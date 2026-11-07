@@ -10,7 +10,7 @@ import {
 } from '@storix/shared'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { authenticate } from '../../http/authenticate'
+import { authenticate, optionalAuthenticate } from '../../http/authenticate'
 import { requireLeagueRole } from '../../http/league-guard'
 import { rateLimits } from '../../http/rate-limit'
 import type { InvitationsService } from './invitations.service'
@@ -62,13 +62,15 @@ export function invitationsRoutes(service: InvitationsService): FastifyPluginAsy
     app.get(
       '/invitations/:token',
       {
+        preHandler: optionalAuthenticate,
         config: { rateLimit: rateLimits.invitationPublic },
         schema: { params: tokenParamsSchema, response: { 200: invitationPreviewSchema } },
       },
-      async (request) => {
-        const session = await app.authGateway.getSessionFromNodeHeaders(request.headers)
-        return service.previewInvitation(request.params.token, session?.userId ?? null)
-      },
+      (request) =>
+        service.previewInvitation(
+          request.params.token,
+          request.optionalAuthSession?.userId ?? null,
+        ),
     )
     app.post(
       '/invitations/:token/signup',

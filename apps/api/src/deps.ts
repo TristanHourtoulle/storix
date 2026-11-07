@@ -12,9 +12,9 @@ import { createMeService, type MeService } from './features/me/me.service'
 import { createMembersService, type MembersService } from './features/members/members.service'
 import {
   createResetCodesService,
-  type ErrorLogger,
   type ResetCodesService,
 } from './features/reset-codes/reset-codes.service'
+import type { ErrorLogger } from './lib/error-logger'
 
 export interface AppDeps {
   env: Env

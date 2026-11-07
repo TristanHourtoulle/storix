@@ -8,6 +8,7 @@ declare module 'fastify' {
   }
   interface FastifyRequest {
     authSession: AuthSession
+    optionalAuthSession: AuthSession | null
   }
 }
 
@@ -16,4 +17,11 @@ export async function authenticate(request: FastifyRequest): Promise<void> {
   const session = await request.server.authGateway.getSessionFromNodeHeaders(request.headers)
   if (session === null) throw unauthenticated()
   request.authSession = session
+}
+
+/** Route preHandler that exposes the Better Auth session when present, or null, without requiring it. */
+export async function optionalAuthenticate(request: FastifyRequest): Promise<void> {
+  request.optionalAuthSession = await request.server.authGateway.getSessionFromNodeHeaders(
+    request.headers,
+  )
 }

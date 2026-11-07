@@ -28,4 +28,3 @@ export const leagueParamsSchema = z.object({ leagueId: z.uuid() })
 export type CreateLeagueBody = z.infer<typeof createLeagueBodySchema>
 export type LeagueSummary = z.infer<typeof leagueSummarySchema>
 export type LeagueDetail = z.infer<typeof leagueDetailSchema>
-export type LeagueParams = z.infer<typeof leagueParamsSchema>

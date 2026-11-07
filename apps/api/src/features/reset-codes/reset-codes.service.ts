@@ -10,6 +10,7 @@ import {
 } from '@storix/shared'
 import type { AuthGateway } from '../../auth/auth.gateway'
 import { generateResetCode, safeEqualHex, sha256Hex } from '../../lib/crypto'
+import type { ErrorLogger } from '../../lib/error-logger'
 import { AppError, notFound } from '../../lib/errors'
 import { runInTransaction } from '../../lib/transaction'
 import { insertAuditEntry } from '../audit/audit.repository'
@@ -25,11 +26,6 @@ import {
   markCodeUsed,
 } from './reset-codes.repository'
 
-export interface ErrorLogger {
-  warn(context: object, message: string): void
-  error(context: object, message: string): void
-}
-
 export interface ResetCodesService {
   issue(m: Membership, targetUserId: string): Promise<IssueResetCodeResponse>
   redeem(body: RedeemResetCodeBody): Promise<void>
@@ -40,6 +36,10 @@ export interface ResetCodesServiceDeps {
   auth: AuthGateway
   clock: () => Date
   logger: ErrorLogger
+}
+
+function errorReason(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown error'
 }
 
 function invalidResetCode(): AppError {
@@ -65,12 +65,18 @@ export function createResetCodesService(deps: ResetCodesServiceDeps): ResetCodes
   async function revokeSessionsWithRetry(userId: string): Promise<void> {
     try {
       await auth.revokeAllSessions(userId)
-    } catch {
-      logger.warn({ userId }, 'Retrying session revocation after password reset')
+    } catch (error) {
+      logger.warn(
+        { userId, reason: errorReason(error) },
+        'Retrying session revocation after password reset',
+      )
       try {
         await auth.revokeAllSessions(userId)
-      } catch {
-        logger.error({ userId }, 'Failed to revoke sessions after password reset')
+      } catch (retryError) {
+        logger.error(
+          { userId, reason: errorReason(retryError) },
+          'Failed to revoke sessions after password reset',
+        )
       }
     }
   }

@@ -18,4 +18,3 @@ export const memberParamsSchema = z.object({ leagueId: z.uuid(), userId: idSchem
 
 export type MemberSummary = z.infer<typeof memberSummarySchema>
 export type UpdateMemberRoleBody = z.infer<typeof updateMemberRoleBodySchema>
-export type MemberParams = z.infer<typeof memberParamsSchema>

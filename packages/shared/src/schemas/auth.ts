@@ -22,5 +22,4 @@ export const meResponseSchema = z.object({
   leagues: z.array(leagueSummarySchema),
 })
 
-export type SessionUser = z.infer<typeof sessionUserSchema>
 export type MeResponse = z.infer<typeof meResponseSchema>
