@@ -9,6 +9,7 @@ import { CardActions } from './card-actions'
 import { CardFace } from './card-face'
 import { CardImage } from './card-image'
 import { authorLabel } from '../author-label'
+import { MotionPrompt } from './motion-prompt'
 import { MetaCell, discovererLabel, formatDate } from './meta-cell'
 import { ReactionBar } from './reaction-bar'
 
@@ -19,7 +20,8 @@ interface CardDetailProps {
 }
 
 export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
-  const { ref, needsMotionPermission, isMotionDenied, requestMotionPermission } = useHoloTilt()
+  const { ref, isDragTilt, needsMotionPermission, isMotionDenied, requestMotionPermission } =
+    useHoloTilt()
   const reactions = useReactions(leagueId, card.id)
   const { recycle, upgradeToFoil } = useCardMutations(leagueId, card.id)
   const isGold = card.displayTier === 'legendary' || card.displayTier === 'mythic'
@@ -32,7 +34,7 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="tilt" ref={ref}>
+      <div className={isDragTilt ? 'tilt is-drag' : 'tilt'} ref={ref}>
         <CardFace
           size="xl"
           title={card.title}
@@ -51,6 +53,11 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
           />
         </CardFace>
       </div>
+      <MotionPrompt
+        needsPermission={needsMotionPermission}
+        isDenied={isMotionDenied}
+        onRequest={requestMotionPermission}
+      />
       <div className="pills">
         <span className={isGold ? 'pill gold' : 'pill'}>{TIER_LABELS[card.displayTier]}</span>
         {hasFoil ? <span className="pill gold">Foil</span> : null}
@@ -87,16 +94,6 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
         </Button>
       ) : null}
       {hasFailed ? <Notice tone="error">Action impossible pour le moment. Réessaie.</Notice> : null}
-      {needsMotionPermission ? (
-        <Button variant="ghost" onClick={() => void requestMotionPermission()}>
-          Activer l'effet holo
-        </Button>
-      ) : null}
-      {isMotionDenied ? (
-        <p className="m-0 text-center text-sm text-muted">
-          Effet holo désactivé dans les réglages de ton téléphone
-        </p>
-      ) : null}
     </div>
   )
 }

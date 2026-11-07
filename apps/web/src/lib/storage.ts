@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
   acknowledgedRemovals: (userId: string, leagueId: string): string =>
     `storix.acknowledgedRemovals.${userId}.${leagueId}`,
   iosHintDismissed: 'storix.iosHintDismissed',
+  motionPermission: 'storix.motionPermission',
   passkeyPromptDismissed: (userId: string): string => `storix.passkeyPromptDismissed.${userId}`,
 } as const
 

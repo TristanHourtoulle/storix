@@ -312,6 +312,9 @@
     padding: 6px 0 8px;
     touch-action: pan-y;
   }
+  .tilt.is-drag {
+    touch-action: none;
+  }
   .tilt .card {
     transform: rotateX(var(--rx, 6deg)) rotateY(var(--ry, -12deg));
     transition: transform 0.2s ease-out;
