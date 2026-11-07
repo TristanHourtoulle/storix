@@ -3,11 +3,19 @@ import { pino } from 'pino'
 import { buildApp } from './app'
 import { loadEnv } from './config/env'
 import { createAppDeps } from './deps'
+import { assertStorageReachable } from './lib/storage-probe'
 
 async function start(): Promise<void> {
   const env = loadEnv(process.env)
   const database = createDb(env.DATABASE_URL)
-  const app = await buildApp(createAppDeps(env, database.db))
+  const deps = createAppDeps(env, database.db)
+  try {
+    await assertStorageReachable(deps.storage)
+  } catch (error) {
+    await database.close()
+    throw error
+  }
+  const app = await buildApp(deps)
 
   async function shutdown(signal: string): Promise<void> {
     app.log.info({ signal }, 'Shutting down')
