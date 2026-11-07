@@ -31,6 +31,9 @@ export interface BoosterDraw {
   variant: CopyVariant
 }
 
+const byNumberThenId = (x: PoolCard, y: PoolCard): number =>
+  x.number - y.number || (x.cardId < y.cardId ? -1 : x.cardId > y.cardId ? 1 : 0)
+
 export class EmptyBoosterPoolError extends Error {
   constructor() {
     super('The booster pool is empty')
@@ -86,9 +89,7 @@ export function pickFromTier(cards: readonly PoolCard[], random: RandomSource): 
     x < y ? -1 : x > y ? 1 : 0,
   )
   const author = authors[random.nextInt(authors.length)]
-  const candidates = cards
-    .filter((c) => authorKey(c) === author)
-    .toSorted((x, y) => x.number - y.number)
+  const candidates = cards.filter((c) => authorKey(c) === author).toSorted(byNumberThenId)
   const picked = candidates[random.nextInt(candidates.length)]
   if (picked === undefined) throw new EmptyBoosterPoolError()
   return picked
@@ -119,7 +120,7 @@ export function drawBooster(input: {
 /** Builds the canonical string the API hashes to fingerprint a booster pool. */
 export function boosterPoolDigestInput(pool: readonly PoolCard[]): string {
   return pool
-    .toSorted((x, y) => x.number - y.number)
+    .toSorted(byNumberThenId)
     .map((c) => `${c.number}:${c.tier}:${c.authorId ?? ''}`)
     .join(',')
 }

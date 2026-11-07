@@ -19,6 +19,15 @@ describe('rarity signals', () => {
   it('rewards scarce uploaders', () => {
     expect(scarcitySignals(['a', 'b', 'b'])).toEqual([1, 0.25, 0.25])
   })
+  it('ranks scarcity with ties, null authors and degenerate sizes', () => {
+    expect(scarcitySignals([])).toEqual([])
+    expect(scarcitySignals(['a'])).toEqual([0.5])
+    expect(scarcitySignals(['a', 'b'])).toEqual([0.5, 0.5])
+    expect(scarcitySignals([null, null, 'a'])).toEqual([0.25, 0.25, 1])
+    expect(scarcitySignals(['a', 'b', 'b', 'c', 'c', 'c'])).toEqual(
+      percentileRanks([-1, -2, -2, -3, -3, -3]),
+    )
+  })
   it('ranks photo age, caps unvalidated dates and neutralizes missing ones', () => {
     const now = new Date('2026-11-07T00:00:00Z')
     const y = (year: number) => new Date(`${year}-11-07T00:00:00Z`)

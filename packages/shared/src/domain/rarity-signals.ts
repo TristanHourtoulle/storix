@@ -4,7 +4,11 @@ export interface RarityWeights {
   reactions: number
 }
 
-export type RaritySignals = RarityWeights
+export interface RaritySignals {
+  uploaderScarcity: number
+  photoAge: number
+  reactions: number
+}
 
 export const DEFAULT_RARITY_WEIGHTS: RarityWeights = {
   uploaderScarcity: 1,
@@ -34,11 +38,23 @@ export function percentileRanks(values: readonly number[]): number[] {
 
 /** Ranks each card by how few cards share its author; null authors form one group. */
 export function scarcitySignals(authorIds: readonly (string | null)[]): number[] {
-  const counts = authorIds.reduce<ReadonlyMap<string | null, number>>(
-    (acc, id) => new Map(acc).set(id, (acc.get(id) ?? 0) + 1),
-    new Map(),
-  )
-  return percentileRanks(authorIds.map((id) => -(counts.get(id) ?? 0)))
+  const n = authorIds.length
+  if (n === 0) return []
+  if (n === 1) return [NEUTRAL_SIGNAL]
+  const authorCounts = new Map<string | null, number>()
+  for (const id of authorIds) authorCounts.set(id, (authorCounts.get(id) ?? 0) + 1)
+  const cardsByCount = new Map<number, number>()
+  for (const count of authorCounts.values()) {
+    cardsByCount.set(count, (cardsByCount.get(count) ?? 0) + count)
+  }
+  const rankByCount = new Map<number, number>()
+  let below = 0
+  for (const count of [...cardsByCount.keys()].toSorted((x, y) => y - x)) {
+    const equal = cardsByCount.get(count) ?? 0
+    rankByCount.set(count, (below + (equal - 1) / 2) / (n - 1))
+    below += equal
+  }
+  return authorIds.map((id) => rankByCount.get(authorCounts.get(id) ?? 0) ?? NEUTRAL_SIGNAL)
 }
 
 /** Ranks photo age among dated photos; undated is neutral, unvalidated dates are capped. */
