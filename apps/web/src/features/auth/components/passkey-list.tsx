@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
-import { usePasskeys } from '../use-passkeys'
+import { defaultPasskeyName, usePasskeys } from '../use-passkeys'
 
-const DEFAULT_PASSKEY_NAME = 'Cet appareil'
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' })
 
-export function PasskeyList() {
+interface PasskeyListProps {
+  displayUsername: string
+}
+
+export function PasskeyList({ displayUsername }: PasskeyListProps) {
   const { passkeys, addPasskey, deletePasskey, isLoading } = usePasskeys()
   const [error, setError] = useState<string | null>(null)
   const [pendingId, setPendingId] = useState<string | null>(null)
@@ -23,7 +26,7 @@ export function PasskeyList() {
 
   async function handleAdd(): Promise<void> {
     setIsAdding(true)
-    await run(() => addPasskey(DEFAULT_PASSKEY_NAME))
+    await run(() => addPasskey(defaultPasskeyName(displayUsername)))
     setIsAdding(false)
   }
 
@@ -50,15 +53,19 @@ export function PasskeyList() {
             >
               <div className="min-w-0">
                 <p className="m-0 truncate text-sm font-medium">{passkey.name ?? 'Passkey'}</p>
-                <p className="m-0 text-xs text-muted">
-                  Ajoutée le {dateFormatter.format(new Date(passkey.createdAt))}
-                </p>
+                {passkey.createdAt ? (
+                  <p className="m-0 text-xs text-muted">
+                    Ajoutée le {dateFormatter.format(new Date(passkey.createdAt))}
+                  </p>
+                ) : null}
               </div>
               <Button
                 variant="ghost"
                 isLoading={pendingId === passkey.id}
                 onClick={() => handleDelete(passkey.id)}
-                aria-label={`Supprimer la passkey ${passkey.name ?? ''}`.trim()}
+                aria-label={
+                  passkey.name ? `Supprimer la passkey ${passkey.name}` : 'Supprimer cette passkey'
+                }
               >
                 Supprimer
               </Button>

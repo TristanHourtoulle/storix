@@ -3,14 +3,14 @@ import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Notice } from '@/components/ui/notice'
 import { usePasskeyPrompt } from '../use-passkey-prompt'
+import { defaultPasskeyName } from '../use-passkeys'
 
 interface PasskeyPromptProps {
   userId: string
+  displayUsername: string
 }
 
-const DEFAULT_PASSKEY_NAME = 'Cet appareil'
-
-export function PasskeyPrompt({ userId }: PasskeyPromptProps) {
+export function PasskeyPrompt({ userId, displayUsername }: PasskeyPromptProps) {
   const { isOpen, dismiss, addPasskey } = usePasskeyPrompt(userId)
   const [error, setError] = useState<string | null>(null)
   const [isPending, setIsPending] = useState(false)
@@ -19,7 +19,7 @@ export function PasskeyPrompt({ userId }: PasskeyPromptProps) {
     setError(null)
     setIsPending(true)
     try {
-      await addPasskey(DEFAULT_PASSKEY_NAME)
+      await addPasskey(defaultPasskeyName(displayUsername))
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Impossible d'ajouter la passkey.")
     } finally {

@@ -5,10 +5,15 @@ import { authErrorMessage } from './auth-errors'
 
 export const PASSKEYS_QUERY_KEY = ['passkeys'] as const
 
+/** Default passkey label for a user. */
+export function defaultPasskeyName(displayUsername: string): string {
+  return `Passkey de ${displayUsername}`
+}
+
 export interface PasskeySummary {
   id: string
   name: string | null
-  createdAt: string
+  createdAt: string | null
 }
 
 const passkeyListSchema = z.array(
@@ -25,7 +30,7 @@ async function fetchPasskeys(): Promise<PasskeySummary[]> {
   return passkeyListSchema.parse(data).map((passkey) => ({
     id: passkey.id,
     name: passkey.name ?? null,
-    createdAt: (passkey.createdAt ?? new Date(0)).toISOString(),
+    createdAt: passkey.createdAt?.toISOString() ?? null,
   }))
 }
 

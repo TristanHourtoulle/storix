@@ -30,7 +30,7 @@ function LeagueLayout() {
     <div className="flex min-h-dvh flex-col">
       <Outlet />
       <IosInstallHint />
-      <PasskeyPrompt userId={me.user.id} />
+      <PasskeyPrompt userId={me.user.id} displayUsername={me.user.displayUsername} />
       <BottomNav leagueId={leagueId} active={active} />
     </div>
   )
