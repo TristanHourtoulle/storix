@@ -2,12 +2,14 @@ import type { Database, DbExecutor } from '@storix/db'
 import {
   boosterEligibleBefore,
   boosterPoolDigestInput,
+  canOpenBooster,
   computeBoosterStock,
   consumeBooster,
   copyKey,
   createSeededRandom,
   drawBooster,
   DROP_TABLE_VERSION,
+  MIN_DRAWABLE_CARDS_FOR_BOOSTER,
   nextPityState,
   resolveLeagueSettings,
   settleBoosterCopies,
@@ -176,8 +178,12 @@ async function openNewBooster(
     leagueId: ctx.m.leagueId,
     eligibleBefore: boosterEligibleBefore(ctx.now, ctx.delayMinutes),
   })
-  if (pool.length === 0) {
-    throw new AppError('BOOSTER_POOL_EMPTY', 409, 'No card can be drawn from this league yet')
+  const drawableCount = new Set(pool.map((card) => card.cardId)).size
+  if (!canOpenBooster(drawableCount)) {
+    throw new AppError('BOOSTER_POOL_EMPTY', 409, 'Not enough distinct cards to fill a booster', {
+      drawableCount,
+      minimumCards: MIN_DRAWABLE_CARDS_FOR_BOOSTER,
+    })
   }
 
   const pityBefore = { sinceEpic: wallet.pitySinceEpic, sinceLegendary: wallet.pitySinceLegendary }

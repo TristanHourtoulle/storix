@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  BoosterPoolTooSmallError,
   boosterPoolDigestInput,
+  MIN_DRAWABLE_CARDS_FOR_BOOSTER,
   drawBooster,
   pickFromTier,
   EmptyBoosterPoolError,
@@ -29,6 +31,10 @@ const card = (cardId: string, tier: CardTier, authorId: string | null, n: number
   number: n,
 })
 const NO_PITY = { sinceEpic: 0, sinceLegendary: 0 }
+const ZERO_ROLLS = Array.from({ length: 5 }, () => [0, 0, 0, 1]).flat()
+const commons = (count: number, authorId: string | null = 'a'): PoolCard[] =>
+  Array.from({ length: count }, (_, i) => card(`c${i}`, 'common', authorId, i + 1))
+const seedAt = (i: number): string => i.toString(16).padStart(32, '0')
 
 describe('booster draw', () => {
   it('breaks number ties by card id', () => {
@@ -98,7 +104,7 @@ describe('booster draw', () => {
     )
   })
   it('honors the epic guarantee with a higher tier when no epic exists', () => {
-    const pool = [card('c1', 'common', 'a', 1), card('l1', 'legendary', 'a', 2)]
+    const pool = [...commons(5), card('l1', 'legendary', 'a', 10)]
     const random = createSeededRandom(SEED)
     for (let i = 0; i < 200; i += 1) {
       const draws = drawBooster({ pool, pity: { sinceEpic: 9, sinceLegendary: 0 }, random })
@@ -128,21 +134,18 @@ describe('booster draw', () => {
       pool,
       pity: NO_PITY,
       random: scripted([0, 0, 0, 1, 80, 0, 0, 1, 79, 0, 0, 1, 70, 0, 0, 1, 99, 0, 0, 0]),
+      tableVersion: 2,
     })
     expect(draws.map((d) => d.tier)).toEqual(['common', 'uncommon', 'common', 'rare', 'legendary'])
     expect(draws[4]).toMatchObject({ rolledTier: 'mythic', cardId: 'l1', variant: 'foil' })
     expect(draws.slice(0, 4).every((d) => d.variant === 'normal')).toBe(true)
   })
   it('honors the epic guarantee', () => {
-    const pool = [
-      card('c1', 'common', 'a', 1),
-      card('r1', 'rare', 'a', 2),
-      card('e1', 'epic', 'a', 3),
-    ]
+    const pool = [...commons(4), card('r1', 'rare', 'a', 5), card('e1', 'epic', 'a', 6)]
     const draws = drawBooster({
       pool,
       pity: { sinceEpic: 9, sinceLegendary: 0 },
-      random: scripted([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]),
+      random: scripted(ZERO_ROLLS),
     })
     expect(draws[4]?.tier).toBe('epic')
   })
@@ -155,13 +158,12 @@ describe('booster draw', () => {
     let fromA = 0
     let foils = 0
     for (let i = 0; i < 4000; i += 1) {
-      for (const d of drawBooster({ pool, pity: NO_PITY, random })) {
-        if (d.cardId === 'a1') fromA += 1
-        if (d.variant === 'foil') foils += 1
-      }
+      const draws = drawBooster({ pool, pity: NO_PITY, random })
+      if (draws[0]?.cardId === 'a1') fromA += 1
+      foils += draws.filter((d) => d.variant === 'foil').length
     }
-    expect(fromA / 20_000).toBeGreaterThan(0.47)
-    expect(fromA / 20_000).toBeLessThan(0.53)
+    expect(fromA / 4000).toBeGreaterThan(0.46)
+    expect(fromA / 4000).toBeLessThan(0.54)
     expect(foils / 20_000).toBeGreaterThan(1 / 15 - 0.01)
     expect(foils / 20_000).toBeLessThan(1 / 15 + 0.01)
   })
@@ -169,8 +171,92 @@ describe('booster draw', () => {
     expect(() =>
       drawBooster({ pool: [], pity: NO_PITY, random: createSeededRandom(SEED) }),
     ).toThrow(EmptyBoosterPoolError)
-    const pool = [card('c1', 'common', null, 1), card('r1', 'rare', 'x', 2)]
+    const pool = [...commons(4, null), card('r1', 'rare', 'x', 5)]
     const once = () => drawBooster({ pool, pity: NO_PITY, random: createSeededRandom(SEED) })
     expect(once()).toEqual(once())
+  })
+
+  it('never draws the same card twice in a booster', () => {
+    const pool = [
+      ...commons(6),
+      card('u1', 'uncommon', 'b', 20),
+      card('u2', 'uncommon', 'c', 21),
+      card('r1', 'rare', 'b', 30),
+      card('e1', 'epic', 'c', 40),
+    ]
+    for (let i = 1; i <= 2000; i += 1) {
+      const draws = drawBooster({ pool, pity: NO_PITY, random: createSeededRandom(seedAt(i)) })
+      expect(new Set(draws.map((d) => d.cardId)).size).toBe(5)
+    }
+  })
+  it('draws every card exactly once from a pool of exactly five', () => {
+    const pool = [
+      card('c1', 'common', 'a', 1),
+      card('u1', 'uncommon', 'b', 2),
+      card('r1', 'rare', 'a', 3),
+      card('e1', 'epic', 'b', 4),
+      card('l1', 'legendary', 'c', 5),
+    ]
+    expect(MIN_DRAWABLE_CARDS_FOR_BOOSTER).toBe(5)
+    for (let i = 1; i <= 500; i += 1) {
+      const draws = drawBooster({ pool, pity: NO_PITY, random: createSeededRandom(seedAt(i)) })
+      expect(draws.map((d) => d.cardId).toSorted()).toEqual(['c1', 'e1', 'l1', 'r1', 'u1'])
+    }
+  })
+  it('rejects a pool with fewer distinct cards than slots', () => {
+    const random = createSeededRandom(SEED)
+    expect(() => drawBooster({ pool: commons(4), pity: NO_PITY, random })).toThrow(
+      BoosterPoolTooSmallError,
+    )
+    const duplicated = [...commons(4), card('c0', 'common', 'a', 1)]
+    expect(() => drawBooster({ pool: duplicated, pity: NO_PITY, random })).toThrow(
+      BoosterPoolTooSmallError,
+    )
+  })
+  it('keeps the epic floor on the rare+ slot without duplicates', () => {
+    const pool = [
+      ...commons(5),
+      card('u1', 'uncommon', 'b', 20),
+      card('r1', 'rare', 'b', 30),
+      card('e1', 'epic', 'c', 40),
+    ]
+    for (let i = 1; i <= 500; i += 1) {
+      const draws = drawBooster({
+        pool,
+        pity: { sinceEpic: 9, sinceLegendary: 0 },
+        random: createSeededRandom(seedAt(i)),
+      })
+      expect(draws[4]?.cardId).toBe('e1')
+      expect(new Set(draws.map((d) => d.cardId)).size).toBe(5)
+    }
+  })
+  it('falls back to the next tier when the rolled tier has no card left', () => {
+    const pool = [
+      card('c1', 'common', 'a', 1),
+      card('u1', 'uncommon', 'a', 2),
+      card('r1', 'rare', 'a', 3),
+      card('r2', 'rare', 'a', 4),
+      card('r3', 'rare', 'a', 5),
+    ]
+    const draws = drawBooster({ pool, pity: NO_PITY, random: scripted(ZERO_ROLLS) })
+    expect(draws.map((d) => d.rolledTier)).toEqual([
+      'common',
+      'common',
+      'common',
+      'uncommon',
+      'rare',
+    ])
+    expect(draws.map((d) => d.tier)).toEqual(['common', 'uncommon', 'rare', 'rare', 'rare'])
+    expect(draws.map((d) => d.cardId)).toEqual(['c1', 'u1', 'r1', 'r2', 'r3'])
+  })
+  it('keeps replaying version 2 openings with replacement', () => {
+    const pool = [card('c1', 'common', 'a', 1)]
+    const draws = drawBooster({
+      pool,
+      pity: NO_PITY,
+      random: createSeededRandom(SEED),
+      tableVersion: 2,
+    })
+    expect(draws.map((d) => d.cardId)).toEqual(['c1', 'c1', 'c1', 'c1', 'c1'])
   })
 })

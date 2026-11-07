@@ -55,3 +55,28 @@ export async function findUserHomeLeague(
     .limit(1)
   return rows[0] ?? null
 }
+
+/** Reads a user's stored display username and locks the user row for the current transaction. */
+export async function lockUserDisplayName(
+  db: DbExecutor,
+  userId: string,
+): Promise<{ username: string | null; displayUsername: string | null } | null> {
+  const rows = await db
+    .select({ username: user.username, displayUsername: user.displayUsername })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1)
+    .for('update')
+  return rows[0] ?? null
+}
+
+/** Replaces a user's display username; the login username is left untouched. */
+export async function updateUserDisplayName(
+  db: DbExecutor,
+  input: { userId: string; displayName: string; now: Date },
+): Promise<void> {
+  await db
+    .update(user)
+    .set({ displayUsername: input.displayName, updatedAt: input.now })
+    .where(eq(user.id, input.userId))
+}

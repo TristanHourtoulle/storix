@@ -11,7 +11,13 @@ import { runInTransaction } from '../../lib/transaction'
 import { insertAuditEntry } from '../audit/audit.repository'
 import { findMembership, insertMember } from '../members/members.repository'
 import { setHomeLeagueIfUnset } from '../users/users.repository'
-import { countMembers, findLeagueById, insertLeague } from './leagues.repository'
+import {
+  countMembers,
+  findLeagueById,
+  insertLeague,
+  lockLeagueById,
+  updateLeagueName,
+} from './leagues.repository'
 
 export interface Membership {
   leagueId: string
@@ -27,11 +33,33 @@ export interface CreateLeagueOptions {
 export interface LeaguesService {
   createLeague(userId: string, name: string, options?: CreateLeagueOptions): Promise<LeagueSummary>
   getLeagueDetail(leagueId: string, membership: Membership): Promise<LeagueDetail>
+  renameLeague(membership: Membership, name: string): Promise<LeagueDetail>
   getMembership(leagueId: string, userId: string): Promise<Membership | null>
 }
 
 /** Builds the leagues service. */
 export function createLeaguesService(db: Database): LeaguesService {
+  const getLeagueDetail = async (
+    leagueId: string,
+    membership: Membership,
+  ): Promise<LeagueDetail> => {
+    const [league, memberCount] = await Promise.all([
+      findLeagueById(db, leagueId),
+      countMembers(db, leagueId),
+    ])
+    if (league === null) throw notFound()
+    return {
+      id: league.id,
+      name: league.name,
+      memberCount,
+      myRole: membership.role,
+      permissions: {
+        canManageInvitations: canManageInvitations(membership.role),
+        canManageMembers: hasRoleAtLeast(membership.role, 'admin'),
+      },
+    }
+  }
+
   return {
     createLeague(userId, name, options = {}) {
       return runInTransaction(db, async (tx) => {
@@ -51,22 +79,22 @@ export function createLeaguesService(db: Database): LeaguesService {
         return { id: league.id, name: league.name, role: 'owner', memberCount: 1 }
       })
     },
-    async getLeagueDetail(leagueId, membership) {
-      const [league, memberCount] = await Promise.all([
-        findLeagueById(db, leagueId),
-        countMembers(db, leagueId),
-      ])
-      if (league === null) throw notFound()
-      return {
-        id: league.id,
-        name: league.name,
-        memberCount,
-        myRole: membership.role,
-        permissions: {
-          canManageInvitations: canManageInvitations(membership.role),
-          canManageMembers: hasRoleAtLeast(membership.role, 'admin'),
-        },
-      }
+    getLeagueDetail,
+    async renameLeague(membership, name) {
+      await runInTransaction(db, async (tx) => {
+        const league = await lockLeagueById(tx, membership.leagueId)
+        if (league === null) throw notFound()
+        if (league.name === name) return
+        await updateLeagueName(tx, membership.leagueId, name)
+        await insertAuditEntry(tx, {
+          leagueId: membership.leagueId,
+          actorId: membership.userId,
+          targetUserId: null,
+          action: 'league.renamed',
+          metadata: { from: league.name, to: name },
+        })
+      })
+      return getLeagueDetail(membership.leagueId, membership)
     },
     async getMembership(leagueId, userId) {
       const record = await findMembership(db, leagueId, userId)
