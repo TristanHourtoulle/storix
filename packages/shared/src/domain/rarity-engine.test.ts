@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { computeLeagueRarity, type RarityCardInput, type RarityResult } from './rarity-engine'
-import { COMPUTED_TIERS } from './rarity-tiers'
+import { COMPUTED_TIERS } from './cards'
 
 const now = new Date('2026-11-07T00:00:00Z')
 const ONLY_AGE = { uploaderScarcity: 0, photoAge: 1, reactions: 0 }

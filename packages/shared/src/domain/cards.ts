@@ -18,12 +18,12 @@ export function tierRank(tier: CardTier): number {
 }
 
 /** Returns the higher of two tiers. */
-export function maxTier(a: CardTier, b: CardTier): CardTier {
+export function maxTier<T extends CardTier>(a: T, b: T): T {
   return tierRank(a) >= tierRank(b) ? a : b
 }
 
 /** Returns the lower of two tiers. */
-export function minTier(a: CardTier, b: CardTier): CardTier {
+export function minTier<T extends CardTier>(a: T, b: T): T {
   return tierRank(a) <= tierRank(b) ? a : b
 }
 

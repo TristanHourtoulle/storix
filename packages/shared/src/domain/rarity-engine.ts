@@ -1,4 +1,4 @@
-import type { CardTier } from './cards'
+import type { CardTier, ComputedTier } from './cards'
 import {
   photoAgeSignals,
   rarityScore,
@@ -14,7 +14,6 @@ import {
   positionPercentiles,
   QUOTA_LOWER_BOUNDS,
   resolveEffectiveTier,
-  type ComputedTier,
   type TierSource,
 } from './rarity-tiers'
 

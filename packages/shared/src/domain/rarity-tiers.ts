@@ -1,8 +1,11 @@
-import type { CardTier } from './cards'
-
-export const COMPUTED_TIERS = ['common', 'uncommon', 'rare', 'epic', 'legendary'] as const
-
-export type ComputedTier = (typeof COMPUTED_TIERS)[number]
+import {
+  COMPUTED_TIERS,
+  type CardTier,
+  type ComputedTier,
+  maxTier,
+  minTier,
+  tierRank,
+} from './cards'
 
 export type TierBounds = Readonly<Record<ComputedTier, number>>
 
@@ -29,13 +32,6 @@ export const COLD_START_LOWER_BOUNDS: TierBounds = {
 }
 
 export const HYSTERESIS_MARGIN = 0.02
-
-const rankOf = (tier: ComputedTier): number => COMPUTED_TIERS.indexOf(tier)
-
-const higherOf = (a: ComputedTier, b: ComputedTier): ComputedTier =>
-  rankOf(a) >= rankOf(b) ? a : b
-
-const lowerOf = (a: ComputedTier, b: ComputedTier): ComputedTier => (rankOf(a) <= rankOf(b) ? a : b)
 
 /** Returns `(zero-based mid-rank + 0.5) / n` for each score. */
 export function positionPercentiles(scores: readonly number[]): number[] {
@@ -64,11 +60,11 @@ export function applyHysteresis(input: {
   const candidate = tierForValue(input.value, input.bounds)
   const { previous } = input
   if (previous === null) return candidate
-  if (rankOf(candidate) > rankOf(previous)) {
-    return higherOf(previous, tierForValue(input.value - HYSTERESIS_MARGIN, input.bounds))
+  if (tierRank(candidate) > tierRank(previous)) {
+    return maxTier(previous, tierForValue(input.value - HYSTERESIS_MARGIN, input.bounds))
   }
-  if (rankOf(candidate) < rankOf(previous)) {
-    return lowerOf(previous, tierForValue(input.value + HYSTERESIS_MARGIN, input.bounds))
+  if (tierRank(candidate) < tierRank(previous)) {
+    return minTier(previous, tierForValue(input.value + HYSTERESIS_MARGIN, input.bounds))
   }
   return previous
 }
@@ -88,7 +84,7 @@ export function resolveEffectiveTier(input: {
   max: ComputedTier | null
 }): { tier: CardTier; source: TierSource } {
   if (input.pinned !== null) return { tier: input.pinned, source: 'pinned' }
-  const raised = input.min === null ? input.computed : higherOf(input.computed, input.min)
-  const clamped = input.max === null ? raised : lowerOf(raised, input.max)
+  const raised = input.min === null ? input.computed : maxTier(input.computed, input.min)
+  const clamped = input.max === null ? raised : minTier(raised, input.max)
   return { tier: clamped, source: clamped === input.computed ? 'computed' : 'bounded' }
 }
