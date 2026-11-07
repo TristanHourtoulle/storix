@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import type { MemberSummary } from '@storix/shared'
-import { Button } from '@/components/ui/button'
-import { Dialog } from '@/components/ui/dialog'
 import { Notice } from '@/components/ui/notice'
 import { ResetCodeDialog } from '@/features/reset-codes/components/reset-code-dialog'
 import { useMembers } from '../use-members'
 import { useChangeRole } from '../use-change-role'
 import { useRemoveMember } from '../use-remove-member'
+import { useTransferOwnership } from '../use-transfer-ownership'
 import { MemberRow } from './member-row'
+import { RemoveMemberDialog } from './remove-member-dialog'
+import { TransferOwnershipDialog } from './transfer-ownership-dialog'
 
 interface MemberListProps {
   leagueId: string
@@ -17,13 +18,21 @@ export function MemberList({ leagueId }: MemberListProps) {
   const members = useMembers(leagueId)
   const roleChange = useChangeRole(leagueId)
   const removal = useRemoveMember(leagueId)
+  const transfer = useTransferOwnership(leagueId)
   const [removeTarget, setRemoveTarget] = useState<MemberSummary | null>(null)
   const [resetTarget, setResetTarget] = useState<MemberSummary | null>(null)
+  const [transferTarget, setTransferTarget] = useState<MemberSummary | null>(null)
 
   const selectRemoveTarget = (target: MemberSummary | null) => {
     removal.reset()
     roleChange.reset()
     setRemoveTarget(target)
+  }
+
+  const selectTransferTarget = (target: MemberSummary | null) => {
+    transfer.reset()
+    roleChange.reset()
+    setTransferTarget(target)
   }
 
   return (
@@ -34,7 +43,7 @@ export function MemberList({ leagueId }: MemberListProps) {
           <MemberRow
             key={member.userId}
             member={member}
-            isBusy={roleChange.isPending}
+            isBusy={roleChange.isPending || transfer.isPending}
             onToggleRole={(target) =>
               roleChange.changeRole({
                 userId: target.userId,
@@ -43,35 +52,31 @@ export function MemberList({ leagueId }: MemberListProps) {
             }
             onRemove={selectRemoveTarget}
             onResetCode={setResetTarget}
+            onTransferOwnership={selectTransferTarget}
           />
         ))}
       </ul>
       {removeTarget ? (
-        <Dialog
-          open
-          title={`Retirer ${removeTarget.displayUsername} de la ligue ?`}
+        <RemoveMemberDialog
+          member={removeTarget}
+          isPending={removal.isPending}
+          errorMessage={removal.errorMessage}
+          onConfirm={(photos) =>
+            removal.remove({ userId: removeTarget.userId, photos }, () => selectRemoveTarget(null))
+          }
           onClose={() => selectRemoveTarget(null)}
-        >
-          <p className="m-0 text-sm leading-snug text-muted">
-            Ce membre perdra l'accès à la ligue. Il pourra la rejoindre à nouveau avec une
-            invitation.
-          </p>
-          {removal.errorMessage ? <Notice tone="error">{removal.errorMessage}</Notice> : null}
-          <div className="flex gap-2">
-            <Button variant="ghost" block onClick={() => selectRemoveTarget(null)}>
-              Annuler
-            </Button>
-            <Button
-              variant="primary"
-              block
-              className="!bg-danger"
-              isLoading={removal.isPending}
-              onClick={() => removal.remove(removeTarget.userId, () => selectRemoveTarget(null))}
-            >
-              Retirer
-            </Button>
-          </div>
-        </Dialog>
+        />
+      ) : null}
+      {transferTarget ? (
+        <TransferOwnershipDialog
+          member={transferTarget}
+          isPending={transfer.isPending}
+          errorMessage={transfer.errorMessage}
+          onConfirm={() =>
+            transfer.transfer(transferTarget.userId, () => selectTransferTarget(null))
+          }
+          onClose={() => selectTransferTarget(null)}
+        />
       ) : null}
       {resetTarget ? (
         <ResetCodeDialog

@@ -1,8 +1,8 @@
 @import 'tailwindcss';
 @import './game.css';
-@import './booster.css';
 @import './collection.css';
 @import './card-detail.css';
+@import './moderation.css';
 
 @theme {
   --spacing-nav: calc(68px + env(safe-area-inset-bottom));

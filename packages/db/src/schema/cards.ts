@@ -66,5 +66,8 @@ export const cardTags = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
   },
-  (t) => [primaryKey({ columns: [t.cardId, t.userId] }), index('card_tags_user_id_idx').on(t.userId)],
+  (t) => [
+    primaryKey({ columns: [t.cardId, t.userId] }),
+    index('card_tags_user_id_idx').on(t.userId),
+  ],
 )

@@ -8,15 +8,17 @@ import { TIER_LABELS } from '../tier-labels'
 import { CardActions } from './card-actions'
 import { CardFace } from './card-face'
 import { CardImage } from './card-image'
+import { authorLabel } from '../author-label'
 import { MetaCell, discovererLabel, formatDate } from './meta-cell'
 import { ReactionBar } from './reaction-bar'
 
 interface CardDetailProps {
   leagueId: string
   card: OwnedCardDetail
+  onWithdraw: () => void
 }
 
-export function CardDetail({ leagueId, card }: CardDetailProps) {
+export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
   const { ref, needsMotionPermission, isMotionDenied, requestMotionPermission } = useHoloTilt()
   const reactions = useReactions(leagueId, card.id)
   const { recycle, upgradeToFoil } = useCardMutations(leagueId, card.id)
@@ -59,7 +61,7 @@ export function CardDetail({ leagueId, card }: CardDetailProps) {
       </div>
       <h2 className="detail-name">{card.title}</h2>
       <div className="meta">
-        <MetaCell label="Photo de" value={card.author.displayUsername ?? 'Ancien membre'} />
+        <MetaCell label="Photo de" value={authorLabel(card.author)} />
         <MetaCell label="Prise le" value={formatDate(card.capturedAt, 'Inconnue')} />
         <MetaCell label="Découverte par" value={discovererLabel(card.discoveredBy)} />
         <MetaCell
@@ -79,6 +81,11 @@ export function CardDetail({ leagueId, card }: CardDetailProps) {
         onRecycle={(variant) => recycle.mutate(variant)}
         onUpgrade={() => upgradeToFoil.mutate()}
       />
+      {card.canWithdraw ? (
+        <Button variant="ghost" onClick={onWithdraw}>
+          Retirer cette photo
+        </Button>
+      ) : null}
       {hasFailed ? <Notice tone="error">Action impossible pour le moment. Réessaie.</Notice> : null}
       {needsMotionPermission ? (
         <Button variant="ghost" onClick={() => void requestMotionPermission()}>
