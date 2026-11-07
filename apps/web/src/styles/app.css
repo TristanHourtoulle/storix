@@ -108,3 +108,187 @@
   box-shadow: var(--shadow-hairline);
   cursor: pointer;
 }
+
+@layer components {
+  .card {
+    --tc: var(--color-tier-common);
+    position: relative;
+    flex: none;
+    overflow: hidden;
+    border-radius: 12px;
+    background: var(--color-surface-2);
+    box-shadow: 0 0 0 2px var(--tc);
+  }
+  .card.t-C {
+    --tc: #a1a1aa;
+  }
+  .card.t-U {
+    --tc: #4ade80;
+  }
+  .card.t-R {
+    --tc: #60a5fa;
+  }
+  .card.t-E {
+    --tc: #c084fc;
+  }
+  .card.t-L {
+    --tc: #fbbf24;
+  }
+  .card.t-M {
+    --tc: #c084fc;
+  }
+  .card.sm {
+    width: 80px;
+    height: 112px;
+    border-radius: 10px;
+  }
+  .card.md {
+    width: 108px;
+    height: 151px;
+  }
+  .card.lg {
+    width: 220px;
+    height: 308px;
+    border-radius: 18px;
+  }
+  .card.xl {
+    width: 236px;
+    height: 330px;
+    border-radius: 18px;
+  }
+  a > .card.md {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 63 / 88;
+  }
+  .card-art {
+    position: absolute;
+    inset: 0;
+  }
+  .card-holo {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .t-E .card-holo {
+    background: linear-gradient(
+      125deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.2) 45%,
+      transparent 60%
+    );
+  }
+  .t-L .card-holo {
+    background: linear-gradient(
+      115deg,
+      transparent 20%,
+      rgba(255, 255, 255, 0.45) 33%,
+      rgba(251, 191, 36, 0.4) 42%,
+      rgba(34, 211, 238, 0.35) 52%,
+      rgba(192, 132, 252, 0.35) 60%,
+      transparent 74%
+    );
+    background-size: 260% 260%;
+    mix-blend-mode: overlay;
+    animation: shine 4.5s linear infinite;
+  }
+  .t-M .card-holo {
+    background: linear-gradient(
+      115deg,
+      transparent 14%,
+      rgba(255, 255, 255, 0.45) 26%,
+      rgba(248, 113, 113, 0.45) 33%,
+      rgba(251, 191, 36, 0.45) 40%,
+      rgba(74, 222, 128, 0.4) 47%,
+      rgba(34, 211, 238, 0.4) 54%,
+      rgba(96, 165, 250, 0.4) 61%,
+      rgba(192, 132, 252, 0.45) 68%,
+      transparent 80%
+    );
+    background-size: 260% 260%;
+    mix-blend-mode: overlay;
+    animation: shine 4.5s linear infinite;
+  }
+  .t-M::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    padding: 2px;
+    pointer-events: none;
+    background: conic-gradient(
+      from var(--mythic-angle, 0deg),
+      #f87171,
+      #fbbf24,
+      #4ade80,
+      #22d3ee,
+      #60a5fa,
+      #c084fc,
+      #f87171
+    );
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    animation: mythic-spin 6s linear infinite;
+  }
+  .card-gem {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--tc);
+    box-shadow: 0 0 8px var(--tc);
+  }
+  .card-band {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 6px 8px;
+    background: rgba(10, 10, 16, 0.8);
+  }
+  .card-name {
+    overflow: hidden;
+    font: 600 11px/1.25 var(--font-display);
+    color: var(--color-ink);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .card-tier {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--tc);
+  }
+  .card.lg .card-band,
+  .card.xl .card-band {
+    padding: 12px 14px;
+  }
+  .card.lg .card-name,
+  .card.xl .card-name {
+    font-size: 17px;
+  }
+  .card.lg .card-tier,
+  .card.xl .card-tier {
+    font-size: 11px;
+  }
+}
+
+@property --mythic-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes mythic-spin {
+  to {
+    --mythic-angle: 360deg;
+  }
+}

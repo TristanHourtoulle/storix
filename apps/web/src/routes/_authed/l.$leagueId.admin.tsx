@@ -2,6 +2,7 @@ import { Suspense, useState } from 'react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { Icon } from '@/components/ui/icon'
+import { Segmented } from '@/components/ui/segmented'
 import { TopBar } from '@/components/ui/top-bar'
 import { InvitationsPanel } from '@/features/invitations/components/invitations-panel'
 import { leagueDetailQueryOptions, loadLeagueDetail } from '@/features/leagues/leagues.queries'
@@ -57,19 +58,7 @@ function Admin() {
           </Link>
         }
       />
-      <div className="flex rounded-control bg-surface p-1 shadow-hairline">
-        {visibleTabs.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={tab === id}
-            onClick={() => setTab(id)}
-            className={`h-10 flex-1 cursor-pointer appearance-none rounded-input border-0 font-display text-sm font-semibold ${tab === id ? 'bg-line text-ink' : 'bg-transparent text-muted'}`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Segmented options={visibleTabs} value={tab} onChange={setTab} />
       {tab === 'invitations' && canManageInvitations ? (
         <InvitationsPanel leagueId={leagueId} />
       ) : (
