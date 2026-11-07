@@ -12,6 +12,10 @@ import {
   createInvitationsService,
   type InvitationsService,
 } from './features/invitations/invitations.service'
+import {
+  createLeagueSettingsService,
+  type LeagueSettingsService,
+} from './features/league-settings/league-settings.service'
 import { createLeaguesService, type LeaguesService } from './features/leagues/leagues.service'
 import { createMediaService, type MediaService } from './features/media/media.service'
 import { createMeService, type MeService } from './features/me/me.service'
@@ -53,6 +57,7 @@ export interface Services {
   health: HealthService
   invitations: InvitationsService
   leagues: LeaguesService
+  leagueSettings: LeagueSettingsService
   me: MeService
   media: MediaService
   members: MembersService
@@ -98,6 +103,12 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       appOrigin: deps.env.APP_ORIGIN,
     }),
     leagues: createLeaguesService(deps.db),
+    leagueSettings: createLeagueSettingsService({
+      db: deps.db,
+      jobs: deps.jobs,
+      clock: deps.clock,
+      logger,
+    }),
     me: createMeService(deps.db),
     media: createMediaService({
       storage: deps.storage,

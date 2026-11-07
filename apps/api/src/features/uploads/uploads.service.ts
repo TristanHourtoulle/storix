@@ -2,9 +2,9 @@ import { randomUUID } from 'node:crypto'
 import type { Database, DbExecutor } from '@storix/db'
 import {
   checkUploadQuota,
-  DEFAULT_UPLOAD_QUOTA_PER_DAY,
   isUploadReservationExpired,
   remainingUploadQuota,
+  resolveLeagueSettings,
   sanitizeCaptureDate,
   UPLOAD_CONTENT_TYPE,
   UPLOAD_MAX_BYTES,
@@ -22,6 +22,7 @@ import type { ObjectStorage } from '@storix/storage'
 import type { JobQueue } from '../../jobs/job-queue'
 import { AppError, notFound } from '../../lib/errors'
 import { runInTransaction } from '../../lib/transaction'
+import { findLeagueSettings } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
 import { listMembers } from '../members/members.repository'
 import {
@@ -60,6 +61,10 @@ function countUsed(db: DbExecutor, m: Membership, now: Date): Promise<number> {
   })
 }
 
+async function quotaLimitOf(db: DbExecutor, leagueId: string): Promise<number> {
+  return resolveLeagueSettings(await findLeagueSettings(db, leagueId)).uploadQuotaPerDay
+}
+
 /** Builds the uploads service handling presigned uploads, the daily quota and completion. */
 export function createUploadsService(deps: {
   db: Database
@@ -87,7 +92,7 @@ export function createUploadsService(deps: {
 
   return {
     async getQuota(m) {
-      const limit = DEFAULT_UPLOAD_QUOTA_PER_DAY
+      const limit = await quotaLimitOf(db, m.leagueId)
       const used = await countUsed(db, m, clock())
       return { limit, used, remaining: remainingUploadQuota({ limit, used }) }
     },
@@ -96,7 +101,6 @@ export function createUploadsService(deps: {
       const now = clock()
       const uploadId = randomUUID()
       const objectKey = `incoming/${m.userId}/${uploadId}`
-      const limit = DEFAULT_UPLOAD_QUOTA_PER_DAY
       const presigned = await storage.presignUpload({
         key: objectKey,
         contentType: UPLOAD_CONTENT_TYPE,
@@ -107,6 +111,7 @@ export function createUploadsService(deps: {
       })
       await runInTransaction(db, async (tx) => {
         await lockMemberRow(tx, m.leagueId, m.userId)
+        const limit = await quotaLimitOf(tx, m.leagueId)
         const used = await countUsed(tx, m, now)
         const quota = checkUploadQuota({ limit, used, requested: 1 })
         if (!quota.allowed) {

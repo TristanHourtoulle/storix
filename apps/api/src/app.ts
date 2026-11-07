@@ -15,6 +15,7 @@ import { cardsRoutes } from './features/cards/cards.routes'
 import { copiesRoutes } from './features/copies/copies.routes'
 import { healthRoutes } from './features/health/health.routes'
 import { invitationsRoutes } from './features/invitations/invitations.routes'
+import { leagueSettingsRoutes } from './features/league-settings/league-settings.routes'
 import { leaguesRoutes } from './features/leagues/leagues.routes'
 import { mediaRoutes } from './features/media/media.routes'
 import { meRoutes } from './features/me/me.routes'
@@ -88,6 +89,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(copiesRoutes(services.copies), { prefix: '/api' })
   await app.register(reactionsRoutes(services.reactions), { prefix: '/api' })
   await app.register(removalsRoutes(services.removals), { prefix: '/api' })
+  await app.register(leagueSettingsRoutes(services.leagueSettings), { prefix: '/api' })
   await app.register(moderationRoutes(services.moderation), { prefix: '/api' })
   await app.register(mediaRoutes(services.media))
 
