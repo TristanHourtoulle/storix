@@ -68,7 +68,11 @@ export async function updateMemberRole(
 }
 
 /** Deletes a member from a league. */
-export async function deleteMember(db: DbExecutor, leagueId: string, userId: string): Promise<void> {
+export async function deleteMember(
+  db: DbExecutor,
+  leagueId: string,
+  userId: string,
+): Promise<void> {
   await db
     .delete(leagueMembers)
     .where(and(eq(leagueMembers.leagueId, leagueId), eq(leagueMembers.userId, userId)))

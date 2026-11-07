@@ -10,6 +10,10 @@ import {
 import { createLeaguesService, type LeaguesService } from './features/leagues/leagues.service'
 import { createMeService, type MeService } from './features/me/me.service'
 import { createMembersService, type MembersService } from './features/members/members.service'
+import {
+  createResetCodesService,
+  type ResetCodesService,
+} from './features/reset-codes/reset-codes.service'
 
 export interface AppDeps {
   env: Env
@@ -24,6 +28,7 @@ export interface Services {
   leagues: LeaguesService
   me: MeService
   members: MembersService
+  resetCodes: ResetCodesService
 }
 
 /** Wires the runtime dependencies for the given environment and database. */
@@ -44,5 +49,6 @@ export function buildServices(deps: AppDeps): Services {
     leagues: createLeaguesService(deps.db),
     me: createMeService(deps.db),
     members: createMembersService(deps.db),
+    resetCodes: createResetCodesService({ db: deps.db, auth: deps.auth, clock: deps.clock }),
   }
 }

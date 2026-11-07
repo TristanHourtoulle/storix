@@ -42,3 +42,16 @@ export async function setHomeLeagueIfUnset(
     .set({ homeLeagueId: leagueId })
     .where(and(eq(user.id, userId), isNull(user.homeLeagueId)))
 }
+
+/** Finds a user's home league by user id; null when the user does not exist. */
+export async function findUserHomeLeague(
+  db: DbExecutor,
+  userId: string,
+): Promise<{ homeLeagueId: string | null } | null> {
+  const rows = await db
+    .select({ homeLeagueId: user.homeLeagueId })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1)
+  return rows[0] ?? null
+}
