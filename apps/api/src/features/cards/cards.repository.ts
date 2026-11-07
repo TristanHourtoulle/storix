@@ -1,4 +1,5 @@
 import { cards, cardTags, media, user, type DbExecutor } from '@storix/db'
+import { mediaVariantsSchema } from '@storix/shared'
 import { and, desc, eq, inArray, lt, sql } from 'drizzle-orm'
 
 export interface CardRow {
@@ -45,12 +46,18 @@ const cardColumns = {
   variants: media.variants,
 }
 
+function parseVariants<T extends { variants: unknown }>(
+  row: T,
+): Omit<T, 'variants'> & { variants: CardRow['variants'] } {
+  return { ...row, variants: mediaVariantsSchema.parse(row.variants) }
+}
+
 /** Lists active cards newest number first, fetching `limit + 1` rows to detect a next page. */
-export function listCards(
+export async function listCards(
   db: DbExecutor,
   input: { leagueId: string; authorId?: string; beforeNumber?: number; limit: number },
 ): Promise<CardRow[]> {
-  return db
+  const rows = await db
     .select(cardColumns)
     .from(cards)
     .innerJoin(media, eq(media.id, cards.mediaId))
@@ -65,6 +72,7 @@ export function listCards(
     )
     .orderBy(desc(cards.number))
     .limit(input.limit + 1)
+  return rows.map(parseVariants)
 }
 
 /** Counts a league's active cards, optionally restricted to one author. */
@@ -111,5 +119,5 @@ export async function findCard(
     .innerJoin(user, eq(user.id, cardTags.userId))
     .where(inArray(cardTags.cardId, [cardId]))
     .orderBy(sql`lower(${displayName})`, user.id)
-  return { ...row, tagged }
+  return { ...parseVariants(row), tagged }
 }

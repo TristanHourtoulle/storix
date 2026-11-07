@@ -32,10 +32,7 @@ export async function startJobQueue(input: {
 
   return {
     async enqueueMediaProcess(payload) {
-      await boss.send(MEDIA_PROCESS_JOB, payload, {
-        ...MEDIA_PROCESS_SEND_OPTIONS,
-        singletonKey: payload.uploadId,
-      })
+      await boss.send(MEDIA_PROCESS_JOB, payload, MEDIA_PROCESS_SEND_OPTIONS)
     },
     stop: () => boss.stop({ graceful: true }),
   }

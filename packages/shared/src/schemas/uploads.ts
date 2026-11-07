@@ -34,6 +34,8 @@ export const createUploadResponseSchema = z.object({
 
 export const cardTitleSchema = z.string().trim().min(1).max(CARD_TITLE_MAX_LENGTH)
 
+export const taggedUserIdsSchema = z.array(idSchema)
+
 export const completeUploadBodySchema = z.object({
   title: cardTitleSchema,
   taggedUserIds: z

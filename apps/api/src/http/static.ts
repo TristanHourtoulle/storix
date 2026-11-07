@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify'
 
 const IMMUTABLE = 'public, max-age=31536000, immutable'
 const NO_STORE = 'no-store'
-const REVALIDATED_FILES = new Set(['sw.js', 'index.html', 'manifest.webmanifest'])
+const NO_STORE_FILES = new Set(['sw.js', 'index.html', 'manifest.webmanifest'])
 const RESERVED_PREFIXES = ['/api', '/media']
 
 function isReserved(url: string): boolean {
@@ -14,7 +14,7 @@ function isReserved(url: string): boolean {
 
 function cacheControlFor(relativePath: string): string | undefined {
   if (relativePath.startsWith('assets/')) return IMMUTABLE
-  if (REVALIDATED_FILES.has(relativePath)) return NO_STORE
+  if (NO_STORE_FILES.has(relativePath)) return NO_STORE
   return undefined
 }
 

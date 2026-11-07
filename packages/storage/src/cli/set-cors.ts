@@ -22,7 +22,7 @@ logger.info(
   {
     bucket: env.S3_BUCKET,
     origins,
-    methods: ['GET', 'PUT', 'POST', 'HEAD'],
+    methods: ['GET', 'POST', 'HEAD'],
     allowedHeaders: ['*'],
     exposeHeaders: ['ETag'],
     maxAgeSeconds: 3600,

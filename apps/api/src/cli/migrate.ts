@@ -8,7 +8,7 @@ import { z } from 'zod'
 const migrateEnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
   MIGRATIONS_DIR: z.string().min(1).default('packages/db/drizzle'),
-  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 })
 
 const fallbackLogger = pino({ level: 'fatal' })

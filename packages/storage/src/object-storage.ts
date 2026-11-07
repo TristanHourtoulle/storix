@@ -198,7 +198,7 @@ export function createObjectStorage(env: StorageEnv): ObjectStorage {
             CORSRules: [
               {
                 AllowedOrigins: [...origins],
-                AllowedMethods: ['GET', 'PUT', 'POST', 'HEAD'],
+                AllowedMethods: ['GET', 'POST', 'HEAD'],
                 AllowedHeaders: ['*'],
                 ExposeHeaders: ['ETag'],
                 MaxAgeSeconds: CORS_MAX_AGE_SECONDS,
