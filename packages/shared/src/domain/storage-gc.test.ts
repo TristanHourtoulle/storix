@@ -41,15 +41,12 @@ describe('classifyOrphans', () => {
 })
 
 describe('evaluateGcSafety', () => {
-  const limits = { maxOrphanRatio: 0.25, maxOrphanCount: 20 }
-
   it('aborts when no media is live but images exist', () => {
     expect(
       evaluateGcSafety({
         liveMediaPrefixCount: 0,
         imagesScanned: 6,
         imageCandidates: 6,
-        ...limits,
       }),
     ).toEqual({ safe: false, reason: 'no-live-media' })
   })
@@ -60,7 +57,6 @@ describe('evaluateGcSafety', () => {
         liveMediaPrefixCount: 0,
         imagesScanned: 0,
         imageCandidates: 0,
-        ...limits,
       }),
     ).toEqual({ safe: true })
   })
@@ -71,7 +67,6 @@ describe('evaluateGcSafety', () => {
         liveMediaPrefixCount: 5,
         imagesScanned: 100,
         imageCandidates: 26,
-        ...limits,
       }),
     ).toEqual({ safe: false, reason: 'too-many-orphans' })
   })
@@ -82,20 +77,28 @@ describe('evaluateGcSafety', () => {
         liveMediaPrefixCount: 5,
         imagesScanned: 1000,
         imageCandidates: 200,
-        ...limits,
       }),
     ).toEqual({ safe: true })
   })
 
-  it('accepts a high ratio below the absolute count', () => {
+  it('accepts a high ratio at the absolute count', () => {
     expect(
       evaluateGcSafety({
         liveMediaPrefixCount: 5,
-        imagesScanned: 30,
-        imageCandidates: 20,
-        ...limits,
+        imagesScanned: 12,
+        imageCandidates: 3,
       }),
     ).toEqual({ safe: true })
+  })
+
+  it('aborts on a small bucket where every image looks orphaned', () => {
+    expect(
+      evaluateGcSafety({
+        liveMediaPrefixCount: 2,
+        imagesScanned: 12,
+        imageCandidates: 12,
+      }),
+    ).toEqual({ safe: false, reason: 'too-many-orphans' })
   })
 
   it('accepts exactly the ratio boundary', () => {
@@ -104,18 +107,16 @@ describe('evaluateGcSafety', () => {
         liveMediaPrefixCount: 5,
         imagesScanned: 100,
         imageCandidates: 25,
-        ...limits,
       }),
     ).toEqual({ safe: true })
   })
 
-  it('aborts at 21 candidates with a high ratio', () => {
+  it('aborts at 4 candidates with a high ratio', () => {
     expect(
       evaluateGcSafety({
         liveMediaPrefixCount: 5,
-        imagesScanned: 30,
-        imageCandidates: 21,
-        ...limits,
+        imagesScanned: 12,
+        imageCandidates: 4,
       }),
     ).toEqual({ safe: false, reason: 'too-many-orphans' })
   })
@@ -126,7 +127,6 @@ describe('evaluateGcSafety', () => {
         liveMediaPrefixCount: 3,
         imagesScanned: 0,
         imageCandidates: 0,
-        ...limits,
       }),
     ).toEqual({ safe: true })
   })
