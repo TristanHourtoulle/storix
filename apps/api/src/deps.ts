@@ -3,6 +3,7 @@ import { createObjectStorage, type ObjectStorage } from '@storix/storage'
 import { createAuth } from './auth/auth'
 import { createAuthGateway, type AuthGateway } from './auth/auth.gateway'
 import type { Env } from './config/env'
+import { createCardRemoval, type CardRemoval } from './features/card-removal/card-removal.service'
 import { createBoostersService, type BoostersService } from './features/boosters/boosters.service'
 import { createCardsService, type CardsService } from './features/cards/cards.service'
 import { createCopiesService, type CopiesService } from './features/copies/copies.service'
@@ -19,6 +20,7 @@ import {
   createReactionsService,
   type ReactionsService,
 } from './features/reactions/reactions.service'
+import { createRemovalsService, type RemovalsService } from './features/removals/removals.service'
 import {
   createResetCodesService,
   type ResetCodesService,
@@ -41,6 +43,7 @@ export interface AppDeps {
 
 export interface Services {
   boosters: BoostersService
+  cardRemoval: CardRemoval
   cards: CardsService
   copies: CopiesService
   health: HealthService
@@ -50,6 +53,7 @@ export interface Services {
   media: MediaService
   members: MembersService
   reactions: ReactionsService
+  removals: RemovalsService
   resetCodes: ResetCodesService
   uploads: UploadsService
   wallets: WalletsService
@@ -77,6 +81,7 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       signer: deps.mediaSigner,
       clock: deps.clock,
     }),
+    cardRemoval: createCardRemoval({ jobs: deps.jobs, logger }),
     cards: createCardsService({ db: deps.db, signer: deps.mediaSigner, clock: deps.clock }),
     copies: createCopiesService({ db: deps.db, clock: deps.clock }),
     health: createHealthService(deps.db),
@@ -95,6 +100,7 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
     }),
     members: createMembersService(deps.db),
     reactions: createReactionsService({ db: deps.db }),
+    removals: createRemovalsService({ db: deps.db, clock: deps.clock }),
     resetCodes: createResetCodesService({
       db: deps.db,
       auth: deps.auth,

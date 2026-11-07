@@ -20,6 +20,7 @@ import { mediaRoutes } from './features/media/media.routes'
 import { meRoutes } from './features/me/me.routes'
 import { membersRoutes } from './features/members/members.routes'
 import { reactionsRoutes } from './features/reactions/reactions.routes'
+import { removalsRoutes } from './features/removals/removals.routes'
 import { resetCodesRoutes } from './features/reset-codes/reset-codes.routes'
 import { uploadsRoutes } from './features/uploads/uploads.routes'
 import { walletsRoutes } from './features/wallets/wallets.routes'
@@ -84,6 +85,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(boostersRoutes(services.boosters), { prefix: '/api' })
   await app.register(copiesRoutes(services.copies), { prefix: '/api' })
   await app.register(reactionsRoutes(services.reactions), { prefix: '/api' })
+  await app.register(removalsRoutes(services.removals), { prefix: '/api' })
   await app.register(mediaRoutes(services.media))
 
   if (isProduction) {

@@ -5,6 +5,7 @@ import { runInTransaction } from '../../lib/transaction'
 import { findCardForViewer } from '../cards/cards.repository'
 import { lockOwnedVariants } from '../copies/copies.repository'
 import type { Membership } from '../leagues/leagues.service'
+import { lockLeagueEconomyShared } from '../wallets/wallets.repository'
 import { addReaction, countReactions, removeReaction } from './reactions.repository'
 
 export interface ReactionsService {
@@ -25,6 +26,7 @@ export function createReactionsService({ db }: ReactionsServiceDeps): ReactionsS
   return {
     setReaction: (m, cardId, type, isOn) =>
       runInTransaction(db, async (tx) => {
+        await lockLeagueEconomyShared(tx, m.leagueId)
         const card = await findCardForViewer(tx, {
           leagueId: m.leagueId,
           cardId,
