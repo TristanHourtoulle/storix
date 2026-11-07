@@ -1,0 +1,61 @@
+@layer components {
+  .admin-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .admin-tile {
+    position: relative;
+    appearance: none;
+    border: 0;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+  }
+  .admin-tile .card.sm {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 63 / 88;
+  }
+  .admin-tile.is-hidden .card {
+    opacity: 0.45;
+  }
+  .admin-tile-pills {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    pointer-events: none;
+  }
+  .pill.tile {
+    padding: 3px 8px;
+    font-size: 10px;
+    background: rgba(10, 10, 16, 0.78);
+  }
+  .pill.rainbow {
+    color: #fff;
+    background: linear-gradient(100deg, #f87171, #fbbf24, #4ade80, #22d3ee, #818cf8, #c084fc);
+    box-shadow: none;
+  }
+  .admin-sheet-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font: 500 13px var(--font-sans);
+    color: var(--color-ink-2);
+  }
+  .picker-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .picker-note {
+    margin: 0;
+    font: 500 12px var(--font-sans);
+    color: var(--color-muted);
+  }
+}

@@ -4,6 +4,7 @@ import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { Icon } from '@/components/ui/icon'
 import { Segmented } from '@/components/ui/segmented'
 import { TopBar } from '@/components/ui/top-bar'
+import { AdminCardsPanel } from '@/features/moderation/components/admin-cards-panel'
 import { InvitationsPanel } from '@/features/invitations/components/invitations-panel'
 import { leagueDetailQueryOptions, loadLeagueDetail } from '@/features/leagues/leagues.queries'
 import { MemberList } from '@/features/members/components/member-list'
@@ -21,7 +22,7 @@ export const Route = createFileRoute('/_authed/l/$leagueId/admin')({
   component: Admin,
 })
 
-type Tab = 'members' | 'invitations'
+type Tab = 'members' | 'invitations' | 'cards'
 
 const TABS: readonly {
   id: Tab
@@ -34,6 +35,7 @@ const TABS: readonly {
     label: 'Invitations',
     isVisible: (canManageInvitations) => canManageInvitations,
   },
+  { id: 'cards', label: 'Cartes', isVisible: () => true },
 ]
 
 function Admin() {
@@ -61,6 +63,8 @@ function Admin() {
       <Segmented options={visibleTabs} value={tab} onChange={setTab} />
       {tab === 'invitations' && canManageInvitations ? (
         <InvitationsPanel leagueId={leagueId} />
+      ) : tab === 'cards' ? (
+        <AdminCardsPanel leagueId={leagueId} />
       ) : (
         <Suspense fallback={<p className="m-0 text-sm text-muted">Chargement…</p>}>
           <MemberList leagueId={leagueId} />
