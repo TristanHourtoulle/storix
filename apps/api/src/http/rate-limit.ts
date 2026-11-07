@@ -1,3 +1,6 @@
+import type { FastifyInstance, FastifyRequest } from 'fastify'
+import { AppError } from '../lib/errors'
+
 export const rateLimits = {
   auth: { max: 60, timeWindow: '1 minute' },
   invitationPublic: { max: 10, timeWindow: '1 minute' },
@@ -10,3 +13,28 @@ export const rateLimits = {
   adminAction: { max: 60, timeWindow: '1 minute' },
   accountDelete: { max: 5, timeWindow: '15 minutes' },
 } as const
+
+export interface RateLimit {
+  max: number
+  timeWindow: string
+}
+
+/** Builds a preHandler limiting a route per authenticated user, on top of its per-IP limit; it must run after `authenticate`. */
+export function perUserRateLimit(
+  app: FastifyInstance,
+  name: string,
+  limit: RateLimit,
+): (request: FastifyRequest) => Promise<void> {
+  const check = app.createRateLimit({
+    ...limit,
+    keyGenerator: (request) => `${name}:user:${request.authSession.userId}`,
+  })
+  return async (request) => {
+    const result = await check(request)
+    if (!result.isAllowed && result.isExceeded) {
+      throw new AppError('RATE_LIMITED', 429, 'Too many requests', {
+        retryAfter: `${result.ttlInSeconds} seconds`,
+      })
+    }
+  }
+}

@@ -10,6 +10,7 @@ import {
 import { authRoutes } from './auth/auth.routes'
 import { clientIpPolicy, rateLimitKeyGenerator } from './config/client-ip'
 import { buildServices, type AppDeps } from './deps'
+import { accountRoutes } from './features/account/account.routes'
 import { boostersRoutes } from './features/boosters/boosters.routes'
 import { cardsRoutes } from './features/cards/cards.routes'
 import { copiesRoutes } from './features/copies/copies.routes'
@@ -79,6 +80,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(authRoutes(deps.auth, env.APP_ORIGIN))
   await app.register(healthRoutes(services.health), { prefix: '/api' })
   await app.register(meRoutes(services.me), { prefix: '/api' })
+  await app.register(accountRoutes(services.account), { prefix: '/api' })
   await app.register(leaguesRoutes(services.leagues), { prefix: '/api' })
   await app.register(invitationsRoutes(services.invitations), { prefix: '/api' })
   await app.register(membersRoutes(services.members), { prefix: '/api' })
