@@ -110,9 +110,9 @@ export function SettingsButtonRow({ onClick, children, ...content }: SettingsBut
 export function SettingsDisabledRow(content: Omit<SettingsRowContentProps, 'tone'>) {
   return (
     <li>
-      <div aria-disabled="true" className={settingsRowClassName(false)}>
+      <button type="button" disabled className={settingsRowClassName(false)}>
         <SettingsRowContent {...content} tone="disabled" />
-      </div>
+      </button>
     </li>
   )
 }
