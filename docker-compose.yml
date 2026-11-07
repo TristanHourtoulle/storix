@@ -1,0 +1,51 @@
+name: storix-foundation
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: storix
+      POSTGRES_PASSWORD: storix
+      POSTGRES_DB: storix
+    ports:
+      - '5440:5432'
+    volumes:
+      - storix-pg:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U storix']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: bitnamilegacy/minio:2025.7.23-debian-12-r5
+    entrypoint: ['minio']
+    command: ['server', '/bitnami/minio/data', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: storix
+      MINIO_ROOT_PASSWORD: storix-dev-secret
+      MINIO_API_CORS_ALLOW_ORIGIN: http://localhost:5180,http://localhost:3021
+    ports:
+      - '9100:9000'
+      - '9101:9001'
+    volumes:
+      - storix-minio:/bitnami/minio/data
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:9000/minio/health/live']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio-init:
+    image: bitnamilegacy/minio-client:2025.7.21-debian-12-r3
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: 'no'
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - mc alias set local http://minio:9000 storix storix-dev-secret && mc mb --ignore-existing local/storix-media && mc anonymous set none local/storix-media
+
+volumes:
+  storix-pg:
+  storix-minio:

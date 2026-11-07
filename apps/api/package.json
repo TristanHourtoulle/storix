@@ -1,0 +1,38 @@
+{
+  "name": "@storix/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=../../.env src/server.ts",
+    "bootstrap": "tsx --env-file=../../.env src/cli/bootstrap.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsdown"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1164.0",
+    "@aws-sdk/s3-presigned-post": "3.1164.0",
+    "@better-auth/passkey": "1.7.18",
+    "@fastify/helmet": "13.2.0",
+    "@fastify/rate-limit": "11.2.2",
+    "@fastify/static": "10.1.10",
+    "@storix/db": "workspace:*",
+    "@storix/shared": "workspace:*",
+    "@storix/storage": "workspace:*",
+    "better-auth": "1.7.18",
+    "drizzle-orm": "0.45.4",
+    "fastify": "5.12.8",
+    "fastify-type-provider-zod": "7.0.0",
+    "pg": "8.23.1",
+    "pg-boss": "12.38.1",
+    "pino": "10.4.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@types/pg": "8.23.1",
+    "pino-pretty": "13.2.0",
+    "tsdown": "0.23.7",
+    "tsx": "4.23.15"
+  }
+}
