@@ -81,3 +81,13 @@ export async function findOwnerIds(
     .where(and(inArray(leagueMembers.leagueId, [...leagueIds]), eq(leagueMembers.role, 'owner')))
   return new Map(rows.map((row) => [row.leagueId, row.userId]))
 }
+
+/** Returns the raw settings column of a league, or null when unset or the league is missing. */
+export async function findLeagueSettings(db: DbExecutor, leagueId: string): Promise<unknown> {
+  const rows = await db
+    .select({ settings: leagues.settings })
+    .from(leagues)
+    .where(eq(leagues.id, leagueId))
+    .limit(1)
+  return rows[0]?.settings ?? null
+}

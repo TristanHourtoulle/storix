@@ -45,6 +45,8 @@ function toSummary(
       canChangeRole({ actorRole: m.role, targetRole: row.role, nextRole, isSelf }),
     ),
     canRemove: canRemoveMember({ actorRole: m.role, targetRole: row.role, isSelf }),
+    authoredCardCount: 0,
+    canTransferOwnership: false,
     canIssueResetCode: canIssueResetCode({
       issuerId: m.userId,
       leagueId: m.leagueId,

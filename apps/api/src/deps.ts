@@ -3,6 +3,7 @@ import { createObjectStorage, type ObjectStorage } from '@storix/storage'
 import { createAuth } from './auth/auth'
 import { createAuthGateway, type AuthGateway } from './auth/auth.gateway'
 import type { Env } from './config/env'
+import { createBoostersService, type BoostersService } from './features/boosters/boosters.service'
 import { createCardsService, type CardsService } from './features/cards/cards.service'
 import { createHealthService, type HealthService } from './features/health/health.service'
 import {
@@ -18,6 +19,7 @@ import {
   type ResetCodesService,
 } from './features/reset-codes/reset-codes.service'
 import { createUploadsService, type UploadsService } from './features/uploads/uploads.service'
+import { createWalletsService, type WalletsService } from './features/wallets/wallets.service'
 import type { JobQueue } from './jobs/job-queue'
 import type { ErrorLogger } from './lib/error-logger'
 import { createMediaSigner, type MediaSigner } from './lib/media-signer'
@@ -33,6 +35,7 @@ export interface AppDeps {
 }
 
 export interface Services {
+  boosters: BoostersService
   cards: CardsService
   health: HealthService
   invitations: InvitationsService
@@ -42,6 +45,7 @@ export interface Services {
   members: MembersService
   resetCodes: ResetCodesService
   uploads: UploadsService
+  wallets: WalletsService
 }
 
 /** Wires the runtime dependencies for the given environment, database and job queue. */
@@ -61,6 +65,11 @@ export function createAppDeps(env: Env, db: Database, jobs: JobQueue): AppDeps {
 /** Builds every feature service from the app dependencies. */
 export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
   return {
+    boosters: createBoostersService({
+      db: deps.db,
+      signer: deps.mediaSigner,
+      clock: deps.clock,
+    }),
     cards: createCardsService({ db: deps.db, signer: deps.mediaSigner }),
     health: createHealthService(deps.db),
     invitations: createInvitationsService({
@@ -89,5 +98,6 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       jobs: deps.jobs,
       clock: deps.clock,
     }),
+    wallets: createWalletsService({ db: deps.db, clock: deps.clock }),
   }
 }

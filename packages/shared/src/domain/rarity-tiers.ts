@@ -51,20 +51,37 @@ export function tierForValue(value: number, bounds: TierBounds): ComputedTier {
   )
 }
 
-/** Moves away from the previous tier only once the value clears a boundary by the hysteresis margin. */
+const BASIS_POINTS = 10_000
+
+const toBasisPoints = (value: number): number => Math.round(value * BASIS_POINTS)
+
+function tierForBasisPoints(
+  basisPoints: number,
+  bounds: TierBounds,
+  isStrict = false,
+): ComputedTier {
+  return COMPUTED_TIERS.reduce<ComputedTier>((found, tier) => {
+    const bound = toBasisPoints(bounds[tier])
+    return (isStrict ? bound < basisPoints : bound <= basisPoints) ? tier : found
+  }, 'common')
+}
+
+/** Moves away from the previous tier only once the value is at least the hysteresis margin past a boundary. */
 export function applyHysteresis(input: {
   value: number
   previous: ComputedTier | null
   bounds: TierBounds
 }): ComputedTier {
-  const candidate = tierForValue(input.value, input.bounds)
+  const basisPoints = toBasisPoints(input.value)
+  const margin = toBasisPoints(HYSTERESIS_MARGIN)
+  const candidate = tierForBasisPoints(basisPoints, input.bounds)
   const { previous } = input
   if (previous === null) return candidate
   if (tierRank(candidate) > tierRank(previous)) {
-    return maxTier(previous, tierForValue(input.value - HYSTERESIS_MARGIN, input.bounds))
+    return maxTier(previous, tierForBasisPoints(basisPoints - margin, input.bounds))
   }
   if (tierRank(candidate) < tierRank(previous)) {
-    return minTier(previous, tierForValue(input.value + HYSTERESIS_MARGIN, input.bounds))
+    return minTier(previous, tierForBasisPoints(basisPoints + margin, input.bounds, true))
   }
   return previous
 }

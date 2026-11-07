@@ -26,6 +26,7 @@ export const cardCopies = pgTable(
   (t) => [
     unique('card_copies_card_owner_variant_unique').on(t.cardId, t.ownerId, t.variant),
     index('card_copies_league_owner_idx').on(t.leagueId, t.ownerId),
+    index('card_copies_opening_id_idx').on(t.openingId),
     foreignKey({
       name: 'card_copies_member_fk',
       columns: [t.leagueId, t.ownerId],

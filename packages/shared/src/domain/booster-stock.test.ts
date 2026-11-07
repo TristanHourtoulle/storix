@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { computeBoosterStock, consumeBooster, DEFAULT_BOOSTER_CADENCE } from './booster-stock'
+import {
+  computeBoosterStock,
+  consumeBooster,
+  DEFAULT_BOOSTER_CADENCE,
+  InvalidBoosterCadenceError,
+} from './booster-stock'
 
 const t0 = new Date('2026-11-07T00:00:00Z')
 const at = (minutes: number) => new Date(t0.getTime() + minutes * 60_000)
@@ -48,4 +53,30 @@ describe('booster stock', () => {
     })
     expect(consumeBooster({ stock: 0, anchor: t0 }, at(60), cadence)).toBeNull()
   })
+  it('rejects an invalid cadence', () => {
+    const state = { stock: 0, anchor: t0 }
+    expect(() => computeBoosterStock(state, t0, { ...cadence, intervalMinutes: 0 })).toThrow(
+      InvalidBoosterCadenceError,
+    )
+    expect(() => computeBoosterStock(state, t0, { ...cadence, maxStock: 0 })).toThrow(
+      InvalidBoosterCadenceError,
+    )
+    expect(() => consumeBooster(state, t0, { ...cadence, intervalMinutes: -5 })).toThrow(
+      InvalidBoosterCadenceError,
+    )
+  })
+  it('applies a changed interval to the elapsed time since the anchor', () => {
+    const fast = { ...cadence, intervalMinutes: 60 }
+    expect(computeBoosterStock({ stock: 0, anchor: t0 }, at(180), fast)).toEqual({
+      available: 3,
+      anchor: at(180),
+      nextAt: at(240),
+    })
+  })
+  it('reports no timer when landing exactly on the max', () =>
+    expect(computeBoosterStock({ stock: 4, anchor: t0 }, at(480), cadence)).toEqual({
+      available: 6,
+      anchor: at(480),
+      nextAt: null,
+    }))
 })

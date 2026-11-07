@@ -1,0 +1,104 @@
+import { cardCopies, type DbExecutor } from '@storix/db'
+import type { CardTier, CopyVariant } from '@storix/shared'
+import { and, eq, inArray, sql } from 'drizzle-orm'
+
+export interface OwnedCopyRow {
+  id: string
+  cardId: string
+  variant: CopyVariant
+  tierAtMint: CardTier
+}
+
+export interface InsertCopyRow {
+  leagueId: string
+  cardId: string
+  ownerId: string
+  variant: CopyVariant
+  tierAtMint: CardTier
+  source: 'booster' | 'craft'
+  openingId: string | null
+}
+
+export interface CopyKeyInput {
+  cardId: string
+  ownerId: string
+  variant: CopyVariant
+}
+
+function copyCondition(input: CopyKeyInput) {
+  return and(
+    eq(cardCopies.cardId, input.cardId),
+    eq(cardCopies.ownerId, input.ownerId),
+    eq(cardCopies.variant, input.variant),
+  )
+}
+
+/** Lists the copies a member owns in a league, optionally restricted to some cards. */
+export async function listOwnedCopies(
+  db: DbExecutor,
+  input: { leagueId: string; ownerId: string; cardIds?: readonly string[] },
+): Promise<OwnedCopyRow[]> {
+  if (input.cardIds !== undefined && input.cardIds.length === 0) return []
+  return db
+    .select({
+      id: cardCopies.id,
+      cardId: cardCopies.cardId,
+      variant: cardCopies.variant,
+      tierAtMint: cardCopies.tierAtMint,
+    })
+    .from(cardCopies)
+    .where(
+      and(
+        eq(cardCopies.leagueId, input.leagueId),
+        eq(cardCopies.ownerId, input.ownerId),
+        input.cardIds === undefined ? undefined : inArray(cardCopies.cardId, [...input.cardIds]),
+      ),
+    )
+}
+
+/** Inserts a new owned copy. */
+export async function insertCopy(db: DbExecutor, row: InsertCopyRow): Promise<void> {
+  await db.insert(cardCopies).values(row)
+}
+
+/** Raises the frozen tier of an owned copy and links it to the opening that upgraded it. */
+export async function updateCopyTier(
+  db: DbExecutor,
+  input: CopyKeyInput & { tierAtMint: CardTier; openingId: string | null },
+): Promise<void> {
+  await db
+    .update(cardCopies)
+    .set({ tierAtMint: input.tierAtMint, openingId: input.openingId, updatedAt: new Date() })
+    .where(copyCondition(input))
+}
+
+/** Deletes an owned copy and returns its tier at mint, or null when it was not owned. */
+export async function deleteCopy(db: DbExecutor, input: CopyKeyInput): Promise<CardTier | null> {
+  const rows = await db
+    .delete(cardCopies)
+    .where(copyCondition(input))
+    .returning({ tierAtMint: cardCopies.tierAtMint })
+  return rows[0]?.tierAtMint ?? null
+}
+
+/** Switches the variant of an owned copy; false when no such copy exists. */
+export async function updateCopyVariant(
+  db: DbExecutor,
+  input: { cardId: string; ownerId: string; from: CopyVariant; to: CopyVariant },
+): Promise<boolean> {
+  const rows = await db
+    .update(cardCopies)
+    .set({ variant: input.to, updatedAt: new Date() })
+    .where(copyCondition({ cardId: input.cardId, ownerId: input.ownerId, variant: input.from }))
+    .returning({ id: cardCopies.id })
+  return rows.length > 0
+}
+
+/** Counts every copy of a card across the league. */
+export async function countCardCopies(db: DbExecutor, cardId: string): Promise<number> {
+  const rows = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(cardCopies)
+    .where(eq(cardCopies.cardId, cardId))
+  return rows[0]?.total ?? 0
+}

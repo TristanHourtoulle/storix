@@ -4,6 +4,7 @@ import {
   MEDIA_SWEEP_JOB,
   RARITY_NIGHTLY_JOB,
   RARITY_RECOMPUTE_JOB,
+  RARITY_RECOMPUTE_QUEUE_OPTIONS,
 } from '@storix/shared'
 import { assertStorageReachable, createObjectStorage } from '@storix/storage'
 import { PgBoss } from 'pg-boss'
@@ -56,7 +57,7 @@ async function start(): Promise<void> {
   await boss.start()
   await boss.createQueue(MEDIA_PROCESS_JOB)
   await boss.createQueue(MEDIA_SWEEP_JOB)
-  await boss.createQueue(RARITY_RECOMPUTE_JOB, { policy: 'stately' })
+  await boss.createQueue(RARITY_RECOMPUTE_JOB, RARITY_RECOMPUTE_QUEUE_OPTIONS)
   await boss.createQueue(RARITY_NIGHTLY_JOB)
 
   const processing = createMediaProcessingService({

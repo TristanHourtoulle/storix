@@ -1,0 +1,3 @@
+CREATE INDEX "card_copies_opening_id_idx" ON "card_copies" USING btree ("opening_id");--> statement-breakpoint
+ALTER TABLE "member_wallets" ADD CONSTRAINT "member_wallets_booster_stock_non_negative" CHECK ("member_wallets"."booster_stock" >= 0);--> statement-breakpoint
+ALTER TABLE "member_wallets" ADD CONSTRAINT "member_wallets_pity_non_negative" CHECK ("member_wallets"."pity_since_epic" >= 0 AND "member_wallets"."pity_since_legendary" >= 0);

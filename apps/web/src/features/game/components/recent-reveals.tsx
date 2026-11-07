@@ -20,6 +20,13 @@ function LockedArt({ thumbhash }: { thumbhash: string }) {
 }
 
 function RevealCard({ card }: { card: RecentReveal['card'] }) {
+  if (card.kind === 'hidden') {
+    return (
+      <CardFace size="md" title="Masquée" tier={card.tier} isProvisional={false}>
+        <LockedArt thumbhash={card.thumbhash} />
+      </CardFace>
+    )
+  }
   if (card.kind === 'locked') {
     return (
       <CardFace size="md" title="???" tier={card.tier} isProvisional={card.isProvisional}>

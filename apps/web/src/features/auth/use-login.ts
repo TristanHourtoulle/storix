@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { authClient } from '@/lib/auth-client'
+import { logger } from '@/lib/logger'
 import { clearApiCache } from '@/features/pwa/api-cache'
 import { UserFacingError, userMessage } from '@/features/errors/user-message'
 import { authErrorMessage } from './auth-errors'
@@ -12,7 +13,11 @@ interface LoginInput {
 
 type LoginAttempt = { kind: 'password'; input: LoginInput } | { kind: 'passkey' }
 
-const CANCELLED_CODES = new Set(['AUTH_CANCELLED', 'ERROR_CEREMONY_ABORTED'])
+const CANCELLED_CODES = new Set([
+  'AUTH_CANCELLED',
+  'ERROR_CEREMONY_ABORTED',
+  'ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY',
+])
 
 function isCancellation(error: unknown): boolean {
   return error instanceof Error && (error.name === 'NotAllowedError' || error.name === 'AbortError')
@@ -28,6 +33,7 @@ async function signInWithPasskey(): Promise<void> {
     const result = await authClient.signIn.passkey()
     if (result?.error) {
       const code = 'code' in result.error ? result.error.code : undefined
+      logger.warn('Passkey sign-in failed', { code, status: result.error.status })
       const message = CANCELLED_CODES.has(code ?? '')
         ? 'Connexion annulée. Tu peux réessayer quand tu veux.'
         : authErrorMessage(result.error, 'Connexion par passkey impossible.')

@@ -32,6 +32,17 @@ describe('rarity tiers', () => {
     expect(applyHysteresis({ value: 0.99, previous: 'common', bounds: b })).toBe('legendary')
     expect(applyHysteresis({ value: 0.46, previous: null, bounds: b })).toBe('uncommon')
   })
+  it('moves at exactly the margin and stays within it, in both directions', () => {
+    const b = QUOTA_LOWER_BOUNDS
+    expect(applyHysteresis({ value: 0.47, previous: 'common', bounds: b })).toBe('uncommon')
+    expect(applyHysteresis({ value: 0.469, previous: 'common', bounds: b })).toBe('common')
+    expect(applyHysteresis({ value: 0.43, previous: 'uncommon', bounds: b })).toBe('common')
+    expect(applyHysteresis({ value: 0.431, previous: 'uncommon', bounds: b })).toBe('uncommon')
+    expect(applyHysteresis({ value: 0.72, previous: 'uncommon', bounds: b })).toBe('rare')
+    expect(applyHysteresis({ value: 0.68, previous: 'rare', bounds: b })).toBe('uncommon')
+    expect(applyHysteresis({ value: 0.87, previous: 'rare', bounds: b })).toBe('epic')
+    expect(applyHysteresis({ value: 0.83, previous: 'epic', bounds: b })).toBe('rare')
+  })
   it('caps cold start legendaries and applies precedence', () => {
     expect(capColdStartTier('legendary', 14)).toBe('epic')
     expect(capColdStartTier('legendary', 15)).toBe('legendary')

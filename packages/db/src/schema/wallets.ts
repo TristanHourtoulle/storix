@@ -19,6 +19,11 @@ export const memberWallets = pgTable(
   (t) => [
     primaryKey({ columns: [t.leagueId, t.userId] }),
     check('member_wallets_dust_non_negative', sql`${t.dust} >= 0`),
+    check('member_wallets_booster_stock_non_negative', sql`${t.boosterStock} >= 0`),
+    check(
+      'member_wallets_pity_non_negative',
+      sql`${t.pitySinceEpic} >= 0 AND ${t.pitySinceLegendary} >= 0`,
+    ),
     foreignKey({
       name: 'member_wallets_member_fk',
       columns: [t.leagueId, t.userId],

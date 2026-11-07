@@ -22,6 +22,15 @@ const MESSAGES: Record<ErrorCode, string> = {
   CRAFT_NOT_ALLOWED: 'Cette carte ne peut pas être fabriquée.',
   FOIL_NOT_ALLOWED: 'Cet exemplaire ne peut pas passer en foil.',
   REACTION_NOT_ALLOWED: 'Tu ne peux pas réagir à cette carte.',
+  MYTHIC_CAP_REACHED: 'La ligue a déjà 3 Mythiques.',
+  INVALID_TIER_BOUNDS: 'Le minimum doit être inférieur ou égal au maximum.',
+  CAPTURE_DATE_MISSING: "Cette photo n'a pas de date de prise de vue.",
+  WITHDRAW_NOT_ALLOWED: 'Tu ne peux retirer que les photos où tu apparais.',
+  OWNERSHIP_TRANSFER_REQUIRED: "Transfère d'abord la propriété de tes ligues.",
+  LEAVE_NOT_ALLOWED: 'Le propriétaire doit transférer la ligue avant de la quitter.',
+  REAUTH_REQUIRED: 'Confirme ton identité pour continuer.',
+  CONFIRMATION_MISMATCH: "Le nom d'utilisateur ne correspond pas.",
+  BOOSTER_CONTENT_REMOVED: 'Une carte de ce booster a été retirée de la ligue.',
   INTERNAL_ERROR: 'Une erreur est survenue.',
 }
 

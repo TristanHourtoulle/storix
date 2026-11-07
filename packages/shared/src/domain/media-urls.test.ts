@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   buildMediaPath,
   isMediaWindowAccepted,
+  leagueMediaPrefix,
+  mediaCachePathPrefix,
   mediaCacheKey,
   mediaMaxAgeSeconds,
+  mediaPrefix,
   mediaVariantKey,
   mediaWindowStart,
   parseMediaPath,
@@ -60,4 +63,20 @@ describe('media urls', () => {
         format: 'avif',
       }),
     ).toBe(key))
+})
+
+describe('media prefixes', () => {
+  const leagueId = '0b6f7c1e-3a59-4c1e-9d7e-2f1a6c3b4d5e'
+  const sha = 'a'.repeat(64)
+
+  it('builds media prefixes', () => {
+    expect(mediaPrefix({ leagueId, sourceSha256: sha })).toBe(`img/${leagueId}/${sha}/`)
+    expect(
+      mediaVariantKey({ leagueId, sourceSha256: sha, size: 256, format: 'avif' }).startsWith(
+        mediaPrefix({ leagueId, sourceSha256: sha }),
+      ),
+    ).toBe(true)
+    expect(leagueMediaPrefix(leagueId)).toBe(`img/${leagueId}/`)
+    expect(mediaCachePathPrefix(leagueMediaPrefix(leagueId))).toBe(`/media/img/${leagueId}/`)
+  })
 })
