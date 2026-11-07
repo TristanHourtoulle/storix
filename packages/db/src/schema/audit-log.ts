@@ -30,6 +30,7 @@ export const AUDIT_ACTIONS = [
   'card.capture_date_validated',
   'card.removed',
   'account.deleted',
+  'league.renamed',
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]
