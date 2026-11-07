@@ -1,0 +1,30 @@
+{
+  "name": "@storix/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=../../.env src/main.ts",
+    "build": "tsdown",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@storix/db": "workspace:*",
+    "@storix/shared": "workspace:*",
+    "@storix/storage": "workspace:*",
+    "drizzle-orm": "0.45.4",
+    "exifr": "7.1.3",
+    "pg-boss": "12.38.1",
+    "pino": "10.4.0",
+    "sharp": "0.35.5",
+    "thumbhash": "0.1.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "pino-pretty": "13.2.0",
+    "tsdown": "0.23.7",
+    "tsx": "4.23.15"
+  }
+}
