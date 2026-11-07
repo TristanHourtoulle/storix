@@ -33,7 +33,11 @@ export function TaggedCardList({ cards, onWithdraw }: TaggedCardListProps) {
               {formatCardNumber(card.number)} · {TIER_LABELS[card.tier]}
             </p>
             {card.status === 'hidden' ? <span className="pill">Masquée</span> : null}
-            <Button variant="ghost" onClick={() => onWithdraw(card)}>
+            <Button
+              variant="ghost"
+              aria-label={`Retirer la carte ${formatCardNumber(card.number)}`}
+              onClick={() => onWithdraw(card)}
+            >
               Retirer
             </Button>
           </div>

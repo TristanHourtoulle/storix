@@ -15,7 +15,7 @@ import { useCardDetail } from '@/features/cards/use-card-detail'
 import { DustBalance } from '@/features/game/components/dust-balance'
 import { useWallet } from '@/features/game/use-wallet'
 import { WithdrawCardDialog } from '@/features/withdrawals/components/withdraw-card-dialog'
-import { useWithdrawCard } from '@/features/withdrawals/use-withdraw-card'
+import { isCardGone, useWithdrawCard } from '@/features/withdrawals/use-withdraw-card'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/cards/$cardId')({
   validateSearch: z.object({ author: z.string().optional() }),
@@ -28,9 +28,13 @@ function CardDetailScreen() {
   const { card, isPending, isMissing, retry } = useCardDetail(leagueId, cardId)
   const { data: wallet } = useWallet(leagueId)
   const { craft } = useCardMutations(leagueId, cardId)
-  const withdraw = useWithdrawCard(leagueId)
+  const withdraw = useWithdrawCard(leagueId, true)
   const [isWithdrawing, setIsWithdrawing] = useState(false)
-  const openWithdraw = () => setIsWithdrawing(true)
+  const openWithdraw = () => {
+    withdraw.reset()
+    setIsWithdrawing(true)
+  }
+  const closeWithdraw = () => setIsWithdrawing(false)
 
   return (
     <main className="screen">
@@ -86,13 +90,11 @@ function CardDetailScreen() {
           }
         />
       )}
-      {withdraw.isError ? (
-        <Notice tone="error">Retrait impossible pour le moment. Réessaie.</Notice>
-      ) : null}
       <WithdrawCardDialog
-        number={isWithdrawing && card ? card.number : null}
+        number={isWithdrawing && card && !isCardGone(withdraw.error) ? card.number : null}
         isPending={withdraw.isPending}
-        onClose={() => setIsWithdrawing(false)}
+        hasError={withdraw.isError}
+        onClose={closeWithdraw}
         onConfirm={() => withdraw.mutate(cardId)}
       />
     </main>

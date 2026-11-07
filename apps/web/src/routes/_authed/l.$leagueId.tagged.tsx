@@ -8,8 +8,8 @@ import { Notice } from '@/components/ui/notice'
 import { TopBar } from '@/components/ui/top-bar'
 import { TaggedCardList } from '@/features/withdrawals/components/tagged-card-list'
 import { WithdrawCardDialog } from '@/features/withdrawals/components/withdraw-card-dialog'
+import { isCardGone, useWithdrawCard } from '@/features/withdrawals/use-withdraw-card'
 import { useTaggedCards } from '@/features/withdrawals/use-tagged-cards'
-import { useWithdrawCard } from '@/features/withdrawals/use-withdraw-card'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/tagged')({
   component: TaggedScreen,
@@ -20,6 +20,12 @@ function TaggedScreen() {
   const { data: cards, isPending, isError, refetch } = useTaggedCards(leagueId)
   const withdraw = useWithdrawCard(leagueId)
   const [target, setTarget] = useState<TaggedCard | null>(null)
+  const isGone = isCardGone(withdraw.error)
+
+  function close() {
+    setTarget(null)
+    withdraw.reset()
+  }
 
   return (
     <main className="screen">
@@ -37,7 +43,13 @@ function TaggedScreen() {
         }
       />
       {cards && cards.length > 0 ? (
-        <TaggedCardList cards={cards} onWithdraw={setTarget} />
+        <TaggedCardList
+          cards={cards}
+          onWithdraw={(card) => {
+            withdraw.reset()
+            setTarget(card)
+          }}
+        />
       ) : cards ? (
         <EmptyState
           icon="profile"
@@ -58,13 +70,12 @@ function TaggedScreen() {
           }
         />
       ) : null}
-      {withdraw.isError ? (
-        <Notice tone="error">Retrait impossible pour le moment. Réessaie.</Notice>
-      ) : null}
+      {isGone ? <Notice tone="error">Cette carte a déjà été retirée.</Notice> : null}
       <WithdrawCardDialog
-        number={target?.number ?? null}
+        number={target && !isGone ? target.number : null}
         isPending={withdraw.isPending}
-        onClose={() => setTarget(null)}
+        hasError={withdraw.isError}
+        onClose={close}
         onConfirm={() => {
           if (target) withdraw.mutate(target.id)
         }}
