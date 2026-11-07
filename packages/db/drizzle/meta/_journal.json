@@ -36,6 +36,13 @@
       "when": 1794050719443,
       "tag": "0004_wallet_checks_copy_opening_index",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794051681369,
+      "tag": "0005_wise_garia",
+      "breakpoints": true
     }
   ]
 }
