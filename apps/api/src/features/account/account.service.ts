@@ -3,7 +3,9 @@ import {
   accountDeletionPlan,
   type AccountDeletionPreview,
   type DeleteAccountBody,
+  type LeagueCardCount,
   type OwnedLeague,
+  type PhotosChoice,
 } from '@storix/shared'
 import type { AuthGateway, AuthSession } from '../../auth/auth.gateway'
 import type { JobQueue } from '../../jobs/job-queue'
@@ -15,7 +17,7 @@ import { deleteUploads, listOpenUploadKeys } from '../card-removal/card-removal.
 import type { CardRemoval, RemovalOutcome } from '../card-removal/card-removal.service'
 import { afterDetach, detachMember, type DetachOutcome } from '../members/members.service'
 import {
-  countAuthoredCards,
+  countAuthoredCardsByLeague,
   deleteLeague,
   deleteUserRow,
   listLeagueCardIds,
@@ -25,6 +27,7 @@ import {
   lockLeagueRows,
   lockOwnMemberships,
   lockUserRow,
+  type AuthoredCardsInLeague,
 } from './account.repository'
 
 export const FRESH_SESSION_MS = 5 * 60_000
@@ -71,6 +74,10 @@ function ownershipTransferRequired(blocking: readonly OwnedLeague[]): AppError {
   )
 }
 
+function toLeagueCardCount(entry: AuthoredCardsInLeague): LeagueCardCount {
+  return { leagueId: entry.leagueId, name: entry.name, cardCount: entry.cardCount }
+}
+
 function reauthRequired(): AppError {
   return new AppError('REAUTH_REQUIRED', 403, 'Re-authentication required')
 }
@@ -107,6 +114,7 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
     tx: DbExecutor,
     session: AuthSession,
     lockedLeagueIds: readonly string[],
+    photos: PhotosChoice,
   ): Promise<DeletionOutcome> {
     const { userId } = session
     for (const leagueId of lockedLeagueIds) await lockLeagueEconomyExclusive(tx, leagueId)
@@ -153,6 +161,7 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
           actorId: userId,
           targetUserId: userId,
           reason: 'account_deleted',
+          photos,
         }),
       }),
     )
@@ -166,7 +175,11 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
       actorId: null,
       targetUserId: null,
       action: 'account.deleted',
-      metadata: { username: session.username },
+      metadata: {
+        username: session.username,
+        photos,
+        keptCards: detached.reduce((sum, entry) => sum + entry.outcome.keptCardCount, 0),
+      },
     })
     if ((await deleteUserRow(tx, userId)) === 0) throw notFound('Account not found')
 
@@ -182,13 +195,17 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
     }
   }
 
-  async function runDeletion(session: AuthSession, attempt: number): Promise<DeletionOutcome> {
+  async function runDeletion(
+    session: AuthSession,
+    photos: PhotosChoice,
+    attempt: number,
+  ): Promise<DeletionOutcome> {
     const lockedLeagueIds = await listMembershipLeagueIds(db, session.userId)
     try {
-      return await runInTransaction(db, (tx) => deleteInTx(tx, session, lockedLeagueIds))
+      return await runInTransaction(db, (tx) => deleteInTx(tx, session, lockedLeagueIds, photos))
     } catch (error) {
       if (error instanceof MembershipsChangedError && attempt < MAX_ATTEMPTS) {
-        return runDeletion(session, attempt + 1)
+        return runDeletion(session, photos, attempt + 1)
       }
       throw error
     }
@@ -211,15 +228,20 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
 
   return {
     async getDeletionPreview(session) {
-      const [owned, authoredCardCount] = await Promise.all([
+      const [owned, authored] = await Promise.all([
         listOwnedLeagues(db, session.userId),
-        countAuthoredCards(db, session.userId),
+        countAuthoredCardsByLeague(db, session.userId),
       ])
       const plan = accountDeletionPlan(owned)
+      const soloIds = new Set(plan.solo.map((league) => league.leagueId))
       return {
         blocking: plan.blocking.map(toLeagueRef),
         solo: plan.solo.map(toLeagueRef),
-        authoredCardCount,
+        authoredCardCount: authored.reduce((sum, entry) => sum + entry.cardCount, 0),
+        choiceLeagues: authored
+          .filter((entry) => entry.isMember && !soloIds.has(entry.leagueId))
+          .map(toLeagueCardCount),
+        anonymizedLeagues: authored.filter((entry) => !entry.isMember).map(toLeagueCardCount),
         requiresPassword: !isFresh(session),
       }
     },
@@ -231,7 +253,7 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
       await assertReauthenticated(session, body.password)
       const precheck = accountDeletionPlan(await listOwnedLeagues(db, session.userId))
       if (precheck.blocking.length > 0) throw ownershipTransferRequired(precheck.blocking)
-      const outcome = await runDeletion(session, 1)
+      const outcome = await runDeletion(session, body.photos, 1)
       await afterDeletion(session, outcome)
     },
   }

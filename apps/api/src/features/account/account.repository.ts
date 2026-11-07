@@ -4,6 +4,13 @@ import { and, asc, count, eq, inArray, sql } from 'drizzle-orm'
 
 export { lockLeagueEconomyExclusive } from '@storix/db'
 
+export interface AuthoredCardsInLeague {
+  leagueId: string
+  name: string
+  cardCount: number
+  isMember: boolean
+}
+
 export interface OwnMembershipLock {
   leagueId: string
   role: LeagueRole
@@ -71,10 +78,27 @@ export async function listLeagueCardIds(db: DbExecutor, leagueId: string): Promi
   return rows.map((row) => row.id)
 }
 
-/** Counts the cards the user authored across all leagues. */
-export async function countAuthoredCards(db: DbExecutor, userId: string): Promise<number> {
-  const rows = await db.select({ total: count() }).from(cards).where(eq(cards.authorId, userId))
-  return rows[0]?.total ?? 0
+/** Counts the cards the user authored in each league, telling whether the user is still a member there, ordered by league id. */
+export function countAuthoredCardsByLeague(
+  db: DbExecutor,
+  userId: string,
+): Promise<AuthoredCardsInLeague[]> {
+  return db
+    .select({
+      leagueId: cards.leagueId,
+      name: leagues.name,
+      cardCount: count(),
+      isMember: sql<boolean>`${leagueMembers.userId} is not null`,
+    })
+    .from(cards)
+    .innerJoin(leagues, eq(leagues.id, cards.leagueId))
+    .leftJoin(
+      leagueMembers,
+      and(eq(leagueMembers.leagueId, cards.leagueId), eq(leagueMembers.userId, userId)),
+    )
+    .where(eq(cards.authorId, userId))
+    .groupBy(cards.leagueId, leagues.name, leagueMembers.userId)
+    .orderBy(asc(cards.leagueId))
 }
 
 /** Deletes a league with everything it cascades to and returns the object keys of the uploads it still held. */

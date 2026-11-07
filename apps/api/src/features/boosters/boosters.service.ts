@@ -254,6 +254,7 @@ function toRevealCard(row: RevealRow): CollectionCardBase {
     isProvisional: row.isProvisional,
     authorId: row.authorId,
     authorName: row.authorName,
+    authorIsFormerMember: row.authorIsFormerMember,
     thumbhash: row.thumbhash,
     dominantColor: row.dominantColor,
     width: row.width,

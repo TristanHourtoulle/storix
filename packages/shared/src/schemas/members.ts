@@ -18,8 +18,17 @@ export const updateMemberRoleBodySchema = z.object({ role: z.enum(['admin', 'mem
 
 export const transferOwnershipBodySchema = z.object({ userId: idSchema })
 
+export const photosChoiceSchema = z.enum(['keep', 'delete'])
+
+export const leaveLeagueBodySchema = z.object({ photos: photosChoiceSchema })
+
+export const removeMemberBodySchema = z.object({ photos: photosChoiceSchema })
+
 export const memberParamsSchema = z.object({ leagueId: z.uuid(), userId: idSchema })
 
 export type MemberSummary = z.infer<typeof memberSummarySchema>
 export type UpdateMemberRoleBody = z.infer<typeof updateMemberRoleBodySchema>
+export type PhotosChoice = z.infer<typeof photosChoiceSchema>
+export type LeaveLeagueBody = z.infer<typeof leaveLeagueBodySchema>
+export type RemoveMemberBody = z.infer<typeof removeMemberBodySchema>
 export type TransferOwnershipBody = z.infer<typeof transferOwnershipBodySchema>

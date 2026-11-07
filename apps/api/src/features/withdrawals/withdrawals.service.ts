@@ -4,6 +4,7 @@ import { AppError, notFound } from '../../lib/errors'
 import type { MediaSigner } from '../../lib/media-signer'
 import { runInTransaction } from '../../lib/transaction'
 import { insertAuditEntry } from '../audit/audit.repository'
+import { toCardAuthor } from '../cards/card-views'
 import { toImageSet } from '../cards/image-set'
 import type { CardRemoval } from '../card-removal/card-removal.service'
 import type { Membership } from '../leagues/leagues.service'
@@ -41,7 +42,7 @@ export function createWithdrawalsService(deps: WithdrawalsServiceDeps): Withdraw
         title: row.title,
         tier: row.tier,
         status: row.status,
-        author: { userId: row.authorId, displayUsername: row.authorName },
+        author: toCardAuthor(row),
         thumbhash: row.thumbhash,
         dominantColor: row.dominantColor,
         width: row.width,

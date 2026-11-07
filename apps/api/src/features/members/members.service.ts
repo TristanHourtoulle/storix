@@ -7,6 +7,7 @@ import {
   canTransferOwnership,
   type LeagueRole,
   type MemberSummary,
+  type PhotosChoice,
 } from '@storix/shared'
 import type { JobQueue } from '../../jobs/job-queue'
 import type { ErrorLogger } from '../../lib/error-logger'
@@ -18,7 +19,11 @@ import {
   findCardIdsByAuthor,
   listOpenUploadKeys,
 } from '../card-removal/card-removal.repository'
-import type { CardRemoval, RemovalOutcome } from '../card-removal/card-removal.service'
+import {
+  emptyRemovalOutcome,
+  type CardRemoval,
+  type RemovalOutcome,
+} from '../card-removal/card-removal.service'
 import { findOwnerIds } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
 import { deleteUnusedCodesFromHomeLeague } from '../reset-codes/reset-codes.repository'
@@ -42,6 +47,7 @@ export type DetachReason = 'member_removed' | 'member_left' | 'account_deleted'
 
 export interface DetachOutcome {
   removal: RemovalOutcome
+  keptCardCount: number
   uploadKeys: string[]
 }
 
@@ -50,6 +56,7 @@ export interface DetachInput {
   actorId: string
   targetUserId: string
   reason: DetachReason
+  photos: PhotosChoice
 }
 
 export interface AfterDetachDeps {
@@ -61,8 +68,8 @@ export interface AfterDetachDeps {
 export interface MembersService {
   listMembers(m: Membership): Promise<MemberSummary[]>
   changeRole(m: Membership, targetUserId: string, nextRole: LeagueRole): Promise<void>
-  removeMember(m: Membership, targetUserId: string): Promise<void>
-  leaveLeague(m: Membership): Promise<void>
+  removeMember(m: Membership, targetUserId: string, photos: PhotosChoice): Promise<void>
+  leaveLeague(m: Membership, photos: PhotosChoice): Promise<void>
   transferOwnership(m: Membership, targetUserId: string): Promise<void>
 }
 
@@ -116,21 +123,23 @@ function roleOf(locks: readonly MemberLock[], userId: string): LeagueRole | null
   return locks.find((lock) => lock.userId === userId)?.role ?? null
 }
 
-/** Detaches a member from a league inside the caller's transaction, which must already hold the exclusive league economy lock and the membership row lock. */
+/**
+ * Detaches a member from a league inside the caller's transaction, which must already hold the exclusive league economy lock and the membership row lock.
+ * With `photos: 'delete'` the authored cards are removed and their owners compensated; with `'keep'` they stay in the league.
+ */
 export async function detachMember(
   tx: DbExecutor,
   cardRemoval: CardRemoval,
   input: DetachInput,
 ): Promise<DetachOutcome> {
-  const { leagueId, actorId, targetUserId, reason } = input
+  const { leagueId, actorId, targetUserId, reason, photos } = input
   const openUploads = await listOpenUploadKeys(tx, { leagueId, userId: targetUserId })
   await deleteMemberCopies(tx, { leagueId, userId: targetUserId })
-  const removal = await cardRemoval.removeInTx(tx, {
-    leagueId,
-    cardIds: await findCardIdsByAuthor(tx, { leagueId, authorId: targetUserId }),
-    reason,
-    actorId,
-  })
+  const authoredCardIds = await findCardIdsByAuthor(tx, { leagueId, authorId: targetUserId })
+  const removal =
+    photos === 'delete'
+      ? await cardRemoval.removeInTx(tx, { leagueId, cardIds: authoredCardIds, reason, actorId })
+      : emptyRemovalOutcome()
   await deleteUploads(
     tx,
     openUploads.map((upload) => upload.id),
@@ -140,7 +149,11 @@ export async function detachMember(
   if ((await deleteMember(tx, leagueId, targetUserId)) === 0) {
     throw notFound('Member not found')
   }
-  return { removal, uploadKeys: openUploads.map((upload) => upload.objectKey) }
+  return {
+    removal,
+    keptCardCount: photos === 'keep' ? authoredCardIds.length : 0,
+    uploadKeys: openUploads.map((upload) => upload.objectKey),
+  }
 }
 
 /** Deletes the departed member's files and recomputes rarity after commit; failures are logged, never thrown. */
@@ -222,7 +235,7 @@ export function createMembersService(deps: MembersServiceDeps): MembersService {
       })
     },
 
-    async removeMember(m, targetUserId) {
+    async removeMember(m, targetUserId, photos) {
       const isSelf = targetUserId === m.userId
       const precheckRole = await findTargetRole(m.leagueId, targetUserId)
       if (!canRemoveMember({ actorRole: m.role, targetRole: precheckRole, isSelf })) {
@@ -237,20 +250,26 @@ export function createMembersService(deps: MembersServiceDeps): MembersService {
           actorId: m.userId,
           targetUserId,
           reason: 'member_removed',
+          photos,
         })
         await insertAuditEntry(tx, {
           leagueId: m.leagueId,
           actorId: m.userId,
           targetUserId,
           action: 'member.removed',
-          metadata: { role: targetRole, removedCards: detached.removal.removedCardIds.length },
+          metadata: {
+            role: targetRole,
+            photos,
+            removedCards: detached.removal.removedCardIds.length,
+            keptCards: detached.keptCardCount,
+          },
         })
         return detached
       })
       await afterDetach(deps, m.leagueId, outcome)
     },
 
-    async leaveLeague(m) {
+    async leaveLeague(m, photos) {
       if (!canLeaveLeague(m.role)) {
         throw leaveNotAllowed()
       }
@@ -266,13 +285,19 @@ export function createMembersService(deps: MembersServiceDeps): MembersService {
           actorId: m.userId,
           targetUserId: m.userId,
           reason: 'member_left',
+          photos,
         })
         await insertAuditEntry(tx, {
           leagueId: m.leagueId,
           actorId: m.userId,
           targetUserId: m.userId,
           action: 'member.left',
-          metadata: { role: own.role, removedCards: detached.removal.removedCardIds.length },
+          metadata: {
+            role: own.role,
+            photos,
+            removedCards: detached.removal.removedCardIds.length,
+            keptCards: detached.keptCardCount,
+          },
         })
         return detached
       })

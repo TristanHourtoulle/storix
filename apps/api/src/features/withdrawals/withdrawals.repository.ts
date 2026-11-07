@@ -1,6 +1,11 @@
 import { cards, cardTags, media, user, type DbExecutor } from '@storix/db'
 import { mediaVariantsSchema, type CardTier, type MediaVariant } from '@storix/shared'
 import { and, desc, eq, sql } from 'drizzle-orm'
+import {
+  authorIsFormerMember,
+  authorMembership,
+  authorMembershipOn,
+} from '../cards/card-author.repository'
 
 export { lockLeagueEconomyExclusive, lockLeagueModeration } from '@storix/db'
 
@@ -12,6 +17,7 @@ export interface TaggedCardRow {
   status: 'active' | 'hidden'
   authorId: string | null
   authorName: string | null
+  authorIsFormerMember: boolean
   thumbhash: string
   dominantColor: string
   width: number
@@ -43,6 +49,7 @@ export async function listTaggedCards(
       authorName: sql<
         string | null
       >`coalesce(${user.displayUsername}, ${user.username}, ${user.name})`,
+      authorIsFormerMember,
       thumbhash: media.thumbhash,
       dominantColor: media.dominantColor,
       width: media.width,
@@ -53,6 +60,7 @@ export async function listTaggedCards(
     .innerJoin(cards, eq(cards.id, cardTags.cardId))
     .innerJoin(media, eq(media.id, cards.mediaId))
     .leftJoin(user, eq(user.id, cards.authorId))
+    .leftJoin(authorMembership, authorMembershipOn)
     .where(and(eq(cardTags.userId, input.userId), eq(cards.leagueId, input.leagueId)))
     .orderBy(desc(cards.number))
   return rows.map((row) => ({ ...row, variants: mediaVariantsSchema.parse(row.variants) }))

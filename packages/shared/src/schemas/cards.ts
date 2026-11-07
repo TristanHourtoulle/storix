@@ -11,13 +11,15 @@ export const cardPersonSchema = z.object({
   displayUsername: z.string().nullable(),
 })
 
+export const cardAuthorSchema = cardPersonSchema.extend({ isFormerMember: z.boolean() })
+
 export const cardSummarySchema = z.object({
   id: z.uuid(),
   number: z.int().positive(),
   title: cardTitleSchema,
   tier: cardTierSchema,
   isProvisional: z.boolean(),
-  author: cardPersonSchema,
+  author: cardAuthorSchema,
   thumbhash: z.string(),
   dominantColor: z.string().regex(/^#[0-9a-f]{6}$/),
   width: z.int().positive(),
@@ -51,7 +53,7 @@ export const lockedCardSummarySchema = z.strictObject({
   number: z.int().positive(),
   tier: cardTierSchema,
   isProvisional: z.boolean(),
-  author: cardPersonSchema,
+  author: cardAuthorSchema,
   thumbhash: z.string(),
   dominantColor: z.string().regex(/^#[0-9a-f]{6}$/),
   width: z.int().positive(),
@@ -139,7 +141,7 @@ export const taggedCardSchema = z.object({
   title: cardTitleSchema,
   tier: cardTierSchema,
   status: z.enum(['active', 'hidden']),
-  author: cardPersonSchema,
+  author: cardAuthorSchema,
   thumbhash: z.string(),
   dominantColor: z.string().regex(/^#[0-9a-f]{6}$/),
   width: z.int().positive(),
@@ -151,6 +153,7 @@ export const taggedCardSchema = z.object({
 export const cardParamsSchema = z.object({ leagueId: z.uuid(), cardId: z.uuid() })
 
 export type CardPerson = z.infer<typeof cardPersonSchema>
+export type CardAuthor = z.infer<typeof cardAuthorSchema>
 export type CardSummary = z.infer<typeof cardSummarySchema>
 export type ListCardsQuery = z.infer<typeof listCardsQuerySchema>
 export type OwnedCardSummary = z.infer<typeof ownedCardSummarySchema>

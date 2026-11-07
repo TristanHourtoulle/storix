@@ -7,6 +7,7 @@ import {
   type MediaVariantSize,
 } from '@storix/shared'
 import type { MediaSigner } from '../../lib/media-signer'
+import { toCardAuthor } from '../cards/card-views'
 import { toImageSet } from '../cards/image-set'
 import type { AdminCardRow } from './moderation.repository'
 
@@ -35,7 +36,7 @@ export function toAdminCard(row: AdminCardRow, ctx: AdminCardContext): AdminCard
     pinnedTier: row.pinnedTier,
     minTier: asComputedTier(row.minTier),
     maxTier: asComputedTier(row.maxTier),
-    author: { userId: row.authorId, displayUsername: row.authorName },
+    author: toCardAuthor(row),
     capturedAt: row.capturedAt?.toISOString() ?? null,
     isCaptureDateValidated: row.isCaptureDateValidated,
     createdAt: row.createdAt.toISOString(),

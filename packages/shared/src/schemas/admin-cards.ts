@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { COMPUTED_TIERS } from '../domain'
-import { cardPersonSchema, cardTierSchema } from './cards'
+import { cardAuthorSchema, cardTierSchema } from './cards'
 import { isoDateSchema } from './common'
 import { imageSetSchema } from './media'
 import { cardTitleSchema } from './uploads'
@@ -24,7 +24,7 @@ export const adminCardSchema = z.object({
   pinnedTier: cardTierSchema.nullable(),
   minTier: computedTierSchema.nullable(),
   maxTier: computedTierSchema.nullable(),
-  author: cardPersonSchema,
+  author: cardAuthorSchema,
   capturedAt: isoDateSchema.nullable(),
   isCaptureDateValidated: z.boolean(),
   createdAt: isoDateSchema,
