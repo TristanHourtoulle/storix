@@ -4,11 +4,12 @@ import type { LeagueSummary, PhotosChoice } from '@storix/shared'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Notice } from '@/components/ui/notice'
+import { SettingsButtonRow, SettingsDisabledRow } from '@/components/ui/settings-list'
 import { useAuthoredCardCount } from '../use-authored-card-count'
 import { useLeaveLeague } from '../use-leave-league'
 import { PhotosChoiceField, type PhotosChoiceOption } from './photos-choice-field'
 
-interface LeaveLeagueSectionProps {
+interface LeaveLeagueRowProps {
   userId: string
   displayUsername: string
   league: LeagueSummary
@@ -36,33 +37,36 @@ function leaveOptions(displayUsername: string): PhotosChoiceOption[] {
   ]
 }
 
-export function LeaveLeagueSection({
+const SCOPE_HINT = 'cette ligue seulement'
+
+/** Note shown to the owner, who must transfer the league before leaving it. */
+export function OwnerLeaveHint({ leagueId }: { leagueId: string }) {
+  return (
+    <p className="m-0">
+      Transfère la propriété depuis l'administration avant de quitter la ligue.{' '}
+      <Link to="/l/$leagueId/admin" params={{ leagueId }} className="font-semibold text-accent">
+        Ouvrir l'administration
+      </Link>
+    </p>
+  )
+}
+
+/** "Quitter la ligue" row of the danger zone, with its confirmation dialog. */
+export function LeaveLeagueRow({
   userId,
   displayUsername,
   league,
   isHomeLeague,
-}: LeaveLeagueSectionProps) {
+}: LeaveLeagueRowProps) {
   const { leave, reset, isPending, errorMessage } = useLeaveLeague(userId, league.id)
   const [isOpen, setIsOpen] = useState(false)
   const [photos, setPhotos] = useState<PhotosChoice | null>(null)
   const hasNoPhotos = useAuthoredCardCount(league.id, userId) === 0
   const choice: PhotosChoice | null = hasNoPhotos ? 'keep' : photos
+  const hint = `${league.name} · ${SCOPE_HINT}`
 
   if (league.role === 'owner') {
-    return (
-      <section aria-label="Quitter la ligue" className="flex flex-col gap-2">
-        <p className="m-0 text-sm leading-snug text-muted">
-          Transfère la propriété depuis l'administration avant de quitter la ligue.
-        </p>
-        <Link
-          to="/l/$leagueId/admin"
-          params={{ leagueId: league.id }}
-          className="text-sm font-semibold text-accent"
-        >
-          Ouvrir l'administration
-        </Link>
-      </section>
-    )
+    return <SettingsDisabledRow icon="exit" label="Quitter la ligue" hint={hint} />
   }
 
   const open = () => {
@@ -72,10 +76,13 @@ export function LeaveLeagueSection({
   }
 
   return (
-    <section aria-label="Quitter la ligue">
-      <Button variant="danger" block onClick={open}>
-        Quitter la ligue
-      </Button>
+    <SettingsButtonRow
+      icon="exit"
+      label="Quitter la ligue"
+      hint={hint}
+      tone="danger"
+      onClick={open}
+    >
       {isOpen ? (
         <Dialog
           open
@@ -120,6 +127,6 @@ export function LeaveLeagueSection({
           </div>
         </Dialog>
       ) : null}
-    </section>
+    </SettingsButtonRow>
   )
 }

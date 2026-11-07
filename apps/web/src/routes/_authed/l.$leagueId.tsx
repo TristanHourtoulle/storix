@@ -33,7 +33,7 @@ function LeagueLayout() {
     ? 'collection'
     : matchRoute({ to: '/l/$leagueId/add', params: { leagueId } })
       ? 'add'
-      : matchRoute({ to: '/l/$leagueId/profile', params: { leagueId } }) ||
+      : matchRoute({ to: '/l/$leagueId/profile', params: { leagueId }, fuzzy: true }) ||
           matchRoute({ to: '/l/$leagueId/admin', params: { leagueId } })
         ? 'profile'
         : 'home'
