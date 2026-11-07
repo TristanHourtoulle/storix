@@ -1,7 +1,7 @@
 import { pino, type Logger } from 'pino'
 import type { WorkerEnv } from '../config/env'
 
-export type WorkerLogger = Pick<Logger, 'debug' | 'info' | 'warn' | 'error'>
+export type WorkerLogger = Pick<Logger, 'debug' | 'info' | 'warn' | 'error' | 'fatal'>
 
 /** Creates the worker pino logger for the given environment. */
 export function createLogger(env: WorkerEnv): Logger {

@@ -1,5 +1,5 @@
 import { createDb } from '@storix/db'
-import { MEDIA_PROCESS_JOB, MEDIA_SWEEP_JOB, type MediaProcessPayload } from '@storix/shared'
+import { MEDIA_PROCESS_JOB, MEDIA_SWEEP_JOB } from '@storix/shared'
 import { createObjectStorage } from '@storix/storage'
 import { PgBoss } from 'pg-boss'
 import { pino } from 'pino'
@@ -8,6 +8,7 @@ import { configureImagePipeline, imagePipeline } from './features/media/image-pi
 import { createMediaProcessingService } from './features/media/media-processing.service'
 import { createMediaSweepService } from './features/media/media-sweep.service'
 import { registerMediaProcessJob } from './jobs/media-process.job'
+import { createMediaQueue } from './jobs/media-queue'
 import { registerMediaSweepJob } from './jobs/media-sweep.job'
 import { createLogger } from './lib/logger'
 
@@ -24,19 +25,17 @@ async function start(): Promise<void> {
   const boss = new PgBoss({ connectionString: env.DATABASE_URL, schema: 'pgboss' })
   boss.on('error', (error) => logger.error({ err: error }, 'pg-boss error'))
 
-  async function enqueueMediaProcess(payload: MediaProcessPayload): Promise<void> {
-    await boss.send(MEDIA_PROCESS_JOB, payload, {
-      singletonKey: payload.uploadId,
-      retryLimit: 3,
-      retryDelay: 15,
-      retryBackoff: true,
-    })
-  }
+  const queue = createMediaQueue(boss)
 
   async function shutdown(signal: string): Promise<void> {
     logger.info({ signal }, 'Shutting down')
-    await boss.stop({ graceful: true, timeout: STOP_TIMEOUT_MS })
-    await database.close()
+    try {
+      await boss.stop({ graceful: true, timeout: STOP_TIMEOUT_MS })
+      await database.close()
+    } catch (error) {
+      logger.fatal({ err: error }, 'Shutdown failed')
+      process.exit(1)
+    }
     process.exit(0)
   }
 
@@ -59,7 +58,7 @@ async function start(): Promise<void> {
     storage,
     clock,
     logger,
-    enqueueMediaProcess,
+    queue,
   })
   await registerMediaProcessJob(boss, processing, logger, { concurrency: env.MEDIA_CONCURRENCY })
   await registerMediaSweepJob(boss, sweep)

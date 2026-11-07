@@ -9,11 +9,11 @@ import {
   perceptualHash,
   sanitizeCaptureDate,
 } from '@storix/shared/domain'
-import type { MediaVariant, UploadRejectionReason } from '@storix/shared'
+import { cardTitleSchema, type MediaVariant, type UploadRejectionReason } from '@storix/shared'
 import { ObjectTooLargeError, type ObjectStorage } from '@storix/storage'
 import type { WorkerLogger } from '../../lib/logger'
 import { runInTransaction } from '../../lib/transaction'
-import type { ImagePipeline } from './image-pipeline'
+import type { ImagePipeline, RenderedFile } from './image-pipeline'
 import * as repository from './media.repository'
 
 const VARIANT_CACHE_CONTROL = 'public, max-age=31536000, immutable'
@@ -34,6 +34,11 @@ interface Deps {
 interface DuplicateMatch {
   mediaId: string
   sourceSha256: string
+}
+
+interface RenderTrace {
+  sha: string | null
+  variantKeys: readonly string[]
 }
 
 type CommitOutcome =
@@ -58,12 +63,23 @@ async function findLeagueDuplicate(
 export function createMediaProcessingService(deps: Deps): MediaProcessingService {
   const { db, storage, pipeline, clock, logger } = deps
 
-  async function readSource(objectKey: string): Promise<Buffer | null> {
+  async function readSource(
+    objectKey: string,
+  ): Promise<{ buffer: Buffer } | { buffer: null; reason: string }> {
     try {
-      return await storage.getBuffer(objectKey, UPLOAD_MAX_BYTES)
+      const buffer = await storage.getBuffer(objectKey, UPLOAD_MAX_BYTES)
+      return buffer === null ? { buffer: null, reason: 'MISSING_OBJECT' } : { buffer }
     } catch (error) {
-      if (error instanceof ObjectTooLargeError) return null
+      if (error instanceof ObjectTooLargeError) return { buffer: null, reason: 'TOO_LARGE' }
       throw error
+    }
+  }
+
+  async function bestEffort(context: object, message: string, task: () => Promise<unknown>) {
+    try {
+      await task()
+    } catch (error) {
+      logger.error({ ...context, err: error }, message)
     }
   }
 
@@ -79,6 +95,7 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
 
   async function commit(
     upload: repository.UploadForProcessing,
+    title: string,
     row: repository.NewMediaRow,
     dedupable: boolean,
   ): Promise<CommitOutcome> {
@@ -96,13 +113,12 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
       }
       const mediaId = await repository.insertMedia(tx, row)
       const number = await repository.nextCardNumber(tx, upload.leagueId)
-      if (upload.title === null) throw new Error(`Upload ${upload.id} has no title`)
       const cardId = await repository.insertCard(tx, {
         leagueId: upload.leagueId,
         mediaId,
         authorId: upload.userId,
         number,
-        title: upload.title,
+        title,
         tier: PROVISIONAL_TIER,
         isProvisional: true,
       })
@@ -117,18 +133,72 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
         action: 'card.created',
         metadata: { cardId, number, uploadId: upload.id },
       })
-      await repository.markUploadReady(tx, upload.id, cardId, now)
+      if ((await repository.markUploadReady(tx, upload.id, cardId, now)) === 0) {
+        throw new Error(`Upload ${upload.id} left processing before its card was committed`)
+      }
       return { kind: 'ready', cardId, number }
     })
   }
 
-  async function process(upload: repository.UploadForProcessing): Promise<void> {
-    const buffer = await readSource(upload.objectKey)
-    if (buffer === null || (await pipeline.probeJpeg(buffer)) === null) {
+  async function uploadVariants(
+    upload: repository.UploadForProcessing,
+    sha: string,
+    files: readonly RenderedFile[],
+    trace: RenderTrace,
+  ): Promise<MediaVariant[]> {
+    const entries = files.map((file) => ({
+      file,
+      variant: {
+        size: file.size,
+        format: file.format,
+        key: mediaVariantKey({
+          leagueId: upload.leagueId,
+          sourceSha256: sha,
+          size: file.size,
+          format: file.format,
+        }),
+        width: file.width,
+        height: file.height,
+        bytes: file.body.length,
+      },
+    }))
+    trace.variantKeys = entries.map((entry) => entry.variant.key)
+    for (const { file, variant } of entries) {
+      await storage.put({
+        key: variant.key,
+        body: file.body,
+        contentType: file.contentType,
+        cacheControl: VARIANT_CACHE_CONTROL,
+      })
+    }
+    return entries.map((entry) => entry.variant)
+  }
+
+  async function process(upload: repository.UploadForProcessing, trace: RenderTrace) {
+    const title = cardTitleSchema.safeParse(upload.title)
+    if (!title.success) {
+      logger.error({ uploadId: upload.id }, 'Upload has no valid title; failing without retries')
+      await failUpload(upload, trace)
+      return
+    }
+    const source = await readSource(upload.objectKey)
+    if (source.buffer === null) {
+      logger.debug({ uploadId: upload.id, reason: source.reason }, 'Upload source unavailable')
+      await reject(upload, 'INVALID_IMAGE')
+      return
+    }
+    const buffer = source.buffer
+    const probe = await pipeline.probeJpeg(buffer)
+    if (!probe.ok) {
+      logger.debug(
+        { uploadId: upload.id, reason: probe.reason, detail: probe.detail },
+        'Upload is not a usable JPEG',
+      )
       await reject(upload, 'INVALID_IMAGE')
       return
     }
     const sha = sha256Hex(buffer)
+    trace.sha = sha
     if (await repository.findMediaBySha(db, upload.leagueId, sha)) {
       await reject(upload, 'DUPLICATE_PHOTO')
       return
@@ -147,36 +217,12 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
     const now = clock()
     const exifDate = sanitizeCaptureDate(await pipeline.readExifCaptureDate(buffer), now)
     const clientDate = sanitizeCaptureDate(upload.clientCapturedAt, now)
-    const capturedAt = exifDate ?? clientDate
-    const captureDateSource = exifDate ? 'exif' : clientDate ? 'client' : null
-
     const rendered = await pipeline.renderVariants(buffer)
-    const variants: MediaVariant[] = []
-    for (const file of rendered.files) {
-      const key = mediaVariantKey({
-        leagueId: upload.leagueId,
-        sourceSha256: sha,
-        size: file.size,
-        format: file.format,
-      })
-      await storage.put({
-        key,
-        body: file.body,
-        contentType: file.contentType,
-        cacheControl: VARIANT_CACHE_CONTROL,
-      })
-      variants.push({
-        size: file.size,
-        format: file.format,
-        key,
-        width: file.width,
-        height: file.height,
-        bytes: file.body.length,
-      })
-    }
+    const variants = await uploadVariants(upload, sha, rendered.files, trace)
 
     const outcome = await commit(
       upload,
+      title.data,
       {
         leagueId: upload.leagueId,
         uploadId: upload.id,
@@ -186,8 +232,8 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
         dominantColor: rendered.dominantColor,
         width: rendered.width,
         height: rendered.height,
-        capturedAt,
-        captureDateSource,
+        capturedAt: exifDate ?? clientDate,
+        captureDateSource: exifDate ? 'exif' : clientDate ? 'client' : null,
         variants,
       },
       dedupable,
@@ -213,9 +259,20 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
     )
   }
 
-  async function fail(upload: repository.UploadForProcessing): Promise<void> {
-    await storage.delete([upload.objectKey])
-    await repository.markUploadFailed(db, upload.id, clock())
+  async function failUpload(upload: repository.UploadForProcessing, trace: RenderTrace) {
+    const context = { uploadId: upload.id }
+    await bestEffort(context, 'Failed to mark upload failed', () =>
+      repository.markUploadFailed(db, upload.id, clock()),
+    )
+    await bestEffort(context, 'Failed to delete incoming object of a failed upload', () =>
+      storage.delete([upload.objectKey]),
+    )
+    const sha = trace.sha
+    if (sha === null || trace.variantKeys.length === 0) return
+    await bestEffort(context, 'Failed to delete variants of a failed upload', async () => {
+      if (await repository.findMediaBySha(db, upload.leagueId, sha)) return
+      await storage.delete(trace.variantKeys)
+    })
   }
 
   return {
@@ -227,12 +284,13 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
         return
       }
       if (!(await repository.markUploadProcessing(db, uploadId))) return
+      const trace: RenderTrace = { sha: null, variantKeys: [] }
       try {
-        await process(upload)
+        await process(upload, trace)
       } catch (error) {
         if (input.isFinalAttempt) {
           logger.error({ uploadId, err: error }, 'Upload processing failed for good')
-          await fail(upload)
+          await failUpload(upload, trace)
         }
         throw error
       }

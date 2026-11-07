@@ -1,4 +1,4 @@
-import { and, eq, inArray, lt, notExists, or, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, lt, notExists, or, sql } from 'drizzle-orm'
 import {
   auditLog,
   cards,
@@ -53,6 +53,7 @@ export interface StaleUpload {
 }
 
 const PROCESSABLE: UploadStatus[] = ['uploaded', 'processing']
+const LEAGUE_MEDIA_LOCK_NAMESPACE = 7201
 
 /** Loads the upload fields the processing job needs. */
 export async function findUploadForProcessing(
@@ -108,22 +109,26 @@ export async function markUploadFailed(db: DbExecutor, uploadId: string, now: Da
     .where(and(eq(uploads.id, uploadId), inArray(uploads.status, PROCESSABLE)))
 }
 
-/** Marks a processable upload as ready and links its card. */
+/** Marks a processable upload as ready and links its card; returns the updated row count. */
 export async function markUploadReady(
   db: DbExecutor,
   uploadId: string,
   cardId: string,
   now: Date,
-): Promise<void> {
-  await db
+): Promise<number> {
+  const rows = await db
     .update(uploads)
     .set({ status: 'ready', cardId, processedAt: now })
     .where(and(eq(uploads.id, uploadId), inArray(uploads.status, PROCESSABLE)))
+    .returning({ id: uploads.id })
+  return rows.length
 }
 
 /** Serializes media creation for a league until the current transaction ends. */
 export async function lockLeagueMedia(db: DbExecutor, leagueId: string): Promise<void> {
-  await db.execute(sql`select pg_advisory_xact_lock(hashtext(${leagueId}))`)
+  await db.execute(
+    sql`select pg_advisory_xact_lock(${LEAGUE_MEDIA_LOCK_NAMESPACE}::int, hashtext(${leagueId}))`,
+  )
 }
 
 /** Finds a league media with the same source bytes. */
@@ -208,10 +213,10 @@ export async function insertAuditEntry(
   await db.insert(auditLog).values({ ...entry, targetUserId: null })
 }
 
-/** Lists pending uploads created before `pendingBefore` and uploaded ones completed before `uploadedBefore`. */
+/** Lists abandoned pending uploads and uploaded or processing ones that look stuck. */
 export function findStaleUploads(
   db: DbExecutor,
-  input: { pendingBefore: Date; uploadedBefore: Date },
+  input: { pendingBefore: Date; uploadedBefore: Date; processingBefore: Date },
 ): Promise<StaleUpload[]> {
   return db
     .select({ id: uploads.id, status: uploads.status, objectKey: uploads.objectKey })
@@ -220,6 +225,11 @@ export function findStaleUploads(
       or(
         and(eq(uploads.status, 'pending'), lt(uploads.createdAt, input.pendingBefore)),
         and(eq(uploads.status, 'uploaded'), lt(uploads.completedAt, input.uploadedBefore)),
+        and(
+          eq(uploads.status, 'processing'),
+          isNull(uploads.processedAt),
+          lt(uploads.completedAt, input.processingBefore),
+        ),
       ),
     )
 }

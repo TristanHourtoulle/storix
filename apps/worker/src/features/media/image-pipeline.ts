@@ -32,8 +32,12 @@ export interface RenderedImage {
   files: RenderedFile[]
 }
 
+export type ProbeResult =
+  | { ok: true; width: number; height: number }
+  | { ok: false; reason: 'NOT_JPEG_MAGIC' | 'NOT_JPEG_FORMAT' | 'UNDECODABLE'; detail?: string }
+
 export interface ImagePipeline {
-  probeJpeg(buffer: Buffer): Promise<{ width: number; height: number } | null>
+  probeJpeg(buffer: Buffer): Promise<ProbeResult>
   readExifCaptureDate(buffer: Buffer): Promise<Date | null>
   grayscaleForHash(buffer: Buffer): Promise<Uint8Array>
   renderVariants(buffer: Buffer): Promise<RenderedImage>
@@ -59,16 +63,22 @@ export function configureImagePipeline(): void {
   sharp.cache(false)
 }
 
-/** Returns the oriented dimensions of a fully decodable JPEG, else null. */
-export async function probeJpeg(buffer: Buffer): Promise<{ width: number; height: number } | null> {
-  if (!hasJpegMagic(buffer)) return null
+/** Tells whether the buffer is a fully decodable JPEG and returns its oriented size. */
+export async function probeJpeg(buffer: Buffer): Promise<ProbeResult> {
+  if (!hasJpegMagic(buffer)) return { ok: false, reason: 'NOT_JPEG_MAGIC' }
   try {
     const metadata = await open(buffer).metadata()
-    if (metadata.format !== 'jpeg') return null
+    if (metadata.format !== 'jpeg') {
+      return { ok: false, reason: 'NOT_JPEG_FORMAT', detail: metadata.format }
+    }
     await open(buffer).resize(8, 8, { fit: 'fill' }).raw().toBuffer()
-    return { width: metadata.autoOrient.width, height: metadata.autoOrient.height }
-  } catch {
-    return null
+    return { ok: true, width: metadata.autoOrient.width, height: metadata.autoOrient.height }
+  } catch (error) {
+    return {
+      ok: false,
+      reason: 'UNDECODABLE',
+      detail: error instanceof Error ? error.message : String(error),
+    }
   }
 }
 
