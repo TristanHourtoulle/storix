@@ -1,11 +1,17 @@
 import {
+  createInvitationResponseSchema,
   invitationPreviewSchema,
+  invitationSummarySchema,
   joinResponseSchema,
+  type CreateInvitationBody,
+  type CreateInvitationResponse,
   type InvitationPreview,
+  type InvitationSummary,
   type JoinResponse,
   type SignupBody,
 } from '@storix/shared'
-import { apiRequest } from '@/lib/http'
+import { z } from 'zod'
+import { apiRequest, apiRequestVoid } from '@/lib/http'
 
 function invitationPath(token: string, action?: string): string {
   const base = `/api/invitations/${encodeURIComponent(token)}`
@@ -32,4 +38,31 @@ export function acceptInvitation(token: string): Promise<JoinResponse> {
     method: 'POST',
     schema: joinResponseSchema,
   })
+}
+
+function leagueInvitationsPath(leagueId: string, invitationId?: string): string {
+  const base = `/api/leagues/${encodeURIComponent(leagueId)}/invitations`
+  return invitationId ? `${base}/${encodeURIComponent(invitationId)}` : base
+}
+
+/** Lists the invitations of a league. */
+export function fetchInvitations(leagueId: string): Promise<InvitationSummary[]> {
+  return apiRequest(leagueInvitationsPath(leagueId), { schema: z.array(invitationSummarySchema) })
+}
+
+/** Creates an invitation; the returned URL is only available now. */
+export function createInvitation(
+  leagueId: string,
+  body: CreateInvitationBody,
+): Promise<CreateInvitationResponse> {
+  return apiRequest(leagueInvitationsPath(leagueId), {
+    method: 'POST',
+    body,
+    schema: createInvitationResponseSchema,
+  })
+}
+
+/** Revokes an invitation. */
+export function revokeInvitation(leagueId: string, invitationId: string): Promise<void> {
+  return apiRequestVoid(leagueInvitationsPath(leagueId, invitationId), { method: 'DELETE' })
 }

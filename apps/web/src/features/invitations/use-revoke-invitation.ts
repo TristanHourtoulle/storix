@@ -1,0 +1,24 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { userMessage } from '@/features/errors/user-message'
+import { revokeInvitation } from './invitations.api'
+import { invitationsQueryOptions } from './invitations.queries'
+
+/** Revokes an invitation and refreshes the list. */
+export function useRevokeInvitation(leagueId: string): {
+  revoke: (invitationId: string) => void
+  isPending: boolean
+  errorMessage: string | null
+} {
+  const queryClient = useQueryClient()
+  const mutation = useMutation({
+    mutationFn: (invitationId: string) => revokeInvitation(leagueId, invitationId),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: invitationsQueryOptions(leagueId).queryKey }),
+  })
+
+  return {
+    revoke: mutation.mutate,
+    isPending: mutation.isPending,
+    errorMessage: mutation.error ? userMessage(mutation.error) : null,
+  }
+}
