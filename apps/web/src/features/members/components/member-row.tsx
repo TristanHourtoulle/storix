@@ -1,6 +1,7 @@
-import type { LeagueRole, MemberSummary } from '@storix/shared'
+import type { MemberSummary } from '@storix/shared'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { ROLE_LABELS } from '@/features/leagues/role-labels'
 
 interface MemberRowProps {
   member: MemberSummary
@@ -8,12 +9,6 @@ interface MemberRowProps {
   onToggleRole: (member: MemberSummary) => void
   onRemove: (member: MemberSummary) => void
   onResetCode: (member: MemberSummary) => void
-}
-
-const ROLE_LABELS: Record<LeagueRole, string> = {
-  owner: 'Propriétaire',
-  admin: 'Admin',
-  member: 'Membre',
 }
 
 export function MemberRow({ member, isBusy, onToggleRole, onRemove, onResetCode }: MemberRowProps) {

@@ -10,7 +10,7 @@ function isWebAuthnSupported(): boolean {
 export function usePasskeyPrompt(userId: string): {
   isOpen: boolean
   dismiss: () => void
-  addPasskey: (name: string) => Promise<void>
+  addPasskey: (displayUsername: string) => Promise<void>
 } {
   const key = STORAGE_KEYS.passkeyPromptDismissed(userId)
   const [isDismissed, setIsDismissed] = useState(() => readStorage(key) !== null)
@@ -22,8 +22,8 @@ export function usePasskeyPrompt(userId: string): {
   }, [key])
 
   const add = useCallback(
-    async (name: string): Promise<void> => {
-      await addPasskey(name)
+    async (displayUsername: string): Promise<void> => {
+      await addPasskey(displayUsername)
       dismiss()
     },
     [addPasskey, dismiss],

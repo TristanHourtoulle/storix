@@ -1,8 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import type { CreateLeagueBody } from '@storix/shared'
-import { ApiError } from '@/lib/http'
-import { errorMessage } from '@/features/errors/error-messages'
+import { userMessage } from '@/features/errors/user-message'
 import { meQueryOptions } from '@/features/auth/session.queries'
 import { createLeague } from './leagues.api'
 
@@ -22,13 +21,9 @@ export function useCreateLeague(): {
     },
   })
 
-  const { error } = mutation
-  const message =
-    error === null
-      ? null
-      : error instanceof ApiError
-        ? errorMessage(error.code)
-        : errorMessage('INTERNAL_ERROR')
-
-  return { create: mutation.mutate, isPending: mutation.isPending, errorMessage: message }
+  return {
+    create: mutation.mutate,
+    isPending: mutation.isPending,
+    errorMessage: mutation.error ? userMessage(mutation.error) : null,
+  }
 }

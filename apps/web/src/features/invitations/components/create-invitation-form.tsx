@@ -1,5 +1,9 @@
 import { useState, type FormEvent } from 'react'
-import { INVITATION_EXPIRY_DAYS, INVITATION_MAX_USES_LIMIT } from '@storix/shared'
+import {
+  INVITATION_EXPIRY_DAYS,
+  INVITATION_MAX_USES_LIMIT,
+  createInvitationBodySchema,
+} from '@storix/shared'
 import type { CreateInvitationBody } from '@storix/shared'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
@@ -31,13 +35,16 @@ export function CreateInvitationForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault()
-    const maxUses = Number(maxUsesInput)
-    if (!Number.isInteger(maxUses) || maxUses < 1 || maxUses > INVITATION_MAX_USES_LIMIT) {
+    const parsed = createInvitationBodySchema.safeParse({
+      expiresInDays,
+      maxUses: maxUsesInput.trim() === '' ? Number.NaN : Number(maxUsesInput),
+    })
+    if (!parsed.success) {
       setFieldError(`Entre 1 et ${INVITATION_MAX_USES_LIMIT}.`)
       return
     }
     setFieldError(undefined)
-    onCreate({ expiresInDays, maxUses })
+    onCreate(parsed.data)
   }
 
   return (

@@ -1,7 +1,7 @@
 import { logger } from './logger'
 
 export const STORAGE_KEYS = {
-  lastLeagueId: 'storix.lastLeagueId',
+  lastLeagueId: (userId: string): string => `storix.lastLeagueId.${userId}`,
   iosHintDismissed: 'storix.iosHintDismissed',
   passkeyPromptDismissed: (userId: string): string => `storix.passkeyPromptDismissed.${userId}`,
 } as const
@@ -22,5 +22,14 @@ export function writeStorage(key: string, value: string): void {
     window.localStorage.setItem(key, value)
   } catch (error) {
     logger.warn('Storage write failed', { key, error })
+  }
+}
+
+/** Removes a localStorage value, logging instead of throwing on failure. */
+export function removeStorage(key: string): void {
+  try {
+    window.localStorage.removeItem(key)
+  } catch (error) {
+    logger.warn('Storage remove failed', { key, error })
   }
 }

@@ -6,6 +6,7 @@ import { TopBar } from '@/components/ui/top-bar'
 import { InvitationsPanel } from '@/features/invitations/components/invitations-panel'
 import { leagueDetailQueryOptions, loadLeagueDetail } from '@/features/leagues/leagues.queries'
 import { MemberList } from '@/features/members/components/member-list'
+import { membersQueryOptions } from '@/features/members/members.queries'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/admin')({
   beforeLoad: async ({ context, params }) => {
@@ -14,6 +15,8 @@ export const Route = createFileRoute('/_authed/l/$leagueId/admin')({
       throw redirect({ to: '/l/$leagueId', params: { leagueId: params.leagueId } })
     }
   },
+  loader: ({ context, params }) =>
+    context.queryClient.ensureQueryData(membersQueryOptions(params.leagueId)),
   component: Admin,
 })
 

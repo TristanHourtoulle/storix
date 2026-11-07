@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
-import { defaultPasskeyName, usePasskeys } from '../use-passkeys'
+import { usePasskeys } from '../use-passkeys'
 
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' })
 
@@ -26,7 +26,7 @@ export function PasskeyList({ displayUsername }: PasskeyListProps) {
 
   async function handleAdd(): Promise<void> {
     setIsAdding(true)
-    await run(() => addPasskey(defaultPasskeyName(displayUsername)))
+    await run(() => addPasskey(displayUsername))
     setIsAdding(false)
   }
 

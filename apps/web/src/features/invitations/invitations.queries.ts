@@ -2,9 +2,11 @@ import { queryOptions } from '@tanstack/react-query'
 import { ApiError } from '@/lib/http'
 import { fetchInvitationPreview, fetchInvitations } from './invitations.api'
 
+export const INVITATIONS_QUERY_KEY = ['invitations'] as const
+
 export function invitationPreviewQueryOptions(token: string) {
   return queryOptions({
-    queryKey: ['invitations', token, 'preview'],
+    queryKey: [...INVITATIONS_QUERY_KEY, token, 'preview'],
     queryFn: () => fetchInvitationPreview(token),
     retry: false,
   })

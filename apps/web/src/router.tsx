@@ -10,7 +10,10 @@ function redirectToLogin(): void {
   const { pathname, href } = router.latestLocation
   if (isPublicPath(pathname)) return
   queryClient.removeQueries({ queryKey: meQueryOptions.queryKey })
-  void router.navigate({ to: '/login', search: { redirect: href } })
+  void router
+    .navigate({ to: '/login', search: { redirect: href } })
+    .then(() => queryClient.cancelQueries())
+    .then(() => queryClient.clear())
 }
 
 export const queryClient = createQueryClient(redirectToLogin)

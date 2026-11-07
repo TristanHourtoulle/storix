@@ -1,14 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { authClient } from '@/lib/auth-client'
+import { logger } from '@/lib/logger'
 import { authErrorMessage } from './auth-errors'
 
 export const PASSKEYS_QUERY_KEY = ['passkeys'] as const
 
-/** Default passkey label for a user. */
-export function defaultPasskeyName(displayUsername: string): string {
+function defaultPasskeyName(displayUsername: string): string {
   return `Passkey de ${displayUsername}`
 }
+
+const registeredPasskeySchema = z.object({ id: z.string() })
 
 export interface PasskeySummary {
   id: string
@@ -24,6 +26,20 @@ const passkeyListSchema = z.array(
   }),
 )
 
+async function registerPasskey(displayUsername: string): Promise<void> {
+  const result = await authClient.passkey.addPasskey({ name: displayUsername })
+  if (result?.error) {
+    throw new Error(authErrorMessage(result.error, "Impossible d'ajouter la passkey."))
+  }
+  const registered = registeredPasskeySchema.safeParse(result?.data)
+  if (!registered.success) return
+  const { error } = await authClient.passkey.updatePasskey({
+    id: registered.data.id,
+    name: defaultPasskeyName(displayUsername),
+  })
+  if (error) logger.warn('Passkey label update failed', { status: error.status })
+}
+
 async function fetchPasskeys(): Promise<PasskeySummary[]> {
   const { data, error } = await authClient.passkey.listUserPasskeys()
   if (error) throw new Error(authErrorMessage(error, 'Impossible de charger tes passkeys.'))
@@ -37,7 +53,7 @@ async function fetchPasskeys(): Promise<PasskeySummary[]> {
 /** Lists, adds and deletes the current user's passkeys. */
 export function usePasskeys(): {
   passkeys: PasskeySummary[]
-  addPasskey: (name: string) => Promise<void>
+  addPasskey: (displayUsername: string) => Promise<void>
   deletePasskey: (id: string) => Promise<void>
   isLoading: boolean
   isReady: boolean
@@ -46,12 +62,7 @@ export function usePasskeys(): {
   const query = useQuery({ queryKey: PASSKEYS_QUERY_KEY, queryFn: fetchPasskeys })
 
   const add = useMutation({
-    mutationFn: async (name: string): Promise<void> => {
-      const result = await authClient.passkey.addPasskey({ name })
-      if (result?.error) {
-        throw new Error(authErrorMessage(result.error, "Impossible d'ajouter la passkey."))
-      }
-    },
+    mutationFn: registerPasskey,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: PASSKEYS_QUERY_KEY }),
   })
 

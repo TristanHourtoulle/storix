@@ -5,6 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { startSessionRefresh } from './features/auth/session-refresh'
 import { registerServiceWorker } from './features/pwa/register-sw'
 import { queryClient, router } from './router'
 
@@ -19,4 +20,5 @@ createRoot(container).render(
   </StrictMode>,
 )
 
+startSessionRefresh()
 void registerServiceWorker()

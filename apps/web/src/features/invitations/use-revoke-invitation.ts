@@ -5,7 +5,8 @@ import { invitationsQueryOptions } from './invitations.queries'
 
 /** Revokes an invitation and refreshes the list. */
 export function useRevokeInvitation(leagueId: string): {
-  revoke: (invitationId: string) => void
+  revoke: (invitationId: string, onDone: () => void) => void
+  reset: () => void
   isPending: boolean
   errorMessage: string | null
 } {
@@ -17,7 +18,8 @@ export function useRevokeInvitation(leagueId: string): {
   })
 
   return {
-    revoke: mutation.mutate,
+    revoke: (invitationId, onDone) => mutation.mutate(invitationId, { onSuccess: onDone }),
+    reset: mutation.reset,
     isPending: mutation.isPending,
     errorMessage: mutation.error ? userMessage(mutation.error) : null,
   }

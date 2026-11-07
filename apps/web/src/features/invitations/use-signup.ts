@@ -2,14 +2,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import type { SignupBody } from '@storix/shared'
 import { authClient } from '@/lib/auth-client'
-import { meQueryOptions } from '@/features/auth/session.queries'
 import { ApiError } from '@/lib/http'
 import { UserFacingError, userMessage } from '@/features/errors/user-message'
 import { invitationPreviewQueryOptions } from './invitations.queries'
 import { signupWithInvitation } from './invitations.api'
 
 const SIGNIN_FAILED_MESSAGE = 'Compte créé, mais connexion impossible. Connecte-toi.'
-const INVITATIONS_KEY = ['invitations'] as const
 
 /** Creates the account, signs in, then opens the joined league. */
 export function useSignup(token: string): {
@@ -34,8 +32,7 @@ export function useSignup(token: string): {
       return leagueId
     },
     onSuccess: async (leagueId) => {
-      queryClient.removeQueries({ queryKey: meQueryOptions.queryKey })
-      queryClient.removeQueries({ queryKey: INVITATIONS_KEY })
+      queryClient.clear()
       await navigate({ to: '/l/$leagueId', params: { leagueId }, replace: true })
     },
     onError: async (error) => {

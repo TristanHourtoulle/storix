@@ -20,7 +20,6 @@ export class CredentialUserCreationError extends Error {
 
 export interface AuthGateway {
   handle(request: Request): Promise<Response>
-  getSession(headers: Headers): Promise<AuthSession | null>
   getSessionFromNodeHeaders(headers: IncomingHttpHeaders): Promise<AuthSession | null>
   createCredentialUser(input: { username: string; password: string }): Promise<{ userId: string }>
   deleteUser(userId: string): Promise<void>
@@ -38,7 +37,7 @@ function isUsernameTaken(error: unknown): boolean {
 /** Wraps the Better Auth instance behind the narrow interface used by the app. */
 export function createAuthGateway(auth: Auth): AuthGateway {
   async function getSession(headers: Headers): Promise<AuthSession | null> {
-    const result = await auth.api.getSession({ headers })
+    const result = await auth.api.getSession({ headers, query: { disableRefresh: true } })
     const username = result?.user.username
     if (result === null || username === null || username === undefined) return null
     return {
@@ -50,7 +49,6 @@ export function createAuthGateway(auth: Auth): AuthGateway {
 
   return {
     handle: (request) => auth.handler(request),
-    getSession,
     getSessionFromNodeHeaders: (headers) => getSession(fromNodeHeaders(headers)),
     async createCredentialUser({ username, password }) {
       try {

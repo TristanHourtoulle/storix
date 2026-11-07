@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { authClient } from '@/lib/auth-client'
 import { UserFacingError, userMessage } from '@/features/errors/user-message'
-import { meQueryOptions } from './session.queries'
 import { authErrorMessage } from './auth-errors'
 
 interface LoginInput {
@@ -56,8 +55,7 @@ export function useLogin(redirectTo?: string): {
       else await signInWithPasskey()
     },
     onSuccess: async () => {
-      queryClient.removeQueries({ queryKey: meQueryOptions.queryKey })
-      queryClient.removeQueries({ queryKey: ['invitations'] })
+      queryClient.clear()
       if (redirectTo) await navigate({ href: redirectTo, replace: true })
       else await navigate({ to: '/', replace: true })
     },

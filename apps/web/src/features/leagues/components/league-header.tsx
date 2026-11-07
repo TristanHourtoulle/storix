@@ -17,32 +17,19 @@ const AVATAR_CLASS =
 export function LeagueHeader({ name, memberCount, leagues, currentLeagueId }: LeagueHeaderProps) {
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false)
   const canSwitch = leagues.length > 1
-  const openSwitcher = () => setIsSwitcherOpen(true)
 
   return (
     <header className="flex items-center gap-3">
-      {canSwitch ? (
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-hidden="true"
-          onClick={openSwitcher}
-          className={`${AVATAR_CLASS} cursor-pointer border-0`}
-        >
-          {initials(name)}
-        </button>
-      ) : (
-        <span aria-hidden="true" className={AVATAR_CLASS}>
-          {initials(name)}
-        </span>
-      )}
+      <span aria-hidden="true" className={AVATAR_CLASS}>
+        {initials(name)}
+      </span>
       <div className="min-w-0">
         <h1 className="truncate text-lg">
           {canSwitch ? (
             <button
               type="button"
               aria-haspopup="dialog"
-              onClick={openSwitcher}
+              onClick={() => setIsSwitcherOpen(true)}
               className="inline-flex max-w-full cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-left font-[inherit] text-[length:inherit] text-inherit"
             >
               <span className="truncate">{name}</span>

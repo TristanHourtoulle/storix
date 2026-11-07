@@ -1,16 +1,11 @@
 import { Link } from '@tanstack/react-router'
-import type { LeagueRole, LeagueSummary } from '@storix/shared'
+import { hasRoleAtLeast, type LeagueSummary } from '@storix/shared'
 import { buttonClassName } from '@/components/ui/button'
+import { ROLE_LABELS } from '../role-labels'
 
 interface LeagueListProps {
   leagues: LeagueSummary[]
   currentLeagueId: string
-}
-
-const ROLE_LABELS: Record<LeagueRole, string> = {
-  owner: 'Propriétaire',
-  admin: 'Admin',
-  member: 'Membre',
 }
 
 export function LeagueList({ leagues, currentLeagueId }: LeagueListProps) {
@@ -20,7 +15,7 @@ export function LeagueList({ leagues, currentLeagueId }: LeagueListProps) {
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {leagues.map((league) => {
           const isCurrent = league.id === currentLeagueId
-          const canManage = league.role !== 'member'
+          const canManage = hasRoleAtLeast(league.role, 'admin')
           return (
             <li
               key={league.id}
