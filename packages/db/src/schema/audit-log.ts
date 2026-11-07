@@ -13,6 +13,7 @@ export const AUDIT_ACTIONS = [
   'reset_code.issued',
   'reset_code.redeemed',
   'reset_code.failed',
+  'card.created',
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]
