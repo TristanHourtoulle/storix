@@ -34,7 +34,18 @@ function BoosterScreen({ leagueId, requestId }: { leagueId: string; requestId: s
 
   const errorCode = getOpeningErrorCode(error)
   let content
-  if (data) {
+  if (data && data.pulls.length === 0) {
+    content = (
+      <main className="screen">
+        <EmptyState
+          icon="collection"
+          title="Booster vide"
+          body="Ce booster ne contient plus de cartes."
+          action={<BackLink leagueId={leagueId} />}
+        />
+      </main>
+    )
+  } else if (data) {
     content = <BoosterStage key={data.id} leagueId={leagueId} opening={data} />
   } else if (isPending) {
     content = (

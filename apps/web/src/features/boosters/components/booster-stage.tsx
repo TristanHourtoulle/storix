@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import type { BoosterOpening } from '@storix/shared'
 import { Button, buttonClassName } from '@/components/ui/button'
@@ -18,6 +19,8 @@ interface BoosterStageProps {
 export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
   const navigate = useNavigate()
   const pullCount = opening.pulls.length
+  const [nextRequestId] = useState(newBoosterRequestId)
+  const [isOpeningNext, setIsOpeningNext] = useState(false)
   const { register, isReady } = useImagesDecoded(pullCount)
   const { revealed, featured, reveal, revealAll, isComplete } = useRevealState(pullCount)
   const revealedCount = revealed.filter(Boolean).length
@@ -26,10 +29,12 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
   const stageGlow = featuredPull ? TIER_GLOW_CLASS[featuredPull.card.tier] : ''
 
   function openAnother() {
+    if (isOpeningNext) return
+    setIsOpeningNext(true)
     void navigate({
       to: '/l/$leagueId/booster',
       params: { leagueId },
-      search: { request: newBoosterRequestId() },
+      search: { request: nextRequestId },
       replace: true,
     })
   }
@@ -65,7 +70,7 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
         {isComplete ? (
           <div className="flex flex-col gap-3">
             {hasStock ? (
-              <Button variant="primary" block onClick={openAnother}>
+              <Button variant="primary" block onClick={openAnother} disabled={isOpeningNext}>
                 Ouvrir un autre
               </Button>
             ) : null}

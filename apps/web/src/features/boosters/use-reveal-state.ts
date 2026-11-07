@@ -7,7 +7,7 @@ interface RevealState {
   featured: number | null
 }
 
-type RevealAction = { type: 'reveal'; index: number }
+type RevealAction = { type: 'reveal' | 'stagger'; index: number }
 
 interface RevealControls extends RevealState {
   reveal: (index: number) => void
@@ -17,6 +17,7 @@ interface RevealControls extends RevealState {
 
 function reducer(state: RevealState, action: RevealAction): RevealState {
   if (action.index < 0 || action.index >= state.revealed.length) return state
+  if (action.type === 'stagger' && state.revealed[action.index]) return state
   if (state.revealed[action.index] && state.featured === action.index) return state
   return {
     revealed: state.revealed.map((value, index) => value || index === action.index),
@@ -32,6 +33,7 @@ export function useRevealState(count: number): RevealControls {
   })
   const stateRef = useRef(state)
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+  const isStaggeringRef = useRef(false)
 
   useEffect(() => {
     stateRef.current = state
@@ -41,6 +43,7 @@ export function useRevealState(count: number): RevealControls {
     () => () => {
       timersRef.current.forEach(clearTimeout)
       timersRef.current = []
+      isStaggeringRef.current = false
     },
     [],
   )
@@ -48,12 +51,17 @@ export function useRevealState(count: number): RevealControls {
   const reveal = useCallback((index: number) => dispatch({ type: 'reveal', index }), [])
 
   const revealAll = useCallback(() => {
-    timersRef.current.forEach(clearTimeout)
+    if (isStaggeringRef.current) return
     const pending = stateRef.current.revealed.flatMap((isRevealed, index) =>
       isRevealed ? [] : [index],
     )
+    if (pending.length === 0) return
+    isStaggeringRef.current = true
     timersRef.current = pending.map((index, order) =>
-      setTimeout(() => dispatch({ type: 'reveal', index }), order * REVEAL_STAGGER_MS),
+      setTimeout(() => {
+        dispatch({ type: 'stagger', index })
+        if (order === pending.length - 1) isStaggeringRef.current = false
+      }, order * REVEAL_STAGGER_MS),
     )
   }, [])
 

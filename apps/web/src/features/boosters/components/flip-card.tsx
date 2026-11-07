@@ -56,7 +56,7 @@ export function FlipCard({ pull, isRevealed, isReady, onReveal, registerImage }:
               thumbhash={card.thumbhash}
               width={card.width}
               height={card.height}
-              sizes="80px"
+              sizes="236px"
               isEager
               isHighPriority
               onImageRef={registerImage}

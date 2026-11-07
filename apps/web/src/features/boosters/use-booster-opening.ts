@@ -19,7 +19,7 @@ export function useBoosterOpening(
 ): UseQueryResult<BoosterOpening> {
   const queryClient = useQueryClient()
   const query = useQuery(boosterOpeningQueryOptions(leagueId, requestId))
-  const wallet = query.data?.wallet
+  const wallet = query.isFetchedAfterMount ? query.data?.wallet : undefined
   const openingId = query.data?.id
   const errorCode = getOpeningErrorCode(query.error)
 
