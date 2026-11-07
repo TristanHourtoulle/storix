@@ -14,8 +14,12 @@
     "db:generate": "pnpm --filter @storix/db db:generate",
     "db:migrate": "pnpm --filter @storix/db db:migrate",
     "dev:db": "docker compose up -d postgres minio minio-init",
-    "build": "pnpm --filter @storix/web build && pnpm --filter @storix/api build",
+    "build:api": "pnpm --filter @storix/web build && pnpm --filter @storix/api build",
+    "build:worker": "pnpm --filter @storix/worker build",
+    "build": "pnpm build:api && pnpm build:worker",
     "start": "node apps/api/dist/server.js",
+    "start:worker": "node apps/worker/dist/main.js",
+    "migrate:prod": "node apps/api/dist/migrate.js",
     "preview:prod": "pnpm build && node --env-file=.env.preview apps/api/dist/server.js"
   },
   "devDependencies": {

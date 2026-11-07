@@ -1,7 +1,11 @@
 import { defineConfig } from 'tsdown'
 
 export default defineConfig({
-  entry: ['src/server.ts'],
+  entry: {
+    server: 'src/server.ts',
+    migrate: 'src/cli/migrate.ts',
+    bootstrap: 'src/cli/bootstrap.ts',
+  },
   format: 'esm',
   platform: 'node',
   fixedExtension: false,
