@@ -32,7 +32,7 @@ import {
   type WalletRow,
 } from '../wallets/wallets.repository'
 import {
-  claimDiscovery,
+  claimDiscoveries,
   findOpeningByRequest,
   insertOpening,
   insertPulls,
@@ -74,7 +74,7 @@ function assertLeagueCards(
   if (foreign) throw new Error('Booster draw contains a card outside the opening league')
 }
 
-async function claimDiscoveries(
+async function discoverySlots(
   ctx: OpeningContext,
   draws: readonly BoosterDraw[],
 ): Promise<ReadonlySet<number>> {
@@ -82,12 +82,17 @@ async function claimDiscoveries(
     (acc, draw) => (acc.has(draw.cardId) ? acc : new Map([...acc, [draw.cardId, draw.slot]])),
     new Map(),
   )
-  let discovered: ReadonlySet<number> = new Set()
-  for (const [cardId, slot] of firstSlotByCard) {
-    const claimed = await claimDiscovery(ctx.tx, { cardId, userId: ctx.m.userId, now: ctx.now })
-    if (claimed) discovered = new Set([...discovered, slot])
-  }
-  return discovered
+  const claimed = await claimDiscoveries(ctx.tx, {
+    cardIds: [...firstSlotByCard.keys()],
+    userId: ctx.m.userId,
+    now: ctx.now,
+  })
+  return new Set(
+    claimed.flatMap((cardId) => {
+      const slot = firstSlotByCard.get(cardId)
+      return slot === undefined ? [] : [slot]
+    }),
+  )
 }
 
 async function mintCopies(
@@ -167,7 +172,7 @@ async function openNewBooster(
     draws.map((draw) => ({ cardId: draw.cardId, tier: draw.tier, variant: draw.variant })),
     owned,
   )
-  const discoveries = await claimDiscoveries(ctx, draws)
+  const discoveries = await discoverySlots(ctx, draws)
 
   const opening = await insertOpening(ctx.tx, {
     leagueId: ctx.m.leagueId,
@@ -180,22 +185,20 @@ async function openNewBooster(
     dustGained,
   })
   await mintCopies(ctx, settlements, opening.id)
-  const pullRows = draws.flatMap((draw, index): InsertPullRow[] => {
+  const pullRows = draws.map((draw, index): InsertPullRow => {
     const settlement = settlements[index]
-    if (settlement === undefined) return []
-    return [
-      {
-        slot: draw.slot,
-        cardId: draw.cardId,
-        rolledTier: draw.rolledTier,
-        tierAtMint: settlement.tierAtMint,
-        variant: settlement.variant,
-        outcome: settlement.outcome,
-        dust: settlement.dust,
-        isFirstCopy: settlement.isFirstCopyOfCard,
-        isDiscovery: discoveries.has(draw.slot),
-      },
-    ]
+    if (settlement === undefined) throw new Error('Booster draw has no copy settlement')
+    return {
+      slot: draw.slot,
+      cardId: draw.cardId,
+      rolledTier: draw.rolledTier,
+      tierAtMint: settlement.tierAtMint,
+      variant: settlement.variant,
+      outcome: settlement.outcome,
+      dust: settlement.dust,
+      isFirstCopy: settlement.isFirstCopyOfCard,
+      isDiscovery: discoveries.has(draw.slot),
+    }
   })
   await insertPulls(ctx.tx, opening.id, pullRows)
 
@@ -223,16 +226,15 @@ export function createBoostersService({ db, signer, clock }: BoostersServiceDeps
     fn: (ctx: OpeningContext, wallet: WalletRow) => Promise<T>,
   ): Promise<T> =>
     runInTransaction(db, async (tx) => {
-      const now = clock()
       const cadence = resolveLeagueSettings(await findLeagueSettings(tx, m.leagueId)).booster
       await ensureWallet(tx, {
         leagueId: m.leagueId,
         userId: m.userId,
         joinGift: cadence.joinGift,
-        now,
+        now: clock(),
       })
       const wallet = await lockWallet(tx, m.leagueId, m.userId)
-      return fn({ tx, m, requestId, now, cadence }, wallet)
+      return fn({ tx, m, requestId, now: clock(), cadence }, wallet)
     })
 
   const presentStored = async (

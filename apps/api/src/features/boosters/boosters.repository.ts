@@ -8,7 +8,7 @@ import {
   type PoolCard,
   type PulledCopyOutcome,
 } from '@storix/shared'
-import { and, asc, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 
 export interface BoosterPoolCard extends PoolCard {
@@ -179,7 +179,7 @@ export async function insertPulls(
   await db.insert(boosterPulls).values(rows.map((row) => ({ ...row, openingId })))
 }
 
-/** Lists the pulls of an opening by slot with their card and media. */
+/** Lists the pulls of an opening by slot with their card and media, skipping pulls whose card was deleted. */
 export async function listOpeningPulls(db: DbExecutor, openingId: string): Promise<PullViewRow[]> {
   const rows = await db
     .select({
@@ -203,23 +203,38 @@ export async function listOpeningPulls(db: DbExecutor, openingId: string): Promi
   return rows.map(parseVariants)
 }
 
-/** Marks the member as the card's discoverer unless already discovered or they are its author. */
-export async function claimDiscovery(
+/** Claims discovery of the undiscovered, non-authored cards for the member, locking rows by id. */
+export async function claimDiscoveries(
   db: DbExecutor,
-  input: { cardId: string; userId: string; now: Date },
-): Promise<boolean> {
+  input: { cardIds: readonly string[]; userId: string; now: Date },
+): Promise<string[]> {
+  if (input.cardIds.length === 0) return []
+  const claimable = and(
+    inArray(cards.id, [...input.cardIds]),
+    isNull(cards.discoveredAt),
+    sql`${cards.authorId} IS DISTINCT FROM ${input.userId}`,
+  )
+  const locked = await db
+    .select({ id: cards.id })
+    .from(cards)
+    .where(claimable)
+    .orderBy(asc(cards.id))
+    .for('update')
+  if (locked.length === 0) return []
   const rows = await db
     .update(cards)
     .set({ discoveredById: input.userId, discoveredAt: input.now })
     .where(
       and(
-        eq(cards.id, input.cardId),
-        isNull(cards.discoveredAt),
-        sql`${cards.authorId} IS DISTINCT FROM ${input.userId}`,
+        claimable,
+        inArray(
+          cards.id,
+          locked.map((row) => row.id),
+        ),
       ),
     )
     .returning({ id: cards.id })
-  return rows.length > 0
+  return rows.map((row) => row.id)
 }
 
 /** Lists the league's latest Rare-or-better pulls since a date, newest first. */
