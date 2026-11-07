@@ -26,10 +26,9 @@ import { registerRarityNightlyJob } from './jobs/rarity-nightly.job'
 import { createRarityQueue } from './jobs/rarity-queue'
 import { registerRarityRecomputeJob } from './jobs/rarity-recompute.job'
 import { registerStorageDeleteJob } from './jobs/storage-delete.job'
-import { registerStorageGcJob } from './jobs/storage-gc.job'
+import { createStorageGcQueue, registerStorageGcJob } from './jobs/storage-gc.job'
 import { createLogger } from './lib/logger'
 
-const STORAGE_GC_STARTUP_KEY = 'startup'
 const STOP_TIMEOUT_MS = 30_000
 
 async function start(): Promise<void> {
@@ -69,7 +68,7 @@ async function start(): Promise<void> {
   await boss.createQueue(RARITY_NIGHTLY_JOB)
   await boss.createQueue(STORAGE_DELETE_JOB, STORAGE_DELETE_SEND_OPTIONS)
   await boss.updateQueue(STORAGE_DELETE_JOB, STORAGE_DELETE_SEND_OPTIONS)
-  await boss.createQueue(STORAGE_GC_JOB)
+  await createStorageGcQueue(boss)
 
   const processing = createMediaProcessingService({
     db: database.db,
@@ -101,7 +100,7 @@ async function start(): Promise<void> {
   const storageGc = createStorageGcService({ db: database.db, storage, clock, logger })
   await registerStorageDeleteJob(boss, storageDelete, logger)
   await registerStorageGcJob(boss, storageGc)
-  await boss.send(STORAGE_GC_JOB, null, { singletonKey: STORAGE_GC_STARTUP_KEY })
+  await boss.send(STORAGE_GC_JOB, null)
   logger.info({ concurrency: env.MEDIA_CONCURRENCY }, 'Worker started')
 }
 

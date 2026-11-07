@@ -108,4 +108,26 @@ describe('evaluateGcSafety', () => {
       }),
     ).toEqual({ safe: true })
   })
+
+  it('aborts at 21 candidates with a high ratio', () => {
+    expect(
+      evaluateGcSafety({
+        liveMediaPrefixCount: 5,
+        imagesScanned: 30,
+        imageCandidates: 21,
+        ...limits,
+      }),
+    ).toEqual({ safe: false, reason: 'too-many-orphans' })
+  })
+
+  it('accepts nothing scanned while media is live', () => {
+    expect(
+      evaluateGcSafety({
+        liveMediaPrefixCount: 3,
+        imagesScanned: 0,
+        imageCandidates: 0,
+        ...limits,
+      }),
+    ).toEqual({ safe: true })
+  })
 })
