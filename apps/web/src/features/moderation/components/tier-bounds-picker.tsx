@@ -2,6 +2,10 @@ import { COMPUTED_TIERS, type ComputedTier } from '@storix/shared'
 import { Chip } from '@/components/ui/chip'
 import { TIER_COLOR_VAR, TIER_LABELS } from '@/features/cards/tier-labels'
 
+function rank(tier: ComputedTier): number {
+  return COMPUTED_TIERS.indexOf(tier)
+}
+
 interface TierBoundsPickerProps {
   min: ComputedTier | null
   max: ComputedTier | null
@@ -14,10 +18,11 @@ interface BoundRowProps {
   label: string
   value: ComputedTier | null
   isDisabled: boolean
+  isTierDisabled: (tier: ComputedTier) => boolean
   onSelect: (tier: ComputedTier | null) => void
 }
 
-function BoundRow({ label, value, isDisabled, onSelect }: BoundRowProps) {
+function BoundRow({ label, value, isDisabled, isTierDisabled, onSelect }: BoundRowProps) {
   return (
     <div role="group" aria-label={label} className="flex flex-col gap-1.5">
       <span className="font-display text-xs font-semibold text-ink-3">{label}</span>
@@ -34,7 +39,7 @@ function BoundRow({ label, value, isDisabled, onSelect }: BoundRowProps) {
             label={TIER_LABELS[tier]}
             dotColor={TIER_COLOR_VAR[tier]}
             isOn={value === tier}
-            isDisabled={isDisabled}
+            isDisabled={isDisabled || isTierDisabled(tier)}
             onToggle={() => onSelect(tier)}
           />
         ))}
@@ -53,12 +58,14 @@ export function TierBoundsPicker({ min, max, isPinned, isBusy, onChange }: TierB
         label="Minimum"
         value={min}
         isDisabled={isDisabled}
+        isTierDisabled={(tier) => max !== null && rank(tier) > rank(max)}
         onSelect={(tier) => onChange({ min: tier, max })}
       />
       <BoundRow
         label="Maximum"
         value={max}
         isDisabled={isDisabled}
+        isTierDisabled={(tier) => min !== null && rank(tier) < rank(min)}
         onSelect={(tier) => onChange({ min, max: tier })}
       />
       {isPinned ? <p className="picker-note">Ignorées : rareté fixée</p> : null}

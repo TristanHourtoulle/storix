@@ -1,11 +1,7 @@
 import { Button } from '@/components/ui/button'
-import { Dialog } from '@/components/ui/dialog'
 import { Notice } from '@/components/ui/notice'
-import { formatCardNumber } from '@/features/cards/card-number'
 
-interface DeleteCardDialogProps {
-  open: boolean
-  number: number
+interface DeleteCardConfirmProps {
   copiesInLeague: number
   isPending: boolean
   errorMessage: string | null
@@ -13,19 +9,15 @@ interface DeleteCardDialogProps {
   onConfirm: () => void
 }
 
-export function DeleteCardDialog({
-  open,
-  number,
+export function DeleteCardConfirm({
   copiesInLeague,
   isPending,
   errorMessage,
   onCancel,
   onConfirm,
-}: DeleteCardDialogProps) {
-  const title = `Supprimer définitivement la carte ${formatCardNumber(number)} ?`
-
+}: DeleteCardConfirmProps) {
   return (
-    <Dialog open={open} title={title} onClose={onCancel} isDismissible={!isPending}>
+    <>
       <p className="m-0 text-sm text-ink-2">
         {`Elle disparaît de toutes les collections. Les ${copiesInLeague} exemplaires sont remboursés en paillettes. C'est irréversible.`}
       </p>
@@ -43,6 +35,6 @@ export function DeleteCardDialog({
           Supprimer
         </Button>
       </div>
-    </Dialog>
+    </>
   )
 }

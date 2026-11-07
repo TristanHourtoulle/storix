@@ -21,7 +21,7 @@ interface AdminCardListProps {
   outOfBoosterIds: ReadonlySet<string>
   filter: AdminFilter
   onFilterChange: (filter: AdminFilter) => void
-  onSelect: (cardId: string) => void
+  onSelect: (card: AdminCard) => void
   onLoadMore: () => void
   hasMore: boolean
   isLoadingMore: boolean
@@ -58,7 +58,7 @@ export function AdminCardList({
               type="button"
               aria-label={`${card.title}, ${TIER_LABELS[card.tier]}`}
               className={`admin-tile${card.status === 'hidden' ? ' is-hidden' : ''}`}
-              onClick={() => onSelect(card.id)}
+              onClick={() => onSelect(card)}
             >
               <CardFace
                 size="sm"

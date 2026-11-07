@@ -31,61 +31,50 @@ export interface CardModeration {
   deleteCard: UseMutationResult<void, Error, { cardId: string }>
 }
 
-function mythicDelta(before: AdminCard | undefined, after: AdminCard | null): number {
-  const wasMythic = before?.pinnedTier === 'mythic'
-  const isMythic = after?.pinnedTier === 'mythic'
-  return Number(isMythic) - Number(wasMythic)
-}
-
 function mapPages(pages: Pages, update: (page: AdminCardPage) => AdminCardPage): Pages {
   return { ...pages, pages: pages.pages.map(update) }
 }
 
 /** Admin card actions; each one patches every cached admin page without a reload. */
-export function useCardModeration(leagueId: string): CardModeration {
+export function useCardModeration(
+  leagueId: string,
+  onCardChanged: (card: AdminCard) => void,
+): CardModeration {
   const queryClient = useQueryClient()
   const rootKey = adminCardsRootKey(leagueId)
 
-  function findCard(cardId: string): AdminCard | undefined {
-    return queryClient
-      .getQueriesData<Pages>({ queryKey: rootKey })
-      .flatMap(([, data]) => data?.pages.flatMap((page) => page.cards) ?? [])
-      .find((card) => card.id === cardId)
-  }
-
-  function refreshOthers(): void {
-    void queryClient.invalidateQueries({ queryKey: rootKey, refetchType: 'none' })
+  function refreshAll(): void {
+    void queryClient
+      .invalidateQueries({ queryKey: rootKey })
+      .catch((error: unknown) => logger.warn('Admin cards refresh failed', { error }))
     void queryClient
       .invalidateQueries({ queryKey: ['leagues', leagueId, 'cards'] })
       .catch((error: unknown) => logger.warn('Collection refresh failed', { error }))
   }
 
   function replaceCard(updated: AdminCard): void {
-    const delta = mythicDelta(findCard(updated.id), updated)
     queryClient.setQueriesData<Pages>({ queryKey: rootKey }, (pages) =>
       pages
         ? mapPages(pages, (page) => ({
             ...page,
-            mythicCount: Math.max(0, page.mythicCount + delta),
             cards: page.cards.map((card) => (card.id === updated.id ? updated : card)),
           }))
         : pages,
     )
-    refreshOthers()
+    onCardChanged(updated)
+    refreshAll()
   }
 
   function dropCard(cardId: string): void {
-    const delta = mythicDelta(findCard(cardId), null)
     queryClient.setQueriesData<Pages>({ queryKey: rootKey }, (pages) =>
       pages
         ? mapPages(pages, (page) => ({
             ...page,
-            mythicCount: Math.max(0, page.mythicCount + delta),
             cards: page.cards.filter((card) => card.id !== cardId),
           }))
         : pages,
     )
-    refreshOthers()
+    refreshAll()
   }
 
   function logFailure(action: string, error: Error): void {

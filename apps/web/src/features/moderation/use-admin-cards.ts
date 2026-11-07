@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import type { AdminCard } from '@storix/shared'
 import type { AdminFilter } from './moderation.types'
@@ -15,10 +14,14 @@ interface AdminCards {
   fetchNextPage: () => void
 }
 
+function currentTimeMs(): number {
+  return Date.now()
+}
+
 /** Paginated admin card list; mythicCount comes from the latest loaded page. */
 export function useAdminCards(leagueId: string, filter: AdminFilter): AdminCards {
   const query = useInfiniteQuery(adminCardsQueryOptions(leagueId, filter))
-  const [mountedAt] = useState(() => Date.now())
+  const now = currentTimeMs()
   const pages = query.data?.pages ?? []
   const cards = pages.flatMap((page) => page.cards)
 
@@ -26,7 +29,7 @@ export function useAdminCards(leagueId: string, filter: AdminFilter): AdminCards
     cards,
     outOfBoosterIds: new Set(
       cards
-        .filter((card) => new Date(card.boosterEligibleAt).getTime() > mountedAt)
+        .filter((card) => new Date(card.boosterEligibleAt).getTime() > now)
         .map((card) => card.id),
     ),
     mythicCount: pages.at(-1)?.mythicCount ?? 0,
