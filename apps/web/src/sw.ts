@@ -4,12 +4,13 @@ import {
   CacheFirst,
   ExpirationPlugin,
   NavigationRoute,
+  NetworkFirst,
   Serwist,
-  StaleWhileRevalidate,
 } from 'serwist'
 import { API_CACHE_NAME, MEDIA_CACHE_NAME } from './features/pwa/cache-names'
 
-const CARD_READ_PATTERN = /^\/api\/leagues\/[^/]+\/cards(\/[^/]+)?$/
+const OFFLINE_READ_PATTERN = /^\/api\/(me|leagues\/[^/]+(\/cards(\/[^/]+)?)?)$/
+const API_NETWORK_TIMEOUT_SECONDS = 3
 
 declare global {
   interface WorkerGlobalScope {
@@ -47,9 +48,10 @@ serwist.registerCapture(
 )
 
 serwist.registerCapture(
-  ({ url, sameOrigin }) => sameOrigin && CARD_READ_PATTERN.test(url.pathname),
-  new StaleWhileRevalidate({
+  ({ url, sameOrigin }) => sameOrigin && OFFLINE_READ_PATTERN.test(url.pathname),
+  new NetworkFirst({
     cacheName: API_CACHE_NAME,
+    networkTimeoutSeconds: API_NETWORK_TIMEOUT_SECONDS,
     plugins: [
       new CacheableResponsePlugin({ statuses: [200] }),
       new ExpirationPlugin({ maxEntries: 100 }),

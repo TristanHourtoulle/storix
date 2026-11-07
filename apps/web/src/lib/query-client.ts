@@ -15,6 +15,7 @@ export function createQueryClient(onUnauthenticated: () => void): QueryClient {
     mutationCache: new MutationCache({ onError: handleError }),
     defaultOptions: {
       queries: {
+        networkMode: 'offlineFirst',
         retry: (failureCount, error) => !isClientError(error) && failureCount < 2,
       },
     },

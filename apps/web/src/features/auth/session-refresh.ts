@@ -6,6 +6,7 @@ const REFRESH_INTERVAL_MS = 10 * 60 * 1000
 let lastRefreshAt: number | null = null
 
 async function refreshSession(): Promise<void> {
+  if (!navigator.onLine) return
   const now = Date.now()
   if (lastRefreshAt !== null && now - lastRefreshAt < REFRESH_INTERVAL_MS) return
   lastRefreshAt = now

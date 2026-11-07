@@ -1,29 +1,32 @@
 import { Suspense } from 'react'
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
+import { useQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
+import type { MemberSummary } from '@storix/shared'
 import { buttonClassName } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { CollectionGrid } from '@/features/cards/components/collection-grid'
 import { MemberFilter } from '@/features/cards/components/member-filter'
 import { cardsInfiniteQueryOptions } from '@/features/cards/cards.queries'
-import { useMembers } from '@/features/members/use-members'
 import { membersQueryOptions } from '@/features/members/members.queries'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/collection')({
   validateSearch: z.object({ author: z.string().optional() }),
   loader: ({ context, params }) =>
-    context.queryClient.ensureQueryData(membersQueryOptions(params.leagueId)),
+    context.queryClient
+      .ensureQueryData(membersQueryOptions(params.leagueId))
+      .catch(() => undefined),
   component: Collection,
 })
 
+const NO_MEMBERS: MemberSummary[] = []
 const LOADING = <p className="m-0 text-sm text-muted">Chargement…</p>
 
 function Collection() {
   const { leagueId } = Route.useParams()
   const { author } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
-  const members = useMembers(leagueId)
+  const members = useQuery(membersQueryOptions(leagueId)).data ?? NO_MEMBERS
   const authorId = author ?? null
   const authorName = members.find((member) => member.userId === authorId)?.displayUsername ?? null
 
@@ -32,11 +35,13 @@ function Collection() {
       <Suspense fallback={<h1>Collection</h1>}>
         <CollectionTitle leagueId={leagueId} authorId={authorId} />
       </Suspense>
-      <MemberFilter
-        members={members}
-        selectedId={authorId}
-        onSelect={(id) => void navigate({ search: { author: id ?? undefined }, replace: true })}
-      />
+      {members.length > 0 && (
+        <MemberFilter
+          members={members}
+          selectedId={authorId}
+          onSelect={(id) => void navigate({ search: { author: id ?? undefined }, replace: true })}
+        />
+      )}
       <Suspense fallback={LOADING}>
         <CollectionBody leagueId={leagueId} authorId={authorId} authorName={authorName} />
       </Suspense>
