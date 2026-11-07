@@ -1,17 +1,14 @@
-import { useCallback } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import type { WalletState } from '@storix/shared'
 import { Button } from '@/components/ui/button'
 import { formatCountdown } from '../format-countdown'
 import { useCountdown } from '../use-countdown'
-import { walletQueryOptions } from '../game.queries'
 import { BoosterPack } from './booster-pack'
 import { StockPips } from './stock-pips'
 
 interface BoosterWidgetProps {
-  leagueId: string
   wallet: WalletState
   onOpen: () => void
+  onElapsed: () => void
   isPoolEmpty: boolean
 }
 
@@ -20,13 +17,9 @@ function titleFor(stock: number): string {
   return stock === 1 ? '1 booster en stock' : `${stock} boosters en stock`
 }
 
-export function BoosterWidget({ leagueId, wallet, onOpen, isPoolEmpty }: BoosterWidgetProps) {
-  const queryClient = useQueryClient()
+export function BoosterWidget({ wallet, onOpen, onElapsed, isPoolEmpty }: BoosterWidgetProps) {
   const { stock, maxStock, nextAt } = wallet.booster
-  const refetchWallet = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: walletQueryOptions(leagueId).queryKey })
-  }, [queryClient, leagueId])
-  const remainingMs = useCountdown(nextAt, refetchWallet)
+  const remainingMs = useCountdown(nextAt, onElapsed)
 
   return (
     <section className="hero" aria-label="Boosters">

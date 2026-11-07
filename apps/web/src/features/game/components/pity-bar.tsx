@@ -15,7 +15,14 @@ export function PityBar({ pity }: PityBarProps) {
         <span>Épique garantie</span>
         <strong>{remaining}</strong>
       </div>
-      <div className="bar" role="presentation">
+      <div
+        className="bar"
+        role="progressbar"
+        aria-label="Progression vers l'Épique garantie"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={percent}
+      >
         <div className="bar-fill" style={{ width: `${percent}%` }} />
       </div>
       {pity.legendaryBonusPercent > 0 ? (
