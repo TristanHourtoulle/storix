@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { cardTitleSchema } from '@storix/shared'
 import { Icon } from '@/components/ui/icon'
 import type { DraftPhase, PhotoDraft } from '../use-photo-drafts'
 
@@ -21,6 +22,14 @@ const PHASE_LABELS: Record<DraftPhase, string> = {
   error: 'erreur',
 }
 
+function overlayLabel(draft: PhotoDraft): string | null {
+  if (draft.phase === 'duplicate') return 'Doublon'
+  if (draft.phase === 'error') return 'Erreur'
+  if (draft.phase !== 'ready') return null
+  if (!cardTitleSchema.safeParse(draft.title).success) return 'Titre manquant'
+  return draft.errorMessage ? 'En attente' : null
+}
+
 function PhaseOverlay({ draft }: { draft: PhotoDraft }) {
   if (BUSY_PHASES.has(draft.phase)) {
     return (
@@ -38,14 +47,7 @@ function PhaseOverlay({ draft }: { draft: PhotoDraft }) {
       </span>
     )
   }
-  const label =
-    draft.phase === 'duplicate'
-      ? 'Doublon'
-      : draft.phase === 'error'
-        ? 'Erreur'
-        : draft.errorMessage
-          ? 'En attente'
-          : null
+  const label = overlayLabel(draft)
   if (!label) return null
   return (
     <span className="absolute inset-x-1 bottom-1 rounded-md bg-bg/80 px-1 py-0.5 text-center font-display text-[11px] font-semibold text-ink">

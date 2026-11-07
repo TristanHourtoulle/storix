@@ -1,5 +1,5 @@
 import { CLIENT_MAX_EDGE_PX, UPLOAD_CONTENT_TYPE, sanitizeCaptureDate } from '@storix/shared'
-import { parse } from 'exifr'
+import { parse } from 'exifr/dist/lite.esm.mjs'
 import { UserFacingError } from '@/features/errors/user-message'
 
 const JPEG_QUALITY = 0.9
@@ -96,10 +96,10 @@ function scaledSize(width: number, height: number): { width: number; height: num
 export async function preparePhoto(file: File): Promise<PreparedPhoto> {
   const capturedAt = await readCaptureDate(file)
   const decoded = await decodeImage(file)
+  const canvas = document.createElement('canvas')
   try {
     if (decoded.width === 0 || decoded.height === 0) throw new UserFacingError(UNSUPPORTED_MESSAGE)
     const size = scaledSize(decoded.width, decoded.height)
-    const canvas = document.createElement('canvas')
     canvas.width = size.width
     canvas.height = size.height
     const context = canvas.getContext('2d')
@@ -108,6 +108,8 @@ export async function preparePhoto(file: File): Promise<PreparedPhoto> {
     const blob = await canvasToJpeg(canvas)
     return { blob, ...size, capturedAt, previewUrl: URL.createObjectURL(blob) }
   } finally {
+    canvas.width = 0
+    canvas.height = 0
     decoded.release()
   }
 }

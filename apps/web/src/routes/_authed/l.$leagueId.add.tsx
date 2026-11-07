@@ -1,11 +1,11 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { Button, buttonClassName } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Icon } from '@/components/ui/icon'
 import { Notice } from '@/components/ui/notice'
 import { TopBar } from '@/components/ui/top-bar'
 import { useMembers } from '@/features/members/use-members'
 import { membersQueryOptions } from '@/features/members/members.queries'
+import { CloseUploadButton } from '@/features/uploads/components/close-upload-button'
 import { DraftEditor } from '@/features/uploads/components/draft-editor'
 import { DraftThumbs } from '@/features/uploads/components/draft-thumbs'
 import { PhotoPicker } from '@/features/uploads/components/photo-picker'
@@ -35,7 +35,7 @@ function overflowMessage({ skipped, accepted }: DraftOverflow): string {
   const ignored = `${plural(skipped, "photo n'a", "photos n'ont")} pas été ajoutée${skipped > 1 ? 's' : ''}`
   return accepted === 0
     ? `Limite du jour atteinte : ${ignored}.`
-    : `Il ne te restait que ${plural(accepted, 'photo', 'photos')} aujourd'hui, ${ignored}.`
+    : `Il ne te restait ${accepted === 1 ? "qu'une photo" : `que ${accepted} photos`} aujourd'hui, ${ignored}.`
 }
 
 function summary(drafts: readonly PhotoDraft[]): string {
@@ -96,16 +96,7 @@ function AddPhotos() {
     <main className="screen">
       <TopBar
         title={`Nouvelles cartes · ${plural(drafts.length, 'photo', 'photos')}`}
-        start={
-          <Link
-            to="/l/$leagueId/collection"
-            params={{ leagueId }}
-            aria-label="Fermer"
-            className="icon-btn"
-          >
-            <Icon name="close" className="size-5" />
-          </Link>
-        }
+        start={<CloseUploadButton leagueId={leagueId} isRunning={creation.isRunning} />}
       />
       <DraftThumbs
         drafts={drafts}

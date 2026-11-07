@@ -6,7 +6,7 @@ interface NoticeProps {
 }
 
 const TONES = {
-  info: 'bg-tier-rare/12 text-[#93C5FD]',
+  info: 'bg-tier-rare/12 text-info',
   error: 'bg-danger/12 text-danger',
 } as const
 

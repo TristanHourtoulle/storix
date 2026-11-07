@@ -69,7 +69,7 @@ export function DraftEditor({
               onChange={(event) => onTitleChange(event.currentTarget.value)}
             />
           </Field>
-          <div className="mt-2 flex items-center gap-2 rounded-input bg-tier-rare/12 px-3 py-2.5 font-display text-[13px] font-semibold text-[#93C5FD]">
+          <div className="mt-2 flex items-center gap-2 rounded-input bg-tier-rare/12 px-3 py-2.5 font-display text-[13px] font-semibold text-info">
             <Icon name="dust" className="size-4 flex-none" />
             Rareté calculée à la création
           </div>

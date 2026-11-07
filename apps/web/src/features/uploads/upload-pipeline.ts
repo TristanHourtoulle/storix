@@ -1,9 +1,11 @@
 import { UPLOAD_CONTENT_TYPE, type UploadState } from '@storix/shared'
 import { errorMessage } from '@/features/errors/error-messages'
 import { userMessage } from '@/features/errors/user-message'
+import { ApiError } from '@/lib/http'
 import { logger } from '@/lib/logger'
 import type { PreparedPhoto } from './prepare-photo'
 import {
+  UPLOAD_FAILED_MESSAGE,
   completeUpload,
   createUpload,
   fetchUploadState,
@@ -15,7 +17,8 @@ import type { DraftPhase, PhotoDraft, PhaseExtra } from './use-photo-drafts'
 const POLL_INTERVAL_MS = 1500
 const POLL_TIMEOUT_MS = 120_000
 const PRESIGN_SAFETY_MS = 60_000
-const OFFLINE_RETRY_MS = 10_000
+const MAX_TRANSIENT_RETRIES = 2
+const RETRY_BASE_MS = 1000
 
 export const OFFLINE_MESSAGE = 'Hors ligne, nouvel essai dès le retour du réseau.'
 const INVALID_IMAGE_MESSAGE = "Cette photo n'a pas pu être lue."
@@ -49,8 +52,12 @@ function ensureActive(signal: AbortSignal): void {
   if (signal.aborted) throw new CancelledError()
 }
 
-function isNetworkError(error: unknown): boolean {
-  return error instanceof TypeError || !navigator.onLine
+function isOffline(): boolean {
+  return navigator.onLine === false
+}
+
+function isTransient(error: unknown): boolean {
+  return error instanceof TypeError || (error instanceof ApiError && error.status >= 500)
 }
 
 function isTerminal(state: UploadState): boolean {
@@ -59,36 +66,39 @@ function isTerminal(state: UploadState): boolean {
 
 function delay(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
-    const timer = window.setTimeout(resolve, ms)
-    signal.addEventListener(
-      'abort',
-      () => {
-        window.clearTimeout(timer)
-        resolve()
-      },
-      { once: true },
-    )
+    const finish = (): void => {
+      window.clearTimeout(timer)
+      signal.removeEventListener('abort', finish)
+      resolve()
+    }
+    const timer = window.setTimeout(finish, ms)
+    signal.addEventListener('abort', finish, { once: true })
   })
 }
 
-/** Resolves when the browser reports being back online, after a fallback delay, or on abort. */
+/** Resolves once the browser is back online, or on abort. */
 export function waitForNetwork(signal: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
-    const done = (): void => {
-      window.removeEventListener('online', done)
+    const finish = (): void => {
+      window.removeEventListener('online', finish)
+      signal.removeEventListener('abort', finish)
       resolve()
     }
-    window.addEventListener('online', done)
-    signal.addEventListener('abort', done, { once: true })
-    if (navigator.onLine) void delay(OFFLINE_RETRY_MS, signal).then(done)
+    if (!isOffline() || signal.aborted) {
+      resolve()
+      return
+    }
+    window.addEventListener('online', finish)
+    signal.addEventListener('abort', finish, { once: true })
   })
 }
 
 async function reserve(ctx: PipelineContext, draftId: string, blob: Blob): Promise<UploadProgress> {
-  const response = await createUpload(ctx.leagueId, {
-    contentType: UPLOAD_CONTENT_TYPE,
-    size: blob.size,
-  })
+  const response = await createUpload(
+    ctx.leagueId,
+    { contentType: UPLOAD_CONTENT_TYPE, size: blob.size },
+    ctx.signal,
+  )
   const progress: UploadProgress = {
     uploadId: response.uploadId,
     target: { url: response.url, fields: response.fields },
@@ -99,26 +109,43 @@ async function reserve(ctx: PipelineContext, draftId: string, blob: Blob): Promi
   return progress
 }
 
+async function resumeState(
+  ctx: PipelineContext,
+  draftId: string,
+  saved: UploadProgress,
+): Promise<UploadState | null> {
+  const state = await fetchUploadState(ctx.leagueId, saved.uploadId, ctx.signal)
+  if (state.status === 'pending') return null
+  ctx.saveProgress(draftId, { ...saved, isCompleted: true })
+  return state
+}
+
 async function send(
   ctx: PipelineContext,
   draft: PhotoDraft,
   photo: PreparedPhoto,
 ): Promise<{ uploadId: string; state: UploadState }> {
   const saved = ctx.readProgress(draft.id)
-  if (saved?.isCompleted) {
-    return { uploadId: saved.uploadId, state: await fetchUploadState(ctx.leagueId, saved.uploadId) }
+  if (saved) {
+    const resumed = await resumeState(ctx, draft.id, saved)
+    if (resumed) return { uploadId: saved.uploadId, state: resumed }
   }
   ctx.setPhase(draft.id, 'sending')
   const isReusable = saved !== undefined && saved.expiresAt - PRESIGN_SAFETY_MS > Date.now()
   const progress = isReusable ? saved : await reserve(ctx, draft.id, photo.blob)
   ensureActive(ctx.signal)
-  await postToBucket(progress.target, photo.blob)
+  await postToBucket(progress.target, photo.blob, ctx.signal)
   ensureActive(ctx.signal)
-  const state = await completeUpload(ctx.leagueId, progress.uploadId, {
-    title: draft.title.trim(),
-    taggedUserIds: [...draft.taggedUserIds],
-    capturedAt: photo.capturedAt,
-  })
+  const state = await completeUpload(
+    ctx.leagueId,
+    progress.uploadId,
+    {
+      title: draft.title.trim(),
+      taggedUserIds: [...draft.taggedUserIds],
+      capturedAt: photo.capturedAt,
+    },
+    ctx.signal,
+  )
   ctx.saveProgress(draft.id, { ...progress, isCompleted: true })
   return { uploadId: progress.uploadId, state }
 }
@@ -134,7 +161,12 @@ async function waitForCard(
     if (Date.now() > deadline) return null
     await delay(POLL_INTERVAL_MS, ctx.signal)
     ensureActive(ctx.signal)
-    state = await fetchUploadState(ctx.leagueId, uploadId)
+    try {
+      state = await fetchUploadState(ctx.leagueId, uploadId, ctx.signal)
+    } catch (error) {
+      if (ctx.signal.aborted || isOffline() || !isTransient(error)) throw error
+      logger.debug('Transient upload state failure', { uploadId })
+    }
   }
   return state
 }
@@ -153,30 +185,45 @@ function applyFinalState(ctx: PipelineContext, draftId: string, state: UploadSta
   }
 }
 
+async function attempt(
+  ctx: PipelineContext,
+  draft: PhotoDraft,
+  photo: PreparedPhoto,
+): Promise<void> {
+  const { uploadId, state } = await send(ctx, draft, photo)
+  ensureActive(ctx.signal)
+  if (!isTerminal(state)) ctx.setPhase(draft.id, 'processing')
+  const final = await waitForCard(ctx, uploadId, state)
+  ensureActive(ctx.signal)
+  applyFinalState(ctx, draft.id, final)
+}
+
 async function processDraft(ctx: PipelineContext, draft: PhotoDraft): Promise<DraftOutcome> {
   const photo = draft.photo
   if (!photo) return 'settled'
-  try {
-    const { uploadId, state } = await send(ctx, draft, photo)
-    ensureActive(ctx.signal)
-    if (!isTerminal(state)) ctx.setPhase(draft.id, 'processing')
-    const final = await waitForCard(ctx, uploadId, state)
-    ensureActive(ctx.signal)
-    applyFinalState(ctx, draft.id, final)
-    return 'settled'
-  } catch (error) {
-    if (error instanceof CancelledError || ctx.signal.aborted) return 'settled'
-    if (isNetworkError(error)) {
-      ctx.setPhase(draft.id, 'ready', { errorMessage: OFFLINE_MESSAGE })
-      return 'offline'
+  for (let retry = 0; ; retry += 1) {
+    try {
+      await attempt(ctx, draft, photo)
+      return 'settled'
+    } catch (error) {
+      if (error instanceof CancelledError || ctx.signal.aborted) return 'settled'
+      if (isOffline()) {
+        ctx.setPhase(draft.id, 'ready', { errorMessage: OFFLINE_MESSAGE })
+        return 'offline'
+      }
+      if (error instanceof TypeError && retry < MAX_TRANSIENT_RETRIES) {
+        await delay(RETRY_BASE_MS * 2 ** retry, ctx.signal)
+        continue
+      }
+      logger.warn('Card creation failed', { draftId: draft.id, error })
+      const message = error instanceof TypeError ? UPLOAD_FAILED_MESSAGE : userMessage(error)
+      ctx.setPhase(draft.id, 'error', { errorMessage: message })
+      return 'settled'
     }
-    logger.warn('Card creation failed', { draftId: draft.id, error })
-    ctx.setPhase(draft.id, 'error', { errorMessage: userMessage(error) })
-    return 'settled'
   }
 }
 
-/** Processes drafts with bounded parallelism and returns the ones that hit a network failure. */
+/** Processes drafts with bounded parallelism and returns the ones stopped by a lost connection. */
 export async function processDrafts(
   ctx: PipelineContext,
   drafts: readonly PhotoDraft[],
