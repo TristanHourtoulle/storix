@@ -5,6 +5,7 @@ import { Button, buttonClassName } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
 import { ChangePasswordForm } from '@/features/auth/components/change-password-form'
 import { PasskeyList } from '@/features/auth/components/passkey-list'
+import { DisplayNameSection } from '@/features/account/components/display-name-section'
 import { DeleteAccountSection } from '@/features/account/components/delete-account-section'
 import { meQueryOptions } from '@/features/auth/session.queries'
 import { useLogout } from '@/features/auth/use-logout'
@@ -38,6 +39,7 @@ function Profile() {
       >
         Photos où tu apparais
       </Link>
+      <DisplayNameSection displayName={me.user.displayUsername} username={me.user.username} />
       <PasskeyList displayUsername={me.user.displayUsername} />
       <ChangePasswordForm />
       <LeagueList leagues={leagues} currentLeagueId={leagueId} />
