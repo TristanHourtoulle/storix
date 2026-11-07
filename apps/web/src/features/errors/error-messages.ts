@@ -12,6 +12,8 @@ const MESSAGES: Record<ErrorCode, string> = {
   ALREADY_MEMBER: 'Tu fais déjà partie de cette ligue.',
   RESET_NOT_ALLOWED: 'Tu ne peux pas réinitialiser le mot de passe de ce membre.',
   INVALID_RESET_CODE: 'Code invalide ou expiré.',
+  UPLOAD_QUOTA_EXCEEDED: "Tu as atteint ta limite de 10 photos aujourd'hui.",
+  UPLOAD_NOT_READY: "La photo n'est pas encore arrivée, réessaie.",
   INTERNAL_ERROR: 'Une erreur est survenue.',
 }
 
