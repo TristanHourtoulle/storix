@@ -20,7 +20,6 @@ const VARIABLES = ['--rx', '--ry', '--mx', '--my', '--glare'] as const
 
 interface HoloTilt {
   ref: RefCallback<HTMLElement>
-  isDragTilt: boolean
   needsMotionPermission: boolean
   isMotionDenied: boolean
   requestMotionPermission: () => void
@@ -107,6 +106,10 @@ export function useHoloTilt(): HoloTilt {
       rect = null
     }
 
+    function preventNativeDrag(event: DragEvent) {
+      event.preventDefault()
+    }
+
     function handlePointerDown(event: PointerEvent) {
       rect = null
       if (event.pointerType === 'touch') isTouchDragging = true
@@ -171,6 +174,7 @@ export function useHoloTilt(): HoloTilt {
     target.addEventListener('pointerup', handlePointerEnd, passive)
     target.addEventListener('pointercancel', reset, passive)
     target.addEventListener('pointerleave', reset, passive)
+    target.addEventListener('dragstart', preventNativeDrag)
     window.addEventListener('resize', invalidateRect, passive)
     window.addEventListener('scroll', invalidateRect, passive)
     document.addEventListener('visibilitychange', handleVisibility)
@@ -183,6 +187,7 @@ export function useHoloTilt(): HoloTilt {
       target.removeEventListener('pointerup', handlePointerEnd)
       target.removeEventListener('pointercancel', reset)
       target.removeEventListener('pointerleave', reset)
+      target.removeEventListener('dragstart', preventNativeDrag)
       window.removeEventListener('resize', invalidateRect)
       window.removeEventListener('scroll', invalidateRect)
       document.removeEventListener('visibilitychange', handleVisibility)
@@ -193,7 +198,6 @@ export function useHoloTilt(): HoloTilt {
 
   return {
     ref,
-    isDragTilt: !isReceiving || isOrientationBlocked,
     needsMotionPermission,
     isMotionDenied,
     requestMotionPermission,

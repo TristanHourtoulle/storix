@@ -20,8 +20,7 @@ interface CardDetailProps {
 }
 
 export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
-  const { ref, isDragTilt, needsMotionPermission, isMotionDenied, requestMotionPermission } =
-    useHoloTilt()
+  const { ref, needsMotionPermission, isMotionDenied, requestMotionPermission } = useHoloTilt()
   const reactions = useReactions(leagueId, card.id)
   const { recycle, upgradeToFoil } = useCardMutations(leagueId, card.id)
   const isGold = card.displayTier === 'legendary' || card.displayTier === 'mythic'
@@ -34,7 +33,7 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className={isDragTilt ? 'tilt is-drag' : 'tilt'} ref={ref}>
+      <div className="tilt" ref={ref}>
         <CardFace
           size="xl"
           title={card.title}
