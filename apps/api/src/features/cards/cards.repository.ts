@@ -18,7 +18,6 @@ export interface CollectionRow {
   variants: (typeof media.$inferSelect)['variants']
   normalTier: CardTier | null
   foilTier: CardTier | null
-  displayTier: CardTier
 }
 
 export interface CardTaggedRow {
@@ -85,7 +84,6 @@ function collectionColumns(owned: ReturnType<typeof viewerCopies>) {
     variants: media.variants,
     normalTier: owned.normalTier,
     foilTier: owned.foilTier,
-    displayTier: displayTierOf(owned),
   }
 }
 

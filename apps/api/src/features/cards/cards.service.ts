@@ -1,13 +1,24 @@
 import type { Database } from '@storix/db'
-import type { CollectionPage, ListCardsQuery, ViewerCardDetail } from '@storix/shared'
+import type {
+  CollectionPage,
+  ListCardsQuery,
+  ReactionCounts,
+  ViewerCardDetail,
+} from '@storix/shared'
 import { notFound } from '../../lib/errors'
 import type { MediaSigner } from '../../lib/media-signer'
 import { countCardCopies } from '../copies/copies.repository'
 import type { Membership } from '../leagues/leagues.service'
 import { countReactions } from '../reactions/reactions.repository'
 import { findWallet } from '../wallets/wallets.repository'
-import { toCardDetail, toCollectionCard } from './card-views'
+import { isOwned, toCardDetail, toCollectionCard } from './card-views'
 import { countCollection, findCardForViewer, listCollection } from './cards.repository'
+
+const NO_REACTIONS: ReactionCounts = {
+  fire: { count: 0, isMine: false },
+  heart: { count: 0, isMine: false },
+  star: { count: 0, isMine: false },
+}
 
 export interface CardsService {
   listCards(m: Membership, query: ListCardsQuery): Promise<CollectionPage>
@@ -51,10 +62,11 @@ export function createCardsService({ db, signer, clock }: CardsServiceDeps): Car
         viewerId: m.userId,
       })
       if (row === null) throw notFound('Card not found')
+      const owned = isOwned(row)
       const [wallet, reactions, copiesInLeague] = await Promise.all([
         findWallet(db, m.leagueId, m.userId),
-        countReactions(db, { cardId, viewerId: m.userId }),
-        countCardCopies(db, cardId),
+        owned ? countReactions(db, { cardId, viewerId: m.userId }) : NO_REACTIONS,
+        owned ? countCardCopies(db, cardId) : 0,
       ])
       return toCardDetail(row, {
         viewerId: m.userId,

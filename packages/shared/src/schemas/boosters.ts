@@ -41,6 +41,7 @@ export const recentRevealSchema = z.object({
   pulledBy: cardPersonSchema,
   pulledAt: isoDateSchema,
   variant: copyVariantSchema,
+  tierAtMint: cardTierSchema,
   card: collectionCardSchema,
 })
 

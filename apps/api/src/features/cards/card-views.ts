@@ -6,7 +6,9 @@ import {
   dustValue,
   foilUpgradeDecision,
   isBoosterEligible,
+  maxTier,
   type CardPerson,
+  type CardTier,
   type CollectionCard,
   type CopyVariant,
   type LockedCardSummary,
@@ -31,8 +33,27 @@ export interface CardDetailContext {
   copiesInLeague: number
 }
 
-function isOwned(row: CollectionRow): boolean {
+export type CollectionCardBase = Omit<CollectionRow, 'normalTier' | 'foilTier'>
+
+/** Returns true when the viewer owns any copy of the card. */
+export function isOwned(row: CollectionRow): boolean {
   return row.normalTier !== null || row.foilTier !== null
+}
+
+/** Returns the tier shown to the viewer: the best owned copy's tier at mint, else the current tier. */
+export function displayTier(row: CollectionRow): CardTier {
+  if (row.normalTier !== null && row.foilTier !== null) return maxTier(row.normalTier, row.foilTier)
+  return row.normalTier ?? row.foilTier ?? row.tier
+}
+
+/** Attaches the viewer's copies of a card, keyed by (card, owner, variant), to its base row. */
+export function withViewerCopies(
+  card: CollectionCardBase,
+  copies: readonly { cardId: string; variant: CopyVariant; tierAtMint: CardTier }[],
+): CollectionRow {
+  const tierOf = (variant: CopyVariant) =>
+    copies.find((copy) => copy.cardId === card.id && copy.variant === variant)?.tierAtMint ?? null
+  return { ...card, normalTier: tierOf('normal'), foilTier: tierOf('foil') }
 }
 
 function toOwnedSummary(
@@ -46,7 +67,7 @@ function toOwnedSummary(
     number: row.number,
     title: row.title,
     tier: row.tier,
-    displayTier: row.displayTier,
+    displayTier: displayTier(row),
     isProvisional: row.isProvisional,
     author: { userId: row.authorId, displayUsername: row.authorName },
     thumbhash: row.thumbhash,

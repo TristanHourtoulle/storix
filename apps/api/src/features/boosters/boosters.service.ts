@@ -8,7 +8,6 @@ import {
   createSeededRandom,
   drawBooster,
   DROP_TABLE_VERSION,
-  maxTier,
   nextPityState,
   resolveLeagueSettings,
   settleBoosterCopies,
@@ -24,14 +23,8 @@ import { generateBoosterSeed, sha256Hex } from '../../lib/crypto'
 import { AppError, isUniqueViolation } from '../../lib/errors'
 import type { MediaSigner } from '../../lib/media-signer'
 import { runInTransaction } from '../../lib/transaction'
-import { toCollectionCard } from '../cards/card-views'
-import type { CollectionRow } from '../cards/cards.repository'
-import {
-  insertCopy,
-  listOwnedCopies,
-  updateCopyTier,
-  type OwnedCopyRow,
-} from '../copies/copies.repository'
+import { toCollectionCard, withViewerCopies, type CollectionCardBase } from '../cards/card-views'
+import { insertCopy, listOwnedCopies, updateCopyTier } from '../copies/copies.repository'
 import { findLeagueSettings } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
 import { toWalletState } from '../wallets/wallet-state'
@@ -234,16 +227,7 @@ async function openNewBooster(
   return present(ctx, { ...opening, dustGained }, walletState, signer)
 }
 
-function toRevealCardRow(row: RevealRow, copies: readonly OwnedCopyRow[]): CollectionRow {
-  const tierOf = (variant: OwnedCopyRow['variant']) =>
-    copies.find((copy) => copy.cardId === row.cardId && copy.variant === variant)?.tierAtMint ??
-    null
-  const normalTier = tierOf('normal')
-  const foilTier = tierOf('foil')
-  const ownedTier =
-    normalTier !== null && foilTier !== null
-      ? maxTier(normalTier, foilTier)
-      : (normalTier ?? foilTier)
+function toRevealCard(row: RevealRow): CollectionCardBase {
   return {
     id: row.cardId,
     number: row.number,
@@ -257,9 +241,6 @@ function toRevealCardRow(row: RevealRow, copies: readonly OwnedCopyRow[]): Colle
     width: row.width,
     height: row.height,
     variants: row.variants,
-    normalTier,
-    foilTier,
-    displayTier: ownedTier ?? row.tier,
   }
 }
 
@@ -311,7 +292,8 @@ export function createBoostersService({ db, signer, clock }: BoostersServiceDeps
         pulledBy: { userId: row.pulledById, displayUsername: row.pulledByName },
         pulledAt: row.pulledAt.toISOString(),
         variant: row.variant,
-        card: toCollectionCard(toRevealCardRow(row, copies), signer),
+        tierAtMint: row.tierAtMint,
+        card: toCollectionCard(withViewerCopies(toRevealCard(row), copies), signer),
       }))
     },
 
