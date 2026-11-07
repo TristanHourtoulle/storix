@@ -43,7 +43,7 @@ export function LeagueList({ leagues, currentLeagueId }: LeagueListProps) {
                   to="/l/$leagueId/admin"
                   params={{ leagueId: league.id }}
                   aria-label={`Gérer ${league.name}`}
-                  className="flex-none rounded-control px-3 py-2 text-xs font-semibold text-ink no-underline shadow-hairline-strong"
+                  className="flex min-h-10 flex-none items-center rounded-control px-3 text-xs font-semibold text-ink no-underline shadow-hairline-strong"
                 >
                   Gérer
                 </Link>
