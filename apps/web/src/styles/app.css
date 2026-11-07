@@ -3,6 +3,7 @@
 @import './collection.css';
 @import './card-detail.css';
 @import './moderation.css';
+@import './rotate-overlay.css';
 
 @theme {
   --spacing-nav: calc(68px + env(safe-area-inset-bottom));

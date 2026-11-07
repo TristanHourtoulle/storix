@@ -1,13 +1,14 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { Link, Outlet, createRootRouteWithContext } from '@tanstack/react-router'
 import { EmptyState } from '@/components/ui/empty-state'
+import { RotateOverlay } from '@/features/pwa/components/rotate-overlay'
 
 interface RouterContext {
   queryClient: QueryClient
 }
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  component: Outlet,
+  component: RootLayout,
   notFoundComponent: () => (
     <main className="screen">
       <EmptyState
@@ -23,3 +24,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     </main>
   ),
 })
+
+function RootLayout() {
+  return (
+    <>
+      <Outlet />
+      <RotateOverlay />
+    </>
+  )
+}
