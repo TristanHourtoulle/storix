@@ -34,3 +34,13 @@ export function forbidden(message = 'Forbidden'): AppError {
 export function unauthenticated(message = 'Authentication required'): AppError {
   return new AppError('UNAUTHENTICATED', 401, message)
 }
+
+/** Tells whether the error, or any error in its cause chain, is a Postgres unique violation. */
+export function isUniqueViolation(error: unknown): boolean {
+  let current: unknown = error
+  for (let depth = 0; depth < 5 && typeof current === 'object' && current !== null; depth += 1) {
+    if ('code' in current && current.code === '23505') return true
+    current = 'cause' in current ? current.cause : undefined
+  }
+  return false
+}

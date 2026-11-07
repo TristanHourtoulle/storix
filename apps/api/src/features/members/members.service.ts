@@ -79,7 +79,9 @@ export function createMembersService(db: Database): MembersService {
       const isSelf = targetUserId === m.userId
       if (!canChangeRole({ actorRole: m.role, targetRole, nextRole, isSelf })) throw forbidden()
       await runInTransaction(db, async (tx) => {
-        await updateMemberRole(tx, m.leagueId, targetUserId, nextRole)
+        if ((await updateMemberRole(tx, m.leagueId, targetUserId, nextRole)) === 0) {
+          throw notFound('Member not found')
+        }
         await insertAuditEntry(tx, {
           leagueId: m.leagueId,
           actorId: m.userId,
@@ -95,7 +97,9 @@ export function createMembersService(db: Database): MembersService {
       const isSelf = targetUserId === m.userId
       if (!canRemoveMember({ actorRole: m.role, targetRole, isSelf })) throw forbidden()
       await runInTransaction(db, async (tx) => {
-        await deleteMember(tx, m.leagueId, targetUserId)
+        if ((await deleteMember(tx, m.leagueId, targetUserId)) === 0) {
+          throw notFound('Member not found')
+        }
         await insertAuditEntry(tx, {
           leagueId: m.leagueId,
           actorId: m.userId,

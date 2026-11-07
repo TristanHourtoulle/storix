@@ -15,12 +15,17 @@ export interface MemberRow {
   homeLeagueId: string | null
 }
 
-/** Inserts a league membership. */
+/** Inserts a league membership; false when the user is already a member. */
 export async function insertMember(
   db: DbExecutor,
   input: { leagueId: string; userId: string; role: LeagueRole },
-): Promise<void> {
-  await db.insert(leagueMembers).values(input)
+): Promise<boolean> {
+  const rows = await db
+    .insert(leagueMembers)
+    .values(input)
+    .onConflictDoNothing()
+    .returning({ userId: leagueMembers.userId })
+  return rows.length > 0
 }
 
 /** Finds a user's membership in a league. */
@@ -54,26 +59,30 @@ export function listMembers(db: DbExecutor, leagueId: string): Promise<MemberRow
     .orderBy(asc(leagueMembers.role), asc(sql`lower(${displayName})`), asc(leagueMembers.userId))
 }
 
-/** Sets a member's role in a league. */
+/** Sets a member's role in a league and returns the number of affected rows. */
 export async function updateMemberRole(
   db: DbExecutor,
   leagueId: string,
   userId: string,
   role: LeagueRole,
-): Promise<void> {
-  await db
+): Promise<number> {
+  const rows = await db
     .update(leagueMembers)
     .set({ role })
     .where(and(eq(leagueMembers.leagueId, leagueId), eq(leagueMembers.userId, userId)))
+    .returning({ userId: leagueMembers.userId })
+  return rows.length
 }
 
-/** Deletes a member from a league. */
+/** Deletes a member from a league and returns the number of affected rows. */
 export async function deleteMember(
   db: DbExecutor,
   leagueId: string,
   userId: string,
-): Promise<void> {
-  await db
+): Promise<number> {
+  const rows = await db
     .delete(leagueMembers)
     .where(and(eq(leagueMembers.leagueId, leagueId), eq(leagueMembers.userId, userId)))
+    .returning({ userId: leagueMembers.userId })
+  return rows.length
 }

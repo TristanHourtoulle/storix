@@ -12,6 +12,7 @@ import { createMeService, type MeService } from './features/me/me.service'
 import { createMembersService, type MembersService } from './features/members/members.service'
 import {
   createResetCodesService,
+  type ErrorLogger,
   type ResetCodesService,
 } from './features/reset-codes/reset-codes.service'
 
@@ -37,7 +38,7 @@ export function createAppDeps(env: Env, db: Database): AppDeps {
 }
 
 /** Builds every feature service from the app dependencies. */
-export function buildServices(deps: AppDeps): Services {
+export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
   return {
     health: createHealthService(deps.db),
     invitations: createInvitationsService({
@@ -49,6 +50,11 @@ export function buildServices(deps: AppDeps): Services {
     leagues: createLeaguesService(deps.db),
     me: createMeService(deps.db),
     members: createMembersService(deps.db),
-    resetCodes: createResetCodesService({ db: deps.db, auth: deps.auth, clock: deps.clock }),
+    resetCodes: createResetCodesService({
+      db: deps.db,
+      auth: deps.auth,
+      clock: deps.clock,
+      logger,
+    }),
   }
 }

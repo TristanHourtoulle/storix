@@ -1,16 +1,13 @@
 import { parseArgs } from 'node:util'
 import { createDb } from '@storix/db'
 import { leagueNameSchema, usernameSchema } from '@storix/shared'
-import { pino } from 'pino'
+import { pino, type Logger } from 'pino'
 import { createAuth } from '../auth/auth'
 import { createAuthGateway } from '../auth/auth.gateway'
-import { loadEnv } from '../config/env'
+import { loadEnv, type Env } from '../config/env'
 import { createLeaguesService } from '../features/leagues/leagues.service'
 import { findUserByUsername } from '../features/users/users.repository'
 import { buildLoggerOptions } from '../lib/logger'
-
-const env = loadEnv(process.env)
-const logger = pino(buildLoggerOptions(env))
 
 function readArgs(argv: string[]): { username: string; league: string } {
   const { values } = parseArgs({
@@ -33,7 +30,7 @@ function readArgs(argv: string[]): { username: string; league: string } {
   return { username: username.data, league: league.data }
 }
 
-async function main(): Promise<void> {
+async function main(env: Env, logger: Logger): Promise<void> {
   const { username, league } = readArgs(process.argv.slice(2))
   const password = process.env['BOOTSTRAP_PASSWORD']
   if (password === undefined || password.length === 0) {
@@ -53,7 +50,11 @@ async function main(): Promise<void> {
       })
       logger.info({ userId, leagueId: created.id }, 'Bootstrap complete')
     } catch (error) {
-      await gateway.deleteUser(userId)
+      try {
+        await gateway.deleteUser(userId)
+      } catch (cleanupError) {
+        logger.error({ err: cleanupError, userId }, 'Bootstrap cleanup failed')
+      }
       throw error
     }
   } finally {
@@ -61,9 +62,12 @@ async function main(): Promise<void> {
   }
 }
 
+const fallbackLogger = pino({ level: 'fatal' })
+
 try {
-  await main()
+  const env = loadEnv(process.env)
+  await main(env, pino(buildLoggerOptions(env)))
 } catch (error) {
-  logger.fatal({ err: error }, 'Bootstrap failed')
+  fallbackLogger.fatal({ err: error }, 'Bootstrap failed')
   process.exitCode = 1
 }

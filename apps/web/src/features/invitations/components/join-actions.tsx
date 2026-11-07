@@ -6,14 +6,18 @@ import { useAcceptInvitation } from '../use-accept-invitation'
 interface JoinActionsProps {
   token: string
   isMember: boolean
+  leagueId: string | null
 }
 
-export function JoinActions({ token, isMember }: JoinActionsProps) {
+export function JoinActions({ token, isMember, leagueId }: JoinActionsProps) {
   const { accept, isPending, errorMessage } = useAcceptInvitation(token)
 
   if (isMember) {
     return (
-      <Link to="/" className={buttonClassName({ variant: 'primary', block: true })}>
+      <Link
+        {...(leagueId === null ? { to: '/' } : { to: '/l/$leagueId', params: { leagueId } })}
+        className={buttonClassName({ variant: 'primary', block: true })}
+      >
         Ouvrir la ligue
       </Link>
     )

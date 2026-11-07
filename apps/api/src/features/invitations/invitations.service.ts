@@ -61,6 +61,10 @@ function toSummary(row: InvitationRow, now: Date): InvitationSummary {
   }
 }
 
+function alreadyMember(): AppError {
+  return new AppError('ALREADY_MEMBER', 409, 'Already a member of this league')
+}
+
 function assertCanManage(m: Membership): void {
   if (!canManageInvitations(m.role)) throw forbidden()
 }
@@ -140,7 +144,9 @@ export function createInvitationsService(deps: InvitationsServiceDeps): Invitati
       const status = evaluateInvitation(invitation, clock())
       const isMember =
         viewerId !== null && (await findMembership(db, invitation.leagueId, viewerId)) !== null
-      if (status !== 'valid') return { status, league: null, invitedBy: null, isMember }
+      if (status !== 'valid') {
+        return { status, league: null, invitedBy: null, isMember, leagueId: null }
+      }
       return {
         status,
         league: {
@@ -149,6 +155,7 @@ export function createInvitationsService(deps: InvitationsServiceDeps): Invitati
         },
         invitedBy: invitation.createdByName,
         isMember,
+        leagueId: isMember ? invitation.leagueId : null,
       }
     },
 
@@ -161,7 +168,11 @@ export function createInvitationsService(deps: InvitationsServiceDeps): Invitati
       try {
         await runInTransaction(db, async (tx) => {
           await consumeOrThrow(tx, invitation.id, clock())
-          await insertMember(tx, { leagueId: invitation.leagueId, userId, role: 'member' })
+          if (
+            !(await insertMember(tx, { leagueId: invitation.leagueId, userId, role: 'member' }))
+          ) {
+            throw alreadyMember()
+          }
           await setHomeLeagueIfUnset(tx, userId, invitation.leagueId)
           await insertAuditEntry(tx, {
             leagueId: invitation.leagueId,
@@ -187,11 +198,13 @@ export function createInvitationsService(deps: InvitationsServiceDeps): Invitati
     async acceptInvitation(token, userId) {
       const invitation = await findRedeemable(token, clock())
       if ((await findMembership(db, invitation.leagueId, userId)) !== null) {
-        throw new AppError('ALREADY_MEMBER', 409, 'Already a member of this league')
+        throw alreadyMember()
       }
       await runInTransaction(db, async (tx) => {
         await consumeOrThrow(tx, invitation.id, clock())
-        await insertMember(tx, { leagueId: invitation.leagueId, userId, role: 'member' })
+        if (!(await insertMember(tx, { leagueId: invitation.leagueId, userId, role: 'member' }))) {
+          throw alreadyMember()
+        }
         await insertAuditEntry(tx, {
           leagueId: invitation.leagueId,
           actorId: userId,

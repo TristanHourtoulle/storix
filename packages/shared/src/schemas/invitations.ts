@@ -38,6 +38,7 @@ export const invitationPreviewSchema = z.object({
   league: z.object({ name: z.string(), memberCount: z.int().min(0) }).nullable(),
   invitedBy: z.string().nullable(),
   isMember: z.boolean(),
+  leagueId: idSchema.nullable(),
 })
 
 export const signupBodySchema = z.object({

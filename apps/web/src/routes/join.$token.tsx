@@ -62,7 +62,7 @@ function JoinScreen() {
     )
   }
 
-  const { status, league, invitedBy, isMember } = preview.data
+  const { status, league, invitedBy, isMember, leagueId } = preview.data
   const isSignedIn = Boolean(me.data)
 
   return (
@@ -74,7 +74,7 @@ function JoinScreen() {
         <>
           <JoinPreview league={league} invitedBy={invitedBy} />
           {isSignedIn ? (
-            <JoinActions token={token} isMember={isMember} />
+            <JoinActions token={token} isMember={isMember} leagueId={leagueId} />
           ) : (
             <SignupForm token={token} />
           )}

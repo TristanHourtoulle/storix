@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { IncomingHttpHeaders } from 'node:http'
 import { isAPIError } from 'better-auth/api'
 import { fromNodeHeaders } from 'better-auth/node'
-import { AppError } from '../lib/errors'
+import { AppError, isUniqueViolation } from '../lib/errors'
 import type { Auth } from './auth'
 
 export interface AuthSession {
@@ -24,7 +24,8 @@ export interface AuthGateway {
 const SYNTHETIC_EMAIL_DOMAIN = 'users.storix.invalid'
 
 function isUsernameTaken(error: unknown): boolean {
-  return isAPIError(error) && error.body?.code === 'USERNAME_IS_ALREADY_TAKEN'
+  if (isAPIError(error) && error.body?.code === 'USERNAME_IS_ALREADY_TAKEN') return true
+  return isUniqueViolation(error)
 }
 
 /** Wraps the Better Auth instance behind the narrow interface used by the app. */

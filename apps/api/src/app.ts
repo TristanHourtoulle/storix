@@ -51,7 +51,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
   app.decorate('authGateway', deps.auth)
 
-  const services = buildServices(deps)
+  const services = buildServices(deps, app.log)
   app.decorate('services', services)
   await app.register(authRoutes(deps.auth, env.APP_ORIGIN))
   await app.register(healthRoutes(services.health), { prefix: '/api' })

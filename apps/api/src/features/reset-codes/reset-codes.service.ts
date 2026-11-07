@@ -25,6 +25,10 @@ import {
   markCodeUsed,
 } from './reset-codes.repository'
 
+export interface ErrorLogger {
+  error(context: object, message: string): void
+}
+
 export interface ResetCodesService {
   issue(m: Membership, targetUserId: string): Promise<IssueResetCodeResponse>
   redeem(body: RedeemResetCodeBody): Promise<void>
@@ -34,6 +38,7 @@ export interface ResetCodesServiceDeps {
   db: Database
   auth: AuthGateway
   clock: () => Date
+  logger: ErrorLogger
 }
 
 function invalidResetCode(): AppError {
@@ -42,7 +47,7 @@ function invalidResetCode(): AppError {
 
 /** Builds the reset codes service. */
 export function createResetCodesService(deps: ResetCodesServiceDeps): ResetCodesService {
-  const { db, auth, clock } = deps
+  const { db, auth, clock, logger } = deps
 
   async function loadHomeLeagueContext(
     homeLeagueId: string | null,
@@ -56,8 +61,23 @@ export function createResetCodesService(deps: ResetCodesServiceDeps): ResetCodes
     return { homeLeagueOwnerId, targetIsHomeLeagueMember: membership !== null }
   }
 
+  async function revokeSessionsWithRetry(userId: string): Promise<void> {
+    try {
+      await auth.revokeAllSessions(userId)
+    } catch {
+      try {
+        await auth.revokeAllSessions(userId)
+      } catch {
+        logger.error({ userId }, 'Failed to revoke sessions after password reset')
+      }
+    }
+  }
+
   return {
     async issue(m, targetUserId) {
+      if ((await findMembership(db, m.leagueId, targetUserId)) === null) {
+        throw notFound('Member not found')
+      }
       const target = await findUserHomeLeague(db, targetUserId)
       if (target === null) throw notFound('Member not found')
       const context = await loadHomeLeagueContext(target.homeLeagueId, targetUserId)
@@ -103,20 +123,21 @@ export function createResetCodesService(deps: ResetCodesServiceDeps): ResetCodes
       const submittedHash = sha256Hex(normalizeResetCode(body.code))
       if (!safeEqualHex(submittedHash, stored.codeHash)) {
         await runInTransaction(db, async (tx) => {
-          await incrementFailedAttempts(tx, stored.id)
+          const failedAttempts = await incrementFailedAttempts(tx, stored.id)
+          if (failedAttempts === null) return
           await insertAuditEntry(tx, {
             leagueId: target.homeLeagueId,
             actorId: null,
             targetUserId: target.id,
             action: 'reset_code.failed',
-            metadata: { failedAttempts: stored.failedAttempts + 1 },
+            metadata: { failedAttempts },
           })
         })
         throw invalidResetCode()
       }
       if (!(await markCodeUsed(db, stored.id, now))) throw invalidResetCode()
       await auth.setPassword(target.id, body.newPassword)
-      await auth.revokeAllSessions(target.id)
+      await revokeSessionsWithRetry(target.id)
       await insertAuditEntry(db, {
         leagueId: target.homeLeagueId,
         actorId: target.id,
