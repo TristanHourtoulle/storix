@@ -1,5 +1,7 @@
-import { memberWallets, type DbExecutor } from '@storix/db'
+import { lockLeagueEconomyShared, memberWallets, type DbExecutor } from '@storix/db'
 import { and, eq } from 'drizzle-orm'
+
+export { lockLeagueEconomyExclusive, lockLeagueEconomyShared } from '@storix/db'
 
 export interface WalletRow {
   leagueId: string
@@ -62,12 +64,13 @@ export async function findWallet(
   return rows[0] ?? null
 }
 
-/** Reads a member wallet under a row lock, failing when it does not exist. */
+/** Reads a member wallet under the shared league economy lock and a row lock, failing when it does not exist. */
 export async function lockWallet(
   db: DbExecutor,
   leagueId: string,
   userId: string,
 ): Promise<WalletRow> {
+  await lockLeagueEconomyShared(db, leagueId)
   const rows = await db
     .select(walletColumns)
     .from(memberWallets)

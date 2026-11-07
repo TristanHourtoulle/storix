@@ -1,17 +1,19 @@
 import type { Database } from '@storix/db'
-import type {
-  CollectionPage,
-  ListCardsQuery,
-  ReactionCounts,
-  ViewerCardDetail,
+import {
+  resolveLeagueSettings,
+  type CollectionPage,
+  type ListCardsQuery,
+  type ReactionCounts,
+  type ViewerCardDetail,
 } from '@storix/shared'
 import { notFound } from '../../lib/errors'
 import type { MediaSigner } from '../../lib/media-signer'
 import { countCardCopies } from '../copies/copies.repository'
+import { findLeagueSettings } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
 import { countReactions } from '../reactions/reactions.repository'
 import { findWallet } from '../wallets/wallets.repository'
-import { isOwned, toCardDetail, toCollectionCard } from './card-views'
+import { isOwned, isVisibleTo, toCardDetail, toCollectionCard } from './card-views'
 import { countCollection, findCardForViewer, listCollection } from './cards.repository'
 
 const NO_REACTIONS: ReactionCounts = {
@@ -61,9 +63,10 @@ export function createCardsService({ db, signer, clock }: CardsServiceDeps): Car
         cardId,
         viewerId: m.userId,
       })
-      if (row === null) throw notFound('Card not found')
-      const owned = isOwned(row)
-      const [wallet, reactions, copiesInLeague] = await Promise.all([
+      if (row === null || !isVisibleTo(row)) throw notFound('Card not found')
+      const owned = isOwned(row) && row.status === 'active'
+      const [settings, wallet, reactions, copiesInLeague] = await Promise.all([
+        findLeagueSettings(db, m.leagueId),
         findWallet(db, m.leagueId, m.userId),
         owned ? countReactions(db, { cardId, viewerId: m.userId }) : NO_REACTIONS,
         owned ? countCardCopies(db, cardId) : 0,
@@ -75,6 +78,7 @@ export function createCardsService({ db, signer, clock }: CardsServiceDeps): Car
         dust: wallet?.dust ?? 0,
         reactions,
         copiesInLeague,
+        delayMinutes: resolveLeagueSettings(settings).newCardDelayMinutes,
       })
     },
   }

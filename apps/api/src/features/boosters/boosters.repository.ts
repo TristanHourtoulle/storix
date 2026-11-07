@@ -85,6 +85,7 @@ export interface PullViewRow extends CardMediaColumns {
 }
 
 export interface RevealRow extends CardMediaColumns {
+  status: 'active' | 'hidden'
   pulledById: string
   pulledByName: string | null
   pulledAt: Date
@@ -309,6 +310,7 @@ export async function listRecentReveals(
   const rows = await db
     .select({
       ...cardMediaColumns,
+      status: cards.status,
       pulledById: boosterOpenings.userId,
       pulledByName: pullerName,
       pulledAt: boosterOpenings.openedAt,

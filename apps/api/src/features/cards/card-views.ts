@@ -2,7 +2,6 @@ import {
   canReact,
   canWithdrawCard,
   craftDecision,
-  DEFAULT_NEW_CARD_DELAY_MINUTES,
   dustValue,
   foilUpgradeDecision,
   isBoosterEligible,
@@ -11,6 +10,8 @@ import {
   type CardTier,
   type CollectionCard,
   type CopyVariant,
+  type HiddenCardDetail,
+  type HiddenCardSummary,
   type LockedCardSummary,
   type MediaVariantSize,
   type OwnedCardSummary,
@@ -31,6 +32,7 @@ export interface CardDetailContext {
   dust: number
   reactions: ReactionCounts
   copiesInLeague: number
+  delayMinutes: number
 }
 
 export type CollectionCardBase = Omit<CollectionRow, 'normalTier' | 'foilTier'>
@@ -38,6 +40,11 @@ export type CollectionCardBase = Omit<CollectionRow, 'normalTier' | 'foilTier'>
 /** Returns true when the viewer owns any copy of the card. */
 export function isOwned(row: CollectionRow): boolean {
   return row.normalTier !== null || row.foilTier !== null
+}
+
+/** Returns true when the viewer may see the card at all: active, or hidden with a copy of it. */
+export function isVisibleTo(row: CollectionRow): boolean {
+  return row.status === 'active' || isOwned(row)
 }
 
 /** Returns the tier shown to the viewer: the best owned copy's tier at mint, else the current tier. */
@@ -94,6 +101,20 @@ function toLockedSummary(row: CollectionRow): LockedCardSummary {
   }
 }
 
+function toHiddenSummary(row: CollectionRow): HiddenCardSummary {
+  return {
+    kind: 'hidden',
+    id: row.id,
+    number: row.number,
+    tier: displayTier(row),
+    thumbhash: row.thumbhash,
+    dominantColor: row.dominantColor,
+    width: row.width,
+    height: row.height,
+    copies: { normal: row.normalTier, foil: row.foilTier },
+  }
+}
+
 function toDiscoveredBy(row: CardViewerRow): CardPerson | null {
   if (row.discoveredAt === null) return null
   if (row.discoveredById === null) return { userId: null, displayUsername: null }
@@ -113,14 +134,13 @@ function ownedCopies(row: CollectionRow): { variant: CopyVariant; dust: number }
 /** Decides whether the viewer may craft the card, shared by the card detail and the craft action. */
 export function craftDecisionFor(
   row: CollectionRow & { createdAt: Date },
-  now: Date,
-  dust: number,
+  input: { now: Date; dust: number; delayMinutes: number },
 ): ReturnType<typeof craftDecision> {
   return craftDecision({
     currentTier: row.tier,
     ownsAnyCopy: isOwned(row),
-    isBoosterEligible: isBoosterEligible(row.createdAt, now, DEFAULT_NEW_CARD_DELAY_MINUTES),
-    dust,
+    isBoosterEligible: isBoosterEligible(row.createdAt, input.now, input.delayMinutes),
+    dust: input.dust,
   })
 }
 
@@ -142,9 +162,17 @@ export function canReactTo(row: CollectionRow, viewerId: string): boolean {
   return canReact({ isAuthor: row.authorId === viewerId, ownsCopy: isOwned(row) })
 }
 
-/** Projects a collection row to what the viewer may see: the full card if owned, a silhouette otherwise. */
+/**
+ * Projects a collection row to what the viewer may see: a hidden face without title or image for a
+ * hidden card, the full card if owned, a silhouette otherwise.
+ */
 export function toCollectionCard(row: CollectionRow, signer: MediaSigner): CollectionCard {
+  if (row.status === 'hidden') return toHiddenSummary(row)
   return isOwned(row) ? toOwnedSummary(row, SUMMARY_SIZES, signer) : toLockedSummary(row)
+}
+
+function toHiddenDetail(row: CardViewerRow, canWithdraw: boolean): HiddenCardDetail {
+  return { ...toHiddenSummary(row), createdAt: row.createdAt.toISOString(), canWithdraw }
 }
 
 /** Projects a card detail to what the viewer may see, with the actions the server allows. */
@@ -154,6 +182,7 @@ export function toCardDetail(row: CardViewerRow, ctx: CardDetailContext): Viewer
     isTagged: row.tagged.some((person) => person.userId === ctx.viewerId),
     isAuthor,
   })
+  if (row.status === 'hidden') return toHiddenDetail(row, canWithdraw)
   const discoveredBy = toDiscoveredBy(row)
   const createdAt = row.createdAt.toISOString()
   if (!isOwned(row)) {
@@ -162,7 +191,11 @@ export function toCardDetail(row: CardViewerRow, ctx: CardDetailContext): Viewer
       createdAt,
       discoveredBy,
       canWithdraw,
-      craft: craftDecisionFor(row, ctx.now, ctx.dust),
+      craft: craftDecisionFor(row, {
+        now: ctx.now,
+        dust: ctx.dust,
+        delayMinutes: ctx.delayMinutes,
+      }),
     }
   }
   return {

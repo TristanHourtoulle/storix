@@ -1,4 +1,5 @@
 import type { Database } from '@storix/db'
+import { lockLeagueEconomyShared } from '../wallets/wallets.repository'
 import { canReact, type ReactionCounts, type ReactionType } from '@storix/shared'
 import { AppError, notFound } from '../../lib/errors'
 import { runInTransaction } from '../../lib/transaction'
@@ -25,12 +26,13 @@ export function createReactionsService({ db }: ReactionsServiceDeps): ReactionsS
   return {
     setReaction: (m, cardId, type, isOn) =>
       runInTransaction(db, async (tx) => {
+        await lockLeagueEconomyShared(tx, m.leagueId)
         const card = await findCardForViewer(tx, {
           leagueId: m.leagueId,
           cardId,
           viewerId: m.userId,
         })
-        if (card === null) throw notFound('Card not found')
+        if (card === null || card.status !== 'active') throw notFound('Card not found')
         const key = { cardId, userId: m.userId, type }
         if (isOn) {
           const owned = await lockOwnedVariants(tx, {
