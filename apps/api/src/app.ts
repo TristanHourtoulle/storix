@@ -13,6 +13,7 @@ import { healthRoutes } from './features/health/health.routes'
 import { invitationsRoutes } from './features/invitations/invitations.routes'
 import { leaguesRoutes } from './features/leagues/leagues.routes'
 import { meRoutes } from './features/me/me.routes'
+import { membersRoutes } from './features/members/members.routes'
 import { registerErrorHandling } from './http/error-handler'
 import { registerOriginCheck } from './http/origin-check'
 import { AppError } from './lib/errors'
@@ -56,6 +57,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(meRoutes(services.me), { prefix: '/api' })
   await app.register(leaguesRoutes(services.leagues), { prefix: '/api' })
   await app.register(invitationsRoutes(services.invitations), { prefix: '/api' })
+  await app.register(membersRoutes(services.members), { prefix: '/api' })
 
   return app
 }

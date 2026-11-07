@@ -9,6 +9,7 @@ import {
 } from './features/invitations/invitations.service'
 import { createLeaguesService, type LeaguesService } from './features/leagues/leagues.service'
 import { createMeService, type MeService } from './features/me/me.service'
+import { createMembersService, type MembersService } from './features/members/members.service'
 
 export interface AppDeps {
   env: Env
@@ -22,6 +23,7 @@ export interface Services {
   invitations: InvitationsService
   leagues: LeaguesService
   me: MeService
+  members: MembersService
 }
 
 /** Wires the runtime dependencies for the given environment and database. */
@@ -41,5 +43,6 @@ export function buildServices(deps: AppDeps): Services {
     }),
     leagues: createLeaguesService(deps.db),
     me: createMeService(deps.db),
+    members: createMembersService(deps.db),
   }
 }

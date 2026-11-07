@@ -1,6 +1,6 @@
 import { leagueMembers, leagues, type DbExecutor } from '@storix/db'
 import type { LeagueSummary } from '@storix/shared'
-import { and, asc, count, eq } from 'drizzle-orm'
+import { and, asc, count, eq, inArray } from 'drizzle-orm'
 
 export interface LeagueRecord {
   id: string
@@ -67,4 +67,17 @@ export async function findOwnerId(db: DbExecutor, leagueId: string): Promise<str
     .where(and(eq(leagueMembers.leagueId, leagueId), eq(leagueMembers.role, 'owner')))
     .limit(1)
   return rows[0]?.userId ?? null
+}
+
+/** Returns the owner's user id for each of the given leagues that has an owner, in one query. */
+export async function findOwnerIds(
+  db: DbExecutor,
+  leagueIds: readonly string[],
+): Promise<ReadonlyMap<string, string>> {
+  if (leagueIds.length === 0) return new Map()
+  const rows = await db
+    .select({ leagueId: leagueMembers.leagueId, userId: leagueMembers.userId })
+    .from(leagueMembers)
+    .where(and(inArray(leagueMembers.leagueId, [...leagueIds]), eq(leagueMembers.role, 'owner')))
+  return new Map(rows.map((row) => [row.leagueId, row.userId]))
 }
