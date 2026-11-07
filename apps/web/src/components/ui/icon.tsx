@@ -9,6 +9,9 @@ export type IconName =
   | 'share'
   | 'dust'
   | 'chevron-down'
+  | 'calendar'
+  | 'shield'
+  | 'check'
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -21,6 +24,9 @@ const PATHS: Record<IconName, string> = {
   share: 'M12 3v12M8 7l4-4 4 4M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6',
   'chevron-down': 'M6 9l6 6 6-6',
   dust: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z',
+  calendar: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
+  shield: 'M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z',
+  check: 'M5 12.5l4.5 4.5L19 7.5',
 }
 
 interface IconProps {
