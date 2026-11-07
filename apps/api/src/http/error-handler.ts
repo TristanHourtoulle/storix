@@ -15,8 +15,11 @@ function isFastifyError(error: unknown): error is FastifyError {
   return error instanceof Error && 'statusCode' in error
 }
 
-/** Registers the JSON error handler and the /api/* not-found handler. */
-export function registerErrorHandling(app: FastifyInstance): void {
+/** Registers the JSON error handler and, unless the static handler owns it, the not-found handler. */
+export function registerErrorHandling(
+  app: FastifyInstance,
+  options: { handleNotFound: boolean } = { handleNotFound: true },
+): void {
   app.setErrorHandler((error: unknown, request, reply) => {
     if (error instanceof AppError) {
       if (error.status >= 500) request.log.error({ err: error, reqId: request.id }, error.message)
@@ -41,6 +44,8 @@ export function registerErrorHandling(app: FastifyInstance): void {
     request.log.error({ err: error, reqId: request.id }, 'Unhandled error')
     return reply.status(500).send(body('INTERNAL_ERROR', 'Internal server error'))
   })
+
+  if (!options.handleNotFound) return
 
   app.setNotFoundHandler((request, reply) => {
     if (request.url.startsWith('/api/') || request.url === '/api') {

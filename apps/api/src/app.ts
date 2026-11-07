@@ -1,3 +1,4 @@
+import { resolve } from 'node:path'
 import helmet from '@fastify/helmet'
 import rateLimit from '@fastify/rate-limit'
 import Fastify, { type FastifyInstance } from 'fastify'
@@ -17,8 +18,13 @@ import { membersRoutes } from './features/members/members.routes'
 import { resetCodesRoutes } from './features/reset-codes/reset-codes.routes'
 import { registerErrorHandling } from './http/error-handler'
 import { registerOriginCheck } from './http/origin-check'
+import { registerStatic } from './http/static'
 import { AppError } from './lib/errors'
 import { buildLoggerOptions } from './lib/logger'
+
+function defaultWebDistDir(): string {
+  return resolve(process.cwd(), 'apps/web/dist')
+}
 
 /** Builds the Fastify application with security hooks and feature routes. */
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
@@ -30,7 +36,8 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
   app.setValidatorCompiler(validatorCompiler)
   app.setSerializerCompiler(serializerCompiler)
-  registerErrorHandling(app)
+  const isProduction = env.NODE_ENV === 'production'
+  registerErrorHandling(app, { handleNotFound: !isProduction })
 
   await app.register(rateLimit, {
     global: false,
@@ -60,6 +67,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(invitationsRoutes(services.invitations), { prefix: '/api' })
   await app.register(membersRoutes(services.members), { prefix: '/api' })
   await app.register(resetCodesRoutes(services.resetCodes), { prefix: '/api' })
+
+  if (isProduction) {
+    await registerStatic(app, env.WEB_DIST_DIR ?? defaultWebDistDir())
+  }
 
   return app
 }
