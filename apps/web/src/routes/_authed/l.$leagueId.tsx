@@ -40,10 +40,12 @@ function LeagueLayout() {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <Outlet />
+      <div className="isolate flex flex-1 flex-col">
+        <Outlet />
+      </div>
       <PasskeyPrompt userId={me.user.id} displayUsername={me.user.displayUsername} />
       {isBoosterStage ? null : (
-        <div className="sticky bottom-0 mt-auto">
+        <div className="sticky bottom-0 z-40 mt-auto">
           <IosInstallHint />
           <BottomNav leagueId={leagueId} active={active} />
         </div>
