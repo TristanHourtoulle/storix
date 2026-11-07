@@ -4,14 +4,19 @@ import { TIER_COLOR_VAR, TIER_LABELS } from '@/features/cards/tier-labels'
 interface DistributionPreviewProps {
   preview: RarityPreview | undefined
   isFetching: boolean
+  isError?: boolean
 }
 
 function barWidth(count: number, max: number): string {
   return max > 0 ? `${Math.max((count / max) * 100, count > 0 ? 3 : 0)}%` : '0%'
 }
 
-export function DistributionPreview({ preview, isFetching }: DistributionPreviewProps) {
-  if (!preview) {
+export function DistributionPreview({
+  preview,
+  isFetching,
+  isError = false,
+}: DistributionPreviewProps) {
+  if (!preview || isError) {
     return <p className="m-0 text-[13px] text-faint">Aperçu indisponible.</p>
   }
   const max = Math.max(
@@ -19,7 +24,7 @@ export function DistributionPreview({ preview, isFetching }: DistributionPreview
   )
 
   return (
-    <div className="flex flex-col gap-3" aria-busy={isFetching}>
+    <div className={`flex flex-col gap-3 transition-opacity ${isFetching ? 'opacity-70' : ''}`}>
       <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
         {CARD_TIERS.map((tier) => (
           <li key={tier} className="flex flex-col gap-1">
@@ -47,7 +52,9 @@ export function DistributionPreview({ preview, isFetching }: DistributionPreview
       <p className="m-0 font-display text-sm font-semibold text-ink-2">
         {preview.changed === 0
           ? 'Aucune carte ne change'
-          : `${preview.changed} cartes changeraient de rareté`}
+          : preview.changed === 1
+            ? '1 carte changerait de rareté'
+            : `${preview.changed} cartes changeraient de rareté`}
       </p>
     </div>
   )

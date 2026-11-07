@@ -30,6 +30,7 @@ export function WeightSlider({ label, value, onChange }: WeightSliderProps) {
         max={5}
         step={0.5}
         value={value}
+        aria-valuetext={`×${value}`}
         onChange={(event) => onChange(Number(event.target.value))}
       />
     </div>

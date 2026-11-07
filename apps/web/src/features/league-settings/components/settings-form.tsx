@@ -56,10 +56,24 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export function SettingsForm({ leagueId }: SettingsFormProps) {
-  const { view, save, isSaving, isSaved, serverFieldErrors, errorMessage } =
+  const { view, save, isSaving, isSaved, reset, serverFieldErrors, errorMessage } =
     useLeagueSettings(leagueId)
   const [draft, setDraft] = useState<Draft>(() => toDraft(view))
-  const { preview, isFetching } = useRarityPreview(leagueId, draft.rarityWeights)
+  const [baseline, setBaseline] = useState(view)
+  const { preview, isFetching, isError } = useRarityPreview(leagueId, draft.rarityWeights)
+
+  const hasViewChanged = view !== baseline
+  const isDirty = !isSameDraft(draft, toDraft(baseline))
+  if (hasViewChanged && (!isDirty || isSameDraft(draft, toDraft(view)))) {
+    setDraft(toDraft(view))
+    setBaseline(view)
+  }
+  const isStale = hasViewChanged && isDirty && !isSameDraft(draft, toDraft(view))
+  const reload = () => {
+    reset()
+    setDraft(toDraft(view))
+    setBaseline(view)
+  }
 
   const errors = {
     ...serverFieldErrors,
@@ -70,11 +84,15 @@ export function SettingsForm({ leagueId }: SettingsFormProps) {
   const hasWeightsError = errors.rarityWeights !== undefined
   const hasServerFieldError = Object.keys(errors).length > 0 && isValid
 
-  const patch = (next: Partial<Draft>) => setDraft((current) => ({ ...current, ...next }))
+  const update = (change: (current: Draft) => Draft) => {
+    reset()
+    setDraft(change)
+  }
+  const patch = (next: Partial<Draft>) => update((current) => ({ ...current, ...next }))
   const patchBooster = (next: Partial<Draft['booster']>) =>
-    setDraft((current) => ({ ...current, booster: { ...current.booster, ...next } }))
+    update((current) => ({ ...current, booster: { ...current.booster, ...next } }))
   const patchWeights = (next: Partial<Draft['rarityWeights']>) =>
-    setDraft((current) => ({ ...current, rarityWeights: { ...current.rarityWeights, ...next } }))
+    update((current) => ({ ...current, rarityWeights: { ...current.rarityWeights, ...next } }))
 
   return (
     <form
@@ -88,7 +106,11 @@ export function SettingsForm({ leagueId }: SettingsFormProps) {
         <NumberSetting
           label="Un booster toutes les"
           unit="minutes"
-          hint={`soit ${formatMinutes(draft.booster.intervalMinutes)}`}
+          hint={
+            formatMinutes(draft.booster.intervalMinutes)
+              ? `soit ${formatMinutes(draft.booster.intervalMinutes)}`
+              : undefined
+          }
           error={errors['booster.intervalMinutes']}
           value={draft.booster.intervalMinutes}
           min={1}
@@ -165,7 +187,7 @@ export function SettingsForm({ leagueId }: SettingsFormProps) {
             {WEIGHTS_ERROR}
           </p>
         ) : (
-          <DistributionPreview preview={preview} isFetching={isFetching} />
+          <DistributionPreview preview={preview} isFetching={isFetching} isError={isError} />
         )}
       </Section>
       <Section title="Mythiques">
@@ -173,6 +195,14 @@ export function SettingsForm({ leagueId }: SettingsFormProps) {
           {view.mythicCount} / {view.mythicCap}
         </p>
       </Section>
+      {isStale ? (
+        <Notice tone="info">
+          Les réglages ont été modifiés ailleurs.{' '}
+          <button type="button" className="underline" onClick={reload}>
+            Recharger
+          </button>
+        </Notice>
+      ) : null}
       {errorMessage && !hasServerFieldError ? <Notice tone="error">{errorMessage}</Notice> : null}
       {hasServerFieldError ? <Notice tone="error">Certains champs sont invalides.</Notice> : null}
       {isSaved && isUnchanged ? (

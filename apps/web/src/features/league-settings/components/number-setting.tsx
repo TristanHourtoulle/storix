@@ -28,6 +28,8 @@ export function NumberSetting({
   onChange,
 }: NumberSettingProps) {
   const [text, setText] = useState(String(value))
+  const [isFocused, setIsFocused] = useState(false)
+  const displayed = isFocused || Number.isNaN(value) ? text : String(value)
 
   return (
     <Field label={unit ? `${label} (${unit})` : label} hint={hint} error={error}>
@@ -37,7 +39,12 @@ export function NumberSetting({
         min={min}
         max={max}
         step={1}
-        value={text}
+        value={displayed}
+        onFocus={() => {
+          setText(String(value))
+          setIsFocused(true)
+        }}
+        onBlur={() => setIsFocused(false)}
         onChange={(event) => {
           setText(event.target.value)
           onChange(parseInteger(event.target.value))

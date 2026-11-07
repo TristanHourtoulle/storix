@@ -14,6 +14,7 @@ interface LeagueSettings {
   save: (body: UpdateLeagueSettingsBody) => void
   isSaving: boolean
   isSaved: boolean
+  reset: () => void
   serverFieldErrors: FieldErrors
   errorMessage: string | null
 }
@@ -41,6 +42,7 @@ export function useLeagueSettings(leagueId: string): LeagueSettings {
     save: mutation.mutate,
     isSaving: mutation.isPending,
     isSaved: mutation.isSuccess,
+    reset: mutation.reset,
     serverFieldErrors:
       mutation.error instanceof ApiError ? fieldErrorsFromDetails(mutation.error.details) : {},
     errorMessage: mutation.error ? userMessage(mutation.error) : null,
