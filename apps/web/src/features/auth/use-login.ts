@@ -28,7 +28,8 @@ async function signInWithPassword(input: LoginInput): Promise<void> {
   if (error) throw new UserFacingError(authErrorMessage(error, 'Connexion impossible.'))
 }
 
-async function signInWithPasskey(): Promise<void> {
+/** Signs in with a passkey; throws a user-facing error on failure or cancellation. */
+export async function signInWithPasskey(): Promise<void> {
   try {
     const result = await authClient.signIn.passkey()
     if (result?.error) {

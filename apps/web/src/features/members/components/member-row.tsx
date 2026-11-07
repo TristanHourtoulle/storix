@@ -9,10 +9,22 @@ interface MemberRowProps {
   onToggleRole: (member: MemberSummary) => void
   onRemove: (member: MemberSummary) => void
   onResetCode: (member: MemberSummary) => void
+  onTransferOwnership: (member: MemberSummary) => void
 }
 
-export function MemberRow({ member, isBusy, onToggleRole, onRemove, onResetCode }: MemberRowProps) {
-  const hasActions = member.canChangeRole || member.canRemove || member.canIssueResetCode
+export function MemberRow({
+  member,
+  isBusy,
+  onToggleRole,
+  onRemove,
+  onResetCode,
+  onTransferOwnership,
+}: MemberRowProps) {
+  const hasActions =
+    member.canChangeRole ||
+    member.canRemove ||
+    member.canIssueResetCode ||
+    member.canTransferOwnership
 
   return (
     <li className="flex flex-col gap-3 rounded-input bg-surface p-3 shadow-hairline">
@@ -36,6 +48,16 @@ export function MemberRow({ member, isBusy, onToggleRole, onRemove, onResetCode 
               onClick={() => onToggleRole(member)}
             >
               {member.role === 'admin' ? 'Repasser membre' : 'Passer admin'}
+            </Button>
+          ) : null}
+          {member.canTransferOwnership ? (
+            <Button
+              variant="ghost"
+              className="!h-10 !px-3 !text-sm"
+              disabled={isBusy}
+              onClick={() => onTransferOwnership(member)}
+            >
+              Transférer la propriété
             </Button>
           ) : null}
           {member.canIssueResetCode ? (
