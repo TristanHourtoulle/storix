@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { BrandMark } from '@/components/ui/brand-mark'
+import { BrandLogo } from '@/components/ui/brand-logo'
 import { RedeemForm } from '@/features/reset-codes/components/redeem-form'
 
 export const Route = createFileRoute('/reset')({
@@ -9,7 +9,7 @@ export const Route = createFileRoute('/reset')({
 function ResetScreen() {
   return (
     <main className="screen">
-      <BrandMark />
+      <BrandLogo size="lg" />
       <h1>Réinitialiser le mot de passe</h1>
       <p className="m-0 text-sm leading-snug text-muted">
         Demande un code au propriétaire de ta première ligue.

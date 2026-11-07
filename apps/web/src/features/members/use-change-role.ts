@@ -12,6 +12,7 @@ interface ChangeRoleVariables {
 /** Changes a member's role and refreshes the member list. */
 export function useChangeRole(leagueId: string): {
   changeRole: (variables: ChangeRoleVariables) => void
+  reset: () => void
   isPending: boolean
   errorMessage: string | null
 } {
@@ -25,6 +26,7 @@ export function useChangeRole(leagueId: string): {
 
   return {
     changeRole: mutation.mutate,
+    reset: mutation.reset,
     isPending: mutation.isPending,
     errorMessage: mutation.error ? userMessage(mutation.error) : null,
   }

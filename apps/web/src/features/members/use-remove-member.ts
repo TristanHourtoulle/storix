@@ -7,6 +7,7 @@ import { membersQueryOptions } from './members.queries'
 /** Removes a member and refreshes the member list and league detail. */
 export function useRemoveMember(leagueId: string): {
   remove: (userId: string, onDone: () => void) => void
+  reset: () => void
   isPending: boolean
   errorMessage: string | null
 } {
@@ -23,6 +24,7 @@ export function useRemoveMember(leagueId: string): {
 
   return {
     remove: (userId, onDone) => mutation.mutate(userId, { onSuccess: onDone }),
+    reset: mutation.reset,
     isPending: mutation.isPending,
     errorMessage: mutation.error ? userMessage(mutation.error) : null,
   }

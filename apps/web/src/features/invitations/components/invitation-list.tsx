@@ -12,14 +12,20 @@ function formatDate(iso: string): string {
 }
 
 export function InvitationList({ leagueId }: InvitationListProps) {
-  const invitations = useActiveInvitations(leagueId)
+  const { invitations, isPending: isLoading, isError } = useActiveInvitations(leagueId)
   const { revoke, isPending, errorMessage } = useRevokeInvitation(leagueId)
 
   return (
     <section aria-labelledby="active-invitations-title" className="flex flex-col gap-3">
       <h2 id="active-invitations-title">Liens actifs</h2>
       {errorMessage ? <Notice tone="error">{errorMessage}</Notice> : null}
-      {invitations.length === 0 ? (
+      {isError ? (
+        <Notice tone="error">Impossible de charger les invitations. Réessaie plus tard.</Notice>
+      ) : isLoading ? (
+        <p role="status" className="m-0 text-sm text-muted">
+          Chargement…
+        </p>
+      ) : invitations.length === 0 ? (
         <p className="m-0 text-sm text-muted">Aucun lien actif.</p>
       ) : (
         <ul className="m-0 flex list-none flex-col gap-2 p-0">

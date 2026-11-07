@@ -19,15 +19,25 @@ export const Route = createFileRoute('/_authed/l/$leagueId/admin')({
 
 type Tab = 'members' | 'invitations'
 
-const TABS: readonly { id: Tab; label: string }[] = [
-  { id: 'members', label: 'Membres' },
-  { id: 'invitations', label: 'Invitations' },
+const TABS: readonly {
+  id: Tab
+  label: string
+  isVisible: (canManageInvitations: boolean) => boolean
+}[] = [
+  { id: 'members', label: 'Membres', isVisible: () => true },
+  {
+    id: 'invitations',
+    label: 'Invitations',
+    isVisible: (canManageInvitations) => canManageInvitations,
+  },
 ]
 
 function Admin() {
   const { leagueId } = Route.useParams()
   const { data: league } = useSuspenseQuery(leagueDetailQueryOptions(leagueId))
   const [tab, setTab] = useState<Tab>('members')
+  const { canManageInvitations } = league.permissions
+  const visibleTabs = TABS.filter(({ isVisible }) => isVisible(canManageInvitations))
 
   return (
     <main className="screen">
@@ -45,7 +55,7 @@ function Admin() {
         }
       />
       <div className="flex rounded-control bg-surface p-1 shadow-hairline">
-        {TABS.map(({ id, label }) => (
+        {visibleTabs.map(({ id, label }) => (
           <button
             key={id}
             type="button"
@@ -57,13 +67,13 @@ function Admin() {
           </button>
         ))}
       </div>
-      <Suspense fallback={null}>
-        {tab === 'members' ? (
+      {tab === 'invitations' && canManageInvitations ? (
+        <InvitationsPanel leagueId={leagueId} />
+      ) : (
+        <Suspense fallback={<p className="m-0 text-sm text-muted">Chargement…</p>}>
           <MemberList leagueId={leagueId} />
-        ) : league.permissions.canManageInvitations ? (
-          <InvitationsPanel leagueId={leagueId} />
-        ) : null}
-      </Suspense>
+        </Suspense>
+      )}
     </main>
   )
 }

@@ -8,7 +8,7 @@ export function IosInstallHint() {
   return (
     <div
       role="status"
-      className="mx-auto box-border flex w-full max-w-[480px] items-center gap-3 bg-nav px-4 py-3 font-sans text-sm text-ink"
+      className="fixed inset-x-0 bottom-[calc(84px+env(safe-area-inset-bottom))] z-10 mx-auto box-border flex w-full max-w-[480px] items-center gap-3 bg-nav px-4 py-2 font-sans text-sm text-ink shadow-nav"
     >
       <Icon name="share" className="size-5 shrink-0" />
       <p className="m-0 flex-1">
