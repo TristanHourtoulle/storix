@@ -24,6 +24,7 @@ function LeagueLayout() {
   const { me } = Route.useRouteContext()
   const matchRoute = useMatchRoute()
   useRememberLastLeague(me.user.id, leagueId)
+  const isBoosterStage = Boolean(matchRoute({ to: '/l/$leagueId/booster', params: { leagueId } }))
   const active = matchRoute({ to: '/l/$leagueId/collection', params: { leagueId } })
     ? 'collection'
     : matchRoute({ to: '/l/$leagueId/add', params: { leagueId } })
@@ -37,10 +38,12 @@ function LeagueLayout() {
     <div className="flex min-h-dvh flex-col">
       <Outlet />
       <PasskeyPrompt userId={me.user.id} displayUsername={me.user.displayUsername} />
-      <div className="sticky bottom-0 mt-auto">
-        <IosInstallHint />
-        <BottomNav leagueId={leagueId} active={active} />
-      </div>
+      {isBoosterStage ? null : (
+        <div className="sticky bottom-0 mt-auto">
+          <IosInstallHint />
+          <BottomNav leagueId={leagueId} active={active} />
+        </div>
+      )}
     </div>
   )
 }

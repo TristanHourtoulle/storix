@@ -1,12 +1,13 @@
 interface ChipProps {
   label: string
   initials?: string
+  dotColor?: string
   isOn: boolean
   isDisabled?: boolean
   onToggle: () => void
 }
 
-export function Chip({ label, initials, isOn, isDisabled = false, onToggle }: ChipProps) {
+export function Chip({ label, initials, dotColor, isOn, isDisabled = false, onToggle }: ChipProps) {
   return (
     <button
       type="button"
@@ -22,6 +23,13 @@ export function Chip({ label, initials, isOn, isDisabled = false, onToggle }: Ch
         >
           {initials}
         </span>
+      ) : null}
+      {dotColor ? (
+        <span
+          aria-hidden="true"
+          className="size-2 flex-none rounded-full"
+          style={{ backgroundColor: dotColor }}
+        />
       ) : null}
       {label}
     </button>

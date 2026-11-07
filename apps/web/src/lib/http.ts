@@ -1,7 +1,7 @@
 import { apiErrorSchema, type ErrorCode } from '@storix/shared'
 import type { z } from 'zod'
 
-type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE'
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 interface VoidRequestOptions {
   method?: HttpMethod

@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import type { CardDetail } from '@storix/shared'
+import type { ViewerCardDetail } from '@storix/shared'
 import { ApiError } from '@/lib/http'
 import { cardDetailQueryOptions } from './cards.queries'
 
 interface CardDetailState {
-  card: CardDetail | undefined
+  card: ViewerCardDetail | undefined
   isPending: boolean
   isMissing: boolean
   retry: () => void

@@ -10,6 +10,7 @@ interface CardImageProps {
   sizes: string
   isEager?: boolean
   isHighPriority?: boolean
+  onImageRef?: (img: HTMLImageElement | null) => void
 }
 
 function toSrcSet(sources: ImageSource[]): string {
@@ -31,12 +32,17 @@ export function CardImage({
   sizes,
   isEager = false,
   isHighPriority = false,
+  onImageRef,
 }: CardImageProps) {
   const [isLoaded, setIsLoaded] = useState(false)
   const [hasFailed, setHasFailed] = useState(false)
-  const imageRef = useCallback((node: HTMLImageElement | null) => {
-    if (node?.complete && node.naturalWidth > 0) setIsLoaded(true)
-  }, [])
+  const imageRef = useCallback(
+    (node: HTMLImageElement | null) => {
+      if (node?.complete && node.naturalWidth > 0) setIsLoaded(true)
+      onImageRef?.(node)
+    },
+    [onImageRef],
+  )
   const placeholder = useThumbhashUrl(thumbhash)
   const fallback = largest(image.webp)
 
