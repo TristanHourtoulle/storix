@@ -21,6 +21,7 @@ type PermissionRequester = { requestPermission: () => Promise<PermissionState> }
 interface HoloTilt {
   ref: RefCallback<HTMLElement>
   needsMotionPermission: boolean
+  isMotionDenied: boolean
   requestMotionPermission: () => Promise<void>
 }
 
@@ -30,14 +31,11 @@ function clamp(value: number, limit: number): number {
 
 function getPermissionRequester(): PermissionRequester | null {
   if (typeof DeviceOrientationEvent === 'undefined') return null
-  const candidate: unknown = DeviceOrientationEvent
   if (
-    typeof candidate === 'object' &&
-    candidate !== null &&
-    'requestPermission' in candidate &&
-    typeof candidate.requestPermission === 'function'
+    'requestPermission' in DeviceOrientationEvent &&
+    typeof DeviceOrientationEvent.requestPermission === 'function'
   ) {
-    return candidate as PermissionRequester
+    return DeviceOrientationEvent as unknown as PermissionRequester
   }
   return null
 }
@@ -70,9 +68,21 @@ function sampleFromOrientation(gamma: number, beta: number): TiltSample {
 /** Drives card tilt and holo CSS variables from pointer and device orientation without React state per frame. */
 export function useHoloTilt(): HoloTilt {
   const [element, setElement] = useState<HTMLElement | null>(null)
-  const [needsMotionPermission, setNeedsMotionPermission] = useState(
+  const [isPermissionPending, setIsPermissionPending] = useState(
     () => getPermissionRequester() !== null,
   )
+  const [isMotionDenied, setIsMotionDenied] = useState(false)
+  const [isReducedMotion, setIsReducedMotion] = useState(
+    () => window.matchMedia(REDUCED_MOTION_QUERY).matches,
+  )
+  const needsMotionPermission = isPermissionPending && !isMotionDenied && !isReducedMotion
+
+  useEffect(() => {
+    const query = window.matchMedia(REDUCED_MOTION_QUERY)
+    const handleChange = (event: MediaQueryListEvent) => setIsReducedMotion(event.matches)
+    query.addEventListener('change', handleChange)
+    return () => query.removeEventListener('change', handleChange)
+  }, [])
 
   const ref = useCallback<RefCallback<HTMLElement>>((node) => setElement(node), [])
 
@@ -81,9 +91,8 @@ export function useHoloTilt(): HoloTilt {
     if (!requester) return
     try {
       const result = await requester.requestPermission()
-      if (result === 'granted') {
-        setNeedsMotionPermission(false)
-      }
+      if (result === 'granted') setIsPermissionPending(false)
+      else setIsMotionDenied(true)
     } catch (error) {
       logger.warn('Motion permission request failed', { error })
     }
@@ -92,11 +101,16 @@ export function useHoloTilt(): HoloTilt {
   useEffect(() => {
     if (!element) return
     const target = element
-    if (window.matchMedia(REDUCED_MOTION_QUERY).matches) return
+    if (isReducedMotion) return
 
     let latest: TiltSample | null = null
     let frame = 0
     let isOrientationAttached = false
+    let rect: DOMRect | null = null
+
+    function invalidateRect() {
+      rect = null
+    }
 
     function flush() {
       frame = 0
@@ -122,7 +136,7 @@ export function useHoloTilt(): HoloTilt {
     }
 
     function handlePointerMove(event: PointerEvent) {
-      const rect = target.getBoundingClientRect()
+      rect ??= target.getBoundingClientRect()
       if (rect.width === 0 || rect.height === 0) return
       schedule(
         sampleFromFraction(
@@ -138,7 +152,7 @@ export function useHoloTilt(): HoloTilt {
     }
 
     function attachOrientation() {
-      if (isOrientationAttached || needsMotionPermission) return
+      if (isOrientationAttached || isPermissionPending) return
       window.addEventListener('deviceorientation', handleOrientation)
       isOrientationAttached = true
     }
@@ -159,19 +173,26 @@ export function useHoloTilt(): HoloTilt {
       }
     }
 
-    target.addEventListener('pointermove', handlePointerMove)
-    target.addEventListener('pointerleave', reset)
+    const passive = { passive: true } as const
+    target.addEventListener('pointerenter', invalidateRect, passive)
+    target.addEventListener('pointermove', handlePointerMove, passive)
+    target.addEventListener('pointerleave', reset, passive)
+    window.addEventListener('resize', invalidateRect, passive)
+    window.addEventListener('scroll', invalidateRect, passive)
     document.addEventListener('visibilitychange', handleVisibility)
     if (!document.hidden) attachOrientation()
 
     return () => {
+      target.removeEventListener('pointerenter', invalidateRect)
       target.removeEventListener('pointermove', handlePointerMove)
       target.removeEventListener('pointerleave', reset)
+      window.removeEventListener('resize', invalidateRect)
+      window.removeEventListener('scroll', invalidateRect)
       document.removeEventListener('visibilitychange', handleVisibility)
       detachOrientation()
       reset()
     }
-  }, [element, needsMotionPermission])
+  }, [element, isPermissionPending, isReducedMotion])
 
-  return { ref, needsMotionPermission, requestMotionPermission }
+  return { ref, needsMotionPermission, isMotionDenied, requestMotionPermission }
 }

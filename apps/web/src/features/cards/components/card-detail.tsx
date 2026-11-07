@@ -12,7 +12,9 @@ interface CardDetailProps {
 const DATE_FORMAT = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' })
 
 function formatDate(value: string | null, fallback: string): string {
-  return value ? DATE_FORMAT.format(new Date(value)) : fallback
+  if (!value) return fallback
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? fallback : DATE_FORMAT.format(date)
 }
 
 function MetaCell({ label, value }: { label: string; value: string }) {
@@ -25,7 +27,7 @@ function MetaCell({ label, value }: { label: string; value: string }) {
 }
 
 export function CardDetail({ card }: CardDetailProps) {
-  const { ref, needsMotionPermission, requestMotionPermission } = useHoloTilt()
+  const { ref, needsMotionPermission, isMotionDenied, requestMotionPermission } = useHoloTilt()
   const isGold = card.tier === 'legendary' || card.tier === 'mythic'
   const tagged = card.tagged
     .flatMap((person) => (person.displayUsername ? [person.displayUsername] : []))
@@ -60,6 +62,11 @@ export function CardDetail({ card }: CardDetailProps) {
         <Button variant="ghost" onClick={() => void requestMotionPermission()}>
           Activer l'effet holo
         </Button>
+      ) : null}
+      {isMotionDenied ? (
+        <p className="m-0 text-center text-sm text-muted">
+          Effet holo désactivé dans les réglages de ton téléphone
+        </p>
       ) : null}
     </div>
   )

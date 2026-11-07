@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
+import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Icon } from '@/components/ui/icon'
 import { TopBar } from '@/components/ui/top-bar'
@@ -49,9 +50,9 @@ function CardDetailScreen() {
           title="Chargement impossible"
           body="Vérifie ta connexion puis réessaie."
           action={
-            <button type="button" className="icon-btn px-4" onClick={retry}>
+            <Button variant="ghost" onClick={retry}>
               Réessayer
-            </button>
+            </Button>
           }
         />
       )}
