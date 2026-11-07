@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
+import { canOpenBooster } from '@storix/shared'
 import { Button, buttonClassName } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { BoosterStage } from '@/features/boosters/components/booster-stage'
@@ -18,7 +19,7 @@ export const Route = createFileRoute('/_authed/l/$leagueId/booster')({
     const wallet = await queryClient
       .fetchQuery({ ...walletQueryOptions(params.leagueId), staleTime: 0 })
       .catch(() => null)
-    if (wallet?.pool.drawableCount === 0) throw redirect(home)
+    if (wallet && !canOpenBooster(wallet.pool.drawableCount)) throw redirect(home)
   },
   component: BoosterRoute,
 })

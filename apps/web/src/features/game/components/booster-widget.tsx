@@ -1,4 +1,4 @@
-import type { WalletState } from '@storix/shared'
+import { canOpenBooster, type WalletState } from '@storix/shared'
 import { Button } from '@/components/ui/button'
 import { formatCountdown } from '../format-countdown'
 import { useCountdown } from '../use-countdown'
@@ -9,7 +9,6 @@ interface BoosterWidgetProps {
   wallet: WalletState
   onOpen: () => void
   onElapsed: () => void
-  isPoolEmpty: boolean
 }
 
 function titleFor(stock: number): string {
@@ -31,24 +30,34 @@ function StockMeta({ remainingMs }: { remainingMs: number | null }) {
   )
 }
 
-function PoolEmptyMeta({ nextCardMs }: { nextCardMs: number | null }) {
+function PoolTooSmallMeta({
+  drawableCount,
+  minimumCards,
+  nextCardMs,
+}: {
+  drawableCount: number
+  minimumCards: number
+  nextCardMs: number | null
+}) {
   return (
     <p className="hero-meta" role="status">
-      Pas encore de carte à tirer
+      Il faut au moins {minimumCards} cartes dans les boosters ({drawableCount}/{minimumCards})
       {nextCardMs === null ? null : (
         <>
-          <br />
-          Prochaine carte dans <strong>{formatCountdown(nextCardMs)}</strong>
+          {' '}
+          · prochaine carte dans <strong>{formatCountdown(nextCardMs)}</strong>
         </>
       )}
     </p>
   )
 }
 
-export function BoosterWidget({ wallet, onOpen, onElapsed, isPoolEmpty }: BoosterWidgetProps) {
+export function BoosterWidget({ wallet, onOpen, onElapsed }: BoosterWidgetProps) {
   const { stock, maxStock, nextAt } = wallet.booster
+  const { pool } = wallet
+  const isPoolTooSmall = !canOpenBooster(pool.drawableCount)
   const remainingMs = useCountdown(nextAt, onElapsed)
-  const nextCardMs = useCountdown(isPoolEmpty ? wallet.pool.nextEligibleAt : null, onElapsed)
+  const nextCardMs = useCountdown(isPoolTooSmall ? pool.nextEligibleAt : null, onElapsed)
 
   return (
     <section className="hero" aria-label="Boosters">
@@ -57,12 +66,16 @@ export function BoosterWidget({ wallet, onOpen, onElapsed, isPoolEmpty }: Booste
         <p className="eyebrow">{stock > 0 ? 'Booster prêt' : 'Prochain booster'}</p>
         <p className="hero-title">{titleFor(stock)}</p>
         <StockPips stock={stock} max={maxStock} />
-        {isPoolEmpty ? (
-          <PoolEmptyMeta nextCardMs={nextCardMs} />
+        {isPoolTooSmall ? (
+          <PoolTooSmallMeta
+            drawableCount={pool.drawableCount}
+            minimumCards={pool.minimumCards}
+            nextCardMs={nextCardMs}
+          />
         ) : (
           <StockMeta remainingMs={remainingMs} />
         )}
-        <Button variant="primary" onClick={onOpen} disabled={stock === 0 || isPoolEmpty}>
+        <Button variant="primary" onClick={onOpen} disabled={stock === 0 || isPoolTooSmall}>
           Ouvrir
         </Button>
       </div>
