@@ -1,26 +1,36 @@
 import { parseArgs } from 'node:util'
 import { createDb } from '@storix/db'
+import { leagueNameSchema, usernameSchema } from '@storix/shared'
 import { pino } from 'pino'
 import { createAuth } from '../auth/auth'
 import { createAuthGateway } from '../auth/auth.gateway'
 import { loadEnv } from '../config/env'
-import { insertAuditEntry } from '../features/audit/audit.repository'
-import { insertLeague } from '../features/leagues/leagues.repository'
-import { insertMember } from '../features/members/members.repository'
-import { findUserByUsername, setHomeLeagueIfUnset } from '../features/users/users.repository'
-import { runInTransaction } from '../lib/transaction'
+import { createLeaguesService } from '../features/leagues/leagues.service'
+import { findUserByUsername } from '../features/users/users.repository'
+import { buildLoggerOptions } from '../lib/logger'
 
-const logger = pino({ level: 'info' })
+const env = loadEnv(process.env)
+const logger = pino(buildLoggerOptions(env))
 
 function readArgs(argv: string[]): { username: string; league: string } {
   const { values } = parseArgs({
     args: argv.filter((arg) => arg !== '--'),
     options: { username: { type: 'string' }, league: { type: 'string' } },
   })
-  if (values.username === undefined || values.league === undefined) {
-    throw new Error('Usage: bootstrap --username <name> --league <name>')
+  const username = usernameSchema.safeParse(values.username)
+  const league = leagueNameSchema.safeParse(values.league)
+  if (!username.success || !league.success) {
+    const problems = [
+      ...(username.success
+        ? []
+        : [`--username: ${username.error.issues[0]?.message ?? 'invalid'}`]),
+      ...(league.success ? [] : [`--league: ${league.error.issues[0]?.message ?? 'invalid'}`]),
+    ]
+    throw new Error(
+      `Usage: bootstrap --username <name> --league <name>. Invalid input (${problems.join('; ')})`,
+    )
   }
-  return { username: values.username, league: values.league }
+  return { username: username.data, league: league.data }
 }
 
 async function main(): Promise<void> {
@@ -29,7 +39,6 @@ async function main(): Promise<void> {
   if (password === undefined || password.length === 0) {
     throw new Error('BOOTSTRAP_PASSWORD environment variable is required')
   }
-  const env = loadEnv(process.env)
   const database = createDb(env.DATABASE_URL)
   try {
     if ((await findUserByUsername(database.db, username)) !== null) {
@@ -37,20 +46,16 @@ async function main(): Promise<void> {
     }
     const gateway = createAuthGateway(createAuth({ db: database.db, env }))
     const { userId } = await gateway.createCredentialUser({ username, password })
-    const created = await runInTransaction(database.db, async (tx) => {
-      const record = await insertLeague(tx, league)
-      await insertMember(tx, { leagueId: record.id, userId, role: 'owner' })
-      await setHomeLeagueIfUnset(tx, userId, record.id)
-      await insertAuditEntry(tx, {
-        leagueId: record.id,
-        actorId: userId,
-        targetUserId: null,
-        action: 'league.created',
-        metadata: { name: record.name, source: 'bootstrap' },
+    try {
+      const created = await createLeaguesService(database.db).createLeague(userId, league, {
+        setHomeLeague: true,
+        source: 'bootstrap',
       })
-      return record
-    })
-    logger.info({ userId, leagueId: created.id }, 'Bootstrap complete')
+      logger.info({ userId, leagueId: created.id }, 'Bootstrap complete')
+    } catch (error) {
+      await gateway.deleteUser(userId)
+      throw error
+    }
   } finally {
     await database.close()
   }

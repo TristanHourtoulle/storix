@@ -1,8 +1,8 @@
-import type { FastifyServerOptions } from 'fastify'
+import type { LoggerOptions } from 'pino'
 import type { Env } from '../config/env'
 
-/** Builds the Fastify pino logger options for the given environment. */
-export function buildLoggerOptions(env: Env): NonNullable<FastifyServerOptions['logger']> {
+/** Builds the pino logger options for the given environment. */
+export function buildLoggerOptions(env: Env): LoggerOptions {
   return {
     level: env.LOG_LEVEL,
     redact: ['req.headers.cookie', 'req.headers.authorization'],
