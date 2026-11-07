@@ -18,6 +18,7 @@ import {
   type ResetCodesService,
 } from './features/reset-codes/reset-codes.service'
 import { createUploadsService, type UploadsService } from './features/uploads/uploads.service'
+import { createWalletsService, type WalletsService } from './features/wallets/wallets.service'
 import type { JobQueue } from './jobs/job-queue'
 import type { ErrorLogger } from './lib/error-logger'
 import { createMediaSigner, type MediaSigner } from './lib/media-signer'
@@ -42,6 +43,7 @@ export interface Services {
   members: MembersService
   resetCodes: ResetCodesService
   uploads: UploadsService
+  wallets: WalletsService
 }
 
 /** Wires the runtime dependencies for the given environment, database and job queue. */
@@ -89,5 +91,6 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       jobs: deps.jobs,
       clock: deps.clock,
     }),
+    wallets: createWalletsService({ db: deps.db, clock: deps.clock }),
   }
 }
