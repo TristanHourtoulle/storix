@@ -11,7 +11,7 @@ import {
   type JoinResponse,
   type SignupBody,
 } from '@storix/shared'
-import type { AuthGateway } from '../../auth/auth.gateway'
+import { CredentialUserCreationError, type AuthGateway } from '../../auth/auth.gateway'
 import { generateInvitationToken, sha256Hex } from '../../lib/crypto'
 import { AppError, forbidden, notFound } from '../../lib/errors'
 import { runInTransaction } from '../../lib/transaction'
@@ -164,7 +164,15 @@ export function createInvitationsService(deps: InvitationsServiceDeps): Invitati
       if ((await findUserByUsername(db, body.username)) !== null) {
         throw new AppError('USERNAME_TAKEN', 409, 'Username already taken')
       }
-      const { userId } = await auth.createCredentialUser(body)
+      const { userId } = await auth.createCredentialUser(body).catch(async (error: unknown) => {
+        if (
+          error instanceof CredentialUserCreationError &&
+          (await findUserByUsername(db, body.username)) !== null
+        ) {
+          throw new AppError('USERNAME_TAKEN', 409, 'Username already taken')
+        }
+        throw error
+      })
       try {
         await runInTransaction(db, async (tx) => {
           await consumeOrThrow(tx, invitation.id, clock())

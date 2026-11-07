@@ -11,6 +11,13 @@ export interface AuthSession {
   displayUsername: string
 }
 
+export class CredentialUserCreationError extends Error {
+  constructor(options?: ErrorOptions) {
+    super('Credential user creation failed', options)
+    this.name = 'CredentialUserCreationError'
+  }
+}
+
 export interface AuthGateway {
   handle(request: Request): Promise<Response>
   getSession(headers: Headers): Promise<AuthSession | null>
@@ -59,6 +66,9 @@ export function createAuthGateway(auth: Auth): AuthGateway {
       } catch (error) {
         if (isUsernameTaken(error)) {
           throw new AppError('USERNAME_TAKEN', 409, 'Username already taken')
+        }
+        if (isAPIError(error) && error.body?.code === 'FAILED_TO_CREATE_USER') {
+          throw new CredentialUserCreationError({ cause: error })
         }
         throw error
       }

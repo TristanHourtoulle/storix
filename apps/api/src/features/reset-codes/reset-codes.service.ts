@@ -26,6 +26,7 @@ import {
 } from './reset-codes.repository'
 
 export interface ErrorLogger {
+  warn(context: object, message: string): void
   error(context: object, message: string): void
 }
 
@@ -65,6 +66,7 @@ export function createResetCodesService(deps: ResetCodesServiceDeps): ResetCodes
     try {
       await auth.revokeAllSessions(userId)
     } catch {
+      logger.warn({ userId }, 'Retrying session revocation after password reset')
       try {
         await auth.revokeAllSessions(userId)
       } catch {
