@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
+import { TIER_LABELS } from '../tier-labels'
 import { cardsInfiniteQueryOptions } from '../cards.queries'
 import { useGridMetrics } from '../use-grid-metrics'
 import { CardFace } from './card-face'
@@ -32,6 +33,10 @@ export function CollectionGrid({ leagueId, authorId }: CollectionGridProps) {
     overscan: 3,
     scrollMargin: offsetTop,
   })
+  const { measure } = virtualizer
+  useEffect(() => {
+    measure()
+  }, [cardHeight, measure])
   const items = virtualizer.getVirtualItems()
   const lastIndex = items.at(-1)?.index ?? -1
 
@@ -57,7 +62,7 @@ export function CollectionGrid({ leagueId, authorId }: CollectionGridProps) {
               key={card.id}
               to="/l/$leagueId/cards/$cardId"
               params={{ leagueId, cardId: card.id }}
-              aria-label={card.title}
+              aria-label={`${card.title}, ${TIER_LABELS[card.tier]}`}
               className="block"
             >
               <CardFace
@@ -72,8 +77,8 @@ export function CollectionGrid({ leagueId, authorId }: CollectionGridProps) {
                   width={card.width}
                   height={card.height}
                   sizes={CARD_SIZES}
-                  alt={card.title}
                   isEager={row.index === 0}
+                  isHighPriority={row.index === 0}
                 />
               </CardFace>
             </Link>

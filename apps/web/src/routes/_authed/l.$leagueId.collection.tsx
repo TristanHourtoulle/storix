@@ -17,56 +17,64 @@ export const Route = createFileRoute('/_authed/l/$leagueId/collection')({
   component: Collection,
 })
 
+const LOADING = <p className="m-0 text-sm text-muted">Chargement…</p>
+
 function Collection() {
   const { leagueId } = Route.useParams()
   const { author } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
   const members = useMembers(leagueId)
   const authorId = author ?? null
-  const selected = members.find((member) => member.userId === authorId)
+  const authorName = members.find((member) => member.userId === authorId)?.displayUsername ?? null
 
   return (
     <main className="screen">
-      <Suspense fallback={<p className="m-0 text-sm text-muted">Chargement…</p>}>
-        <CollectionBody
-          leagueId={leagueId}
-          authorId={authorId}
-          authorName={selected?.displayUsername ?? null}
-          filter={
-            <MemberFilter
-              members={members}
-              selectedId={authorId}
-              onSelect={(id) =>
-                void navigate({ search: { author: id ?? undefined }, replace: true })
-              }
-            />
-          }
-        />
+      <Suspense fallback={<h1>Collection</h1>}>
+        <CollectionTitle leagueId={leagueId} authorId={authorId} />
+      </Suspense>
+      <MemberFilter
+        members={members}
+        selectedId={authorId}
+        onSelect={(id) => void navigate({ search: { author: id ?? undefined }, replace: true })}
+      />
+      <Suspense fallback={LOADING}>
+        <CollectionBody leagueId={leagueId} authorId={authorId} authorName={authorName} />
       </Suspense>
     </main>
   )
 }
 
-interface CollectionBodyProps {
+interface CollectionPartProps {
   leagueId: string
   authorId: string | null
-  authorName: string | null
-  filter: React.ReactNode
 }
 
-function CollectionBody({ leagueId, authorId, authorName, filter }: CollectionBodyProps) {
+function useTotal({ leagueId, authorId }: CollectionPartProps): number {
   const { data } = useSuspenseInfiniteQuery(cardsInfiniteQueryOptions(leagueId, authorId))
-  const total = data.pages[0]?.total ?? 0
+  return data.pages[0]?.total ?? 0
+}
+
+function CollectionTitle(props: CollectionPartProps) {
+  const total = useTotal(props)
+  return (
+    <div className="flex items-baseline justify-between">
+      <h1>Collection</h1>
+      <span className="font-display text-[15px] font-semibold text-muted">
+        <strong className="text-ink">{total}</strong> {total > 1 ? 'cartes' : 'carte'}
+      </span>
+    </div>
+  )
+}
+
+function CollectionBody({
+  leagueId,
+  authorId,
+  authorName,
+}: CollectionPartProps & { authorName: string | null }) {
+  const total = useTotal({ leagueId, authorId })
 
   return (
     <>
-      <div className="flex items-baseline justify-between">
-        <h1>Collection</h1>
-        <span className="font-display text-[15px] font-semibold text-muted">
-          <strong className="text-ink">{total}</strong> {total > 1 ? 'cartes' : 'carte'}
-        </span>
-      </div>
-      {filter}
       <p className="m-0 font-display text-sm font-semibold text-ink-3">
         {authorName ? `Cartes de ${authorName} · ${total}` : `Toutes les cartes · ${total}`}
       </p>

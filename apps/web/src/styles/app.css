@@ -190,7 +190,6 @@
     );
     background-size: 260% 260%;
     mix-blend-mode: overlay;
-    animation: shine 4.5s linear infinite;
   }
   .t-M .card-holo {
     background: linear-gradient(
@@ -207,6 +206,11 @@
     );
     background-size: 260% 260%;
     mix-blend-mode: overlay;
+  }
+  .card.lg.t-L .card-holo,
+  .card.xl.t-L .card-holo,
+  .card.lg.t-M .card-holo,
+  .card.xl.t-M .card-holo {
     animation: shine 4.5s linear infinite;
   }
   .t-M::before {
@@ -231,6 +235,9 @@
       linear-gradient(#000 0 0) content-box,
       linear-gradient(#000 0 0);
     mask-composite: exclude;
+  }
+  .card.lg.t-M::before,
+  .card.xl.t-M::before {
     animation: mythic-spin 6s linear infinite;
   }
   .card-gem {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { ImageSet, ImageSource } from '@storix/shared'
 import { useThumbhashUrl } from '../use-thumbhash-url'
 
@@ -8,8 +8,8 @@ interface CardImageProps {
   width: number
   height: number
   sizes: string
-  alt: string
   isEager?: boolean
+  isHighPriority?: boolean
 }
 
 function toSrcSet(sources: ImageSource[]): string {
@@ -29,10 +29,14 @@ export function CardImage({
   width,
   height,
   sizes,
-  alt,
   isEager = false,
+  isHighPriority = false,
 }: CardImageProps) {
   const [isLoaded, setIsLoaded] = useState(false)
+  const [hasFailed, setHasFailed] = useState(false)
+  const imageRef = useCallback((node: HTMLImageElement | null) => {
+    if (node?.complete && node.naturalWidth > 0) setIsLoaded(true)
+  }, [])
   const placeholder = useThumbhashUrl(thumbhash)
   const fallback = largest(image.webp)
 
@@ -46,19 +50,24 @@ export function CardImage({
         <source type="image/webp" srcSet={toSrcSet(image.webp)} sizes={sizes} />
         <img
           src={fallback?.url}
-          alt={alt}
+          alt=""
           width={width}
           height={height}
           sizes={sizes}
           loading={isEager ? 'eager' : 'lazy'}
           decoding="async"
           onLoad={() => setIsLoaded(true)}
-          ref={(node) => {
-            if (node?.complete && node.naturalWidth > 0) setIsLoaded(true)
-          }}
+          ref={imageRef}
+          onError={() => setHasFailed(true)}
+          fetchPriority={isHighPriority ? 'high' : undefined}
           className={`size-full object-cover transition-opacity duration-300 motion-reduce:transition-none ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
         />
       </picture>
+      {hasFailed ? (
+        <span className="absolute inset-0 grid place-items-center bg-surface-2/80 px-2 text-center text-[11px] text-muted">
+          Image indisponible
+        </span>
+      ) : null}
     </div>
   )
 }

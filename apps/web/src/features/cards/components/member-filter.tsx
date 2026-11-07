@@ -10,7 +10,11 @@ interface MemberFilterProps {
 
 export function MemberFilter({ members, selectedId, onSelect }: MemberFilterProps) {
   return (
-    <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]">
+    <div
+      role="group"
+      aria-label="Filtrer par membre"
+      className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]"
+    >
       <Chip label="Toutes" isOn={selectedId === null} onToggle={() => onSelect(null)} />
       {members.map((member) => (
         <Chip
