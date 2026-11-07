@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { leagueMediaPrefix, mediaCachePathPrefix } from '@storix/shared/domain'
 import { logger } from '@/lib/logger'
-import { API_CACHE_NAME, MEDIA_CACHE_NAME } from '@/features/pwa/cache-names'
+import { API_CACHE_NAME, API_CACHE_PREFIX, MEDIA_CACHE_NAME } from '@/features/pwa/cache-names'
 
 async function deleteMatching(
   cacheName: string,
@@ -54,11 +54,12 @@ export async function purgeLeagueCaches(queryClient: QueryClient, leagueId: stri
   ])
 }
 
-/** Deletes the per-user offline API cache and the media cache; failures are logged, never thrown. */
+/** Deletes every offline API cache version and the media cache; failures are logged, never thrown. */
 export async function purgeAllCaches(): Promise<void> {
   if (!('caches' in window)) return
   try {
-    await Promise.all([caches.delete(API_CACHE_NAME), caches.delete(MEDIA_CACHE_NAME)])
+    const apiCaches = (await caches.keys()).filter((name) => name.startsWith(API_CACHE_PREFIX))
+    await Promise.all([...apiCaches, MEDIA_CACHE_NAME].map((name) => caches.delete(name)))
   } catch (error) {
     logger.warn('Cache clear failed', { error })
   }
