@@ -30,9 +30,12 @@ export function MemberRow({
     <li className="flex flex-col gap-3 rounded-input bg-surface p-3 shadow-hairline">
       <div className="flex items-center gap-3">
         <Avatar label={member.displayUsername} />
-        <span className="min-w-0 flex-1 truncate text-[15px] font-medium">
-          {member.displayUsername}
-        </span>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-[15px] font-medium">{member.displayUsername}</span>
+          {member.username !== null ? (
+            <span className="truncate text-xs text-muted">identifiant : {member.username}</span>
+          ) : null}
+        </div>
         {member.isSelf ? <span className="text-xs text-muted">toi</span> : null}
         <span className="flex-none rounded-full bg-surface-2 px-2.5 py-1 font-display text-xs font-semibold text-ink-3 shadow-hairline-strong">
           {ROLE_LABELS[member.role]}

@@ -91,6 +91,7 @@ function toSummary(
   return {
     userId: row.userId,
     displayUsername: row.displayUsername,
+    username: m.role === 'admin' || m.role === 'owner' ? row.username : null,
     role: row.role,
     joinedAt: row.joinedAt.toISOString(),
     isSelf,
