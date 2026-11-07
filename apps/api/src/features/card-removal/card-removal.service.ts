@@ -1,9 +1,9 @@
 import type { DbExecutor } from '@storix/db'
+import { lockLeagueEconomyExclusive } from '../wallets/wallets.repository'
 import { compensateRemovedCopies, mediaPrefix, type RemovalReason } from '@storix/shared'
 import type { JobQueue } from '../../jobs/job-queue'
 import type { ErrorLogger } from '../../lib/error-logger'
 import { insertAuditEntry } from '../audit/audit.repository'
-import { lockLeagueEconomyExclusive } from '../wallets/wallets.repository'
 import {
   creditDust,
   deleteCards,

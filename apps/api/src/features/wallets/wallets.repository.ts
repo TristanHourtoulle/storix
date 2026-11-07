@@ -1,5 +1,7 @@
-import { memberWallets, type DbExecutor } from '@storix/db'
-import { and, eq, sql } from 'drizzle-orm'
+import { lockLeagueEconomyShared, memberWallets, type DbExecutor } from '@storix/db'
+import { and, eq } from 'drizzle-orm'
+
+export { lockLeagueEconomyExclusive, lockLeagueEconomyShared } from '@storix/db'
 
 export interface WalletRow {
   leagueId: string
@@ -60,20 +62,6 @@ export async function findWallet(
     .where(keyCondition(leagueId, userId))
     .limit(1)
   return rows[0] ?? null
-}
-
-function economyLockKey(leagueId: string) {
-  return sql`hashtext(${'economy:' + leagueId})::bigint`
-}
-
-/** Takes the league economy lock in shared mode until the transaction ends. */
-export async function lockLeagueEconomyShared(db: DbExecutor, leagueId: string): Promise<void> {
-  await db.execute(sql`select pg_advisory_xact_lock_shared(${economyLockKey(leagueId)})`)
-}
-
-/** Takes the league economy lock in exclusive mode until the transaction ends. */
-export async function lockLeagueEconomyExclusive(db: DbExecutor, leagueId: string): Promise<void> {
-  await db.execute(sql`select pg_advisory_xact_lock(${economyLockKey(leagueId)})`)
 }
 
 /** Reads a member wallet under the shared league economy lock and a row lock, failing when it does not exist. */

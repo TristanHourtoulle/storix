@@ -1,11 +1,11 @@
 import type { Database } from '@storix/db'
+import { lockLeagueEconomyShared } from '../wallets/wallets.repository'
 import { canReact, type ReactionCounts, type ReactionType } from '@storix/shared'
 import { AppError, notFound } from '../../lib/errors'
 import { runInTransaction } from '../../lib/transaction'
 import { findCardForViewer } from '../cards/cards.repository'
 import { lockOwnedVariants } from '../copies/copies.repository'
 import type { Membership } from '../leagues/leagues.service'
-import { lockLeagueEconomyShared } from '../wallets/wallets.repository'
 import { addReaction, countReactions, removeReaction } from './reactions.repository'
 
 export interface ReactionsService {
