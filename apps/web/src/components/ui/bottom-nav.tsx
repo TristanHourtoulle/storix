@@ -12,6 +12,7 @@ const ITEM =
   'flex min-h-11 w-16 flex-col items-center gap-1 p-0 font-sans text-[11px] font-medium no-underline'
 
 export function BottomNav({ leagueId, active }: BottomNavProps) {
+  const current = (section: NavSection) => (active === section ? 'page' : undefined)
   const tone = (section: NavSection): string => (active === section ? 'text-ink' : 'text-faint')
 
   return (
@@ -19,13 +20,20 @@ export function BottomNav({ leagueId, active }: BottomNavProps) {
       aria-label="Navigation principale"
       className="sticky bottom-0 mx-auto mt-auto box-border max-w-[480px] flex h-[calc(84px+env(safe-area-inset-bottom))] w-full items-start justify-around bg-nav px-2 pt-2.5 shadow-nav"
     >
-      <Link to="/l/$leagueId" params={{ leagueId }} className={`${ITEM} ${tone('home')}`}>
+      <Link
+        to="/l/$leagueId"
+        params={{ leagueId }}
+        activeOptions={{ exact: true }}
+        aria-current={current('home')}
+        className={`${ITEM} ${tone('home')}`}
+      >
         <Icon name="home" />
         <span>Accueil</span>
       </Link>
       <Link
         to="/l/$leagueId/collection"
         params={{ leagueId }}
+        aria-current={current('collection')}
         className={`${ITEM} ${tone('collection')}`}
       >
         <Icon name="collection" />
@@ -35,6 +43,7 @@ export function BottomNav({ leagueId, active }: BottomNavProps) {
         to="/l/$leagueId/add"
         params={{ leagueId }}
         aria-label="Ajouter des photos"
+        aria-current={current('add')}
         className={`${ITEM} ${tone('add')}`}
       >
         <span className="-mt-1.5 grid size-12 place-items-center rounded-plus bg-accent text-bg">
@@ -49,6 +58,7 @@ export function BottomNav({ leagueId, active }: BottomNavProps) {
       <Link
         to="/l/$leagueId/profile"
         params={{ leagueId }}
+        aria-current={current('profile')}
         className={`${ITEM} ${tone('profile')}`}
       >
         <Icon name="profile" />

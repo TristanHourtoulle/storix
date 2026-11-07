@@ -1,15 +1,8 @@
+import { initials } from '@/lib/initials'
+
 interface AvatarProps {
   label: string
   size?: 'sm' | 'md'
-}
-
-function initials(label: string): string {
-  return label
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join('')
 }
 
 export function Avatar({ label, size = 'sm' }: AvatarProps) {

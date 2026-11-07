@@ -1,12 +1,13 @@
 import { createRouter } from '@tanstack/react-router'
+import { isPublicPath } from '@/lib/redirect'
 import { createQueryClient } from '@/lib/query-client'
 import { meQueryOptions } from '@/features/auth/session.queries'
 import { routeTree } from './routeTree.gen'
 
 function redirectToLogin(): void {
-  const { pathname, href } = router.state.location
-  if (pathname.startsWith('/login')) return
-  queryClient.setQueryData(meQueryOptions.queryKey, null)
+  const { pathname, href } = router.latestLocation
+  if (isPublicPath(pathname)) return
+  queryClient.removeQueries({ queryKey: meQueryOptions.queryKey })
   void router.navigate({ to: '/login', search: { redirect: href } })
 }
 

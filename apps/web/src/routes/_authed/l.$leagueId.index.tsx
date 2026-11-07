@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { Button } from '@/components/ui/button'
+import { buttonClassName } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { LeagueHeader } from '@/features/leagues/components/league-header'
 import { leagueDetailQueryOptions } from '@/features/leagues/leagues.queries'
@@ -22,10 +22,12 @@ function LeagueHome() {
         body="En attendant, invite tes potes dans la ligue."
         action={
           league.permissions.canManageInvitations ? (
-            <Link to="/l/$leagueId/admin" params={{ leagueId }} className="no-underline">
-              <Button variant="ghost" tabIndex={-1}>
-                Inviter
-              </Button>
+            <Link
+              to="/l/$leagueId/admin"
+              params={{ leagueId }}
+              className={buttonClassName({ variant: 'ghost' })}
+            >
+              Inviter
             </Link>
           ) : undefined
         }

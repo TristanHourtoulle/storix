@@ -11,6 +11,16 @@ const VARIANTS = {
   ghost: 'bg-transparent text-ink shadow-hairline-strong',
 } as const
 
+interface ButtonClassOptions {
+  variant: 'primary' | 'ghost'
+  block?: boolean
+}
+
+/** Class names shared by buttons and link-styled buttons. */
+export function buttonClassName({ variant, block = false }: ButtonClassOptions): string {
+  return `inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-control border-0 px-5 font-display text-base font-semibold no-underline disabled:cursor-not-allowed disabled:opacity-60 ${VARIANTS[variant]} ${block ? 'w-full' : ''}`
+}
+
 export function Button({
   variant,
   block = false,
@@ -27,7 +37,7 @@ export function Button({
       type={type}
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}
-      className={`inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-control border-0 px-5 font-display text-base font-semibold no-underline disabled:cursor-not-allowed disabled:opacity-60 ${VARIANTS[variant]} ${block ? 'w-full' : ''} ${className}`}
+      className={`${buttonClassName({ variant, block })} ${className}`}
     >
       {isLoading ? (
         <span
