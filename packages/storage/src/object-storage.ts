@@ -1,4 +1,4 @@
-import type { Readable } from 'node:stream'
+import { Readable } from 'node:stream'
 import {
   DeleteObjectsCommand,
   GetObjectCommand,
@@ -32,12 +32,14 @@ export interface ObjectStorage {
   readonly uploadOrigin: string
   presignUpload(input: PresignUploadInput): Promise<PresignedUpload>
   head(key: string): Promise<{ contentLength: number; contentType: string | null } | null>
+  /** Callers must fully consume or destroy the returned body stream. */
   getStream(key: string): Promise<{
     body: Readable
     contentType: string | null
     contentLength: number | null
     etag: string | null
   } | null>
+  /** Resolves null when the object is missing and rejects with ObjectTooLargeError above maxBytes. */
   getBuffer(key: string, maxBytes: number): Promise<Buffer | null>
   put(input: {
     key: string
@@ -50,12 +52,25 @@ export interface ObjectStorage {
 }
 
 function isMissing(error: unknown): boolean {
-  if (!(error instanceof S3ServiceException)) return false
   return (
-    error.name === 'NoSuchKey' ||
-    error.name === 'NotFound' ||
-    error.$metadata.httpStatusCode === 404
+    error instanceof S3ServiceException && (error.name === 'NoSuchKey' || error.name === 'NotFound')
   )
+}
+
+/** Thrown when an object exceeds the byte cap requested by the caller. */
+export class ObjectTooLargeError extends Error {
+  constructor(
+    readonly key: string,
+    readonly maxBytes: number,
+  ) {
+    super(`Object ${key} exceeds ${maxBytes} bytes`)
+    this.name = 'ObjectTooLargeError'
+  }
+}
+
+function toReadable(body: unknown, key: string): Readable {
+  if (!(body instanceof Readable)) throw new Error(`Unexpected body type for object ${key}`)
+  return body
 }
 
 async function orNull<T>(operation: () => Promise<T>): Promise<T | null> {
@@ -73,7 +88,7 @@ function computeUploadOrigin(env: StorageEnv): string {
   return `${endpoint.protocol}//${env.S3_BUCKET}.${endpoint.host}`
 }
 
-async function readCapped(body: Readable, maxBytes: number): Promise<Buffer | null> {
+async function readCapped(body: Readable, key: string, maxBytes: number): Promise<Buffer> {
   const chunks: Buffer[] = []
   let total = 0
   for await (const chunk of body) {
@@ -81,7 +96,7 @@ async function readCapped(body: Readable, maxBytes: number): Promise<Buffer | nu
     total += buffer.length
     if (total > maxBytes) {
       body.destroy()
-      return null
+      throw new ObjectTooLargeError(key, maxBytes)
     }
     chunks.push(buffer)
   }
@@ -129,9 +144,9 @@ export function createObjectStorage(env: StorageEnv): ObjectStorage {
     getStream: (key) =>
       orNull(async () => {
         const result = await client.send(new GetObjectCommand({ Bucket, Key: key }))
-        if (!result.Body) throw new Error(`Empty body for object ${key}`)
+        const body = toReadable(result.Body, key)
         return {
-          body: result.Body as Readable,
+          body,
           contentType: result.ContentType ?? null,
           contentLength: result.ContentLength ?? null,
           etag: result.ETag ?? null,
@@ -141,10 +156,13 @@ export function createObjectStorage(env: StorageEnv): ObjectStorage {
     getBuffer: (key, maxBytes) =>
       orNull(async () => {
         const result = await client.send(new GetObjectCommand({ Bucket, Key: key }))
-        if (!result.Body) throw new Error(`Empty body for object ${key}`)
-        if (result.ContentLength !== undefined && result.ContentLength > maxBytes) return null
-        return readCapped(result.Body as Readable, maxBytes)
-      }).then((buffer) => buffer ?? null),
+        const body = toReadable(result.Body, key)
+        if (result.ContentLength !== undefined && result.ContentLength > maxBytes) {
+          body.destroy()
+          throw new ObjectTooLargeError(key, maxBytes)
+        }
+        return readCapped(body, key, maxBytes)
+      }),
 
     put: async (input) => {
       await client.send(
@@ -161,12 +179,14 @@ export function createObjectStorage(env: StorageEnv): ObjectStorage {
     delete: async (keys) => {
       for (let index = 0; index < keys.length; index += DELETE_CHUNK_SIZE) {
         const chunk = keys.slice(index, index + DELETE_CHUNK_SIZE)
-        await client.send(
+        const result = await client.send(
           new DeleteObjectsCommand({
             Bucket,
             Delete: { Objects: chunk.map((Key) => ({ Key })), Quiet: true },
           }),
         )
+        const failed = (result.Errors ?? []).map((item) => item.Key ?? '?')
+        if (failed.length > 0) throw new Error(`Failed to delete objects: ${failed.join(', ')}`)
       }
     },
 
