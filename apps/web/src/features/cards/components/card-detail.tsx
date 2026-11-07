@@ -9,6 +9,7 @@ import { CardActions } from './card-actions'
 import { CardFace } from './card-face'
 import { CardImage } from './card-image'
 import { authorLabel } from '../author-label'
+import { MotionPrompt } from './motion-prompt'
 import { MetaCell, discovererLabel, formatDate } from './meta-cell'
 import { ReactionBar } from './reaction-bar'
 
@@ -51,6 +52,11 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
           />
         </CardFace>
       </div>
+      <MotionPrompt
+        needsPermission={needsMotionPermission}
+        isDenied={isMotionDenied}
+        onRequest={requestMotionPermission}
+      />
       <div className="pills">
         <span className={isGold ? 'pill gold' : 'pill'}>{TIER_LABELS[card.displayTier]}</span>
         {hasFoil ? <span className="pill gold">Foil</span> : null}
@@ -87,16 +93,6 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
         </Button>
       ) : null}
       {hasFailed ? <Notice tone="error">Action impossible pour le moment. Réessaie.</Notice> : null}
-      {needsMotionPermission ? (
-        <Button variant="ghost" onClick={() => void requestMotionPermission()}>
-          Activer l'effet holo
-        </Button>
-      ) : null}
-      {isMotionDenied ? (
-        <p className="m-0 text-center text-sm text-muted">
-          Effet holo désactivé dans les réglages de ton téléphone
-        </p>
-      ) : null}
     </div>
   )
 }

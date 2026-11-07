@@ -5,6 +5,8 @@ export const leagueNameSchema = z.string().trim().min(2).max(40)
 
 export const createLeagueBodySchema = z.object({ name: leagueNameSchema })
 
+export const renameLeagueBodySchema = z.object({ name: leagueNameSchema })
+
 export const leagueSummarySchema = z.object({
   id: idSchema,
   name: z.string(),
@@ -26,5 +28,6 @@ export const leagueDetailSchema = z.object({
 export const leagueParamsSchema = z.object({ leagueId: z.uuid() })
 
 export type CreateLeagueBody = z.infer<typeof createLeagueBodySchema>
+export type RenameLeagueBody = z.infer<typeof renameLeagueBodySchema>
 export type LeagueSummary = z.infer<typeof leagueSummarySchema>
 export type LeagueDetail = z.infer<typeof leagueDetailSchema>

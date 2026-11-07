@@ -11,6 +11,7 @@ export const walletStateSchema = z.object({
   }),
   pool: z.object({
     drawableCount: z.int().min(0),
+    minimumCards: z.int().min(1),
     nextEligibleAt: isoDateSchema.nullable(),
   }),
   pity: z.object({

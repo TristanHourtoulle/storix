@@ -1,6 +1,7 @@
-import { CLIENT_MAX_EDGE_PX, UPLOAD_CONTENT_TYPE, sanitizeCaptureDate } from '@storix/shared'
+import { CLIENT_MAX_EDGE_PX, UPLOAD_CONTENT_TYPE, resolveCaptureDate } from '@storix/shared'
 import { parse } from 'exifr/dist/lite.esm.mjs'
 import { UserFacingError } from '@/features/errors/user-message'
+import { logger } from '@/lib/logger'
 
 const JPEG_QUALITY = 0.9
 const UNSUPPORTED_MESSAGE = 'Format non pris en charge sur cet appareil.'
@@ -20,17 +21,26 @@ interface DecodedImage {
   release: () => void
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
+const EXIF_DATE_OPTIONS = {
+  ifd1: false,
+  gps: false,
+  interop: false,
+  xmp: false,
+  icc: false,
+  iptc: false,
+  jfif: false,
+  exif: { pick: ['DateTimeOriginal', 'OffsetTimeOriginal', 'CreateDate'] },
 }
 
 async function readCaptureDate(file: File): Promise<string | null> {
   try {
-    const tags: unknown = await parse(file, { pick: ['DateTimeOriginal'] })
-    const raw = isRecord(tags) ? tags.DateTimeOriginal : undefined
-    if (!(raw instanceof Date)) return null
-    return sanitizeCaptureDate(raw, new Date())?.toISOString() ?? null
-  } catch {
+    const tags: unknown = await parse(file, EXIF_DATE_OPTIONS)
+    return resolveCaptureDate(tags, new Date())
+  } catch (error) {
+    logger.warn('Capture date could not be read', {
+      name: error instanceof Error ? error.name : 'UnknownError',
+      message: error instanceof Error ? error.message : String(error),
+    })
     return null
   }
 }

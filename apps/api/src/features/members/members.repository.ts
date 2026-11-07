@@ -18,6 +18,7 @@ export interface MembershipRecord {
 export interface MemberRow {
   userId: string
   displayUsername: string
+  username: string | null
   role: LeagueRole
   joinedAt: Date
   homeLeagueId: string | null
@@ -63,6 +64,7 @@ export function listMembers(db: DbExecutor, leagueId: string): Promise<MemberRow
     .select({
       userId: leagueMembers.userId,
       displayUsername: displayName,
+      username: user.username,
       role: leagueMembers.role,
       joinedAt: leagueMembers.joinedAt,
       homeLeagueId: user.homeLeagueId,

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useReducer, useRef, useState, type RefObject } 
 import type { BoosterPull } from '@storix/shared'
 import { TIER_LABELS } from '@/features/cards/tier-labels'
 import { logger } from '@/lib/logger'
-import { revealFlat, revealLong, stash } from './arcade/choreography'
+import { revealLong, revealQuick, stash } from './arcade/choreography'
 import { Director, collectLayers, isStale } from './arcade/director'
 import { STAGE_HEIGHT } from './arcade/geometry'
 import { PACK_TAPS, burstPack, hitPack } from './arcade/pack-choreography'
@@ -119,8 +119,8 @@ function prefersReducedMotion(): boolean {
 }
 
 /**
- * Drives the arcade opening: pack hits, burst, then one reveal per tap.
- * Cards new to the collection get the long tier build-up and flip; the others appear flat.
+ * Drives the arcade opening: pack hits, burst, the first card revealed on its own, then one reveal per tap.
+ * Cards new to the collection get the long tier build-up and flip; owned ones get a short flip.
  */
 export function useArcadeOpening(
   pulls: readonly BoosterPull[],
@@ -135,9 +135,11 @@ export function useArcadeOpening(
   const stateRef = useRef(state)
   const busyRef = useRef(false)
   const tapsRef = useRef(0)
+  const isReadyRef = useRef(isReady)
 
   useEffect(() => {
     stateRef.current = state
+    isReadyRef.current = isReady
   })
 
   useEffect(() => {
@@ -178,6 +180,21 @@ export function useArcadeOpening(
     [pulls],
   )
 
+  const playReveal = useCallback(
+    async (director: Director, index: number) => {
+      const pull = pulls[index]
+      if (!pull) return
+      dispatch({ type: 'revealing', index })
+      if (pull.isFirstCopy) {
+        await revealLong(director, index, tierFx(pull.card.tier), TIER_LABELS[pull.card.tier])
+      } else {
+        await revealQuick(director, index)
+      }
+      dispatch({ type: 'revealed', index, announcement: describe(pull, index + 1, count) })
+    },
+    [pulls, count],
+  )
+
   const open = useCallback(
     () =>
       run(async (director) => {
@@ -188,8 +205,9 @@ export function useArcadeOpening(
           type: 'opened',
           announcement: `Booster ouvert. ${count} carte${plural} face cachée.`,
         })
+        if (isReadyRef.current) await playReveal(director, 0)
       }),
-    [run, count],
+    [run, count, playReveal],
   )
 
   const advance = useCallback(
@@ -205,20 +223,15 @@ export function useArcadeOpening(
             return
           }
         }
-        const next = current + 1
-        const pull = pulls[next]
-        if (!pull) return
-        dispatch({ type: 'revealing', index: next })
-        if (pull.isFirstCopy) {
-          const tier = tierFx(pull.card.tier)
-          await revealLong(director, next, tier, TIER_LABELS[pull.card.tier])
-        } else {
-          await revealFlat(director, next)
-        }
-        dispatch({ type: 'revealed', index: next, announcement: describe(pull, next + 1, count) })
+        await playReveal(director, current + 1)
       }),
-    [run, pulls, count],
+    [run, pulls, count, playReveal],
   )
+
+  const { phase, current } = state
+  useEffect(() => {
+    if (isReady && phase === 'deck' && current === -1) void advance()
+  }, [isReady, phase, current, advance])
 
   const onTap = useCallback(() => {
     const director = directorRef.current
