@@ -55,7 +55,7 @@ function TaggedScreen() {
         <EmptyState
           icon="profile"
           title="Aucune photo"
-          body="Personne ne t'a identifié sur une photo pour l'instant."
+          body="Tu n'apparais encore sur aucune photo."
         />
       ) : isPending ? (
         <p className="m-0 text-sm text-muted">Chargement…</p>

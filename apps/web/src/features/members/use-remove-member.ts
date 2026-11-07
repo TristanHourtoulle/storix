@@ -10,7 +10,7 @@ interface RemoveMemberVariables {
   photos: PhotosChoice
 }
 
-/** Removes a member and refreshes the member list and league detail. */
+/** Removes a member and refreshes the member list, league detail and card lists. */
 export function useRemoveMember(leagueId: string): {
   remove: (variables: RemoveMemberVariables, onDone: () => void) => void
   reset: () => void
@@ -25,6 +25,8 @@ export function useRemoveMember(leagueId: string): {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: membersQueryOptions(leagueId).queryKey }),
         queryClient.invalidateQueries({ queryKey: leagueDetailQueryOptions(leagueId).queryKey }),
+        queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'cards'] }),
+        queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'admin'] }),
       ])
     },
   })
