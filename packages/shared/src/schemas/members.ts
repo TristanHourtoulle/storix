@@ -4,6 +4,7 @@ import { idSchema, isoDateSchema, leagueRoleSchema } from './common'
 export const memberSummarySchema = z.object({
   userId: idSchema,
   displayUsername: z.string(),
+  username: z.string().nullable(),
   role: leagueRoleSchema,
   joinedAt: isoDateSchema,
   isSelf: z.boolean(),

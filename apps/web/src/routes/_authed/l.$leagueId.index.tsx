@@ -55,12 +55,7 @@ function LeagueHome() {
       ) : null}
       {wallet ? (
         <>
-          <BoosterWidget
-            wallet={wallet}
-            onOpen={openBooster}
-            onElapsed={invalidateWallet}
-            isPoolEmpty={wallet.pool.drawableCount === 0}
-          />
+          <BoosterWidget wallet={wallet} onOpen={openBooster} onElapsed={invalidateWallet} />
           <PityBar pity={wallet.pity} />
         </>
       ) : isError ? (

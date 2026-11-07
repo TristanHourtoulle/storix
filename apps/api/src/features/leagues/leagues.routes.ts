@@ -3,10 +3,12 @@ import {
   leagueDetailSchema,
   leagueParamsSchema,
   leagueSummarySchema,
+  renameLeagueBodySchema,
 } from '@storix/shared'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { authenticate } from '../../http/authenticate'
 import { requireLeagueRole } from '../../http/league-guard'
+import { rateLimits } from '../../http/rate-limit'
 import type { LeaguesService } from './leagues.service'
 
 /** Registers the league routes under /api/leagues. */
@@ -30,6 +32,19 @@ export function leaguesRoutes(service: LeaguesService): FastifyPluginAsyncZod {
         schema: { params: leagueParamsSchema, response: { 200: leagueDetailSchema } },
       },
       (request) => service.getLeagueDetail(request.params.leagueId, request.membership),
+    )
+    app.patch(
+      '/leagues/:leagueId',
+      {
+        preHandler: [authenticate, requireLeagueRole('admin')],
+        config: { rateLimit: rateLimits.adminAction },
+        schema: {
+          params: leagueParamsSchema,
+          body: renameLeagueBodySchema,
+          response: { 200: leagueDetailSchema },
+        },
+      },
+      (request) => service.renameLeague(request.membership, request.body.name),
     )
   }
 }

@@ -28,6 +28,31 @@ export async function findLeagueById(db: DbExecutor, id: string): Promise<League
   return rows[0] ?? null
 }
 
+/** Renames a league and returns its id and name, or null when the league is missing. */
+export async function updateLeagueName(
+  db: DbExecutor,
+  id: string,
+  name: string,
+): Promise<LeagueRecord | null> {
+  const rows = await db
+    .update(leagues)
+    .set({ name })
+    .where(eq(leagues.id, id))
+    .returning({ id: leagues.id, name: leagues.name })
+  return rows[0] ?? null
+}
+
+/** Finds a league by id and locks its row for the current transaction. */
+export async function lockLeagueById(db: DbExecutor, id: string): Promise<LeagueRecord | null> {
+  const rows = await db
+    .select({ id: leagues.id, name: leagues.name })
+    .from(leagues)
+    .where(eq(leagues.id, id))
+    .limit(1)
+    .for('update')
+  return rows[0] ?? null
+}
+
 /** Lists the user's leagues with their role and member count in a single query. */
 export async function listLeaguesForUser(db: DbExecutor, userId: string): Promise<LeagueSummary[]> {
   const memberCounts = db

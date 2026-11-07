@@ -3,9 +3,10 @@ import type { CopyVariant } from './dust'
 import { isEpicGuaranteed, legendaryBonusPercent, type PityState } from './pity'
 import type { RandomSource } from './random'
 
-export const DROP_TABLE_VERSION = 2
+export const DROP_TABLE_VERSION = 3
 
 const EPIC_FLOOR_SINCE_VERSION = 2
+const NO_DUPLICATE_SINCE_VERSION = 3
 export const FOIL_ODDS = 15
 
 export type TierWeights = Readonly<Partial<Record<CardTier, number>>>
@@ -17,6 +18,9 @@ const RPLUS: TierWeights = { rare: 72, epic: 20, legendary: 7, mythic: 1 }
 export const BOOSTER_SLOTS: readonly TierWeights[] = [CU, CU, CU, UPLUS, RPLUS]
 
 const RARE_PLUS_SLOT = BOOSTER_SLOTS.length - 1
+
+/** Minimum number of distinct drawable cards a league needs before a booster can be opened. */
+export const MIN_DRAWABLE_CARDS_FOR_BOOSTER = BOOSTER_SLOTS.length
 
 export interface PoolCard {
   cardId: string
@@ -41,6 +45,18 @@ export class EmptyBoosterPoolError extends Error {
     super('The booster pool is empty')
     this.name = 'EmptyBoosterPoolError'
   }
+}
+
+export class BoosterPoolTooSmallError extends Error {
+  constructor(readonly drawableCount: number) {
+    super('The booster pool has fewer distinct cards than booster slots')
+    this.name = 'BoosterPoolTooSmallError'
+  }
+}
+
+/** Whether a pool of `drawableCount` distinct cards can fill a booster without duplicates. */
+export function canOpenBooster(drawableCount: number): boolean {
+  return drawableCount >= MIN_DRAWABLE_CARDS_FOR_BOOSTER
 }
 
 /** Returns the rare+ slot weights with the Legendary pity bonus and the Epic guarantee applied. */
@@ -107,6 +123,7 @@ export function pickFromTier(cards: readonly PoolCard[], random: RandomSource): 
 
 /**
  * Draws the five slots of a booster; RNG order per slot is tier, author, card, foil.
+ * From version 3 the draw is without replacement and needs at least five distinct cards.
  * `tableVersion` defaults to the current table; version 1 replays the fallback without the Epic floor.
  */
 export function drawBooster(input: {
@@ -116,10 +133,15 @@ export function drawBooster(input: {
   tableVersion?: number
 }): BoosterDraw[] {
   if (input.pool.length === 0) throw new EmptyBoosterPoolError()
-  const available = new Set(input.pool.map((c) => c.tier))
   const tableVersion = input.tableVersion ?? DROP_TABLE_VERSION
+  const isUnique = tableVersion >= NO_DUPLICATE_SINCE_VERSION
+  const distinctCount = new Set(input.pool.map((c) => c.cardId)).size
+  if (isUnique && !canOpenBooster(distinctCount)) throw new BoosterPoolTooSmallError(distinctCount)
   const hasEpicFloor = tableVersion >= EPIC_FLOOR_SINCE_VERSION && isEpicGuaranteed(input.pity)
-  return BOOSTER_SLOTS.map((slotWeights, slot) => {
+  return BOOSTER_SLOTS.reduce<BoosterDraw[]>((draws, slotWeights, slot) => {
+    const drawn = new Set(isUnique ? draws.map((d) => d.cardId) : [])
+    const remaining = input.pool.filter((c) => !drawn.has(c.cardId))
+    const available = new Set(remaining.map((c) => c.tier))
     const isRarePlus = slot === RARE_PLUS_SLOT
     const weights = isRarePlus ? rarePlusWeights(input.pity) : slotWeights
     const rolledTier = rollTier(weights, input.random)
@@ -127,12 +149,12 @@ export function drawBooster(input: {
     const tier = resolveTierWithFallback(rolledTier, available, floor)
     if (tier === null) throw new EmptyBoosterPoolError()
     const picked = pickFromTier(
-      input.pool.filter((c) => c.tier === tier),
+      remaining.filter((c) => c.tier === tier),
       input.random,
     )
     const variant: CopyVariant = input.random.nextInt(FOIL_ODDS) === 0 ? 'foil' : 'normal'
-    return { slot, rolledTier, tier, cardId: picked.cardId, variant }
-  })
+    return [...draws, { slot, rolledTier, tier, cardId: picked.cardId, variant }]
+  }, [])
 }
 
 /** Builds the canonical string the API hashes to fingerprint a booster pool. */

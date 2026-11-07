@@ -4,6 +4,7 @@ import {
   type CreateLeagueBody,
   type LeagueDetail,
   type LeagueSummary,
+  type RenameLeagueBody,
 } from '@storix/shared'
 import { apiRequest } from '@/lib/http'
 
@@ -15,4 +16,13 @@ export function fetchLeagueDetail(leagueId: string): Promise<LeagueDetail> {
 /** Creates a league owned by the current user. */
 export function createLeague(body: CreateLeagueBody): Promise<LeagueSummary> {
   return apiRequest('/api/leagues', { method: 'POST', body, schema: leagueSummarySchema })
+}
+
+/** Renames a league; restricted to its admins and owner. */
+export function renameLeague(leagueId: string, body: RenameLeagueBody): Promise<LeagueDetail> {
+  return apiRequest(`/api/leagues/${encodeURIComponent(leagueId)}`, {
+    method: 'PATCH',
+    body,
+    schema: leagueDetailSchema,
+  })
 }

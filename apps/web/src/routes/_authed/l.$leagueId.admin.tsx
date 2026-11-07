@@ -9,6 +9,7 @@ import { AdminCardsPanel } from '@/features/moderation/components/admin-cards-pa
 import { InvitationsPanel } from '@/features/invitations/components/invitations-panel'
 import { leagueDetailQueryOptions, loadLeagueDetail } from '@/features/leagues/leagues.queries'
 import { SettingsForm } from '@/features/league-settings/components/settings-form'
+import { RenameLeagueForm } from '@/features/leagues/components/rename-league-form'
 import { MemberList } from '@/features/members/components/member-list'
 import { membersQueryOptions } from '@/features/members/members.queries'
 
@@ -75,7 +76,10 @@ function Admin() {
         <AdminCardsPanel leagueId={leagueId} />
       ) : tab === 'settings' ? (
         <Suspense fallback={<p className="m-0 text-sm text-muted">Chargement…</p>}>
-          <SettingsForm leagueId={leagueId} />
+          <div className="flex flex-col gap-6">
+            <RenameLeagueForm leagueId={leagueId} currentName={league.name} />
+            <SettingsForm leagueId={leagueId} />
+          </div>
         </Suspense>
       ) : (
         <Suspense fallback={<p className="m-0 text-sm text-muted">Chargement…</p>}>
