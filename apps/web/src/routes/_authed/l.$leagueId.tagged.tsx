@@ -24,7 +24,8 @@ function TaggedScreen() {
 
   function close() {
     setTarget(null)
-    withdraw.reset()
+    // The dialog closes itself when the card is gone; keep that error so its notice stays visible.
+    if (!isCardGone(withdraw.error)) withdraw.reset()
   }
 
   return (
