@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { CARD_TIERS, type CardTier, type MemberSummary } from '@storix/shared'
 import { Button, buttonClassName } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Notice } from '@/components/ui/notice'
 import { Segmented } from '@/components/ui/segmented'
 import { CollectionGrid } from '@/features/cards/components/collection-grid'
 import { CollectionProgress } from '@/features/cards/components/collection-progress'
@@ -27,6 +28,7 @@ export const Route = createFileRoute('/_authed/l/$leagueId/collection')({
     author: z.string().optional(),
     tier: z.enum(CARD_TIERS).optional(),
     by: z.enum(['member', 'rarity']).optional(),
+    notice: z.literal('withdrawn').optional(),
   }),
   loader: ({ context, params }) =>
     context.queryClient
@@ -40,7 +42,7 @@ const LOADING = <p className="m-0 text-sm text-muted">Chargement…</p>
 
 function Collection() {
   const { leagueId } = Route.useParams()
-  const { author, tier, by } = Route.useSearch()
+  const { author, tier, by, notice } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
   const members = useQuery(membersQueryOptions(leagueId)).data ?? NO_MEMBERS
   const { data: wallet } = useWallet(leagueId)
@@ -66,6 +68,7 @@ function Collection() {
         <h1>Collection</h1>
         <DustBalance dust={wallet?.dust} />
       </div>
+      {notice ? <Notice tone="error">Cette carte a déjà été retirée.</Notice> : null}
       <Segmented options={FILTER_MODES} value={mode} onChange={selectMode} />
       {mode === 'rarity' ? (
         <RarityFilter selected={filters.tier} onSelect={selectTier} />

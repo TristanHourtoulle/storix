@@ -2,6 +2,11 @@ import { cardCopies, cards, cardTags, media, user, type DbExecutor } from '@stor
 import { mediaVariantsSchema, type CardTier } from '@storix/shared'
 import { and, desc, eq, isNotNull, lt, or, sql, type SQL } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
+import {
+  authorIsFormerMember,
+  authorMembership,
+  authorMembershipOn,
+} from './card-author.repository'
 
 export interface CollectionRow {
   id: string
@@ -12,6 +17,7 @@ export interface CollectionRow {
   isProvisional: boolean
   authorId: string | null
   authorName: string | null
+  authorIsFormerMember: boolean
   thumbhash: string
   dominantColor: string
   width: number
@@ -79,6 +85,7 @@ function collectionColumns(owned: ReturnType<typeof viewerCopies>) {
     isProvisional: cards.isProvisional,
     authorId: cards.authorId,
     authorName: displayName,
+    authorIsFormerMember,
     thumbhash: media.thumbhash,
     dominantColor: media.dominantColor,
     width: media.width,
@@ -130,6 +137,7 @@ export async function listCollection(
     .from(cards)
     .innerJoin(media, eq(media.id, cards.mediaId))
     .leftJoin(user, eq(user.id, cards.authorId))
+    .leftJoin(authorMembership, authorMembershipOn)
     .leftJoin(owned, eq(owned.cardId, cards.id))
     .where(
       and(
@@ -178,6 +186,7 @@ export async function findCardForViewer(
     .from(cards)
     .innerJoin(media, eq(media.id, cards.mediaId))
     .leftJoin(user, eq(user.id, cards.authorId))
+    .leftJoin(authorMembership, authorMembershipOn)
     .leftJoin(discoverer, eq(discoverer.id, cards.discoveredById))
     .leftJoin(owned, eq(owned.cardId, cards.id))
     .where(and(eq(cards.id, input.cardId), eq(cards.leagueId, input.leagueId)))

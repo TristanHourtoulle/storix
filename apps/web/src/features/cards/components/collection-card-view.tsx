@@ -1,6 +1,7 @@
 import type { CardTier, CollectionCard } from '@storix/shared'
 import { CardFace } from './card-face'
 import { CardImage } from './card-image'
+import { HiddenCardFace } from './hidden-card-face'
 import { LockedCardFace } from './locked-card-face'
 
 interface CollectionCardViewProps {
@@ -23,14 +24,7 @@ export function CollectionCardView({
     return <LockedCardFace size={size} tier={tier ?? card.tier} thumbhash={card.thumbhash} />
   }
   if (card.kind === 'hidden') {
-    return (
-      <LockedCardFace
-        size={size}
-        tier={tier ?? card.tier}
-        thumbhash={card.thumbhash}
-        label="Masquée"
-      />
-    )
+    return <HiddenCardFace size={size} tier={tier ?? card.tier} thumbhash={card.thumbhash} />
   }
   const isFoilOnly = card.copies.foil !== null && card.copies.normal === null
 

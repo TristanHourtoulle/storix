@@ -8,6 +8,8 @@ import { PityBar } from '@/features/game/components/pity-bar'
 import { RecentReveals } from '@/features/game/components/recent-reveals'
 import { recentRevealsQueryOptions, walletQueryOptions } from '@/features/game/game.queries'
 import { useWallet } from '@/features/game/use-wallet'
+import { RemovalNotice } from '@/features/privacy/components/removal-notice'
+import { useRemovedCardsSync } from '@/features/privacy/use-removed-cards-sync'
 import { LeagueHeader } from '@/features/leagues/components/league-header'
 import { useMyLeagues } from '@/features/leagues/use-my-leagues'
 import { leagueDetailQueryOptions } from '@/features/leagues/leagues.queries'
@@ -24,6 +26,8 @@ function LeagueHome() {
   const { data: wallet, isError, refetch } = useWallet(leagueId)
   const { data: reveals } = useQuery(recentRevealsQueryOptions(leagueId))
   const leagues = useMyLeagues()
+  const { me } = Route.useRouteContext()
+  const { notice, acknowledge } = useRemovedCardsSync(me.user.id, leagueId)
 
   function invalidateWallet() {
     void queryClient.invalidateQueries({ queryKey: walletQueryOptions(leagueId).queryKey })
@@ -46,6 +50,9 @@ function LeagueHome() {
         currentLeagueId={leagueId}
         trailing={<DustBalance dust={wallet?.dust} />}
       />
+      {notice ? (
+        <RemovalNotice count={notice.count} dust={notice.dust} onClose={acknowledge} />
+      ) : null}
       {wallet ? (
         <>
           <BoosterWidget

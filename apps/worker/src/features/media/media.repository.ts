@@ -20,13 +20,15 @@ import {
 export interface UploadForProcessing {
   id: string
   leagueId: string
-  userId: string
+  userId: string | null
   objectKey: string
   status: UploadStatus
   title: string | null
   taggedUserIds: string[]
   clientCapturedAt: Date | null
 }
+
+export type OwnedUpload = UploadForProcessing & { userId: string }
 
 export interface NewMediaRow {
   leagueId: string

@@ -7,6 +7,11 @@ import {
   type TierSource,
 } from '@storix/shared'
 import { and, desc, eq, gt, lt, sql, type SQL } from 'drizzle-orm'
+import {
+  authorIsFormerMember,
+  authorMembership,
+  authorMembershipOn,
+} from '../cards/card-author.repository'
 
 export { lockLeagueEconomyExclusive, lockLeagueModeration, lockLeagueRarity } from '@storix/db'
 
@@ -27,6 +32,7 @@ export interface AdminCardRow {
   maxTier: CardTier | null
   authorId: string | null
   authorName: string | null
+  authorIsFormerMember: boolean
   capturedAt: Date | null
   isCaptureDateValidated: boolean
   createdAt: Date
@@ -128,6 +134,7 @@ async function selectAdminCards(
       maxTier: cards.maxTier,
       authorId: cards.authorId,
       authorName,
+      authorIsFormerMember,
       capturedAt: media.capturedAt,
       isCaptureDateValidated: media.isCaptureDateValidated,
       createdAt: cards.createdAt,
@@ -141,6 +148,7 @@ async function selectAdminCards(
     .from(cards)
     .innerJoin(media, eq(media.id, cards.mediaId))
     .leftJoin(user, eq(user.id, cards.authorId))
+    .leftJoin(authorMembership, authorMembershipOn)
     .leftJoin(counts, eq(counts.cardId, cards.id))
     .where(and(eq(cards.leagueId, leagueId), where))
     .orderBy(desc(cards.number))

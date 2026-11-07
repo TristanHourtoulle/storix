@@ -6,6 +6,7 @@ import {
   foilUpgradeDecision,
   isBoosterEligible,
   maxTier,
+  type CardAuthor,
   type CardPerson,
   type CardTier,
   type CollectionCard,
@@ -63,6 +64,19 @@ export function withViewerCopies(
   return { ...card, normalTier: tierOf('normal'), foilTier: tierOf('foil') }
 }
 
+/** Projects a card's author columns to the author view shared by every card payload. */
+export function toCardAuthor(row: {
+  authorId: string | null
+  authorName: string | null
+  authorIsFormerMember: boolean
+}): CardAuthor {
+  return {
+    userId: row.authorId,
+    displayUsername: row.authorName,
+    isFormerMember: row.authorIsFormerMember,
+  }
+}
+
 function toOwnedSummary(
   row: CollectionRow,
   sizes: readonly MediaVariantSize[],
@@ -76,7 +90,7 @@ function toOwnedSummary(
     tier: row.tier,
     displayTier: displayTier(row),
     isProvisional: row.isProvisional,
-    author: { userId: row.authorId, displayUsername: row.authorName },
+    author: toCardAuthor(row),
     thumbhash: row.thumbhash,
     dominantColor: row.dominantColor,
     width: row.width,
@@ -93,7 +107,7 @@ function toLockedSummary(row: CollectionRow): LockedCardSummary {
     number: row.number,
     tier: row.tier,
     isProvisional: row.isProvisional,
-    author: { userId: row.authorId, displayUsername: row.authorName },
+    author: toCardAuthor(row),
     thumbhash: row.thumbhash,
     dominantColor: row.dominantColor,
     width: row.width,
@@ -191,11 +205,6 @@ export function toCardDetail(row: CardViewerRow, ctx: CardDetailContext): Viewer
       createdAt,
       discoveredBy,
       canWithdraw,
-      craft: craftDecisionFor(row, {
-        now: ctx.now,
-        dust: ctx.dust,
-        delayMinutes: ctx.delayMinutes,
-      }),
     }
   }
   return {

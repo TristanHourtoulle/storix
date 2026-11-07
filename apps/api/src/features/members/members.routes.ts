@@ -1,7 +1,10 @@
 import {
+  leaveLeagueBodySchema,
   leagueParamsSchema,
   memberParamsSchema,
   memberSummarySchema,
+  removeMemberBodySchema,
+  transferOwnershipBodySchema,
   updateMemberRoleBodySchema,
 } from '@storix/shared'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
@@ -10,7 +13,7 @@ import { authenticate } from '../../http/authenticate'
 import { requireLeagueRole } from '../../http/league-guard'
 import type { MembersService } from './members.service'
 
-/** Registers the league member listing, role change and removal routes. */
+/** Registers the league member listing, role change, removal, leave and ownership transfer routes. */
 export function membersRoutes(service: MembersService): FastifyPluginAsyncZod {
   return async (app) => {
     app.get(
@@ -36,10 +39,32 @@ export function membersRoutes(service: MembersService): FastifyPluginAsyncZod {
       '/leagues/:leagueId/members/:userId',
       {
         preHandler: [authenticate, requireLeagueRole('admin')],
-        schema: { params: memberParamsSchema },
+        schema: { params: memberParamsSchema, body: removeMemberBodySchema },
       },
       async (request, reply) => {
-        await service.removeMember(request.membership, request.params.userId)
+        await service.removeMember(request.membership, request.params.userId, request.body.photos)
+        return reply.code(204).send()
+      },
+    )
+    app.delete(
+      '/leagues/:leagueId/membership',
+      {
+        preHandler: [authenticate, requireLeagueRole('member')],
+        schema: { params: leagueParamsSchema, body: leaveLeagueBodySchema },
+      },
+      async (request, reply) => {
+        await service.leaveLeague(request.membership, request.body.photos)
+        return reply.code(204).send()
+      },
+    )
+    app.post(
+      '/leagues/:leagueId/ownership',
+      {
+        preHandler: [authenticate, requireLeagueRole('owner')],
+        schema: { params: leagueParamsSchema, body: transferOwnershipBodySchema },
+      },
+      async (request, reply) => {
+        await service.transferOwnership(request.membership, request.body.userId)
         return reply.code(204).send()
       },
     )

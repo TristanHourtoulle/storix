@@ -19,6 +19,7 @@ export const sessionUserSchema = z.object({
 
 export const meResponseSchema = z.object({
   user: sessionUserSchema,
+  homeLeagueId: idSchema.nullable(),
   leagues: z.array(leagueSummarySchema),
 })
 

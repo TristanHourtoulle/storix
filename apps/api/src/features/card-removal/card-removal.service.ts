@@ -41,7 +41,8 @@ export interface CardRemovalDeps {
   logger: ErrorLogger
 }
 
-function emptyOutcome(): RemovalOutcome {
+/** Returns the outcome of a removal that removed nothing. */
+export function emptyRemovalOutcome(): RemovalOutcome {
   return { removedCardIds: [], objectKeys: [], compensatedOwners: 0, dust: 0 }
 }
 
@@ -49,13 +50,13 @@ function emptyOutcome(): RemovalOutcome {
 export function createCardRemoval({ jobs, logger }: CardRemovalDeps): CardRemoval {
   return {
     async removeInTx(tx, input) {
-      if (input.cardIds.length === 0) return emptyOutcome()
+      if (input.cardIds.length === 0) return emptyRemovalOutcome()
       await lockLeagueEconomyExclusive(tx, input.leagueId)
       const removable = await lockCards(tx, {
         leagueId: input.leagueId,
         cardIds: [...new Set(input.cardIds)],
       })
-      if (removable.length === 0) return emptyOutcome()
+      if (removable.length === 0) return emptyRemovalOutcome()
       const cardIds = removable.map((card) => card.id)
 
       const compensations = compensateRemovedCopies(await listCopiesOfCards(tx, cardIds))

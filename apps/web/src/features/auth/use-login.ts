@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { authClient } from '@/lib/auth-client'
 import { logger } from '@/lib/logger'
-import { clearApiCache } from '@/features/pwa/api-cache'
+import { purgeAllCaches } from '@/features/privacy/purge-cache'
 import { UserFacingError, userMessage } from '@/features/errors/user-message'
 import { authErrorMessage } from './auth-errors'
 
@@ -28,7 +28,8 @@ async function signInWithPassword(input: LoginInput): Promise<void> {
   if (error) throw new UserFacingError(authErrorMessage(error, 'Connexion impossible.'))
 }
 
-async function signInWithPasskey(): Promise<void> {
+/** Signs in with a passkey; throws a user-facing error on failure or cancellation. */
+export async function signInWithPasskey(): Promise<void> {
   try {
     const result = await authClient.signIn.passkey()
     if (result?.error) {
@@ -63,7 +64,7 @@ export function useLogin(redirectTo?: string): {
     },
     onSuccess: async () => {
       queryClient.clear()
-      await clearApiCache()
+      await purgeAllCaches()
       if (redirectTo) await navigate({ href: redirectTo, replace: true })
       else await navigate({ to: '/', replace: true })
     },

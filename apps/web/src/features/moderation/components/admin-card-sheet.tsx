@@ -7,6 +7,7 @@ import { Notice } from '@/components/ui/notice'
 import { formatCardNumber } from '@/features/cards/card-number'
 import { CardFace } from '@/features/cards/components/card-face'
 import { CardImage } from '@/features/cards/components/card-image'
+import { authorLabel } from '@/features/cards/author-label'
 import { MetaCell, formatDate } from '@/features/cards/components/meta-cell'
 import { TIER_LABELS } from '@/features/cards/tier-labels'
 import { userMessage } from '@/features/errors/user-message'
@@ -106,7 +107,7 @@ export function AdminCardSheet({ card, mythicCount, moderation, onClose }: Admin
               {isHidden ? <span className="pill">Masquée</span> : null}
             </div>
             <div className="meta w-full">
-              <MetaCell label="Photo de" value={card.author.displayUsername ?? 'Ancien membre'} />
+              <MetaCell label="Photo de" value={authorLabel(card.author)} />
               <MetaCell label="Numéro" value={formatCardNumber(card.number)} />
             </div>
           </div>

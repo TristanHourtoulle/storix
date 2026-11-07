@@ -1,5 +1,11 @@
 import { z } from 'zod'
-import { cardPersonSchema, cardTierSchema, collectionCardSchema, copyVariantSchema } from './cards'
+import {
+  cardAuthorSchema,
+  cardPersonSchema,
+  cardTierSchema,
+  collectionCardSchema,
+  copyVariantSchema,
+} from './cards'
 import { isoDateSchema } from './common'
 import { imageSetSchema } from './media'
 import { cardTitleSchema } from './uploads'
@@ -14,7 +20,7 @@ export const boosterPullSchema = z.object({
     number: z.int().positive(),
     title: cardTitleSchema,
     tier: cardTierSchema,
-    author: cardPersonSchema,
+    author: cardAuthorSchema,
     thumbhash: z.string(),
     dominantColor: z.string().regex(/^#[0-9a-f]{6}$/),
     width: z.int().positive(),

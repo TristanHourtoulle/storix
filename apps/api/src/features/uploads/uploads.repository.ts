@@ -1,17 +1,20 @@
 import { leagueMembers, uploads, type DbExecutor } from '@storix/db'
-import { and, count, eq, gte, inArray, or, sql } from 'drizzle-orm'
+import { and, count, eq, gte, inArray, or } from 'drizzle-orm'
 
 export type UploadRow = typeof uploads.$inferSelect
 
-/** Locks the member row so concurrent quota checks for the same member serialize. */
+/** Locks the member row so concurrent quota checks for the same member serialize; false when the member is gone. */
 export async function lockMemberRow(
   db: DbExecutor,
   leagueId: string,
   userId: string,
-): Promise<void> {
-  await db.execute(
-    sql`select 1 from ${leagueMembers} where ${leagueMembers.leagueId} = ${leagueId} and ${leagueMembers.userId} = ${userId} for update`,
-  )
+): Promise<boolean> {
+  const rows = await db
+    .select({ userId: leagueMembers.userId })
+    .from(leagueMembers)
+    .where(and(eq(leagueMembers.leagueId, leagueId), eq(leagueMembers.userId, userId)))
+    .for('update')
+  return rows.length > 0
 }
 
 /** Counts the member's quota-consuming uploads: completed since `since`, pending since `pendingSince`. */

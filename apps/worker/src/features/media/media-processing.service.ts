@@ -96,7 +96,7 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
   }
 
   async function commit(
-    upload: repository.UploadForProcessing,
+    upload: repository.OwnedUpload,
     title: string,
     row: repository.NewMediaRow,
     dedupable: boolean,
@@ -176,7 +176,7 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
     return entries.map((entry) => entry.variant)
   }
 
-  async function process(upload: repository.UploadForProcessing, trace: RenderTrace) {
+  async function process(upload: repository.OwnedUpload, trace: RenderTrace) {
     const title = cardTitleSchema.safeParse(upload.title)
     if (!title.success) {
       logger.error({ uploadId: upload.id }, 'Upload has no valid title; failing without retries')
@@ -284,14 +284,15 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
     async processUpload(uploadId, input) {
       const upload = await repository.findUploadForProcessing(db, uploadId)
       if (upload === null) return
-      if (TERMINAL_STATUSES.has(upload.status)) {
+      const { userId } = upload
+      if (TERMINAL_STATUSES.has(upload.status) || userId === null) {
         await storage.delete([upload.objectKey])
         return
       }
       if (!(await repository.markUploadProcessing(db, uploadId))) return
       const trace: RenderTrace = { sha: null, variantKeys: [] }
       try {
-        await process(upload, trace)
+        await process({ ...upload, userId }, trace)
       } catch (error) {
         if (input.isFinalAttempt) {
           logger.error({ uploadId, err: error }, 'Upload processing failed for good')

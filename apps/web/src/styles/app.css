@@ -1,6 +1,5 @@
 @import 'tailwindcss';
 @import './game.css';
-@import './booster.css';
 @import './collection.css';
 @import './card-detail.css';
 @import './moderation.css';
