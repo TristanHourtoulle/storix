@@ -1,10 +1,12 @@
 import { createRouter } from '@tanstack/react-router'
 import { isPublicPath } from '@/lib/redirect'
+import { isLoggingOut } from '@/lib/session-state'
 import { createQueryClient } from '@/lib/query-client'
 import { meQueryOptions } from '@/features/auth/session.queries'
 import { routeTree } from './routeTree.gen'
 
 function redirectToLogin(): void {
+  if (isLoggingOut()) return
   const { pathname, href } = router.latestLocation
   if (isPublicPath(pathname)) return
   queryClient.removeQueries({ queryKey: meQueryOptions.queryKey })
