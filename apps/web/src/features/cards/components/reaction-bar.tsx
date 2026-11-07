@@ -24,7 +24,7 @@ export function ReactionBar({ reactions, canReact, onToggle }: ReactionBarProps)
             type="button"
             className={isMine ? 'react on' : 'react'}
             aria-pressed={isMine}
-            aria-label={`${label}, ${count} réactions`}
+            aria-label={`${label}, ${count} ${count > 1 ? 'réactions' : 'réaction'}`}
             disabled={!canReact}
             title={canReact ? undefined : 'Tu ne peux pas réagir à ta propre carte'}
             onClick={() => onToggle(type, !isMine)}
