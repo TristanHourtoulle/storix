@@ -1,0 +1,7 @@
+export const rateLimits = {
+  auth: { max: 60, timeWindow: '1 minute' },
+  invitationPublic: { max: 10, timeWindow: '1 minute' },
+  invitationCreate: { max: 20, timeWindow: '1 hour' },
+  resetRedeem: { max: 5, timeWindow: '15 minutes' },
+  resetIssue: { max: 10, timeWindow: '1 hour' },
+} as const
