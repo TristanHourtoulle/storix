@@ -1,7 +1,10 @@
 import { z } from 'zod'
 import { isoDateSchema } from './common'
 
-export const removedCardsQuerySchema = z.object({ since: isoDateSchema.optional() })
+export const removedCardsQuerySchema = z.object({
+  since: isoDateSchema.optional(),
+  after: z.uuid().optional(),
+})
 
 export const removedCardSchema = z.object({
   cardId: z.uuid(),
@@ -14,6 +17,8 @@ export const removedCardSchema = z.object({
 export const removedCardsSchema = z.object({
   removed: z.array(removedCardSchema).max(500),
   cursor: isoDateSchema,
+  after: z.uuid().nullable(),
+  hasMore: z.boolean(),
 })
 
 export type RemovedCardsQuery = z.infer<typeof removedCardsQuerySchema>

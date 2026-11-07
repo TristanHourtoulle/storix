@@ -52,12 +52,12 @@ const OPEN_UPLOAD_STATUSES: readonly UploadStatus[] = [
   'failed',
 ]
 
-/** Locks the given cards and their media rows, ordered by card id. */
+/** Locks the given cards of a league and their media rows, ordered by card id. */
 export async function lockCards(
   db: DbExecutor,
-  cardIds: readonly string[],
+  input: { leagueId: string; cardIds: readonly string[] },
 ): Promise<RemovableCardRow[]> {
-  if (cardIds.length === 0) return []
+  if (input.cardIds.length === 0) return []
   const rows = await db
     .select({
       id: cards.id,
@@ -72,7 +72,13 @@ export async function lockCards(
     })
     .from(cards)
     .innerJoin(media, eq(media.id, cards.mediaId))
-    .where(inArray(cards.id, [...cardIds]))
+    .where(
+      and(
+        inArray(cards.id, [...input.cardIds]),
+        eq(cards.leagueId, input.leagueId),
+        eq(media.leagueId, input.leagueId),
+      ),
+    )
     .orderBy(asc(cards.id))
     .for('update')
   return rows.map(({ variants, ...row }) => ({
@@ -98,15 +104,17 @@ export async function listCopiesOfCards(
     .where(inArray(cardCopies.cardId, [...cardIds]))
 }
 
-/** Adds dust to an existing member wallet. */
+/** Adds dust to an existing member wallet, failing when the wallet does not exist. */
 export async function creditDust(
   db: DbExecutor,
   input: { leagueId: string; userId: string; dust: number },
 ): Promise<void> {
-  await db
+  const rows = await db
     .update(memberWallets)
     .set({ dust: sql`${memberWallets.dust} + ${input.dust}`, updatedAt: new Date() })
     .where(and(eq(memberWallets.leagueId, input.leagueId), eq(memberWallets.userId, input.userId)))
+    .returning({ userId: memberWallets.userId })
+  if (rows.length === 0) throw new Error('Member wallet not found')
 }
 
 /** Records the tombstones of removed cards. */

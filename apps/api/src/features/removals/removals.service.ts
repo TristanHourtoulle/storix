@@ -7,8 +7,13 @@ const INITIAL_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
 const CURSOR_OVERLAP_MS = 10 * 60 * 1000
 const REMOVED_LIMIT = 500
 
+export interface RemovedCardsPage {
+  since?: Date
+  after?: string
+}
+
 export interface RemovalsService {
-  listRemovedCards(m: Membership, since: Date | undefined): Promise<RemovedCards>
+  listRemovedCards(m: Membership, page: RemovedCardsPage): Promise<RemovedCards>
 }
 
 export interface RemovalsServiceDeps {
@@ -19,14 +24,16 @@ export interface RemovalsServiceDeps {
 /** Builds the service telling members which cards were removed so their devices can purge them. */
 export function createRemovalsService({ db, clock }: RemovalsServiceDeps): RemovalsService {
   return {
-    async listRemovedCards(m, since) {
+    async listRemovedCards(m, page) {
       const now = clock()
       const rows = await listRemovedSince(db, {
         leagueId: m.leagueId,
         viewerId: m.userId,
-        since: since ?? new Date(now.getTime() - INITIAL_WINDOW_MS),
+        since: page.since ?? new Date(now.getTime() - INITIAL_WINDOW_MS),
+        after: page.since === undefined ? undefined : page.after,
         limit: REMOVED_LIMIT,
       })
+      const last = rows.length === REMOVED_LIMIT ? rows.at(-1) : undefined
       return {
         removed: rows.map((row) => ({
           cardId: row.cardId,
@@ -35,7 +42,9 @@ export function createRemovalsService({ db, clock }: RemovalsServiceDeps): Remov
           removedAt: row.removedAt.toISOString(),
           compensation: row.compensation,
         })),
-        cursor: new Date(now.getTime() - CURSOR_OVERLAP_MS).toISOString(),
+        cursor: (last?.removedAt ?? new Date(now.getTime() - CURSOR_OVERLAP_MS)).toISOString(),
+        after: last?.cardId ?? null,
+        hasMore: last !== undefined,
       }
     },
   }

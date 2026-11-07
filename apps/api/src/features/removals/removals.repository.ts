@@ -1,5 +1,5 @@
 import { cardCompensations, cardRemovals, type DbExecutor } from '@storix/db'
-import { and, asc, eq, gte, sql } from 'drizzle-orm'
+import { and, asc, eq, sql } from 'drizzle-orm'
 
 export interface RemovedCardRow {
   cardId: string
@@ -9,11 +9,17 @@ export interface RemovedCardRow {
   compensation: number
 }
 
-/** Lists the league tombstones since a date with the dust the viewer received for each. */
+const removedAtMs = sql<Date>`date_trunc('milliseconds', ${cardRemovals.removedAt})`
+
+/** Lists the league tombstones after a (removedAt, cardId) key, or since a date, with the dust the viewer received for each. */
 export async function listRemovedSince(
   db: DbExecutor,
-  input: { leagueId: string; viewerId: string; since: Date; limit: number },
+  input: { leagueId: string; viewerId: string; since: Date; after?: string; limit: number },
 ): Promise<RemovedCardRow[]> {
+  const window =
+    input.after === undefined
+      ? sql`${removedAtMs} >= ${input.since}::timestamptz`
+      : sql`(${removedAtMs}, ${cardRemovals.cardId}) > (${input.since}::timestamptz, ${input.after}::uuid)`
   return db
     .select({
       cardId: cardRemovals.cardId,
@@ -30,7 +36,7 @@ export async function listRemovedSince(
         eq(cardCompensations.userId, input.viewerId),
       ),
     )
-    .where(and(eq(cardRemovals.leagueId, input.leagueId), gte(cardRemovals.removedAt, input.since)))
-    .orderBy(asc(cardRemovals.removedAt), asc(cardRemovals.cardId))
+    .where(and(eq(cardRemovals.leagueId, input.leagueId), window))
+    .orderBy(asc(removedAtMs), asc(cardRemovals.cardId))
     .limit(input.limit)
 }

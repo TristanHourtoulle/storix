@@ -3,6 +3,7 @@ import { compensateRemovedCopies, mediaPrefix, type RemovalReason } from '@stori
 import type { JobQueue } from '../../jobs/job-queue'
 import type { ErrorLogger } from '../../lib/error-logger'
 import { insertAuditEntry } from '../audit/audit.repository'
+import { lockLeagueEconomyExclusive } from '../wallets/wallets.repository'
 import {
   creditDust,
   deleteCards,
@@ -29,7 +30,7 @@ export interface RemovalInput {
 }
 
 export interface CardRemoval {
-  /** Removes the cards inside the caller's transaction; the caller must hold the league economy lock. */
+  /** Removes the cards inside the caller's transaction under the exclusive league economy lock; never take the shared lock before it. */
   removeInTx(tx: DbExecutor, input: RemovalInput): Promise<RemovalOutcome>
   /** Deletes the files and recomputes rarity after commit; failures are logged, never thrown. */
   afterCommit(leagueId: string, outcome: RemovalOutcome): Promise<void>
@@ -40,23 +41,21 @@ export interface CardRemovalDeps {
   logger: ErrorLogger
 }
 
-const EMPTY_OUTCOME: RemovalOutcome = {
-  removedCardIds: [],
-  objectKeys: [],
-  compensatedOwners: 0,
-  dust: 0,
+function emptyOutcome(): RemovalOutcome {
+  return { removedCardIds: [], objectKeys: [], compensatedOwners: 0, dust: 0 }
 }
 
 /** Builds the card removal core shared by every flow that deletes cards. */
 export function createCardRemoval({ jobs, logger }: CardRemovalDeps): CardRemoval {
   return {
     async removeInTx(tx, input) {
-      if (input.cardIds.length === 0) return EMPTY_OUTCOME
-      const locked = await lockCards(tx, [...new Set(input.cardIds)])
-      const removable = locked.filter(
-        (card) => card.leagueId === input.leagueId && card.leagueIdOfMedia === input.leagueId,
-      )
-      if (removable.length === 0) return EMPTY_OUTCOME
+      if (input.cardIds.length === 0) return emptyOutcome()
+      await lockLeagueEconomyExclusive(tx, input.leagueId)
+      const removable = await lockCards(tx, {
+        leagueId: input.leagueId,
+        cardIds: [...new Set(input.cardIds)],
+      })
+      if (removable.length === 0) return emptyOutcome()
       const cardIds = removable.map((card) => card.id)
 
       const compensations = compensateRemovedCopies(await listCopiesOfCards(tx, cardIds))

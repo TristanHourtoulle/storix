@@ -18,11 +18,11 @@ export function removalsRoutes(service: RemovalsService): FastifyPluginAsyncZod 
         },
       },
       (request) => {
-        const { since } = request.query
-        return service.listRemovedCards(
-          request.membership,
-          since === undefined ? undefined : new Date(since),
-        )
+        const { since, after } = request.query
+        return service.listRemovedCards(request.membership, {
+          since: since === undefined ? undefined : new Date(since),
+          after,
+        })
       },
     )
   }
