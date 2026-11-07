@@ -9,7 +9,13 @@ import {
   type AuditAction,
   type DbExecutor,
 } from '@storix/db'
-import type { CardTier, MediaVariant, UploadRejectionReason, UploadStatus } from '@storix/shared'
+import {
+  taggedUserIdsSchema,
+  type CardTier,
+  type MediaVariant,
+  type UploadRejectionReason,
+  type UploadStatus,
+} from '@storix/shared'
 
 export interface UploadForProcessing {
   id: string
@@ -73,7 +79,8 @@ export async function findUploadForProcessing(
     })
     .from(uploads)
     .where(eq(uploads.id, uploadId))
-  return row ?? null
+  if (row === undefined) return null
+  return { ...row, taggedUserIds: taggedUserIdsSchema.parse(row.taggedUserIds) }
 }
 
 /** Moves an upload to processing; false when it is no longer processable. */

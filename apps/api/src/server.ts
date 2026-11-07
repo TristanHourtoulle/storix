@@ -1,11 +1,11 @@
 import { createDb } from '@storix/db'
+import { assertStorageReachable } from '@storix/storage'
 import { pino } from 'pino'
 import { buildApp } from './app'
 import { loadEnv } from './config/env'
 import { createAppDeps } from './deps'
 import { startJobQueue, type JobQueue } from './jobs/job-queue'
 import { buildLoggerOptions } from './lib/logger'
-import { assertStorageReachable } from './lib/storage-probe'
 
 async function start(): Promise<void> {
   const env = loadEnv(process.env)

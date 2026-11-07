@@ -1,6 +1,6 @@
 import { createDb } from '@storix/db'
 import { MEDIA_PROCESS_JOB, MEDIA_SWEEP_JOB } from '@storix/shared'
-import { createObjectStorage } from '@storix/storage'
+import { assertStorageReachable, createObjectStorage } from '@storix/storage'
 import { PgBoss } from 'pg-boss'
 import { pino } from 'pino'
 import { loadWorkerEnv } from './config/env'
@@ -42,6 +42,7 @@ async function start(): Promise<void> {
   process.once('SIGTERM', (signal) => void shutdown(signal))
   process.once('SIGINT', (signal) => void shutdown(signal))
 
+  await assertStorageReachable(storage)
   await boss.start()
   await boss.createQueue(MEDIA_PROCESS_JOB)
   await boss.createQueue(MEDIA_SWEEP_JOB)

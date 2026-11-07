@@ -1,4 +1,4 @@
-import type { ObjectStorage } from '@storix/storage'
+import type { ObjectStorage } from './object-storage'
 
 const PROBE_KEY = 'health/storage-probe'
 

@@ -18,7 +18,6 @@ export function createMediaQueue(boss: PgBoss): MediaQueue {
   return {
     async enqueueMediaProcess(payload) {
       await boss.send(MEDIA_PROCESS_JOB, payload, {
-        singletonKey: payload.uploadId,
         retryLimit: 3,
         retryDelay: 15,
         retryBackoff: true,
