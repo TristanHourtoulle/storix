@@ -1,5 +1,6 @@
 import { Outlet, createFileRoute, redirect, useMatchRoute } from '@tanstack/react-router'
 import { BottomNav } from '@/components/ui/bottom-nav'
+import { IosInstallHint } from '@/features/pwa/components/ios-install-hint'
 import { loadLeagueDetail } from '@/features/leagues/leagues.queries'
 import { STORAGE_KEYS, writeStorage } from '@/lib/storage'
 
@@ -26,6 +27,7 @@ function LeagueLayout() {
   return (
     <div className="flex min-h-dvh flex-col">
       <Outlet />
+      <IosInstallHint />
       <BottomNav leagueId={leagueId} active={active} />
     </div>
   )

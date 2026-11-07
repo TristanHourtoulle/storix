@@ -23,12 +23,14 @@
   },
   "devDependencies": {
     "@serwist/vite": "9.5.13",
+    "@serwist/window": "9.5.13",
     "@tailwindcss/vite": "4.3.5",
     "@tanstack/router-plugin": "1.168.48",
     "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.2.1",
+    "serwist": "9.5.13",
     "tailwindcss": "4.3.5",
     "vite": "8.3.6"
   }
