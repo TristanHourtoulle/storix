@@ -8,11 +8,18 @@ import {
   type PoolCard,
   type PulledCopyOutcome,
 } from '@storix/shared'
-import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 
 export interface BoosterPoolCard extends PoolCard {
   leagueId: string
+}
+
+export interface PoolAvailabilityRow {
+  drawableCount: number
+  hasEpicOrBetter: boolean
+  hasLegendaryOrBetter: boolean
+  nextCreatedAt: Date | null
 }
 
 export interface OpeningRecord {
@@ -108,6 +115,14 @@ function parseVariants<T extends { variants: unknown }>(
   return { ...row, variants: mediaVariantsSchema.parse(row.variants) }
 }
 
+function activeLeagueCards(leagueId: string) {
+  return and(eq(cards.leagueId, leagueId), eq(cards.status, 'active'))
+}
+
+function isDrawable(eligibleBefore: Date) {
+  return lte(cards.createdAt, eligibleBefore)
+}
+
 /** Lists the active cards of a league created at or before `eligibleBefore`, by number. */
 export async function listBoosterPool(
   db: DbExecutor,
@@ -122,14 +137,35 @@ export async function listBoosterPool(
       tier: cards.tier,
     })
     .from(cards)
-    .where(
-      and(
-        eq(cards.leagueId, input.leagueId),
-        eq(cards.status, 'active'),
-        lte(cards.createdAt, input.eligibleBefore),
-      ),
-    )
+    .where(and(activeLeagueCards(input.leagueId), isDrawable(input.eligibleBefore)))
     .orderBy(asc(cards.number))
+}
+
+/** Aggregates the booster pool over the same predicate as `listBoosterPool`, with the next card to enter it. */
+export async function findPoolAvailability(
+  db: DbExecutor,
+  input: { leagueId: string; eligibleBefore: Date },
+): Promise<PoolAvailabilityRow> {
+  const drawable = isDrawable(input.eligibleBefore)
+  const rows = await db
+    .select({
+      drawableCount: sql<number>`count(*) filter (where ${drawable})`.mapWith(Number),
+      hasEpicOrBetter: sql<boolean>`count(*) filter (where ${drawable} and ${cards.tier} >= 'epic') > 0`,
+      hasLegendaryOrBetter: sql<boolean>`count(*) filter (where ${drawable} and ${cards.tier} >= 'legendary') > 0`,
+      nextCreatedAt:
+        sql<Date | null>`min(${cards.createdAt}) filter (where ${gt(cards.createdAt, input.eligibleBefore)})`.mapWith(
+          cards.createdAt,
+        ),
+    })
+    .from(cards)
+    .where(activeLeagueCards(input.leagueId))
+  const row = rows[0]
+  return {
+    drawableCount: row?.drawableCount ?? 0,
+    hasEpicOrBetter: row?.hasEpicOrBetter ?? false,
+    hasLegendaryOrBetter: row?.hasLegendaryOrBetter ?? false,
+    nextCreatedAt: row?.nextCreatedAt ?? null,
+  }
 }
 
 /** Finds the opening a member already made with this client request id. */

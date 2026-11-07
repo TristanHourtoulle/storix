@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { LazyMotion, MotionConfig, domAnimation } from 'motion/react'
 import { z } from 'zod'
@@ -5,11 +6,20 @@ import { Button, buttonClassName } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { BoosterStage } from '@/features/boosters/components/booster-stage'
 import { getOpeningErrorCode, useBoosterOpening } from '@/features/boosters/use-booster-opening'
+import { boosterOpeningQueryOptions, walletQueryOptions } from '@/features/game/game.queries'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/booster')({
   validateSearch: z.object({ request: z.uuid().optional().catch(undefined) }),
-  beforeLoad: ({ params, search }) => {
-    if (!search.request) throw redirect({ to: '/l/$leagueId', params, replace: true })
+  beforeLoad: async ({ context, params, search }) => {
+    const home = { to: '/l/$leagueId', params, replace: true } as const
+    if (!search.request) throw redirect(home)
+    const { queryClient } = context
+    const opening = boosterOpeningQueryOptions(params.leagueId, search.request)
+    if (queryClient.getQueryData(opening.queryKey) !== undefined) return
+    const wallet = await queryClient
+      .fetchQuery({ ...walletQueryOptions(params.leagueId), staleTime: 0 })
+      .catch(() => null)
+    if (wallet?.pool.drawableCount === 0) throw redirect(home)
   },
   component: BoosterRoute,
 })
@@ -17,6 +27,23 @@ export const Route = createFileRoute('/_authed/l/$leagueId/booster')({
 function BackLink({ leagueId }: { leagueId: string }) {
   return (
     <Link to="/l/$leagueId" params={{ leagueId }} className={buttonClassName({ variant: 'ghost' })}>
+      Retour
+    </Link>
+  )
+}
+
+function PoolEmptyHomeLink({ leagueId }: { leagueId: string }) {
+  const queryClient = useQueryClient()
+  return (
+    <Link
+      to="/l/$leagueId"
+      params={{ leagueId }}
+      replace
+      className={buttonClassName({ variant: 'ghost' })}
+      onClick={() =>
+        void queryClient.invalidateQueries({ queryKey: walletQueryOptions(leagueId).queryKey })
+      }
+    >
       Retour
     </Link>
   )
@@ -71,7 +98,7 @@ function BoosterScreen({ leagueId, requestId }: { leagueId: string; requestId: s
           icon="collection"
           title="Aucune carte disponible"
           body="Les cartes sont trop récentes pour les boosters. Réessaie un peu plus tard."
-          action={<BackLink leagueId={leagueId} />}
+          action={<PoolEmptyHomeLink leagueId={leagueId} />}
         />
       </main>
     )

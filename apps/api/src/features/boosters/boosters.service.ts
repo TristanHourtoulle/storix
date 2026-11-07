@@ -1,8 +1,8 @@
 import type { Database, DbExecutor } from '@storix/db'
 import {
   boosterEligibleBefore,
-  DEFAULT_NEW_CARD_DELAY_MINUTES,
   boosterPoolDigestInput,
+  computeBoosterStock,
   consumeBooster,
   copyKey,
   createSeededRandom,
@@ -48,6 +48,7 @@ import {
   type RevealRow,
 } from './boosters.repository'
 import { toBoosterPull } from './opening-view'
+import { loadPoolAvailability } from './pool-availability'
 
 export interface BoostersService {
   openBooster(m: Membership, requestId: string): Promise<BoosterOpening>
@@ -69,6 +70,7 @@ interface OpeningContext {
   requestId: string
   now: Date
   cadence: BoosterCadence
+  delayMinutes: number
 }
 
 function assertLeagueCards(
@@ -125,6 +127,15 @@ async function mintCopies(
   }
 }
 
+async function walletStateFor(ctx: OpeningContext, wallet: WalletRow): Promise<WalletState> {
+  const pool = await loadPoolAvailability(ctx.tx, {
+    leagueId: ctx.m.leagueId,
+    now: ctx.now,
+    delayMinutes: ctx.delayMinutes,
+  })
+  return toWalletState(wallet, ctx.cadence, ctx.now, pool)
+}
+
 async function present(
   ctx: OpeningContext,
   opening: OpeningRecord,
@@ -152,12 +163,18 @@ async function openNewBooster(
     ctx.cadence,
   )
   if (consumed === null) {
-    const { nextAt } = toWalletState(wallet, ctx.cadence, ctx.now).booster
-    throw new AppError('BOOSTER_STOCK_EMPTY', 409, 'No booster available', { nextAt })
+    const { nextAt } = computeBoosterStock(
+      { stock: wallet.boosterStock, anchor: wallet.boosterStockAt },
+      ctx.now,
+      ctx.cadence,
+    )
+    throw new AppError('BOOSTER_STOCK_EMPTY', 409, 'No booster available', {
+      nextAt: nextAt === null ? null : nextAt.toISOString(),
+    })
   }
   const pool = await listBoosterPool(ctx.tx, {
     leagueId: ctx.m.leagueId,
-    eligibleBefore: boosterEligibleBefore(ctx.now, DEFAULT_NEW_CARD_DELAY_MINUTES),
+    eligibleBefore: boosterEligibleBefore(ctx.now, ctx.delayMinutes),
   })
   if (pool.length === 0) {
     throw new AppError('BOOSTER_POOL_EMPTY', 409, 'No card can be drawn from this league yet')
@@ -223,7 +240,7 @@ async function openNewBooster(
     pitySinceLegendary: pityAfter.sinceLegendary,
   }
   await updateWallet(ctx.tx, { leagueId: ctx.m.leagueId, userId: ctx.m.userId }, patch)
-  const walletState = toWalletState({ ...wallet, ...patch }, ctx.cadence, ctx.now)
+  const walletState = await walletStateFor(ctx, { ...wallet, ...patch })
   return present(ctx, { ...opening, dustGained }, walletState, signer)
 }
 
@@ -252,7 +269,8 @@ export function createBoostersService({ db, signer, clock }: BoostersServiceDeps
     fn: (ctx: OpeningContext, wallet: WalletRow) => Promise<T>,
   ): Promise<T> =>
     runInTransaction(db, async (tx) => {
-      const cadence = resolveLeagueSettings(await findLeagueSettings(tx, m.leagueId)).booster
+      const settings = resolveLeagueSettings(await findLeagueSettings(tx, m.leagueId))
+      const cadence = settings.booster
       await ensureWallet(tx, {
         leagueId: m.leagueId,
         userId: m.userId,
@@ -260,7 +278,10 @@ export function createBoostersService({ db, signer, clock }: BoostersServiceDeps
         now: clock(),
       })
       const wallet = await lockWallet(tx, m.leagueId, m.userId)
-      return fn({ tx, m, requestId, now: clock(), cadence }, wallet)
+      return fn(
+        { tx, m, requestId, now: clock(), cadence, delayMinutes: settings.newCardDelayMinutes },
+        wallet,
+      )
     })
 
   const presentStored = async (
@@ -273,7 +294,7 @@ export function createBoostersService({ db, signer, clock }: BoostersServiceDeps
       requestId: ctx.requestId,
     })
     if (existing === null) return null
-    return present(ctx, existing, toWalletState(wallet, ctx.cadence, ctx.now), signer)
+    return present(ctx, existing, await walletStateFor(ctx, wallet), signer)
   }
 
   return {

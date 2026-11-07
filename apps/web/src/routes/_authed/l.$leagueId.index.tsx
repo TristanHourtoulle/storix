@@ -52,7 +52,7 @@ function LeagueHome() {
             wallet={wallet}
             onOpen={openBooster}
             onElapsed={invalidateWallet}
-            isPoolEmpty={false}
+            isPoolEmpty={wallet.pool.drawableCount === 0}
           />
           <PityBar pity={wallet.pity} />
         </>
