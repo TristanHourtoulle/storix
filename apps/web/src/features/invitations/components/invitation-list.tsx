@@ -21,12 +21,15 @@ export function InvitationList({ leagueId }: InvitationListProps) {
       {errorMessage ? <Notice tone="error">{errorMessage}</Notice> : null}
       {isError ? (
         <Notice tone="error">Impossible de charger les invitations. Réessaie plus tard.</Notice>
-      ) : isLoading ? (
+      ) : null}
+      {isLoading ? (
         <p role="status" className="m-0 text-sm text-muted">
           Chargement…
         </p>
       ) : invitations.length === 0 ? (
-        <p className="m-0 text-sm text-muted">Aucun lien actif.</p>
+        isError ? null : (
+          <p className="m-0 text-sm text-muted">Aucun lien actif.</p>
+        )
       ) : (
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
           {invitations.map((invitation) => (

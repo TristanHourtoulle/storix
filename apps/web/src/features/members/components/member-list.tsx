@@ -22,6 +22,7 @@ export function MemberList({ leagueId }: MemberListProps) {
 
   const selectRemoveTarget = (target: MemberSummary | null) => {
     removal.reset()
+    roleChange.reset()
     setRemoveTarget(target)
   }
 

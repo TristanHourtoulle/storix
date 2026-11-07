@@ -25,14 +25,18 @@ export function ResetCodeDialog({ leagueId, member, onClose }: ResetCodeDialogPr
       onClose={onClose}
       isDismissible={!isPending}
     >
-      {result ? (
-        <>
-          <div role="status" className="text-center">
+      <div role="status" className="text-center empty:-mb-4">
+        {result ? (
+          <>
             <span className="sr-only">Code de réinitialisation</span>
             <p className="m-0 font-display text-[28px] font-bold tabular-nums tracking-wider">
               {result.code}
             </p>
-          </div>
+          </>
+        ) : null}
+      </div>
+      {result ? (
+        <>
           <p className="m-0 text-center text-sm text-muted">
             Expire le {formatExpiry(result.expiresAt)}
           </p>

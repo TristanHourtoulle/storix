@@ -18,7 +18,7 @@ export function BottomNav({ leagueId, active }: BottomNavProps) {
   return (
     <nav
       aria-label="Navigation principale"
-      className="sticky bottom-0 mx-auto mt-auto box-border max-w-[480px] flex h-[calc(84px+env(safe-area-inset-bottom))] w-full items-start justify-around bg-nav px-2 pt-2.5 shadow-nav"
+      className="mx-auto box-border flex h-nav w-full max-w-[480px] items-start justify-around bg-nav px-2 pt-2.5 shadow-nav"
     >
       <Link
         to="/l/$leagueId"

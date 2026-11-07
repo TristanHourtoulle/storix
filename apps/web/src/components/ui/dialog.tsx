@@ -22,7 +22,13 @@ export function Dialog({ open, title, onClose, isDismissible = true, children }:
   return (
     <dialog
       ref={ref}
-      onClose={onClose}
+      onClose={() => {
+        if (isDismissible) {
+          onClose()
+        } else if (ref.current && !ref.current.open) {
+          ref.current.showModal()
+        }
+      }}
       onCancel={(event) => {
         if (!isDismissible) event.preventDefault()
       }}
