@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: storix
+      POSTGRES_PASSWORD: storix
+      POSTGRES_DB: storix
+    ports:
+      - '5440:5432'
+    volumes:
+      - storix-pg:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U storix']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  storix-pg:
