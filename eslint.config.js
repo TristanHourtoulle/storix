@@ -65,7 +65,28 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/api/src/**/*.routes.ts', 'apps/api/src/http/**/*.ts'],
+    files: ['packages/storage/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            banned('@storix/db', 'Layer rule: storage must not depend on the db package.'),
+            banned('fastify', 'Layer rule: storage must not depend on the HTTP framework.'),
+            banned('react', 'Layer rule: storage must not depend on React.'),
+          ],
+          patterns: [
+            {
+              group: ['drizzle-orm*', 'better-auth*'],
+              message: 'Layer rule: storage must not depend on the ORM or auth libraries.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/{api,worker}/src/**/*.routes.ts', 'apps/api/src/http/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -116,7 +137,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/api/src/**/*.service.ts'],
+    files: ['apps/{api,worker}/src/**/*.service.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -131,9 +152,16 @@ export default tseslint.config(
           ],
           patterns: [
             {
-              group: ['drizzle-orm*', 'better-auth*', '**/*.routes*'],
+              group: [
+                'drizzle-orm*',
+                'better-auth*',
+                '**/*.routes*',
+                '@aws-sdk/*',
+                'sharp',
+                'pg-boss',
+              ],
               message:
-                'Layer rule: services have no SQL, no auth library and no dependency on routes.',
+                'Layer rule: services have no SQL, no auth library, no S3 SDK, no image or queue library and no dependency on routes.',
             },
           ],
         },
@@ -141,7 +169,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/api/src/**/*.repository.ts'],
+    files: ['apps/{api,worker}/src/**/*.repository.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -152,6 +180,26 @@ export default tseslint.config(
               group: ['better-auth*', '**/*.service*', '**/*.routes*'],
               message:
                 'Layer rule: repositories hold no rules and depend on neither services nor routes.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/worker/src/**/*.job.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            banned('@storix/db', 'Layer rule: jobs parse a payload and call one service.'),
+            banned('sharp', 'Layer rule: jobs parse a payload and call one service.'),
+          ],
+          patterns: [
+            {
+              group: ['drizzle-orm*', '**/*.repository*', '@aws-sdk/*'],
+              message: 'Layer rule: jobs parse a payload and call one service.',
             },
           ],
         },

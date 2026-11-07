@@ -4,4 +4,4 @@
 - Start with `portly status --json`. Reuse a healthy managed server; if an in-scope server is running outside Portly, register it and use `portly take-over <project/server> --json`.
 - Never launch persistent development servers directly, in the background, or through another supervisor.
 
-Ports: web 5180, api 3020, postgres 5440, prod preview 3021.
+Ports: web 5180, api 3020, postgres 5440, prod preview 3021, MinIO S3 9100, MinIO console 9101.
