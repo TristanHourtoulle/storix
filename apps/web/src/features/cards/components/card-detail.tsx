@@ -14,9 +14,10 @@ import { ReactionBar } from './reaction-bar'
 interface CardDetailProps {
   leagueId: string
   card: OwnedCardDetail
+  onWithdraw: () => void
 }
 
-export function CardDetail({ leagueId, card }: CardDetailProps) {
+export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
   const { ref, needsMotionPermission, isMotionDenied, requestMotionPermission } = useHoloTilt()
   const reactions = useReactions(leagueId, card.id)
   const { recycle, upgradeToFoil } = useCardMutations(leagueId, card.id)
@@ -79,6 +80,11 @@ export function CardDetail({ leagueId, card }: CardDetailProps) {
         onRecycle={(variant) => recycle.mutate(variant)}
         onUpgrade={() => upgradeToFoil.mutate()}
       />
+      {card.canWithdraw ? (
+        <Button variant="ghost" onClick={onWithdraw}>
+          Retirer cette photo
+        </Button>
+      ) : null}
       {hasFailed ? <Notice tone="error">Action impossible pour le moment. Réessaie.</Notice> : null}
       {needsMotionPermission ? (
         <Button variant="ghost" onClick={() => void requestMotionPermission()}>

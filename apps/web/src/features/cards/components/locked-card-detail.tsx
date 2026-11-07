@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { LockedCardDetail as LockedCardDetailData, HiddenCardDetail } from '@storix/shared'
+import type { LockedCardDetail as LockedCardDetailData } from '@storix/shared'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { TIER_LABELS } from '../tier-labels'
@@ -7,10 +7,11 @@ import { LockedCardFace } from './locked-card-face'
 import { MetaCell, discovererLabel } from './meta-cell'
 
 interface LockedCardDetailProps {
-  card: LockedCardDetailData | HiddenCardDetail
+  card: LockedCardDetailData
   dust: number | undefined
   isBusy?: boolean
   onCraft: () => void
+  onWithdraw: () => void
 }
 
 function craftBlockedLabel(card: LockedCardDetailData, dust: number | undefined): string | null {
@@ -23,11 +24,16 @@ function craftBlockedLabel(card: LockedCardDetailData, dust: number | undefined)
   return `Il te manque ${missing} paillettes`
 }
 
-export function LockedCardDetail({ card, dust, isBusy = false, onCraft }: LockedCardDetailProps) {
+export function LockedCardDetail({
+  card,
+  dust,
+  isBusy = false,
+  onCraft,
+  onWithdraw,
+}: LockedCardDetailProps) {
   const [isConfirming, setIsConfirming] = useState(false)
-  const isHidden = card.kind === 'hidden'
-  const blockedLabel = card.kind === 'locked' ? craftBlockedLabel(card, dust) : null
-  const cost = card.kind === 'locked' ? (card.craft.cost ?? 0) : 0
+  const blockedLabel = craftBlockedLabel(card, dust)
+  const cost = card.craft.cost ?? 0
 
   function confirm() {
     setIsConfirming(false)
@@ -36,44 +42,38 @@ export function LockedCardDetail({ card, dust, isBusy = false, onCraft }: Locked
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <LockedCardFace
-        size="xl"
-        tier={card.tier}
-        thumbhash={card.thumbhash}
-        label={isHidden ? 'Masquée' : undefined}
-      />
+      <LockedCardFace size="xl" tier={card.tier} thumbhash={card.thumbhash} />
       <div className="pills">
-        <span className="pill">{isHidden ? 'Masquée' : TIER_LABELS[card.tier]}</span>
+        <span className="pill">{TIER_LABELS[card.tier]}</span>
       </div>
       <h2 className="detail-name">???</h2>
-      {card.kind === 'locked' ? (
-        <div className="meta">
-          <MetaCell label="Photo de" value={card.author.displayUsername ?? 'Ancien membre'} />
-          <MetaCell label="Découverte par" value={discovererLabel(card.discoveredBy)} />
-        </div>
+      <div className="meta">
+        <MetaCell label="Photo de" value={card.author.displayUsername ?? 'Ancien membre'} />
+        <MetaCell label="Découverte par" value={discovererLabel(card.discoveredBy)} />
+      </div>
+      <Button
+        variant="primary"
+        block
+        disabled={blockedLabel !== null || isBusy}
+        onClick={() => setIsConfirming(true)}
+      >
+        {blockedLabel ?? `Fabriquer · ${cost} paillettes`}
+      </Button>
+      {card.canWithdraw ? (
+        <Button variant="ghost" onClick={onWithdraw}>
+          Retirer cette photo
+        </Button>
       ) : null}
-      {card.kind === 'locked' ? (
-        <>
-          <Button
-            variant="primary"
-            block
-            disabled={blockedLabel !== null || isBusy}
-            onClick={() => setIsConfirming(true)}
-          >
-            {blockedLabel ?? `Fabriquer · ${cost} paillettes`}
-          </Button>
-          <Dialog
-            open={isConfirming}
-            title="Fabriquer cette carte ?"
-            onClose={() => setIsConfirming(false)}
-          >
-            <p className="m-0 text-sm text-ink-2">Cela coûte {cost} paillettes.</p>
-            <Button variant="primary" block onClick={confirm}>
-              Fabriquer · {cost} paillettes
-            </Button>
-          </Dialog>
-        </>
-      ) : null}
+      <Dialog
+        open={isConfirming}
+        title="Fabriquer cette carte ?"
+        onClose={() => setIsConfirming(false)}
+      >
+        <p className="m-0 text-sm text-ink-2">Cela coûte {cost} paillettes.</p>
+        <Button variant="primary" block onClick={confirm}>
+          Fabriquer · {cost} paillettes
+        </Button>
+      </Dialog>
     </div>
   )
 }

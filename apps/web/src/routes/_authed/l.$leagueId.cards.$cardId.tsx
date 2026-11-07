@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
@@ -7,11 +8,14 @@ import { Notice } from '@/components/ui/notice'
 import { TopBar } from '@/components/ui/top-bar'
 import { formatCardNumber } from '@/features/cards/card-number'
 import { CardDetail } from '@/features/cards/components/card-detail'
+import { HiddenCardDetail } from '@/features/cards/components/hidden-card-detail'
 import { LockedCardDetail } from '@/features/cards/components/locked-card-detail'
 import { useCardMutations } from '@/features/cards/use-card-mutations'
 import { useCardDetail } from '@/features/cards/use-card-detail'
 import { DustBalance } from '@/features/game/components/dust-balance'
 import { useWallet } from '@/features/game/use-wallet'
+import { WithdrawCardDialog } from '@/features/withdrawals/components/withdraw-card-dialog'
+import { useWithdrawCard } from '@/features/withdrawals/use-withdraw-card'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/cards/$cardId')({
   validateSearch: z.object({ author: z.string().optional() }),
@@ -24,6 +28,9 @@ function CardDetailScreen() {
   const { card, isPending, isMissing, retry } = useCardDetail(leagueId, cardId)
   const { data: wallet } = useWallet(leagueId)
   const { craft } = useCardMutations(leagueId, cardId)
+  const withdraw = useWithdrawCard(leagueId)
+  const [isWithdrawing, setIsWithdrawing] = useState(false)
+  const openWithdraw = () => setIsWithdrawing(true)
 
   return (
     <main className="screen">
@@ -43,7 +50,9 @@ function CardDetailScreen() {
         }
       />
       {card?.kind === 'owned' ? (
-        <CardDetail leagueId={leagueId} card={card} />
+        <CardDetail leagueId={leagueId} card={card} onWithdraw={openWithdraw} />
+      ) : card?.kind === 'hidden' ? (
+        <HiddenCardDetail card={card} onWithdraw={openWithdraw} />
       ) : card ? (
         <>
           <LockedCardDetail
@@ -51,6 +60,7 @@ function CardDetailScreen() {
             dust={wallet?.dust}
             isBusy={craft.isPending}
             onCraft={() => craft.mutate()}
+            onWithdraw={openWithdraw}
           />
           {craft.isError ? (
             <Notice tone="error">Fabrication impossible pour le moment. Réessaie.</Notice>
@@ -76,6 +86,15 @@ function CardDetailScreen() {
           }
         />
       )}
+      {withdraw.isError ? (
+        <Notice tone="error">Retrait impossible pour le moment. Réessaie.</Notice>
+      ) : null}
+      <WithdrawCardDialog
+        number={isWithdrawing && card ? card.number : null}
+        isPending={withdraw.isPending}
+        onClose={() => setIsWithdrawing(false)}
+        onConfirm={() => withdraw.mutate(cardId)}
+      />
     </main>
   )
 }

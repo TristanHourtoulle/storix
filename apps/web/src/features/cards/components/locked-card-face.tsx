@@ -7,10 +7,9 @@ interface LockedCardFaceProps {
   size: 'sm' | 'md' | 'lg' | 'xl'
   tier: CardTier
   thumbhash: string
-  label?: string
 }
 
-export function LockedCardFace({ size, tier, thumbhash, label }: LockedCardFaceProps) {
+export function LockedCardFace({ size, tier, thumbhash }: LockedCardFaceProps) {
   const placeholder = useThumbhashUrl(thumbhash)
 
   return (
@@ -25,7 +24,7 @@ export function LockedCardFace({ size, tier, thumbhash, label }: LockedCardFaceP
       <Icon name="lock" className="locked-icon" />
       <div className="card-band">
         <span className="card-name">???</span>
-        <span className="card-tier">{label ?? TIER_LABELS[tier]}</span>
+        <span className="card-tier">{TIER_LABELS[tier]}</span>
       </div>
     </div>
   )
