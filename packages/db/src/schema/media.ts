@@ -26,7 +26,7 @@ export const media = pgTable(
     uploadId: uuid('upload_id')
       .notNull()
       .unique()
-      .references(() => uploads.id, { onDelete: 'restrict' }),
+      .references(() => uploads.id, { onDelete: 'no action' }),
     sourceSha256: text('source_sha256').notNull(),
     phash: text('phash').notNull(),
     thumbhash: text('thumbhash').notNull(),

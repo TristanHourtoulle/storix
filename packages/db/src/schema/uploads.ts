@@ -26,7 +26,7 @@ export const uploads = pgTable(
       .references(() => leagues.id, { onDelete: 'cascade' }),
     userId: text('user_id')
       .notNull()
-      .references(() => user.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'restrict' }),
     objectKey: text('object_key').notNull().unique(),
     status: uploadStatus('status').notNull().default('pending'),
     title: text('title'),

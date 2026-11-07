@@ -1,5 +1,5 @@
 {
-  "id": "bf300006-2309-4034-ad90-7eb1749fec27",
+  "id": "9c2b7163-1305-4363-916a-89850fbe81d2",
   "prevId": "178aee17-39df-4c7a-b7eb-824d3de87c48",
   "version": "7",
   "dialect": "postgresql",
@@ -1177,7 +1177,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         },
         "uploads_card_id_cards_id_fk": {
@@ -1342,7 +1342,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -1569,7 +1569,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "no action",
           "onUpdate": "no action"
         },
         "cards_author_id_user_id_fk": {

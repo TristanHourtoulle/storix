@@ -28,7 +28,7 @@ export const cards = pgTable(
     mediaId: uuid('media_id')
       .notNull()
       .unique()
-      .references(() => media.id, { onDelete: 'restrict' }),
+      .references(() => media.id, { onDelete: 'no action' }),
     authorId: text('author_id').references(() => user.id, { onDelete: 'set null' }),
     number: integer('number').notNull(),
     title: text('title').notNull(),
