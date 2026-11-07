@@ -2,6 +2,7 @@ import type { LockedCardDetail as LockedCardDetailData } from '@storix/shared'
 import { Button } from '@/components/ui/button'
 import { TIER_LABELS } from '../tier-labels'
 import { LockedCardFace } from './locked-card-face'
+import { authorLabel } from '../author-label'
 import { MetaCell, discovererLabel } from './meta-cell'
 
 interface LockedCardDetailProps {
@@ -18,7 +19,7 @@ export function LockedCardDetail({ card, onWithdraw }: LockedCardDetailProps) {
       </div>
       <h2 className="detail-name">???</h2>
       <div className="meta">
-        <MetaCell label="Photo de" value={card.author.displayUsername ?? 'Ancien membre'} />
+        <MetaCell label="Photo de" value={authorLabel(card.author)} />
         <MetaCell label="Découverte par" value={discovererLabel(card.discoveredBy)} />
       </div>
       {card.canWithdraw ? (

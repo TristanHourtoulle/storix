@@ -1,5 +1,6 @@
 import type { TaggedCard } from '@storix/shared'
 import { Button } from '@/components/ui/button'
+import { authorLabel } from '@/features/cards/author-label'
 import { formatCardNumber } from '@/features/cards/card-number'
 import { CardFace } from '@/features/cards/components/card-face'
 import { CardImage } from '@/features/cards/components/card-image'
@@ -31,6 +32,9 @@ export function TaggedCardList({ cards, onWithdraw }: TaggedCardListProps) {
             <p className="m-0 max-w-full truncate font-display font-semibold">{card.title}</p>
             <p className="m-0 text-sm text-muted">
               {formatCardNumber(card.number)} · {TIER_LABELS[card.tier]}
+            </p>
+            <p className="m-0 max-w-full truncate text-sm text-muted">
+              Photo de {authorLabel(card.author)}
             </p>
             {card.status === 'hidden' ? <span className="pill">Masquée</span> : null}
             <Button

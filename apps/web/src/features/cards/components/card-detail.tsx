@@ -8,6 +8,7 @@ import { TIER_LABELS } from '../tier-labels'
 import { CardActions } from './card-actions'
 import { CardFace } from './card-face'
 import { CardImage } from './card-image'
+import { authorLabel } from '../author-label'
 import { MetaCell, discovererLabel, formatDate } from './meta-cell'
 import { ReactionBar } from './reaction-bar'
 
@@ -60,7 +61,7 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
       </div>
       <h2 className="detail-name">{card.title}</h2>
       <div className="meta">
-        <MetaCell label="Photo de" value={card.author.displayUsername ?? 'Ancien membre'} />
+        <MetaCell label="Photo de" value={authorLabel(card.author)} />
         <MetaCell label="Prise le" value={formatDate(card.capturedAt, 'Inconnue')} />
         <MetaCell label="Découverte par" value={discovererLabel(card.discoveredBy)} />
         <MetaCell
