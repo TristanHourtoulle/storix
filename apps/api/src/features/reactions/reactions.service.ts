@@ -1,8 +1,9 @@
 import type { Database } from '@storix/db'
-import type { ReactionCounts, ReactionType } from '@storix/shared'
+import { canReact, type ReactionCounts, type ReactionType } from '@storix/shared'
 import { AppError, notFound } from '../../lib/errors'
-import { canReactTo } from '../cards/card-views'
+import { runInTransaction } from '../../lib/transaction'
 import { findCardForViewer } from '../cards/cards.repository'
+import { lockOwnedVariants } from '../copies/copies.repository'
 import type { Membership } from '../leagues/leagues.service'
 import { addReaction, countReactions, removeReaction } from './reactions.repository'
 
@@ -19,22 +20,32 @@ export interface ReactionsServiceDeps {
   db: Database
 }
 
-/** Builds the service letting members who own a card they did not author react to it. */
+/** Builds the service letting owners react to cards they did not author, and anyone withdraw their own reaction. */
 export function createReactionsService({ db }: ReactionsServiceDeps): ReactionsService {
   return {
-    async setReaction(m, cardId, type, isOn) {
-      const card = await findCardForViewer(db, {
-        leagueId: m.leagueId,
-        cardId,
-        viewerId: m.userId,
-      })
-      if (card === null) throw notFound('Card not found')
-      if (!canReactTo(card, m.userId)) {
-        throw new AppError('REACTION_NOT_ALLOWED', 403, 'You cannot react to this card')
-      }
-      const key = { cardId, userId: m.userId, type }
-      await (isOn ? addReaction(db, key) : removeReaction(db, key))
-      return countReactions(db, { cardId, viewerId: m.userId })
-    },
+    setReaction: (m, cardId, type, isOn) =>
+      runInTransaction(db, async (tx) => {
+        const card = await findCardForViewer(tx, {
+          leagueId: m.leagueId,
+          cardId,
+          viewerId: m.userId,
+        })
+        if (card === null) throw notFound('Card not found')
+        const key = { cardId, userId: m.userId, type }
+        if (isOn) {
+          const owned = await lockOwnedVariants(tx, {
+            leagueId: m.leagueId,
+            cardId,
+            ownerId: m.userId,
+          })
+          if (!canReact({ isAuthor: card.authorId === m.userId, ownsCopy: owned.length > 0 })) {
+            throw new AppError('REACTION_NOT_ALLOWED', 403, 'You cannot react to this card')
+          }
+          await addReaction(tx, key)
+        } else {
+          await removeReaction(tx, key)
+        }
+        return countReactions(tx, { cardId, viewerId: m.userId })
+      }),
   }
 }

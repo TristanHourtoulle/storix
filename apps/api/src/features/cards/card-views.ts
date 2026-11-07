@@ -131,7 +131,7 @@ export function foilUpgradeDecisionFor(
 ): ReturnType<typeof foilUpgradeDecision> {
   return foilUpgradeDecision({
     currentTier: row.tier,
-    ownsNormal: row.normalTier !== null,
+    normalTierAtMint: row.normalTier,
     ownsFoil: row.foilTier !== null,
     dust,
   })
