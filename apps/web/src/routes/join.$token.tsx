@@ -53,6 +53,15 @@ function JoinScreen() {
     )
   }
 
+  if (me.isError) {
+    return (
+      <main className="screen">
+        <BrandMark />
+        <Notice tone="error">Impossible de vérifier ta session. Réessaie plus tard.</Notice>
+      </main>
+    )
+  }
+
   const { status, league, invitedBy, isMember } = preview.data
   const isSignedIn = Boolean(me.data)
 

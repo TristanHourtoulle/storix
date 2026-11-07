@@ -10,9 +10,10 @@ import { useLogin } from '../use-login'
 interface LoginFormProps {
   redirectTo?: string
   isResetDone: boolean
+  isSignupFailed?: boolean
 }
 
-export function LoginForm({ redirectTo, isResetDone }: LoginFormProps) {
+export function LoginForm({ redirectTo, isResetDone, isSignupFailed = false }: LoginFormProps) {
   const { loginWithPassword, loginWithPasskey, isPending, error } = useLogin(redirectTo)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -31,6 +32,9 @@ export function LoginForm({ redirectTo, isResetDone }: LoginFormProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      {isSignupFailed ? (
+        <Notice tone="error">Compte créé, mais connexion impossible. Connecte-toi.</Notice>
+      ) : null}
       {isResetDone ? (
         <Notice tone="info">Mot de passe modifié. Connecte-toi avec le nouveau.</Notice>
       ) : null}

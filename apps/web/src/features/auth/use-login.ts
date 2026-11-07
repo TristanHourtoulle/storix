@@ -54,7 +54,10 @@ export function useLogin(redirectTo?: string): {
     mutationFn: async (attempt: LoginAttempt): Promise<void> => {
       if (attempt.kind === 'password') await signInWithPassword(attempt.input)
       else await signInWithPasskey()
+    },
+    onSuccess: async () => {
       queryClient.removeQueries({ queryKey: meQueryOptions.queryKey })
+      queryClient.removeQueries({ queryKey: ['invitations'] })
       if (redirectTo) await navigate({ href: redirectTo, replace: true })
       else await navigate({ to: '/', replace: true })
     },
