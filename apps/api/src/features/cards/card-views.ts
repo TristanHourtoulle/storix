@@ -106,7 +106,7 @@ function toHiddenSummary(row: CollectionRow): HiddenCardSummary {
     kind: 'hidden',
     id: row.id,
     number: row.number,
-    tier: row.tier,
+    tier: displayTier(row),
     thumbhash: row.thumbhash,
     dominantColor: row.dominantColor,
     width: row.width,

@@ -3,7 +3,6 @@ import {
   areTierBoundsValid,
   boosterEligibleBefore,
   canPinTier,
-  COMPUTED_TIERS,
   MYTHIC_CAP,
   PROVISIONAL_TIER,
   resolveEffectiveTier,
@@ -32,6 +31,7 @@ import {
   listAdminCards,
   lockLeagueEconomyExclusive,
   lockLeagueModeration,
+  lockLeagueRarity,
   setCaptureDateValidated,
   updateCardModeration,
   type CardStatus,
@@ -80,13 +80,29 @@ async function delayMinutesOf(tx: DbExecutor, leagueId: string): Promise<number>
   return resolveLeagueSettings(await findLeagueSettings(tx, leagueId)).newCardDelayMinutes
 }
 
-async function applyTierRules(ctx: ModerationContext, rules: TierRules) {
-  const effective = resolveEffectiveTier({
-    computed: asComputedTier(ctx.card.computedTier ?? PROVISIONAL_TIER) ?? COMPUTED_TIERS[0],
+function resolveTier(card: ModerationCardRow, rules: TierRules) {
+  return resolveEffectiveTier({
+    computed: asComputedTier(card.computedTier) ?? PROVISIONAL_TIER,
     pinned: rules.pinnedTier,
     min: rules.minTier,
     max: rules.maxTier,
   })
+}
+
+function isSettled(card: ModerationCardRow, rules: TierRules): boolean {
+  const current = currentRules(card)
+  const effective = resolveTier(card, rules)
+  return (
+    current.pinnedTier === rules.pinnedTier &&
+    current.minTier === rules.minTier &&
+    current.maxTier === rules.maxTier &&
+    card.tier === effective.tier &&
+    card.tierSource === effective.source
+  )
+}
+
+async function applyTierRules(ctx: ModerationContext, rules: TierRules) {
+  const effective = resolveTier(ctx.card, rules)
   await updateCardModeration(ctx.tx, ctx.card.id, {
     ...rules,
     tier: effective.tier,
@@ -119,7 +135,10 @@ function tierState(card: ModerationCardRow, rules: TierRules) {
   return { ...rules, tier: card.tier, tierSource: card.tierSource }
 }
 
-/** Builds the admin service moderating league cards, serialized per league by the moderation lock. */
+/**
+ * Builds the admin service moderating league cards, serialized per league by the moderation lock,
+ * then the rarity lock so a recompute never writes stale tier rules over a pin or bounds change.
+ */
 export function createModerationService(deps: ModerationServiceDeps): ModerationService {
   const { db, signer, clock, jobs, cardRemoval, logger } = deps
 
@@ -138,6 +157,7 @@ export function createModerationService(deps: ModerationServiceDeps): Moderation
   ): Promise<AdminCard> => {
     const { card, changed } = await runInTransaction(db, async (tx) => {
       await lockLeagueModeration(tx, m.leagueId)
+      await lockLeagueRarity(tx, m.leagueId)
       const locked = await findCardForModeration(tx, { leagueId: m.leagueId, cardId })
       if (locked === null) throw notFound('Card not found')
       const audit = await change({ tx, m, card: locked, now: clock() })
@@ -193,7 +213,9 @@ export function createModerationService(deps: ModerationServiceDeps): Moderation
 
     pinTier: (m, cardId, tier) =>
       moderate(m, cardId, async (ctx) => {
-        if (ctx.card.pinnedTier === tier) return null
+        const before = currentRules(ctx.card)
+        const rules = { ...before, pinnedTier: tier }
+        if (isSettled(ctx.card, rules)) return null
         const mythicCount = await countMythicPins(ctx.tx, m.leagueId)
         const decision = canPinTier({
           tier,
@@ -206,8 +228,7 @@ export function createModerationService(deps: ModerationServiceDeps): Moderation
             mythicCount,
           })
         }
-        const before = currentRules(ctx.card)
-        const after = await applyTierRules(ctx, { ...before, pinnedTier: tier })
+        const after = await applyTierRules(ctx, rules)
         return {
           action: 'card.tier_pinned',
           metadata: { before: tierState(ctx.card, before), after },
@@ -223,12 +244,9 @@ export function createModerationService(deps: ModerationServiceDeps): Moderation
           })
         }
         const before = currentRules(ctx.card)
-        if (before.minTier === bounds.min && before.maxTier === bounds.max) return null
-        const after = await applyTierRules(ctx, {
-          ...before,
-          minTier: bounds.min,
-          maxTier: bounds.max,
-        })
+        const rules = { ...before, minTier: bounds.min, maxTier: bounds.max }
+        if (isSettled(ctx.card, rules)) return null
+        const after = await applyTierRules(ctx, rules)
         return {
           action: 'card.bounds_set',
           metadata: { before: tierState(ctx.card, before), after },
