@@ -14,6 +14,7 @@ interface DeletionSummaryProps {
 }
 
 function cardsLabel(count: number, participle: string): string {
+  if (count === 0) return `Aucune carte ${participle}e`
   return count === 1 ? `1 carte ${participle}e` : `${count} cartes ${participle}es`
 }
 
@@ -78,7 +79,7 @@ export function DeletionSummary({
       {anonymizedLeagues.length > 0 ? (
         <p className="m-0">
           {cardsLabel(sumCards(anonymizedLeagues), 'déjà gardé')} dans {namesOf(anonymizedLeagues)}{' '}
-          {sumCards(anonymizedLeagues) === 1 ? 'reste signée' : 'restent signées'} « Ancien membre
+          {sumCards(anonymizedLeagues) <= 1 ? 'reste signée' : 'restent signées'} « Ancien membre
           ».
         </p>
       ) : null}
