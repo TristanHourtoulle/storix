@@ -83,7 +83,9 @@ export function LeaveLeagueSection({
           onClose={() => setIsOpen(false)}
           isDismissible={!isPending}
         >
-          <p className="m-0 text-sm leading-snug text-muted">{OUTCOME_COPY[hasNoPhotos ? 'none' : (photos ?? 'none')]}</p>
+          <p className="m-0 text-sm leading-snug text-muted">
+            {OUTCOME_COPY[hasNoPhotos ? 'none' : (photos ?? 'none')]}
+          </p>
           {isHomeLeague ? (
             <Notice tone="error">
               C'est ta ligue d'origine : plus personne ne pourra te générer de code de

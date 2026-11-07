@@ -79,8 +79,7 @@ export function DeletionSummary({
       {anonymizedLeagues.length > 0 ? (
         <p className="m-0">
           {cardsLabel(sumCards(anonymizedLeagues), 'déjà gardé')} dans {namesOf(anonymizedLeagues)}{' '}
-          {sumCards(anonymizedLeagues) <= 1 ? 'reste signée' : 'restent signées'} « Ancien membre
-          ».
+          {sumCards(anonymizedLeagues) <= 1 ? 'reste signée' : 'restent signées'} « Ancien membre ».
         </p>
       ) : null}
       {!isChoiceNeeded || photos !== null ? (
