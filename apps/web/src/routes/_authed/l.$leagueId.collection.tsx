@@ -1,5 +1,5 @@
-import { Suspense } from 'react'
-import { useQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 import { CARD_TIERS, type CardTier, type MemberSummary } from '@storix/shared'
@@ -74,13 +74,11 @@ function Collection() {
           <MemberFilter members={members} selectedId={filters.authorId} onSelect={selectAuthor} />
         )
       )}
-      <Suspense fallback={LOADING}>
-        <CollectionBody
-          leagueId={leagueId}
-          filters={filters}
-          label={authorName ? `Cartes de ${authorName}` : 'Toutes les cartes'}
-        />
-      </Suspense>
+      <CollectionBody
+        leagueId={leagueId}
+        filters={filters}
+        label={authorName ? `Cartes de ${authorName}` : 'Toutes les cartes'}
+      />
     </main>
   )
 }
@@ -92,8 +90,18 @@ interface CollectionBodyProps {
 }
 
 function CollectionBody({ leagueId, filters, label }: CollectionBodyProps) {
-  const { data } = useSuspenseInfiniteQuery(cardsInfiniteQueryOptions(leagueId, filters))
+  const { data, hasNextPage, isFetchingNextPage, fetchNextPage } = useInfiniteQuery({
+    ...cardsInfiniteQueryOptions(leagueId, filters),
+    placeholderData: keepPreviousData,
+  })
+  const { authorId, tier } = filters
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [authorId, tier])
+
+  if (!data) return LOADING
   const firstPage = data.pages[0]
+  const cards = data.pages.flatMap((page) => page.cards)
   const total = firstPage?.total ?? 0
   const owned = firstPage?.ownedCount ?? 0
   const isFiltered = filters.authorId !== null || filters.tier !== null
@@ -127,7 +135,13 @@ function CollectionBody({ leagueId, filters, label }: CollectionBodyProps) {
           Ouvre un booster pour découvrir tes premières cartes.
         </p>
       )}
-      <CollectionGrid leagueId={leagueId} filters={filters} />
+      <CollectionGrid
+        leagueId={leagueId}
+        cards={cards}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        fetchNextPage={fetchNextPage}
+      />
     </>
   )
 }

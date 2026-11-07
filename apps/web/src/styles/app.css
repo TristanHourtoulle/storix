@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 @import './game.css';
+@import './booster.css';
+@import './collection.css';
 
 @theme {
   --spacing-nav: calc(68px + env(safe-area-inset-bottom));
@@ -27,6 +29,7 @@
   --color-tier-epic: #c084fc;
   --color-tier-legendary: #fbbf24;
   --color-tier-legendary-soft: #fcd34d;
+  --color-tier-mythic: #c084fc;
   --color-locked: #6b6b80;
   --font-display: 'Space Grotesk Variable', 'Space Grotesk', sans-serif;
   --font-sans: 'Inter Variable', Inter, system-ui, sans-serif;

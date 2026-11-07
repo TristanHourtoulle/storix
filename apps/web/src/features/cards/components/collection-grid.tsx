@@ -1,16 +1,17 @@
 import { useEffect } from 'react'
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import type { CollectionCard } from '@storix/shared'
 import { TIER_LABELS } from '../tier-labels'
-import { cardsInfiniteQueryOptions, type CollectionFilters } from '../cards.queries'
 import { useGridMetrics } from '../use-grid-metrics'
 import { CollectionCardView } from './collection-card-view'
 
 interface CollectionGridProps {
   leagueId: string
-  filters: CollectionFilters
+  cards: CollectionCard[]
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  fetchNextPage: () => unknown
 }
 
 const COLUMNS = 3
@@ -23,11 +24,13 @@ function cardLabel(card: CollectionCard): string {
   return `Carte à découvrir, ${TIER_LABELS[card.tier]}`
 }
 
-export function CollectionGrid({ leagueId, filters }: CollectionGridProps) {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
-    cardsInfiniteQueryOptions(leagueId, filters),
-  )
-  const cards = data.pages.flatMap((page) => page.cards)
+export function CollectionGrid({
+  leagueId,
+  cards,
+  hasNextPage,
+  isFetchingNextPage,
+  fetchNextPage,
+}: CollectionGridProps) {
   const { containerRef, width, offsetTop } = useGridMetrics()
   const cardWidth = Math.max(0, (width - GAP * (COLUMNS - 1)) / COLUMNS)
   const cardHeight = (cardWidth * 88) / 63
