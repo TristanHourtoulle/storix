@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { authClient } from '@/lib/auth-client'
+import { clearApiCache } from '@/features/pwa/api-cache'
 import { setLoggingOut } from '@/lib/session-state'
 import { authErrorMessage } from './auth-errors'
 
@@ -21,6 +22,7 @@ export function useLogout(): {
         await navigate({ to: '/login', replace: true })
         await queryClient.cancelQueries()
         queryClient.clear()
+        await clearApiCache()
       } finally {
         setLoggingOut(false)
       }

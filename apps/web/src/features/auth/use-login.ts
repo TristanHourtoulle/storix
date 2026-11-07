@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { authClient } from '@/lib/auth-client'
+import { clearApiCache } from '@/features/pwa/api-cache'
 import { UserFacingError, userMessage } from '@/features/errors/user-message'
 import { authErrorMessage } from './auth-errors'
 
@@ -56,6 +57,7 @@ export function useLogin(redirectTo?: string): {
     },
     onSuccess: async () => {
       queryClient.clear()
+      await clearApiCache()
       if (redirectTo) await navigate({ href: redirectTo, replace: true })
       else await navigate({ to: '/', replace: true })
     },

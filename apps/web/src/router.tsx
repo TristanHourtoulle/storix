@@ -1,4 +1,5 @@
 import { createRouter } from '@tanstack/react-router'
+import { clearApiCache } from '@/features/pwa/api-cache'
 import { isPublicPath } from '@/lib/redirect'
 import { isLoggingOut } from '@/lib/session-state'
 import { createQueryClient } from '@/lib/query-client'
@@ -14,6 +15,7 @@ function redirectToLogin(): void {
     .navigate({ to: '/login', search: { redirect: href } })
     .then(() => queryClient.cancelQueries())
     .then(() => queryClient.clear())
+    .then(() => clearApiCache())
 }
 
 export const queryClient = createQueryClient(redirectToLogin)
