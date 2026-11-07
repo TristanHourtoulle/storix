@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { LeagueSummary } from '@storix/shared'
 import { Icon } from '@/components/ui/icon'
 import { initials } from '@/lib/initials'
@@ -9,12 +9,19 @@ interface LeagueHeaderProps {
   memberCount: number
   leagues: LeagueSummary[]
   currentLeagueId: string
+  trailing?: ReactNode
 }
 
 const AVATAR_CLASS =
   'grid size-11 flex-none place-items-center rounded-control bg-surface-2 font-display text-[15px] font-bold text-accent-hover shadow-hairline-strong'
 
-export function LeagueHeader({ name, memberCount, leagues, currentLeagueId }: LeagueHeaderProps) {
+export function LeagueHeader({
+  name,
+  memberCount,
+  leagues,
+  currentLeagueId,
+  trailing,
+}: LeagueHeaderProps) {
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false)
   const canSwitch = leagues.length > 1
 
@@ -44,6 +51,7 @@ export function LeagueHeader({ name, memberCount, leagues, currentLeagueId }: Le
           {memberCount} {memberCount > 1 ? 'membres' : 'membre'}
         </p>
       </div>
+      {trailing ? <div className="ml-auto flex-none">{trailing}</div> : null}
       {canSwitch ? (
         <LeagueSwitcherDialog
           open={isSwitcherOpen}
