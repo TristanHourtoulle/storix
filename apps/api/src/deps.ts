@@ -120,7 +120,7 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       signer: deps.mediaSigner,
       clock: deps.clock,
     }),
-    members: createMembersService(deps.db),
+    members: createMembersService({ db: deps.db, cardRemoval, jobs: deps.jobs, logger }),
     moderation: createModerationService({
       db: deps.db,
       signer: deps.mediaSigner,

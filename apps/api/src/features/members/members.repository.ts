@@ -1,6 +1,6 @@
-import { leagueMembers, user, type DbExecutor } from '@storix/db'
+import { cardTags, cards, leagueMembers, reactions, user, type DbExecutor } from '@storix/db'
 import type { LeagueRole } from '@storix/shared'
-import { and, asc, eq, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 
 export interface MembershipRecord {
   role: LeagueRole
@@ -13,6 +13,12 @@ export interface MemberRow {
   role: LeagueRole
   joinedAt: Date
   homeLeagueId: string | null
+  authoredCardCount: number
+}
+
+export interface MemberLock {
+  userId: string
+  role: LeagueRole
 }
 
 /** Inserts a league membership; false when the user is already a member. */
@@ -42,7 +48,7 @@ export async function findMembership(
   return rows[0] ?? null
 }
 
-/** Lists a league's members with their home league, ordered owner, admins, members, then by name. */
+/** Lists a league's members with their home league and authored card count, ordered owner, admins, members, then by name. */
 export function listMembers(db: DbExecutor, leagueId: string): Promise<MemberRow[]> {
   const displayName = sql<string>`coalesce(${user.displayUsername}, ${user.username}, ${user.name})`
   return db
@@ -52,6 +58,10 @@ export function listMembers(db: DbExecutor, leagueId: string): Promise<MemberRow
       role: leagueMembers.role,
       joinedAt: leagueMembers.joinedAt,
       homeLeagueId: user.homeLeagueId,
+      authoredCardCount:
+        sql<number>`(select count(*) from ${cards} where ${cards.leagueId} = ${leagueMembers.leagueId} and ${cards.authorId} = ${leagueMembers.userId})`.mapWith(
+          Number,
+        ),
     })
     .from(leagueMembers)
     .innerJoin(user, eq(user.id, leagueMembers.userId))
@@ -85,4 +95,70 @@ export async function deleteMember(
     .where(and(eq(leagueMembers.leagueId, leagueId), eq(leagueMembers.userId, userId)))
     .returning({ userId: leagueMembers.userId })
   return rows.length
+}
+
+/** Locks the given memberships of a league in user id order and returns the ones that exist. */
+export function lockMemberships(
+  db: DbExecutor,
+  leagueId: string,
+  userIds: readonly string[],
+): Promise<MemberLock[]> {
+  return db
+    .select({ userId: leagueMembers.userId, role: leagueMembers.role })
+    .from(leagueMembers)
+    .where(and(eq(leagueMembers.leagueId, leagueId), inArray(leagueMembers.userId, [...userIds])))
+    .orderBy(asc(leagueMembers.userId))
+    .for('update')
+}
+
+/** Hands the league from its owner to an admin: demotes the owner first, then promotes the target. */
+export async function transferOwnership(
+  db: DbExecutor,
+  input: { leagueId: string; fromUserId: string; toUserId: string },
+): Promise<void> {
+  const demoted = await db
+    .update(leagueMembers)
+    .set({ role: 'admin' })
+    .where(
+      and(
+        eq(leagueMembers.leagueId, input.leagueId),
+        eq(leagueMembers.userId, input.fromUserId),
+        eq(leagueMembers.role, 'owner'),
+      ),
+    )
+    .returning({ userId: leagueMembers.userId })
+  if (demoted.length === 0) throw new Error('League owner not found')
+  const promoted = await db
+    .update(leagueMembers)
+    .set({ role: 'owner' })
+    .where(
+      and(
+        eq(leagueMembers.leagueId, input.leagueId),
+        eq(leagueMembers.userId, input.toUserId),
+        eq(leagueMembers.role, 'admin'),
+      ),
+    )
+    .returning({ userId: leagueMembers.userId })
+  if (promoted.length === 0) throw new Error('Target admin not found')
+}
+
+/** Deletes a member's tags and reactions on a league's cards and drops their discovery credit, keeping the date. */
+export async function clearMemberTraces(
+  db: DbExecutor,
+  input: { leagueId: string; userId: string },
+): Promise<void> {
+  const leagueCardIds = db
+    .select({ id: cards.id })
+    .from(cards)
+    .where(eq(cards.leagueId, input.leagueId))
+  await db
+    .delete(cardTags)
+    .where(and(eq(cardTags.userId, input.userId), inArray(cardTags.cardId, leagueCardIds)))
+  await db
+    .delete(reactions)
+    .where(and(eq(reactions.userId, input.userId), inArray(reactions.cardId, leagueCardIds)))
+  await db
+    .update(cards)
+    .set({ discoveredById: null })
+    .where(and(eq(cards.leagueId, input.leagueId), eq(cards.discoveredById, input.userId)))
 }

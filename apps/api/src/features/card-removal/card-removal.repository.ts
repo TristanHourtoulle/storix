@@ -168,7 +168,7 @@ export async function findCardIdsByAuthor(
   return rows.map((row) => row.id)
 }
 
-/** Lists a member's uploads that never became a card, in one league or in all of them. */
+/** Locks and lists a member's uploads that never became a card, in one league or in all of them. */
 export async function listOpenUploadKeys(
   db: DbExecutor,
   input: { leagueId?: string; userId: string },
@@ -184,6 +184,7 @@ export async function listOpenUploadKeys(
       ),
     )
     .orderBy(asc(uploads.id))
+    .for('update')
 }
 
 /** Deletes uploads by id. */

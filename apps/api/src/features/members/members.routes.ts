@@ -2,6 +2,7 @@ import {
   leagueParamsSchema,
   memberParamsSchema,
   memberSummarySchema,
+  transferOwnershipBodySchema,
   updateMemberRoleBodySchema,
 } from '@storix/shared'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
@@ -10,7 +11,7 @@ import { authenticate } from '../../http/authenticate'
 import { requireLeagueRole } from '../../http/league-guard'
 import type { MembersService } from './members.service'
 
-/** Registers the league member listing, role change and removal routes. */
+/** Registers the league member listing, role change, removal, leave and ownership transfer routes. */
 export function membersRoutes(service: MembersService): FastifyPluginAsyncZod {
   return async (app) => {
     app.get(
@@ -40,6 +41,28 @@ export function membersRoutes(service: MembersService): FastifyPluginAsyncZod {
       },
       async (request, reply) => {
         await service.removeMember(request.membership, request.params.userId)
+        return reply.code(204).send()
+      },
+    )
+    app.delete(
+      '/leagues/:leagueId/membership',
+      {
+        preHandler: [authenticate, requireLeagueRole('member')],
+        schema: { params: leagueParamsSchema },
+      },
+      async (request, reply) => {
+        await service.leaveLeague(request.membership)
+        return reply.code(204).send()
+      },
+    )
+    app.post(
+      '/leagues/:leagueId/ownership',
+      {
+        preHandler: [authenticate, requireLeagueRole('owner')],
+        schema: { params: leagueParamsSchema, body: transferOwnershipBodySchema },
+      },
+      async (request, reply) => {
+        await service.transferOwnership(request.membership, request.body.userId)
         return reply.code(204).send()
       },
     )
