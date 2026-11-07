@@ -13,8 +13,8 @@ interface DeletionSummaryProps {
   isDisabled: boolean
 }
 
-function cardsLabel(count: number): string {
-  return count === 1 ? '1 carte' : `${count} cartes`
+function cardsLabel(count: number, participle: string): string {
+  return count === 1 ? `1 carte ${participle}e` : `${count} cartes ${participle}es`
 }
 
 function sumCards(leagues: readonly LeagueCardCount[]): number {
@@ -45,7 +45,7 @@ function choiceOptions(choiceCards: number): PhotosChoiceOption[] {
     {
       value: 'delete',
       label: 'Supprimer mes photos',
-      description: `${cardsLabel(choiceCards)} retirées, leurs propriétaires remboursés en paillettes.`,
+      description: `${cardsLabel(choiceCards, 'retiré')}, leurs propriétaires remboursés en paillettes.`,
     },
   ]
 }
@@ -59,7 +59,7 @@ export function DeletionSummary({
   const { solo, choiceLeagues, anonymizedLeagues } = preview
   const isChoiceNeeded = choiceLeagues.length > 0
   const removed = removedCardCount(preview, photos)
-  const removedLabel = removed === 1 ? '1 carte retirée' : `${removed} cartes retirées`
+  const removedLabel = cardsLabel(removed, 'retiré')
 
   return (
     <div className="flex flex-col gap-3 text-sm leading-snug text-muted">
@@ -77,8 +77,9 @@ export function DeletionSummary({
       ) : null}
       {anonymizedLeagues.length > 0 ? (
         <p className="m-0">
-          Tes {cardsLabel(sumCards(anonymizedLeagues))} déjà gardées dans{' '}
-          {namesOf(anonymizedLeagues)} restent signées « Ancien membre ».
+          {cardsLabel(sumCards(anonymizedLeagues), 'déjà gardé')} dans {namesOf(anonymizedLeagues)}{' '}
+          {sumCards(anonymizedLeagues) === 1 ? 'reste signée' : 'restent signées'} « Ancien membre
+          ».
         </p>
       ) : null}
       {!isChoiceNeeded || photos !== null ? (
