@@ -115,11 +115,6 @@ export const lockedCardDetailSchema = lockedCardSummarySchema.extend({
   createdAt: isoDateSchema,
   discoveredBy: cardPersonSchema.nullable(),
   canWithdraw: z.boolean(),
-  craft: z.object({
-    cost: z.int().min(0).nullable(),
-    allowed: z.boolean(),
-    reason: z.enum(['owned', 'not_craftable', 'provisional', 'insufficient_dust']).nullable(),
-  }),
 })
 
 export const hiddenCardDetailSchema = hiddenCardSummarySchema.extend({

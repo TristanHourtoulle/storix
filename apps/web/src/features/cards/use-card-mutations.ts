@@ -3,11 +3,10 @@ import type { CopyVariant, DustBalance, WalletState } from '@storix/shared'
 import { ApiError } from '@/lib/http'
 import { logger } from '@/lib/logger'
 import { walletQueryOptions } from '@/features/game/game.queries'
-import { craftCard, recycleCopy, upgradeToFoil } from './cards.api'
+import { recycleCopy, upgradeToFoil } from './cards.api'
 
 interface CardMutations {
   recycle: UseMutationResult<DustBalance, Error, CopyVariant>
-  craft: UseMutationResult<DustBalance, Error, void>
   upgradeToFoil: UseMutationResult<DustBalance, Error, void>
 }
 
@@ -43,16 +42,11 @@ export function useCardMutations(leagueId: string, cardId: string): CardMutation
     onSuccess,
     onError: (error) => logFailure('recycle', error),
   })
-  const craft = useMutation({
-    mutationFn: () => craftCard(leagueId, cardId),
-    onSuccess,
-    onError: (error) => logFailure('craft', error),
-  })
   const upgrade = useMutation({
     mutationFn: () => upgradeToFoil(leagueId, cardId),
     onSuccess,
     onError: (error) => logFailure('foil', error),
   })
 
-  return { recycle, craft, upgradeToFoil: upgrade }
+  return { recycle, upgradeToFoil: upgrade }
 }

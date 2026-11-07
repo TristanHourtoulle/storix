@@ -191,11 +191,6 @@ export function toCardDetail(row: CardViewerRow, ctx: CardDetailContext): Viewer
       createdAt,
       discoveredBy,
       canWithdraw,
-      craft: craftDecisionFor(row, {
-        now: ctx.now,
-        dust: ctx.dust,
-        delayMinutes: ctx.delayMinutes,
-      }),
     }
   }
   return {
