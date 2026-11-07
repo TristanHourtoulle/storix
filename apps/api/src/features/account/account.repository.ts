@@ -51,6 +51,20 @@ export function lockOwnMemberships(db: DbExecutor, userId: string): Promise<OwnM
     .for('update')
 }
 
+/**
+ * Locks every remaining card authored by the user in id order.
+ * Taken before the user row, so the `ON DELETE SET NULL` of `cards.author_id` never waits on a card row
+ * held by a moderation that itself waits on the user row (through its audit entry).
+ */
+export async function lockAuthoredCards(db: DbExecutor, userId: string): Promise<void> {
+  await db
+    .select({ id: cards.id })
+    .from(cards)
+    .where(eq(cards.authorId, userId))
+    .orderBy(asc(cards.id))
+    .for('update')
+}
+
 /** Locks league rows in id order, which blocks concurrent joins until the transaction ends. */
 export async function lockLeagueRows(db: DbExecutor, leagueIds: readonly string[]): Promise<void> {
   if (leagueIds.length === 0) return
