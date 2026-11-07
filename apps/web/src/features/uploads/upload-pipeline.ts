@@ -60,6 +60,13 @@ function isTransient(error: unknown): boolean {
   return error instanceof TypeError || (error instanceof ApiError && error.status >= 500)
 }
 
+function isStaleReservation(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    (error.code === 'UPLOAD_NOT_READY' || error.code === 'UPLOAD_EXPIRED')
+  )
+}
+
 function isTerminal(state: UploadState): boolean {
   return state.status === 'ready' || state.status === 'rejected' || state.status === 'failed'
 }
@@ -211,13 +218,16 @@ async function processDraft(ctx: PipelineContext, draft: PhotoDraft): Promise<Dr
         ctx.setPhase(draft.id, 'ready', { errorMessage: OFFLINE_MESSAGE })
         return 'offline'
       }
-      if (error instanceof TypeError && retry < MAX_TRANSIENT_RETRIES) {
+      if (isTransient(error) && retry < MAX_TRANSIENT_RETRIES) {
         await delay(RETRY_BASE_MS * 2 ** retry, ctx.signal)
         continue
       }
       logger.warn('Card creation failed', { draftId: draft.id, error })
       const message = error instanceof TypeError ? UPLOAD_FAILED_MESSAGE : userMessage(error)
-      ctx.setPhase(draft.id, 'error', { errorMessage: message })
+      ctx.setPhase(draft.id, 'error', {
+        errorMessage: message,
+        isRetryable: isStaleReservation(error),
+      })
       return 'settled'
     }
   }

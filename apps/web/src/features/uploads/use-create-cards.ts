@@ -79,11 +79,21 @@ export function useCreateCards(
     })
   }, [drafts, leagueId, queryClient, setPhase])
 
+  const retry = useCallback(
+    (draftId: string): void => {
+      progressRef.current = Object.fromEntries(
+        Object.entries(progressRef.current).filter(([id]) => id !== draftId),
+      )
+      setPhase(draftId, 'ready')
+    },
+    [setPhase],
+  )
+
   const isDone =
     hasStarted &&
     !isRunning &&
     drafts.length > 0 &&
     drafts.every((draft) => SETTLED_PHASES.has(draft.phase))
 
-  return { start, isRunning, isDone, hasStarted }
+  return { start, retry, isRunning, isDone, hasStarted }
 }

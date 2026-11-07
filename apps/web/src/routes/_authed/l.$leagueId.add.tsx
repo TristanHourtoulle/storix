@@ -116,6 +116,7 @@ function AddPhotos() {
           onTitleChange={(title) => photoDrafts.setTitle(selected.id, title)}
           onToggleTag={(userId) => photoDrafts.toggleTag(selected.id, userId)}
           onRemove={() => photoDrafts.remove(selected.id)}
+          onRetry={() => creation.retry(selected.id)}
         />
       ) : null}
       {creation.isDone ? (

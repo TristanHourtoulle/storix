@@ -12,11 +12,13 @@ export interface PhotoDraft {
   taggedUserIds: readonly string[]
   phase: DraftPhase
   errorMessage: string | null
+  isRetryable: boolean
   cardId: string | null
 }
 
 export interface PhaseExtra {
   errorMessage?: string | null
+  isRetryable?: boolean
   cardId?: string | null
 }
 
@@ -97,6 +99,7 @@ function reducer(state: DraftsState, action: DraftsAction): DraftsState {
         ...draft,
         phase: action.phase,
         errorMessage: action.extra.errorMessage ?? null,
+        isRetryable: action.extra.isRetryable ?? false,
         cardId: action.extra.cardId ?? draft.cardId,
       }))
   }
@@ -130,6 +133,7 @@ function createDraft(): PhotoDraft {
     taggedUserIds: [],
     phase: 'preparing',
     errorMessage: null,
+    isRetryable: false,
     cardId: null,
   }
 }

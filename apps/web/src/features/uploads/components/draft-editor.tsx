@@ -17,6 +17,7 @@ interface DraftEditorProps {
   onTitleChange: (title: string) => void
   onToggleTag: (userId: string) => void
   onRemove: () => void
+  onRetry: () => void
 }
 
 const dateFormat = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' })
@@ -36,6 +37,7 @@ export function DraftEditor({
   onTitleChange,
   onToggleTag,
   onRemove,
+  onRetry,
 }: DraftEditorProps) {
   const isEditable = !isLocked && draft.phase === 'ready'
 
@@ -43,6 +45,11 @@ export function DraftEditor({
     <section className="flex flex-col gap-4">
       {draft.phase === 'error' && draft.errorMessage ? (
         <Notice tone="error">{draft.errorMessage}</Notice>
+      ) : null}
+      {draft.phase === 'error' && draft.isRetryable ? (
+        <Button variant="ghost" className="!h-10 self-start !px-3 !text-sm" onClick={onRetry}>
+          Réessayer
+        </Button>
       ) : null}
       <div className="flex items-start gap-3.5">
         <CardFace
