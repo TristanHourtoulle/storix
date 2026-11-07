@@ -3,7 +3,7 @@ import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-qu
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 import { CARD_TIERS, type CardTier, type MemberSummary } from '@storix/shared'
-import { buttonClassName } from '@/components/ui/button'
+import { Button, buttonClassName } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Segmented } from '@/components/ui/segmented'
 import { CollectionGrid } from '@/features/cards/components/collection-grid'
@@ -90,7 +90,8 @@ interface CollectionBodyProps {
 }
 
 function CollectionBody({ leagueId, filters, label }: CollectionBodyProps) {
-  const { data, hasNextPage, isFetchingNextPage, fetchNextPage } = useInfiniteQuery({
+  const { data, isError, refetch, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useInfiniteQuery({
     ...cardsInfiniteQueryOptions(leagueId, filters),
     placeholderData: keepPreviousData,
   })
@@ -99,7 +100,18 @@ function CollectionBody({ leagueId, filters, label }: CollectionBodyProps) {
     window.scrollTo({ top: 0 })
   }, [authorId, tier])
 
-  if (!data) return LOADING
+  if (!data) {
+    return isError ? (
+      <section role="alert" className="flex flex-col items-center gap-3 text-center">
+        <p className="m-0 text-sm text-muted">Impossible de charger ta collection.</p>
+        <Button variant="ghost" onClick={() => void refetch()}>
+          Réessayer
+        </Button>
+      </section>
+    ) : (
+      LOADING
+    )
+  }
   const firstPage = data.pages[0]
   const cards = data.pages.flatMap((page) => page.cards)
   const total = firstPage?.total ?? 0

@@ -125,22 +125,22 @@
     box-shadow: 0 0 0 2px var(--tc);
   }
   .card.t-C {
-    --tc: #a1a1aa;
+    --tc: var(--color-tier-common);
   }
   .card.t-U {
-    --tc: #4ade80;
+    --tc: var(--color-tier-uncommon);
   }
   .card.t-R {
-    --tc: #60a5fa;
+    --tc: var(--color-tier-rare);
   }
   .card.t-E {
-    --tc: #c084fc;
+    --tc: var(--color-tier-epic);
   }
   .card.t-L {
-    --tc: #fbbf24;
+    --tc: var(--color-tier-legendary);
   }
   .card.t-M {
-    --tc: #c084fc;
+    --tc: var(--color-tier-mythic);
   }
   .card.sm {
     width: 80px;
