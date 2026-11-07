@@ -16,6 +16,8 @@ import {
   createResetCodesService,
   type ResetCodesService,
 } from './features/reset-codes/reset-codes.service'
+import { createUploadsService, type UploadsService } from './features/uploads/uploads.service'
+import type { JobQueue } from './jobs/job-queue'
 import type { ErrorLogger } from './lib/error-logger'
 import { createMediaSigner, type MediaSigner } from './lib/media-signer'
 
@@ -26,6 +28,7 @@ export interface AppDeps {
   clock: () => Date
   storage: ObjectStorage
   mediaSigner: MediaSigner
+  jobs: JobQueue
 }
 
 export interface Services {
@@ -36,10 +39,11 @@ export interface Services {
   media: MediaService
   members: MembersService
   resetCodes: ResetCodesService
+  uploads: UploadsService
 }
 
-/** Wires the runtime dependencies for the given environment and database. */
-export function createAppDeps(env: Env, db: Database): AppDeps {
+/** Wires the runtime dependencies for the given environment, database and job queue. */
+export function createAppDeps(env: Env, db: Database, jobs: JobQueue): AppDeps {
   const clock = (): Date => new Date()
   return {
     env,
@@ -48,6 +52,7 @@ export function createAppDeps(env: Env, db: Database): AppDeps {
     clock,
     storage: createObjectStorage(env),
     mediaSigner: createMediaSigner(env.MEDIA_URL_SECRET, clock),
+    jobs,
   }
 }
 
@@ -74,6 +79,12 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       auth: deps.auth,
       clock: deps.clock,
       logger,
+    }),
+    uploads: createUploadsService({
+      db: deps.db,
+      storage: deps.storage,
+      jobs: deps.jobs,
+      clock: deps.clock,
     }),
   }
 }

@@ -4,4 +4,5 @@ export const rateLimits = {
   invitationCreate: { max: 20, timeWindow: '1 hour' },
   resetRedeem: { max: 5, timeWindow: '15 minutes' },
   resetIssue: { max: 10, timeWindow: '1 hour' },
+  uploadCreate: { max: 30, timeWindow: '1 minute' },
 } as const

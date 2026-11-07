@@ -17,6 +17,7 @@ import { mediaRoutes } from './features/media/media.routes'
 import { meRoutes } from './features/me/me.routes'
 import { membersRoutes } from './features/members/members.routes'
 import { resetCodesRoutes } from './features/reset-codes/reset-codes.routes'
+import { uploadsRoutes } from './features/uploads/uploads.routes'
 import { registerErrorHandling } from './http/error-handler'
 import { registerOriginCheck } from './http/origin-check'
 import { registerStatic } from './http/static'
@@ -72,6 +73,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(invitationsRoutes(services.invitations), { prefix: '/api' })
   await app.register(membersRoutes(services.members), { prefix: '/api' })
   await app.register(resetCodesRoutes(services.resetCodes), { prefix: '/api' })
+  await app.register(uploadsRoutes(services.uploads), { prefix: '/api' })
   await app.register(mediaRoutes(services.media))
 
   if (isProduction) {

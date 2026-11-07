@@ -20,6 +20,10 @@ const envSchema = baseEnvSchema
       !URL.canParse(env.APP_ORIGIN) || new URL(env.APP_ORIGIN).hostname === env.PASSKEY_RP_ID,
     { path: ['PASSKEY_RP_ID'], message: 'PASSKEY_RP_ID must equal the hostname of APP_ORIGIN' },
   )
+  .refine((env) => env.MEDIA_URL_SECRET !== env.BETTER_AUTH_SECRET, {
+    path: ['MEDIA_URL_SECRET'],
+    message: 'MEDIA_URL_SECRET must differ from BETTER_AUTH_SECRET',
+  })
 
 export type Env = z.infer<typeof envSchema>
 
