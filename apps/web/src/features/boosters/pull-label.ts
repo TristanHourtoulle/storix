@@ -4,6 +4,7 @@ import { authorLabel } from '@/features/cards/author-label'
 /** Short outcome label of a pull: the dust gained by a copy, or the "new" badge. */
 export function pullLabel(pull: BoosterPull): string {
   if (pull.isFirstCopy) return pull.isDiscovery ? 'Nouvelle · Découverte par toi' : 'Nouvelle'
+  if (pull.outcome === 'new') return pull.variant === 'foil' ? 'Nouvelle foil' : 'Nouvelle'
   const gain = `+${pull.dust} paillettes`
   return pull.outcome === 'upgraded' ? `Améliorée · ${gain}` : gain
 }

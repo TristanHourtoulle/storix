@@ -112,7 +112,11 @@ export function AdminCardSheet({ card, mythicCount, moderation, onClose }: Admin
             </div>
           </div>
           <div className="admin-sheet-meta">
-            <span>{`Prise le ${formatDate(card.capturedAt, 'Inconnue')}`}</span>
+            <span>
+              {hasDate
+                ? `Prise le ${formatDate(card.capturedAt, 'Inconnue')}`
+                : 'Date de prise inconnue'}
+            </span>
             <Chip
               label={hasDate ? 'Date vérifiée' : 'Pas de date'}
               isOn={card.isCaptureDateValidated}

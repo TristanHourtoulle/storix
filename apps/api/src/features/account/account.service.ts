@@ -23,12 +23,12 @@ import {
   listLeagueVariantKeys,
   listMembershipLeagueIds,
   listOwnedLeagues,
+  lockAuthoredCards,
   lockLeagueEconomyExclusive,
   lockLeagueRows,
   lockOwnMemberships,
   lockUserRow,
   type AuthoredCardsInLeague,
-  type OwnMembershipLock,
 } from './account.repository'
 
 export const FRESH_SESSION_MS = 5 * 60_000
@@ -71,14 +71,6 @@ function deletionConflict(): AppError {
 
 function isRetryable(error: unknown): boolean {
   return error instanceof MembershipsChangedError || isDeadlock(error)
-}
-
-function sameMemberships(
-  left: readonly OwnMembershipLock[],
-  right: readonly OwnMembershipLock[],
-): boolean {
-  const keyOf = (lock: OwnMembershipLock) => `${lock.leagueId}:${lock.role}`
-  return left.map(keyOf).join(',') === right.map(keyOf).join(',')
 }
 
 function toLeagueRef(league: OwnedLeague): { leagueId: string; name: string } {
@@ -128,8 +120,10 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
   /**
    * Deletes everything the user holds in one transaction.
    * Locks, in order: every economy lock in sorted league id order (so concurrent removals and other deletions never deadlock),
-   * then the user's membership rows, the open uploads, the owned league rows (blocking joins), and the user row (blocking new references).
-   * The memberships are re-read after the user row lock, so a join committed in between restarts the attempt.
+   * then the user's membership rows, the open uploads and the owned league rows (blocking joins).
+   * The user's remaining authored cards, then the user row, are locked last, right before the user delete, so moderation of those cards
+   * (card row, then an audit row referencing the user) can never wait on the user row while this transaction waits on the same card rows.
+   * Once every membership is detached, they are re-read under the user row lock: a join committed in between restarts the attempt.
    */
   async function deleteInTx(
     tx: DbExecutor,
@@ -148,10 +142,6 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
       tx,
       memberships.filter((membership) => membership.role === 'owner').map((m) => m.leagueId),
     )
-    if (!(await lockUserRow(tx, userId))) throw notFound('Account not found')
-    if (!sameMemberships(memberships, await lockOwnMemberships(tx, userId))) {
-      throw new MembershipsChangedError()
-    }
 
     const plan = accountDeletionPlan(await listOwnedLeagues(tx, userId))
     if (plan.blocking.length > 0) throw ownershipTransferRequired(plan.blocking)
@@ -189,6 +179,9 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
       tx,
       openUploads.map((upload) => upload.id),
     )
+    await lockAuthoredCards(tx, userId)
+    if (!(await lockUserRow(tx, userId))) throw notFound('Account not found')
+    if ((await lockOwnMemberships(tx, userId)).length > 0) throw new MembershipsChangedError()
     await insertAuditEntry(tx, {
       leagueId: null,
       actorId: null,

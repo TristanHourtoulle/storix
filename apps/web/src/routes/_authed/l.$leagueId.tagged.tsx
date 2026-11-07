@@ -24,7 +24,8 @@ function TaggedScreen() {
 
   function close() {
     setTarget(null)
-    withdraw.reset()
+    // The dialog closes itself when the card is gone; keep that error so its notice stays visible.
+    if (!isCardGone(withdraw.error)) withdraw.reset()
   }
 
   return (
@@ -54,7 +55,7 @@ function TaggedScreen() {
         <EmptyState
           icon="profile"
           title="Aucune photo"
-          body="Personne ne t'a identifié sur une photo pour l'instant."
+          body="Tu n'apparais encore sur aucune photo."
         />
       ) : isPending ? (
         <p className="m-0 text-sm text-muted">Chargement…</p>

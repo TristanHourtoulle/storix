@@ -35,6 +35,16 @@ Shipped as planned, with these changes:
 
 Deferred: the home activity feed ("a ajouté 4 photos", "a tiré une Légendaire"), the estimated rarity on the Add photos screen, the league settings UI, admin pins/bounds/Mythic cap UI and the recompute-on-settings-change trigger (Plan 4), booster replay tooling, and trades / Wonder Pick / wishlist / duels / sets (out of MVP).
 
-## Plan 4 — Admin & privacy
+## Plan 4 — Admin & privacy (`2026-11-07-storix-04-admin-privacy.md`) — DONE (2026-11-07)
 
 League settings (rarity weights, booster cadence, upload quota, Zod-validated JSON), card admin (hide, delete, pin rarity, min/max bounds, validate date, Mythic event capped at 3), tagged-member withdrawal, card disappearance with dust compensation and real bucket deletion, withdrawn-cards sync + service worker / IndexedDB purge, member removal side effects, account deletion ("former member" credit), ownership transfer if needed.
+
+Shipped as planned, with these changes:
+
+- Arcade booster opening: long aura and flip only for new cards; duplicates and upgrades shown flat.
+- Leaving, member removal and account deletion ask to keep or delete the member's photos; kept cards show "ancien membre" (or "Ancien membre" after account deletion), and authorship comes back on rejoin (migration 0006 makes `uploads.user_id` nullable).
+- Crafting removed from the UI and its route unregistered (service kept).
+- No IndexedDB query persister exists, so the purge covers Cache Storage (`storix-media-v1`, `storix-api-v3`) and the in-memory query cache.
+- The worker waits at startup for the migrations bundled in its build to be applied.
+
+Deferred: Wonder Pick, trades, wishlist, duels and sets; crafting; the home activity feed; booster replay tooling; an audit-log viewer; editing a capture date; sound effects (proposal only); the review minors listed in the README under "Known limitations / next steps".
