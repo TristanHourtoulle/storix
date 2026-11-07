@@ -15,12 +15,20 @@ export interface BoosterStockState {
   anchor: Date
 }
 
+export class InvalidBoosterCadenceError extends Error {
+  constructor() {
+    super('Booster cadence requires intervalMinutes >= 1 and maxStock >= 1')
+    this.name = 'InvalidBoosterCadenceError'
+  }
+}
+
 /** Computes the boosters available at `now` from the stored stock and its refill anchor. */
 export function computeBoosterStock(
   state: BoosterStockState,
   now: Date,
   cadence: BoosterCadence,
 ): { available: number; anchor: Date; nextAt: Date | null } {
+  if (cadence.intervalMinutes < 1 || cadence.maxStock < 1) throw new InvalidBoosterCadenceError()
   if (state.stock >= cadence.maxStock) {
     return { available: state.stock, anchor: now, nextAt: null }
   }

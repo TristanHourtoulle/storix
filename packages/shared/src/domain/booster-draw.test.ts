@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  boosterPoolDigestInput,
   drawBooster,
+  pickFromTier,
   EmptyBoosterPoolError,
   type PoolCard,
   rarePlusWeights,
@@ -29,6 +31,37 @@ const card = (cardId: string, tier: CardTier, authorId: string | null, n: number
 const NO_PITY = { sinceEpic: 0, sinceLegendary: 0 }
 
 describe('booster draw', () => {
+  it('breaks number ties by card id', () => {
+    const a = card('a', 'common', 'x', 1)
+    const b = card('b', 'common', 'x', 1)
+    expect(pickFromTier([b, a], scripted([0, 0]))).toBe(a)
+    expect(pickFromTier([a, b], scripted([0, 1]))).toBe(b)
+    expect(pickFromTier([b, a], scripted([0, 1]))).toBe(b)
+  })
+  it('builds a canonical pool digest input', () => {
+    const pool = [
+      card('b', 'rare', null, 2),
+      card('a', 'common', 'x', 1),
+      card('c', 'rare', 'y', 2),
+    ]
+    expect(boosterPoolDigestInput(pool)).toBe('1:common:x,2:rare:,2:rare:y')
+    expect(boosterPoolDigestInput([...pool].reverse())).toBe(boosterPoolDigestInput(pool))
+    expect(boosterPoolDigestInput([])).toBe('')
+  })
+  it('keeps the rare+ weights summing to 100 unless the Epic guarantee drops Rare', () => {
+    const states = [
+      { sinceEpic: 0, sinceLegendary: 0 },
+      { sinceEpic: 0, sinceLegendary: 25 },
+      { sinceEpic: 0, sinceLegendary: 60 },
+      { sinceEpic: 3, sinceLegendary: 500 },
+    ]
+    for (const pity of states) {
+      const total = Object.values(rarePlusWeights(pity)).reduce((sum, w) => sum + w, 0)
+      expect(total).toBe(100)
+    }
+    const guaranteed = rarePlusWeights({ sinceEpic: 9, sinceLegendary: 0 })
+    expect(Object.values(guaranteed).reduce((sum, w) => sum + w, 0)).toBe(28)
+  })
   it('applies pity to the rare+ slot', () => {
     expect(rarePlusWeights(NO_PITY)).toEqual({ rare: 72, epic: 20, legendary: 7, mythic: 1 })
     expect(rarePlusWeights({ sinceEpic: 0, sinceLegendary: 30 })).toEqual({
