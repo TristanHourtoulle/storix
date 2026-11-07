@@ -1,5 +1,14 @@
 import { sql } from 'drizzle-orm'
-import { check, foreignKey, integer, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import {
+  check,
+  foreignKey,
+  integer,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core'
 import { leagueMembers, leagues } from './leagues'
 
 export const memberWallets = pgTable(
