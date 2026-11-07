@@ -1,6 +1,6 @@
-import { passwordResetCodes, type DbExecutor } from '@storix/db'
+import { passwordResetCodes, user, type DbExecutor } from '@storix/db'
 import { RESET_CODE_MAX_ATTEMPTS } from '@storix/shared'
-import { and, desc, eq, gt, isNull, lt, sql } from 'drizzle-orm'
+import { and, desc, eq, exists, gt, isNull, lt, sql } from 'drizzle-orm'
 
 export interface ResetCodeRecord {
   id: string
@@ -15,6 +15,26 @@ export async function deleteUnusedCodes(db: DbExecutor, userId: string): Promise
   await db
     .delete(passwordResetCodes)
     .where(and(eq(passwordResetCodes.userId, userId), isNull(passwordResetCodes.usedAt)))
+}
+
+/** Deletes the user's unused reset codes when their home league is the given league. */
+export async function deleteUnusedCodesFromHomeLeague(
+  db: DbExecutor,
+  input: { userId: string; leagueId: string },
+): Promise<void> {
+  const homedHere = db
+    .select({ id: user.id })
+    .from(user)
+    .where(and(eq(user.id, input.userId), eq(user.homeLeagueId, input.leagueId)))
+  await db
+    .delete(passwordResetCodes)
+    .where(
+      and(
+        eq(passwordResetCodes.userId, input.userId),
+        isNull(passwordResetCodes.usedAt),
+        exists(homedHere),
+      ),
+    )
 }
 
 /** Inserts a reset code hash. */

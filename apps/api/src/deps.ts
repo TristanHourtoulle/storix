@@ -12,6 +12,10 @@ import {
   createInvitationsService,
   type InvitationsService,
 } from './features/invitations/invitations.service'
+import {
+  createLeagueSettingsService,
+  type LeagueSettingsService,
+} from './features/league-settings/league-settings.service'
 import { createLeaguesService, type LeaguesService } from './features/leagues/leagues.service'
 import { createMediaService, type MediaService } from './features/media/media.service'
 import { createMeService, type MeService } from './features/me/me.service'
@@ -31,6 +35,10 @@ import {
 } from './features/reset-codes/reset-codes.service'
 import { createUploadsService, type UploadsService } from './features/uploads/uploads.service'
 import { createWalletsService, type WalletsService } from './features/wallets/wallets.service'
+import {
+  createWithdrawalsService,
+  type WithdrawalsService,
+} from './features/withdrawals/withdrawals.service'
 import type { JobQueue } from './jobs/job-queue'
 import type { ErrorLogger } from './lib/error-logger'
 import { createMediaSigner, type MediaSigner } from './lib/media-signer'
@@ -53,6 +61,7 @@ export interface Services {
   health: HealthService
   invitations: InvitationsService
   leagues: LeaguesService
+  leagueSettings: LeagueSettingsService
   me: MeService
   media: MediaService
   members: MembersService
@@ -62,6 +71,7 @@ export interface Services {
   resetCodes: ResetCodesService
   uploads: UploadsService
   wallets: WalletsService
+  withdrawals: WithdrawalsService
 }
 
 /** Wires the runtime dependencies for the given environment, database and job queue. */
@@ -98,13 +108,19 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       appOrigin: deps.env.APP_ORIGIN,
     }),
     leagues: createLeaguesService(deps.db),
+    leagueSettings: createLeagueSettingsService({
+      db: deps.db,
+      jobs: deps.jobs,
+      clock: deps.clock,
+      logger,
+    }),
     me: createMeService(deps.db),
     media: createMediaService({
       storage: deps.storage,
       signer: deps.mediaSigner,
       clock: deps.clock,
     }),
-    members: createMembersService(deps.db),
+    members: createMembersService({ db: deps.db, cardRemoval, jobs: deps.jobs, logger }),
     moderation: createModerationService({
       db: deps.db,
       signer: deps.mediaSigner,
@@ -128,5 +144,10 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       clock: deps.clock,
     }),
     wallets: createWalletsService({ db: deps.db, clock: deps.clock }),
+    withdrawals: createWithdrawalsService({
+      db: deps.db,
+      signer: deps.mediaSigner,
+      cardRemoval,
+    }),
   }
 }
