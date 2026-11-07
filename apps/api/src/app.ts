@@ -6,6 +6,7 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod'
+import { authRoutes } from './auth/auth.routes'
 import { buildServices, type AppDeps } from './deps'
 import { healthRoutes } from './features/health/health.routes'
 import { registerErrorHandling } from './http/error-handler'
@@ -42,7 +43,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     return payload
   })
 
+  app.decorate('authGateway', deps.auth)
+
   const services = buildServices(deps)
+  await app.register(authRoutes(deps.auth, env.APP_ORIGIN))
   await app.register(healthRoutes(services.health), { prefix: '/api' })
 
   return app

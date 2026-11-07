@@ -1,12 +1,13 @@
 import type { Database } from '@storix/db'
-import { createAuth, type Auth } from './auth/auth'
+import { createAuth } from './auth/auth'
+import { createAuthGateway, type AuthGateway } from './auth/auth.gateway'
 import type { Env } from './config/env'
 import { createHealthService, type HealthService } from './features/health/health.service'
 
 export interface AppDeps {
   env: Env
   db: Database
-  auth: Auth
+  auth: AuthGateway
   clock: () => Date
 }
 
@@ -16,7 +17,7 @@ export interface Services {
 
 /** Wires the runtime dependencies for the given environment and database. */
 export function createAppDeps(env: Env, db: Database): AppDeps {
-  return { env, db, auth: createAuth({ db, env }), clock: () => new Date() }
+  return { env, db, auth: createAuthGateway(createAuth({ db, env })), clock: () => new Date() }
 }
 
 /** Builds every feature service from the app dependencies. */
