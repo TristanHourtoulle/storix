@@ -15,6 +15,13 @@ const MESSAGES: Record<ErrorCode, string> = {
   UPLOAD_QUOTA_EXCEEDED: "Tu as atteint ta limite de 10 photos aujourd'hui.",
   UPLOAD_NOT_READY: "La photo n'est pas encore arrivée, réessaie.",
   UPLOAD_EXPIRED: "Ce lien d'envoi a expiré, recommence l'ajout de cette photo.",
+  BOOSTER_STOCK_EMPTY: 'Plus de booster en stock, reviens un peu plus tard.',
+  BOOSTER_POOL_EMPTY: 'Pas encore assez de cartes dans la ligue pour un booster.',
+  INSUFFICIENT_DUST: 'Il te manque des paillettes.',
+  COPY_NOT_OWNED: "Tu n'as plus cet exemplaire.",
+  CRAFT_NOT_ALLOWED: 'Cette carte ne peut pas être fabriquée.',
+  FOIL_NOT_ALLOWED: 'Cet exemplaire ne peut pas passer en foil.',
+  REACTION_NOT_ALLOWED: 'Tu ne peux pas réagir à cette carte.',
   INTERNAL_ERROR: 'Une erreur est survenue.',
 }
 
