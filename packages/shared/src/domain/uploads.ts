@@ -2,6 +2,7 @@ export const UPLOAD_MIN_BYTES = 1
 export const UPLOAD_MAX_BYTES = 15 * 1024 * 1024
 export const UPLOAD_CONTENT_TYPE = 'image/jpeg'
 export const UPLOAD_PRESIGN_TTL_SECONDS = 900
+export const UPLOAD_COMPLETION_GRACE_SECONDS = 300
 export const DEFAULT_UPLOAD_QUOTA_PER_DAY = 10
 export const UPLOAD_QUOTA_WINDOW_MS = 86_400_000
 export const CLIENT_MAX_EDGE_PX = 2048
@@ -29,6 +30,18 @@ export function checkUploadQuota(input: {
 /** Returns the start of the rolling 24 h quota window. */
 export function uploadQuotaWindowStart(now: Date): Date {
   return new Date(now.getTime() - UPLOAD_QUOTA_WINDOW_MS)
+}
+
+/** Returns the oldest creation time at which a pending upload can still be completed. */
+export function uploadReservationCutoff(now: Date): Date {
+  return new Date(
+    now.getTime() - (UPLOAD_PRESIGN_TTL_SECONDS + UPLOAD_COMPLETION_GRACE_SECONDS) * 1000,
+  )
+}
+
+/** Tells whether a pending upload created at `createdAt` can no longer be completed. */
+export function isUploadReservationExpired(createdAt: Date, now: Date): boolean {
+  return createdAt.getTime() < uploadReservationCutoff(now).getTime()
 }
 
 /** Returns the capture date when plausible, otherwise null. */

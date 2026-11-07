@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   checkUploadQuota,
+  isUploadReservationExpired,
   remainingUploadQuota,
   sanitizeCaptureDate,
+  UPLOAD_COMPLETION_GRACE_SECONDS,
+  UPLOAD_PRESIGN_TTL_SECONDS,
   uploadQuotaWindowStart,
+  uploadReservationCutoff,
 } from './uploads'
 
 describe('uploads', () => {
@@ -48,5 +52,17 @@ describe('uploads', () => {
     expect(sanitizeCaptureDate(new Date('2017-03-03T12:00:00Z'), now)?.toISOString()).toBe(
       '2017-03-03T12:00:00.000Z',
     )
+  })
+  it('computes the reservation cutoff from the presign ttl plus grace', () => {
+    const now = new Date('2026-11-07T12:00:00.000Z')
+    const span = (UPLOAD_PRESIGN_TTL_SECONDS + UPLOAD_COMPLETION_GRACE_SECONDS) * 1000
+    expect(uploadReservationCutoff(now).getTime()).toBe(now.getTime() - span)
+  })
+  it('expires reservations strictly older than the cutoff', () => {
+    const now = new Date('2026-11-07T12:00:00.000Z')
+    const cutoff = uploadReservationCutoff(now)
+    expect(isUploadReservationExpired(cutoff, now)).toBe(false)
+    expect(isUploadReservationExpired(new Date(cutoff.getTime() - 1), now)).toBe(true)
+    expect(isUploadReservationExpired(now, now)).toBe(false)
   })
 })

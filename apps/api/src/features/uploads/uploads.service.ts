@@ -3,6 +3,7 @@ import type { Database, DbExecutor } from '@storix/db'
 import {
   checkUploadQuota,
   DEFAULT_UPLOAD_QUOTA_PER_DAY,
+  isUploadReservationExpired,
   remainingUploadQuota,
   sanitizeCaptureDate,
   UPLOAD_CONTENT_TYPE,
@@ -10,6 +11,7 @@ import {
   UPLOAD_MIN_BYTES,
   UPLOAD_PRESIGN_TTL_SECONDS,
   uploadQuotaWindowStart,
+  uploadReservationCutoff,
   type CompleteUploadBody,
   type CreateUploadBody,
   type CreateUploadResponse,
@@ -54,7 +56,7 @@ function countUsed(db: DbExecutor, m: Membership, now: Date): Promise<number> {
     leagueId: m.leagueId,
     userId: m.userId,
     since: uploadQuotaWindowStart(now),
-    pendingSince: new Date(now.getTime() - UPLOAD_PRESIGN_TTL_SECONDS * 1000),
+    pendingSince: uploadReservationCutoff(now),
   })
 }
 
@@ -95,6 +97,14 @@ export function createUploadsService(deps: {
       const uploadId = randomUUID()
       const objectKey = `incoming/${m.userId}/${uploadId}`
       const limit = DEFAULT_UPLOAD_QUOTA_PER_DAY
+      const presigned = await storage.presignUpload({
+        key: objectKey,
+        contentType: UPLOAD_CONTENT_TYPE,
+        minBytes: UPLOAD_MIN_BYTES,
+        maxBytes: UPLOAD_MAX_BYTES,
+        cacheControl: UPLOAD_CACHE_CONTROL,
+        expiresInSeconds: UPLOAD_PRESIGN_TTL_SECONDS,
+      })
       await runInTransaction(db, async (tx) => {
         await lockMemberRow(tx, m.leagueId, m.userId)
         const used = await countUsed(tx, m, now)
@@ -107,14 +117,6 @@ export function createUploadsService(deps: {
         }
         await insertUpload(tx, { id: uploadId, leagueId: m.leagueId, userId: m.userId, objectKey })
       })
-      const presigned = await storage.presignUpload({
-        key: objectKey,
-        contentType: UPLOAD_CONTENT_TYPE,
-        minBytes: UPLOAD_MIN_BYTES,
-        maxBytes: UPLOAD_MAX_BYTES,
-        cacheControl: UPLOAD_CACHE_CONTROL,
-        expiresInSeconds: UPLOAD_PRESIGN_TTL_SECONDS,
-      })
       return {
         uploadId,
         url: presigned.url,
@@ -126,11 +128,14 @@ export function createUploadsService(deps: {
     async completeUpload(m, uploadId, body) {
       const row = await findOwnedUpload(m, uploadId)
       if (row.status !== 'pending') return toState(row)
+      const now = clock()
+      if (isUploadReservationExpired(row.createdAt, now)) {
+        throw new AppError('UPLOAD_EXPIRED', 410, 'The upload reservation has expired')
+      }
       await assertTaggedMembers(m, body.taggedUserIds)
       if ((await storage.head(row.objectKey)) === null) {
         throw new AppError('UPLOAD_NOT_READY', 409, 'The file has not been uploaded yet')
       }
-      const now = clock()
       const capturedAt = body.capturedAt === null ? null : new Date(body.capturedAt)
       const marked = await markUploaded(db, {
         id: row.id,

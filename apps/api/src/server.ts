@@ -26,9 +26,16 @@ async function start(): Promise<void> {
 
     async function shutdown(signal: string): Promise<void> {
       app.log.info({ signal }, 'Shutting down')
-      await app.close()
-      await release()
-      process.exit(0)
+      let exitCode = 0
+      try {
+        await app.close()
+        await release()
+      } catch (error) {
+        exitCode = 1
+        app.log.error({ err: error }, 'Shutdown failed')
+      } finally {
+        process.exit(exitCode)
+      }
     }
 
     process.once('SIGTERM', (signal) => void shutdown(signal))
