@@ -17,3 +17,12 @@ export const TIER_CLASS: Record<CardTier, string> = {
   legendary: 't-L',
   mythic: 't-M',
 }
+
+export const TIER_GLOW_CLASS: Record<CardTier, string> = {
+  common: 'g-C',
+  uncommon: 'g-U',
+  rare: 'g-R',
+  epic: 'g-E',
+  legendary: 'g-L',
+  mythic: 'g-M',
+}
