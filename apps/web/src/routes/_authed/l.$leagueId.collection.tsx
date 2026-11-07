@@ -92,9 +92,9 @@ interface CollectionBodyProps {
 function CollectionBody({ leagueId, filters, label }: CollectionBodyProps) {
   const { data, isError, refetch, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useInfiniteQuery({
-    ...cardsInfiniteQueryOptions(leagueId, filters),
-    placeholderData: keepPreviousData,
-  })
+      ...cardsInfiniteQueryOptions(leagueId, filters),
+      placeholderData: keepPreviousData,
+    })
   const { authorId, tier } = filters
   useEffect(() => {
     window.scrollTo({ top: 0 })

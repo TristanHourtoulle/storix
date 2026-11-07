@@ -2,6 +2,7 @@
 @import './game.css';
 @import './booster.css';
 @import './collection.css';
+@import './card-detail.css';
 
 @theme {
   --spacing-nav: calc(68px + env(safe-area-inset-bottom));

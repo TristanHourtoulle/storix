@@ -7,7 +7,7 @@ import {
   NetworkFirst,
   Serwist,
 } from 'serwist'
-import { API_CACHE_NAME, MEDIA_CACHE_NAME } from './features/pwa/cache-names'
+import { API_CACHE_NAME, API_CACHE_PREFIX, MEDIA_CACHE_NAME } from './features/pwa/cache-names'
 
 const OFFLINE_READ_PATTERN = /^\/api\/(me|leagues\/[^/]+(\/cards(\/[^/]+)?)?)$/
 const API_NETWORK_TIMEOUT_SECONDS = 3
@@ -65,5 +65,19 @@ serwist.registerRoute(
     denylist: [/^\/api(\/|$)/, /^\/media(\/|$)/],
   }),
 )
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((names) =>
+        Promise.all(
+          names
+            .filter((name) => name.startsWith(API_CACHE_PREFIX) && name !== API_CACHE_NAME)
+            .map((name) => caches.delete(name)),
+        ),
+      ),
+  )
+})
 
 serwist.addEventListeners()
