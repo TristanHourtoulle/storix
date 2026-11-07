@@ -26,6 +26,7 @@ import { removalsRoutes } from './features/removals/removals.routes'
 import { resetCodesRoutes } from './features/reset-codes/reset-codes.routes'
 import { uploadsRoutes } from './features/uploads/uploads.routes'
 import { walletsRoutes } from './features/wallets/wallets.routes'
+import { withdrawalsRoutes } from './features/withdrawals/withdrawals.routes'
 import { registerErrorHandling } from './http/error-handler'
 import { registerOriginCheck } from './http/origin-check'
 import { registerStatic } from './http/static'
@@ -91,6 +92,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(removalsRoutes(services.removals), { prefix: '/api' })
   await app.register(leagueSettingsRoutes(services.leagueSettings), { prefix: '/api' })
   await app.register(moderationRoutes(services.moderation), { prefix: '/api' })
+  await app.register(withdrawalsRoutes(services.withdrawals), { prefix: '/api' })
   await app.register(mediaRoutes(services.media))
 
   if (isProduction) {
