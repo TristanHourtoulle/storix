@@ -5,17 +5,18 @@ import { Dialog } from '@/components/ui/dialog'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Notice } from '@/components/ui/notice'
+import { SettingsButtonRow } from '@/components/ui/settings-list'
 import { useAccountDeletion } from '../use-account-deletion'
 import { DeletionSummary } from './deletion-summary'
 
 const LIST_FORMAT = new Intl.ListFormat('fr-FR', { type: 'conjunction' })
 
-interface DeleteAccountSectionProps {
+interface DeleteAccountRowProps {
   userId: string
   username: string
 }
 
-interface DeleteAccountDialogProps extends DeleteAccountSectionProps {
+interface DeleteAccountDialogProps extends DeleteAccountRowProps {
   onClose: () => void
 }
 
@@ -111,17 +112,21 @@ function DeleteAccountDialog({ userId, username, onClose }: DeleteAccountDialogP
   )
 }
 
-export function DeleteAccountSection({ userId, username }: DeleteAccountSectionProps) {
+/** "Supprimer mon compte" row of the danger zone, with its confirmation dialog. */
+export function DeleteAccountRow({ userId, username }: DeleteAccountRowProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <section aria-label="Supprimer mon compte">
-      <Button variant="ghost" block className="!text-danger" onClick={() => setIsOpen(true)}>
-        Supprimer mon compte
-      </Button>
+    <SettingsButtonRow
+      icon="trash"
+      label="Supprimer mon compte"
+      hint="Toutes tes ligues"
+      tone="danger"
+      onClick={() => setIsOpen(true)}
+    >
       {isOpen ? (
         <DeleteAccountDialog userId={userId} username={username} onClose={() => setIsOpen(false)} />
       ) : null}
-    </section>
+    </SettingsButtonRow>
   )
 }

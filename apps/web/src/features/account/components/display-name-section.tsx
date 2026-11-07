@@ -25,42 +25,36 @@ export function DisplayNameSection({ displayName, username }: DisplayNameSection
   }
 
   return (
-    <section aria-labelledby="display-name-title" className="flex flex-col gap-3">
-      <h2 id="display-name-title">Pseudo affiché</h2>
-      <p className="m-0 text-sm text-muted">
-        Actuel : <strong className="text-ink">{displayName}</strong>
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
+      <Field
+        label="Nouveau pseudo"
+        error={draft.length > 0 && !parsed.success ? NAME_ERROR : undefined}
+      >
+        <Input
+          type="text"
+          autoComplete="off"
+          value={draft}
+          disabled={isPending}
+          onChange={(event) => {
+            reset()
+            setDraft(event.target.value)
+          }}
+        />
+      </Field>
+      <p className="m-0 text-[13px] text-faint">
+        Ton identifiant de connexion reste <strong>{username}</strong>.
       </p>
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3">
-        <Field
-          label="Nouveau pseudo"
-          error={draft.length > 0 && !parsed.success ? NAME_ERROR : undefined}
-        >
-          <Input
-            type="text"
-            autoComplete="off"
-            value={draft}
-            disabled={isPending}
-            onChange={(event) => {
-              reset()
-              setDraft(event.target.value)
-            }}
-          />
-        </Field>
-        <p className="m-0 text-[13px] text-faint">
-          Ton identifiant de connexion reste <strong>{username}</strong>.
-        </p>
-        {errorMessage ? <Notice tone="error">{errorMessage}</Notice> : null}
-        {isSuccess && isUnchanged ? <Notice tone="info">Pseudo mis à jour.</Notice> : null}
-        <Button
-          type="submit"
-          variant="primary"
-          block
-          isLoading={isPending}
-          disabled={!parsed.success || isUnchanged}
-        >
-          Enregistrer
-        </Button>
-      </form>
-    </section>
+      {errorMessage ? <Notice tone="error">{errorMessage}</Notice> : null}
+      {isSuccess && isUnchanged ? <Notice tone="info">Pseudo mis à jour.</Notice> : null}
+      <Button
+        type="submit"
+        variant="primary"
+        block
+        isLoading={isPending}
+        disabled={!parsed.success || isUnchanged}
+      >
+        Enregistrer
+      </Button>
+    </form>
   )
 }
