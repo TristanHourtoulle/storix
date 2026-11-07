@@ -6,6 +6,7 @@ import { RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { startSessionRefresh } from './features/auth/session-refresh'
+import { requestPersistentStorage } from './features/pwa/persist-storage'
 import { registerServiceWorker } from './features/pwa/register-sw'
 import { queryClient, router } from './router'
 
@@ -21,4 +22,6 @@ createRoot(container).render(
 )
 
 startSessionRefresh()
-void registerServiceWorker()
+void registerServiceWorker().then(() =>
+  import.meta.env.PROD ? requestPersistentStorage() : undefined,
+)

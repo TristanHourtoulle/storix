@@ -21,6 +21,7 @@ import { Route as AuthedLLeagueIdAddRouteImport } from './routes/_authed/l.$leag
 import { Route as AuthedLLeagueIdAdminRouteImport } from './routes/_authed/l.$leagueId.admin'
 import { Route as AuthedLLeagueIdCollectionRouteImport } from './routes/_authed/l.$leagueId.collection'
 import { Route as AuthedLLeagueIdProfileRouteImport } from './routes/_authed/l.$leagueId.profile'
+import { Route as AuthedLLeagueIdCardsCardIdRouteImport } from './routes/_authed/l.$leagueId.cards.$cardId'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -82,6 +83,12 @@ const AuthedLLeagueIdProfileRoute = AuthedLLeagueIdProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthedLLeagueIdRoute,
 } as any)
+const AuthedLLeagueIdCardsCardIdRoute =
+  AuthedLLeagueIdCardsCardIdRouteImport.update({
+    id: '/cards/$cardId',
+    path: '/cards/$cardId',
+    getParentRoute: () => AuthedLLeagueIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/l/$leagueId/collection': typeof AuthedLLeagueIdCollectionRoute
   '/l/$leagueId/profile': typeof AuthedLLeagueIdProfileRoute
   '/l/$leagueId/': typeof AuthedLLeagueIdIndexRoute
+  '/l/$leagueId/cards/$cardId': typeof AuthedLLeagueIdCardsCardIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -107,6 +115,7 @@ export interface FileRoutesByTo {
   '/l/$leagueId/collection': typeof AuthedLLeagueIdCollectionRoute
   '/l/$leagueId/profile': typeof AuthedLLeagueIdProfileRoute
   '/l/$leagueId': typeof AuthedLLeagueIdIndexRoute
+  '/l/$leagueId/cards/$cardId': typeof AuthedLLeagueIdCardsCardIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -122,6 +131,7 @@ export interface FileRoutesById {
   '/_authed/l/$leagueId/collection': typeof AuthedLLeagueIdCollectionRoute
   '/_authed/l/$leagueId/profile': typeof AuthedLLeagueIdProfileRoute
   '/_authed/l/$leagueId/': typeof AuthedLLeagueIdIndexRoute
+  '/_authed/l/$leagueId/cards/$cardId': typeof AuthedLLeagueIdCardsCardIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/l/$leagueId/collection'
     | '/l/$leagueId/profile'
     | '/l/$leagueId/'
+    | '/l/$leagueId/cards/$cardId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/l/$leagueId/collection'
     | '/l/$leagueId/profile'
     | '/l/$leagueId'
+    | '/l/$leagueId/cards/$cardId'
   id:
     | '__root__'
     | '/_authed'
@@ -163,6 +175,7 @@ export interface FileRouteTypes {
     | '/_authed/l/$leagueId/collection'
     | '/_authed/l/$leagueId/profile'
     | '/_authed/l/$leagueId/'
+    | '/_authed/l/$leagueId/cards/$cardId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -258,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedLLeagueIdProfileRouteImport
       parentRoute: typeof AuthedLLeagueIdRoute
     }
+    '/_authed/l/$leagueId/cards/$cardId': {
+      id: '/_authed/l/$leagueId/cards/$cardId'
+      path: '/cards/$cardId'
+      fullPath: '/l/$leagueId/cards/$cardId'
+      preLoaderRoute: typeof AuthedLLeagueIdCardsCardIdRouteImport
+      parentRoute: typeof AuthedLLeagueIdRoute
+    }
   }
 }
 
@@ -267,6 +287,7 @@ interface AuthedLLeagueIdRouteChildren {
   AuthedLLeagueIdCollectionRoute: typeof AuthedLLeagueIdCollectionRoute
   AuthedLLeagueIdProfileRoute: typeof AuthedLLeagueIdProfileRoute
   AuthedLLeagueIdIndexRoute: typeof AuthedLLeagueIdIndexRoute
+  AuthedLLeagueIdCardsCardIdRoute: typeof AuthedLLeagueIdCardsCardIdRoute
 }
 
 const AuthedLLeagueIdRouteChildren: AuthedLLeagueIdRouteChildren = {
@@ -275,6 +296,7 @@ const AuthedLLeagueIdRouteChildren: AuthedLLeagueIdRouteChildren = {
   AuthedLLeagueIdCollectionRoute: AuthedLLeagueIdCollectionRoute,
   AuthedLLeagueIdProfileRoute: AuthedLLeagueIdProfileRoute,
   AuthedLLeagueIdIndexRoute: AuthedLLeagueIdIndexRoute,
+  AuthedLLeagueIdCardsCardIdRoute: AuthedLLeagueIdCardsCardIdRoute,
 }
 
 const AuthedLLeagueIdRouteWithChildren = AuthedLLeagueIdRoute._addFileChildren(

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import type { SignupBody } from '@storix/shared'
 import { authClient } from '@/lib/auth-client'
+import { clearApiCache } from '@/features/pwa/api-cache'
 import { ApiError } from '@/lib/http'
 import { UserFacingError, userMessage } from '@/features/errors/user-message'
 import { invitationPreviewQueryOptions } from './invitations.queries'
@@ -33,6 +34,7 @@ export function useSignup(token: string): {
     },
     onSuccess: async (leagueId) => {
       queryClient.clear()
+      await clearApiCache()
       await navigate({ to: '/l/$leagueId', params: { leagueId }, replace: true })
     },
     onError: async (error) => {
