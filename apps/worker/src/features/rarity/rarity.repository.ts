@@ -38,13 +38,17 @@ export async function findLeagueSettings(db: DbExecutor, leagueId: string): Prom
   return row?.settings ?? null
 }
 
-/** Writes computed rarity onto cards and marks them as no longer provisional. */
+/**
+ * Writes computed rarity onto cards and marks them as no longer provisional.
+ * Rows are written in card-id order, the order booster discovery locks cards in, so the two never deadlock.
+ */
 export async function applyRarityResults(
   db: DbExecutor,
   rows: readonly RarityUpdateRow[],
   now: Date,
 ): Promise<void> {
-  for (const row of rows) {
+  const byCardId = rows.toSorted((x, y) => (x.cardId < y.cardId ? -1 : x.cardId > y.cardId ? 1 : 0))
+  for (const row of byCardId) {
     await db
       .update(cards)
       .set({

@@ -1,5 +1,7 @@
 export const GC_IMG_GRACE_MS = 86_400_000
 export const GC_INCOMING_GRACE_MS = 172_800_000
+export const GC_MAX_IMG_ORPHAN_RATIO = 0.25
+export const GC_MAX_IMG_ORPHAN_COUNT = 3
 
 export interface StoredObject {
   key: string
@@ -41,20 +43,21 @@ export function classifyOrphans(input: {
 export type GcSafetyVerdict =
   { safe: true } | { safe: false; reason: 'no-live-media' | 'too-many-orphans' }
 
-/** Decides whether a collection run looks sane enough to delete anything. */
+/**
+ * Decides whether a collection run looks sane enough to delete anything: it aborts when image
+ * candidates exceed both `GC_MAX_IMG_ORPHAN_RATIO` of the scanned images and `GC_MAX_IMG_ORPHAN_COUNT`.
+ */
 export function evaluateGcSafety(input: {
   liveMediaPrefixCount: number
   imagesScanned: number
   imageCandidates: number
-  maxOrphanRatio: number
-  maxOrphanCount: number
 }): GcSafetyVerdict {
   const { liveMediaPrefixCount, imagesScanned, imageCandidates } = input
   if (liveMediaPrefixCount === 0 && imagesScanned > 0)
     return { safe: false, reason: 'no-live-media' }
   if (
-    imageCandidates > input.maxOrphanCount &&
-    imageCandidates > imagesScanned * input.maxOrphanRatio
+    imageCandidates > GC_MAX_IMG_ORPHAN_COUNT &&
+    imageCandidates > imagesScanned * GC_MAX_IMG_ORPHAN_RATIO
   ) {
     return { safe: false, reason: 'too-many-orphans' }
   }

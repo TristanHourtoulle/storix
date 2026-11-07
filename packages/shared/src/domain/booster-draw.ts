@@ -3,7 +3,9 @@ import type { CopyVariant } from './dust'
 import { isEpicGuaranteed, legendaryBonusPercent, type PityState } from './pity'
 import type { RandomSource } from './random'
 
-export const DROP_TABLE_VERSION = 1
+export const DROP_TABLE_VERSION = 2
+
+const EPIC_FLOOR_SINCE_VERSION = 2
 export const FOIL_ODDS = 15
 
 export type TierWeights = Readonly<Partial<Record<CardTier, number>>>
@@ -71,15 +73,23 @@ export function rollTier(weights: TierWeights, random: RandomSource): CardTier {
   throw new Error('Tier roll out of range')
 }
 
-/** Returns the rolled tier if present, else the nearest lower present tier, else the nearest higher one. */
+/**
+ * Returns the rolled tier if present, else the nearest lower present tier, else the nearest higher one.
+ * With a floor at or below the rolled tier, tiers from the rolled one down to the floor come first,
+ * then the higher tiers, and tiers below the floor only last.
+ */
 export function resolveTierWithFallback(
   rolled: CardTier,
   available: ReadonlySet<CardTier>,
+  floor?: CardTier,
 ): CardTier | null {
   const rank = tierRank(rolled)
   const lower = CARD_TIERS.slice(0, rank + 1).toReversed()
   const higher = CARD_TIERS.slice(rank + 1)
-  return [...lower, ...higher].find((tier) => available.has(tier)) ?? null
+  const floorRank = floor === undefined ? 0 : Math.min(tierRank(floor), rank)
+  const aboveFloor = lower.filter((tier) => tierRank(tier) >= floorRank)
+  const belowFloor = lower.filter((tier) => tierRank(tier) < floorRank)
+  return [...aboveFloor, ...higher, ...belowFloor].find((tier) => available.has(tier)) ?? null
 }
 
 /** Picks an author uniformly, then one of that author's cards uniformly. */
@@ -95,18 +105,26 @@ export function pickFromTier(cards: readonly PoolCard[], random: RandomSource): 
   return picked
 }
 
-/** Draws the five slots of a booster; RNG order per slot is tier, author, card, foil. */
+/**
+ * Draws the five slots of a booster; RNG order per slot is tier, author, card, foil.
+ * `tableVersion` defaults to the current table; version 1 replays the fallback without the Epic floor.
+ */
 export function drawBooster(input: {
   pool: readonly PoolCard[]
   pity: PityState
   random: RandomSource
+  tableVersion?: number
 }): BoosterDraw[] {
   if (input.pool.length === 0) throw new EmptyBoosterPoolError()
   const available = new Set(input.pool.map((c) => c.tier))
+  const tableVersion = input.tableVersion ?? DROP_TABLE_VERSION
+  const hasEpicFloor = tableVersion >= EPIC_FLOOR_SINCE_VERSION && isEpicGuaranteed(input.pity)
   return BOOSTER_SLOTS.map((slotWeights, slot) => {
-    const weights = slot === RARE_PLUS_SLOT ? rarePlusWeights(input.pity) : slotWeights
+    const isRarePlus = slot === RARE_PLUS_SLOT
+    const weights = isRarePlus ? rarePlusWeights(input.pity) : slotWeights
     const rolledTier = rollTier(weights, input.random)
-    const tier = resolveTierWithFallback(rolledTier, available)
+    const floor: CardTier | undefined = isRarePlus && hasEpicFloor ? 'epic' : undefined
+    const tier = resolveTierWithFallback(rolledTier, available, floor)
     if (tier === null) throw new EmptyBoosterPoolError()
     const picked = pickFromTier(
       input.pool.filter((c) => c.tier === tier),

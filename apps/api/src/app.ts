@@ -8,7 +8,7 @@ import {
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod'
 import { authRoutes } from './auth/auth.routes'
-import { clientIpPolicy } from './config/client-ip'
+import { clientIpPolicy, rateLimitKeyGenerator } from './config/client-ip'
 import { buildServices, type AppDeps } from './deps'
 import { boostersRoutes } from './features/boosters/boosters.routes'
 import { cardsRoutes } from './features/cards/cards.routes'
@@ -49,6 +49,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
   await app.register(rateLimit, {
     global: false,
+    keyGenerator: rateLimitKeyGenerator(env),
     errorResponseBuilder: (_request, context) =>
       new AppError('RATE_LIMITED', 429, 'Too many requests', { retryAfter: context.after }),
   })

@@ -88,6 +88,34 @@ describe('booster draw', () => {
     expect(resolveTierWithFallback('uncommon', new Set(['rare']))).toBe('rare')
     expect(resolveTierWithFallback('common', new Set())).toBeNull()
   })
+  it('searches up to higher tiers before falling below the floor', () => {
+    const available = new Set<CardTier>(['common', 'rare', 'legendary'])
+    expect(resolveTierWithFallback('epic', available, 'epic')).toBe('legendary')
+    expect(resolveTierWithFallback('epic', available)).toBe('rare')
+    expect(resolveTierWithFallback('mythic', available, 'epic')).toBe('legendary')
+    expect(resolveTierWithFallback('epic', new Set<CardTier>(['common', 'rare']), 'epic')).toBe(
+      'rare',
+    )
+  })
+  it('honors the epic guarantee with a higher tier when no epic exists', () => {
+    const pool = [card('c1', 'common', 'a', 1), card('l1', 'legendary', 'a', 2)]
+    const random = createSeededRandom(SEED)
+    for (let i = 0; i < 200; i += 1) {
+      const draws = drawBooster({ pool, pity: { sinceEpic: 9, sinceLegendary: 0 }, random })
+      expect(draws[4]?.tier).toBe('legendary')
+    }
+  })
+  it('replays version 1 openings without the epic floor', () => {
+    const pool = [card('c1', 'common', 'a', 1), card('l1', 'legendary', 'a', 2)]
+    const random = createSeededRandom(SEED)
+    const tiers = Array.from(
+      { length: 200 },
+      () =>
+        drawBooster({ pool, pity: { sinceEpic: 9, sinceLegendary: 0 }, random, tableVersion: 1 })[4]
+          ?.tier,
+    )
+    expect(tiers).toContain('common')
+  })
   it('draws five slots in the pinned RNG order', () => {
     const pool = [
       card('c1', 'common', 'a', 1),

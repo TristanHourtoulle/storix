@@ -13,8 +13,6 @@ import * as repository from './storage-gc.repository'
 const DAY_MS = 86_400_000
 const TOMBSTONE_RETENTION_MS = 35 * DAY_MS
 const DELETE_CHUNK_SIZE = 500
-const MAX_IMG_ORPHAN_RATIO = 0.25
-const MAX_IMG_ORPHAN_COUNT = 20
 const IMG_PREFIX = 'img/'
 const INCOMING_PREFIX = 'incoming/'
 
@@ -65,8 +63,6 @@ export function createStorageGcService(deps: Deps): StorageGcService {
         liveMediaPrefixCount: liveMediaPrefixes.size,
         imagesScanned: images.length,
         imageCandidates: orphans.filter((key) => key.startsWith(IMG_PREFIX)).length,
-        maxOrphanRatio: MAX_IMG_ORPHAN_RATIO,
-        maxOrphanCount: MAX_IMG_ORPHAN_COUNT,
       })
       if (!verdict.safe) {
         logger.error(
