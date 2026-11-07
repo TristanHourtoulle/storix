@@ -1,4 +1,4 @@
-import { createDb } from '@storix/db'
+import { countAppliedMigrations, createDb, MIGRATION_JOURNAL_ENTRY_COUNT } from '@storix/db'
 import {
   MEDIA_PROCESS_JOB,
   MEDIA_SWEEP_JOB,
@@ -27,6 +27,7 @@ import { registerRarityRecomputeJob } from './jobs/rarity-recompute.job'
 import { registerStorageDeleteJob } from './jobs/storage-delete.job'
 import { createStorageGcQueue, registerStorageGcJob } from './jobs/storage-gc.job'
 import { createLogger } from './lib/logger'
+import { waitForMigrations } from './lib/migration-gate'
 
 const STOP_TIMEOUT_MS = 30_000
 
@@ -60,6 +61,11 @@ async function start(): Promise<void> {
   process.once('SIGINT', (signal) => void shutdown(signal))
 
   await assertStorageReachable(storage)
+  await waitForMigrations({
+    expected: MIGRATION_JOURNAL_ENTRY_COUNT,
+    countApplied: () => countAppliedMigrations(database.db),
+    logger,
+  })
   await boss.start()
   await boss.createQueue(MEDIA_PROCESS_JOB)
   await boss.createQueue(MEDIA_SWEEP_JOB)

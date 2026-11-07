@@ -9,12 +9,13 @@ export const Route = createFileRoute('/login')({
     redirect: z.string().refine(isSafeRedirectPath).optional().catch(undefined),
     reset: z.literal('done').optional().catch(undefined),
     signup: z.literal('failed').optional().catch(undefined),
+    deleted: z.literal(1).optional().catch(undefined),
   }),
   component: LoginScreen,
 })
 
 function LoginScreen() {
-  const { redirect, reset, signup } = Route.useSearch()
+  const { redirect, reset, signup, deleted } = Route.useSearch()
 
   return (
     <main className="screen">
@@ -24,6 +25,7 @@ function LoginScreen() {
         {...(redirect ? { redirectTo: redirect } : {})}
         isResetDone={reset === 'done'}
         isSignupFailed={signup === 'failed'}
+        isAccountDeleted={deleted === 1}
       />
     </main>
   )

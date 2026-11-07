@@ -1,6 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { Link, createFileRoute, redirect } from '@tanstack/react-router'
-import { LazyMotion, MotionConfig, domAnimation } from 'motion/react'
 import { z } from 'zod'
 import { Button, buttonClassName } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -122,9 +121,5 @@ function BoosterScreen({ leagueId, requestId }: { leagueId: string; requestId: s
     )
   }
 
-  return (
-    <LazyMotion features={domAnimation} strict>
-      <MotionConfig reducedMotion="user">{content}</MotionConfig>
-    </LazyMotion>
-  )
+  return content
 }

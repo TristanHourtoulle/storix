@@ -5,7 +5,7 @@ import { requireLeagueRole } from '../../http/league-guard'
 import { rateLimits } from '../../http/rate-limit'
 import type { CopiesService } from './copies.service'
 
-/** Registers the recycle, craft and foil upgrade routes of a card. */
+/** Registers the recycle and foil upgrade routes of a card (crafting is disabled: its route is not registered). */
 export function copiesRoutes(service: CopiesService): FastifyPluginAsyncZod {
   return async (app) => {
     const guard = {
@@ -17,9 +17,6 @@ export function copiesRoutes(service: CopiesService): FastifyPluginAsyncZod {
       '/leagues/:leagueId/cards/:cardId/recycle',
       { ...guard, schema: { ...schema, body: recycleBodySchema } },
       (request) => service.recycle(request.membership, request.params.cardId, request.body.variant),
-    )
-    app.post('/leagues/:leagueId/cards/:cardId/craft', { ...guard, schema }, (request) =>
-      service.craft(request.membership, request.params.cardId),
     )
     app.post('/leagues/:leagueId/cards/:cardId/foil', { ...guard, schema }, (request) =>
       service.upgradeToFoil(request.membership, request.params.cardId),

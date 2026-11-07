@@ -37,6 +37,7 @@ interface LockedContext {
   wallet: WalletRow
   card: CardViewerRow
   now: Date
+  delayMinutes: number
 }
 
 function copyNotOwned(): AppError {
@@ -57,7 +58,9 @@ export function createCopiesService({ db, clock }: CopiesServiceDeps): CopiesSer
   ): Promise<T> =>
     runInTransaction(db, async (tx) => {
       const now = clock()
-      const { booster } = resolveLeagueSettings(await findLeagueSettings(tx, m.leagueId))
+      const { booster, newCardDelayMinutes } = resolveLeagueSettings(
+        await findLeagueSettings(tx, m.leagueId),
+      )
       await ensureWallet(tx, {
         leagueId: m.leagueId,
         userId: m.userId,
@@ -70,8 +73,8 @@ export function createCopiesService({ db, clock }: CopiesServiceDeps): CopiesSer
         cardId,
         viewerId: m.userId,
       })
-      if (card === null) throw notFound('Card not found')
-      return fn({ tx, m, wallet, card, now })
+      if (card === null || card.status !== 'active') throw notFound('Card not found')
+      return fn({ tx, m, wallet, card, now, delayMinutes: newCardDelayMinutes })
     })
 
   return {
@@ -92,7 +95,11 @@ export function createCopiesService({ db, clock }: CopiesServiceDeps): CopiesSer
 
     craft: (m, cardId) =>
       withLockedCard(m, cardId, async (ctx) => {
-        const decision = craftDecisionFor(ctx.card, ctx.now, ctx.wallet.dust)
+        const decision = craftDecisionFor(ctx.card, {
+          now: ctx.now,
+          dust: ctx.wallet.dust,
+          delayMinutes: ctx.delayMinutes,
+        })
         if (decision.reason === 'insufficient_dust') {
           throw new AppError('INSUFFICIENT_DUST', 409, 'Not enough dust to craft this card', {
             cost: decision.cost,

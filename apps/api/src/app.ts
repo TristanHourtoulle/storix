@@ -10,19 +10,24 @@ import {
 import { authRoutes } from './auth/auth.routes'
 import { clientIpPolicy, rateLimitKeyGenerator } from './config/client-ip'
 import { buildServices, type AppDeps } from './deps'
+import { accountRoutes } from './features/account/account.routes'
 import { boostersRoutes } from './features/boosters/boosters.routes'
 import { cardsRoutes } from './features/cards/cards.routes'
 import { copiesRoutes } from './features/copies/copies.routes'
 import { healthRoutes } from './features/health/health.routes'
 import { invitationsRoutes } from './features/invitations/invitations.routes'
+import { leagueSettingsRoutes } from './features/league-settings/league-settings.routes'
 import { leaguesRoutes } from './features/leagues/leagues.routes'
 import { mediaRoutes } from './features/media/media.routes'
 import { meRoutes } from './features/me/me.routes'
 import { membersRoutes } from './features/members/members.routes'
+import { moderationRoutes } from './features/moderation/moderation.routes'
 import { reactionsRoutes } from './features/reactions/reactions.routes'
+import { removalsRoutes } from './features/removals/removals.routes'
 import { resetCodesRoutes } from './features/reset-codes/reset-codes.routes'
 import { uploadsRoutes } from './features/uploads/uploads.routes'
 import { walletsRoutes } from './features/wallets/wallets.routes'
+import { withdrawalsRoutes } from './features/withdrawals/withdrawals.routes'
 import { registerErrorHandling } from './http/error-handler'
 import { registerOriginCheck } from './http/origin-check'
 import { registerStatic } from './http/static'
@@ -75,6 +80,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(authRoutes(deps.auth, env.APP_ORIGIN))
   await app.register(healthRoutes(services.health), { prefix: '/api' })
   await app.register(meRoutes(services.me), { prefix: '/api' })
+  await app.register(accountRoutes(services.account), { prefix: '/api' })
   await app.register(leaguesRoutes(services.leagues), { prefix: '/api' })
   await app.register(invitationsRoutes(services.invitations), { prefix: '/api' })
   await app.register(membersRoutes(services.members), { prefix: '/api' })
@@ -85,6 +91,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(boostersRoutes(services.boosters), { prefix: '/api' })
   await app.register(copiesRoutes(services.copies), { prefix: '/api' })
   await app.register(reactionsRoutes(services.reactions), { prefix: '/api' })
+  await app.register(removalsRoutes(services.removals), { prefix: '/api' })
+  await app.register(leagueSettingsRoutes(services.leagueSettings), { prefix: '/api' })
+  await app.register(moderationRoutes(services.moderation), { prefix: '/api' })
+  await app.register(withdrawalsRoutes(services.withdrawals), { prefix: '/api' })
   await app.register(mediaRoutes(services.media))
 
   if (isProduction) {

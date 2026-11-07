@@ -1,7 +1,9 @@
 import type { ButtonHTMLAttributes } from 'react'
 
+type ButtonVariant = 'primary' | 'ghost' | 'danger'
+
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant: 'primary' | 'ghost'
+  variant: ButtonVariant
   block?: boolean
   isLoading?: boolean
 }
@@ -9,10 +11,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const VARIANTS = {
   primary: 'bg-ink text-bg',
   ghost: 'bg-transparent text-ink shadow-hairline-strong',
+  danger: 'bg-danger text-bg',
 } as const
 
 interface ButtonClassOptions {
-  variant: 'primary' | 'ghost'
+  variant: ButtonVariant
   block?: boolean
 }
 

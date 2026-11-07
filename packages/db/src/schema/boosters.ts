@@ -62,5 +62,8 @@ export const boosterPulls = pgTable(
     isFirstCopy: boolean('is_first_copy').notNull(),
     isDiscovery: boolean('is_discovery').notNull(),
   },
-  (t) => [primaryKey({ columns: [t.openingId, t.slot] }), index('booster_pulls_card_id_idx').on(t.cardId)],
+  (t) => [
+    primaryKey({ columns: [t.openingId, t.slot] }),
+    index('booster_pulls_card_id_idx').on(t.cardId),
+  ],
 )

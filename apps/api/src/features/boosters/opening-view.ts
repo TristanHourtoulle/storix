@@ -1,5 +1,6 @@
 import type { BoosterPull, MediaVariantSize } from '@storix/shared'
 import type { MediaSigner } from '../../lib/media-signer'
+import { toCardAuthor } from '../cards/card-views'
 import { toImageSet } from '../cards/image-set'
 import type { PullViewRow } from './boosters.repository'
 
@@ -14,7 +15,7 @@ export function toBoosterPull(row: PullViewRow, signer: MediaSigner): BoosterPul
       number: row.number,
       title: row.title,
       tier: row.tierAtMint,
-      author: { userId: row.authorId, displayUsername: row.authorName },
+      author: toCardAuthor(row),
       thumbhash: row.thumbhash,
       dominantColor: row.dominantColor,
       width: row.width,

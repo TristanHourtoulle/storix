@@ -3,6 +3,8 @@ import type { LeagueDetail } from '@storix/shared'
 import { ApiError } from '@/lib/http'
 import { fetchLeagueDetail } from './leagues.api'
 
+const LEAGUE_DETAIL_REVALIDATE_MS = 10_000
+
 export function leagueDetailQueryOptions(leagueId: string) {
   return queryOptions({
     queryKey: ['leagues', leagueId],
@@ -16,7 +18,10 @@ export async function loadLeagueDetail(
   leagueId: string,
 ): Promise<LeagueDetail | null> {
   try {
-    return await queryClient.ensureQueryData(leagueDetailQueryOptions(leagueId))
+    return await queryClient.fetchQuery({
+      ...leagueDetailQueryOptions(leagueId),
+      staleTime: LEAGUE_DETAIL_REVALIDATE_MS,
+    })
   } catch (error) {
     if (error instanceof ApiError && (error.status === 403 || error.status === 404)) return null
     throw error

@@ -52,14 +52,6 @@ export function recycleCopy(
   })
 }
 
-/** Crafts a locked card with dust. */
-export function craftCard(leagueId: string, cardId: string): Promise<DustBalance> {
-  return apiRequest(`${cardPath(leagueId, cardId)}/craft`, {
-    method: 'POST',
-    schema: dustBalanceSchema,
-  })
-}
-
 /** Upgrades the normal copy to foil with dust. */
 export function upgradeToFoil(leagueId: string, cardId: string): Promise<DustBalance> {
   return apiRequest(`${cardPath(leagueId, cardId)}/foil`, {

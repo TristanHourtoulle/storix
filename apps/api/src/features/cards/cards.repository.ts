@@ -1,16 +1,23 @@
 import { cardCopies, cards, cardTags, media, user, type DbExecutor } from '@storix/db'
 import { mediaVariantsSchema, type CardTier } from '@storix/shared'
-import { and, desc, eq, lt, sql, type SQL } from 'drizzle-orm'
+import { and, desc, eq, isNotNull, lt, or, sql, type SQL } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
+import {
+  authorIsFormerMember,
+  authorMembership,
+  authorMembershipOn,
+} from './card-author.repository'
 
 export interface CollectionRow {
   id: string
   number: number
   title: string
+  status: 'active' | 'hidden'
   tier: CardTier
   isProvisional: boolean
   authorId: string | null
   authorName: string | null
+  authorIsFormerMember: boolean
   thumbhash: string
   dominantColor: string
   width: number
@@ -73,10 +80,12 @@ function collectionColumns(owned: ReturnType<typeof viewerCopies>) {
     id: cards.id,
     number: cards.number,
     title: cards.title,
+    status: cards.status,
     tier: cards.tier,
     isProvisional: cards.isProvisional,
     authorId: cards.authorId,
     authorName: displayName,
+    authorIsFormerMember,
     thumbhash: media.thumbhash,
     dominantColor: media.dominantColor,
     width: media.width,
@@ -94,10 +103,11 @@ function displayTierOf(owned: ReturnType<typeof viewerCopies>): SQL<CardTier> {
 function collectionWhere(
   input: CollectionFilters,
   owned: ReturnType<typeof viewerCopies>,
+  visibility: SQL | undefined,
 ): SQL | undefined {
   return and(
     eq(cards.leagueId, input.leagueId),
-    eq(cards.status, 'active'),
+    visibility,
     input.authorId === undefined ? undefined : eq(cards.authorId, input.authorId),
     input.tier === undefined ? undefined : eq(displayTierOf(owned), input.tier),
   )
@@ -109,7 +119,14 @@ function parseVariants<T extends { variants: unknown }>(
   return { ...row, variants: mediaVariantsSchema.parse(row.variants) }
 }
 
-/** Lists active cards with the viewer's copies, newest number first, fetching `limit + 1` rows. */
+function activeOrOwnedHidden(owned: ReturnType<typeof viewerCopies>): SQL | undefined {
+  return or(eq(cards.status, 'active'), and(eq(cards.status, 'hidden'), isNotNull(owned.cardId)))
+}
+
+/**
+ * Lists active cards, and hidden cards the viewer owns a copy of, with the viewer's copies,
+ * newest number first, fetching `limit + 1` rows.
+ */
 export async function listCollection(
   db: DbExecutor,
   input: CollectionFilters & { beforeNumber?: number; limit: number },
@@ -120,10 +137,11 @@ export async function listCollection(
     .from(cards)
     .innerJoin(media, eq(media.id, cards.mediaId))
     .leftJoin(user, eq(user.id, cards.authorId))
+    .leftJoin(authorMembership, authorMembershipOn)
     .leftJoin(owned, eq(owned.cardId, cards.id))
     .where(
       and(
-        collectionWhere(input, owned),
+        collectionWhere(input, owned, activeOrOwnedHidden(owned)),
         input.beforeNumber === undefined ? undefined : lt(cards.number, input.beforeNumber),
       ),
     )
@@ -145,11 +163,11 @@ export async function countCollection(
     })
     .from(cards)
     .leftJoin(owned, eq(owned.cardId, cards.id))
-    .where(collectionWhere(input, owned))
+    .where(collectionWhere(input, owned, eq(cards.status, 'active')))
   return rows[0] ?? { total: 0, owned: 0 }
 }
 
-/** Finds an active card of a league with its media, discoverer, tagged members and the viewer's copies. */
+/** Finds a card of a league, active or hidden, with its media, discoverer, tagged members and the viewer's copies. */
 export async function findCardForViewer(
   db: DbExecutor,
   input: { leagueId: string; cardId: string; viewerId: string },
@@ -168,15 +186,10 @@ export async function findCardForViewer(
     .from(cards)
     .innerJoin(media, eq(media.id, cards.mediaId))
     .leftJoin(user, eq(user.id, cards.authorId))
+    .leftJoin(authorMembership, authorMembershipOn)
     .leftJoin(discoverer, eq(discoverer.id, cards.discoveredById))
     .leftJoin(owned, eq(owned.cardId, cards.id))
-    .where(
-      and(
-        eq(cards.id, input.cardId),
-        eq(cards.leagueId, input.leagueId),
-        eq(cards.status, 'active'),
-      ),
-    )
+    .where(and(eq(cards.id, input.cardId), eq(cards.leagueId, input.leagueId)))
     .limit(1)
   const row = rows[0]
   if (row === undefined) return null

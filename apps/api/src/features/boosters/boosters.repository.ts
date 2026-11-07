@@ -18,6 +18,11 @@ import {
 } from '@storix/shared'
 import { and, asc, desc, eq, exists, gt, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
+import {
+  authorIsFormerMember,
+  authorMembership,
+  authorMembershipOn,
+} from '../cards/card-author.repository'
 
 export interface BoosterPoolCard extends PoolCard {
   leagueId: string
@@ -65,6 +70,7 @@ interface CardMediaColumns {
   title: string
   authorId: string | null
   authorName: string | null
+  authorIsFormerMember: boolean
   thumbhash: string
   dominantColor: string
   width: number
@@ -85,6 +91,7 @@ export interface PullViewRow extends CardMediaColumns {
 }
 
 export interface RevealRow extends CardMediaColumns {
+  status: 'active' | 'hidden'
   pulledById: string
   pulledByName: string | null
   pulledAt: Date
@@ -110,6 +117,7 @@ const cardMediaColumns = {
   title: cards.title,
   authorId: cards.authorId,
   authorName,
+  authorIsFormerMember,
   thumbhash: media.thumbhash,
   dominantColor: media.dominantColor,
   width: media.width,
@@ -246,6 +254,7 @@ export async function listOpeningPulls(db: DbExecutor, openingId: string): Promi
     .innerJoin(cards, eq(cards.id, boosterPulls.cardId))
     .innerJoin(media, eq(media.id, cards.mediaId))
     .leftJoin(author, eq(author.id, cards.authorId))
+    .leftJoin(authorMembership, authorMembershipOn)
     .where(
       and(
         eq(boosterPulls.openingId, openingId),
@@ -309,6 +318,7 @@ export async function listRecentReveals(
   const rows = await db
     .select({
       ...cardMediaColumns,
+      status: cards.status,
       pulledById: boosterOpenings.userId,
       pulledByName: pullerName,
       pulledAt: boosterOpenings.openedAt,
@@ -322,6 +332,7 @@ export async function listRecentReveals(
     .innerJoin(cards, eq(cards.id, boosterPulls.cardId))
     .innerJoin(media, eq(media.id, cards.mediaId))
     .leftJoin(author, eq(author.id, cards.authorId))
+    .leftJoin(authorMembership, authorMembershipOn)
     .leftJoin(puller, eq(puller.id, boosterOpenings.userId))
     .where(
       and(
