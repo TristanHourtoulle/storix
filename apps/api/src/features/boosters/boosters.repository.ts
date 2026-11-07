@@ -1,4 +1,12 @@
-import { boosterOpenings, boosterPulls, cards, media, user, type DbExecutor } from '@storix/db'
+import {
+  boosterOpenings,
+  boosterPulls,
+  cardCopies,
+  cards,
+  media,
+  user,
+  type DbExecutor,
+} from '@storix/db'
 import {
   mediaVariantsSchema,
   type CardTier,
@@ -8,7 +16,7 @@ import {
   type PoolCard,
   type PulledCopyOutcome,
 } from '@storix/shared'
-import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, gt, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 
 export interface BoosterPoolCard extends PoolCard {
@@ -215,7 +223,10 @@ export async function insertPulls(
   await db.insert(boosterPulls).values(rows.map((row) => ({ ...row, openingId })))
 }
 
-/** Lists the pulls of an opening by slot with their card and media, skipping pulls whose card was deleted. */
+/**
+ * Lists the pulls of an opening by slot with their card and media, skipping pulls whose card was deleted,
+ * is no longer active, or of which the opener no longer owns any copy.
+ */
 export async function listOpeningPulls(db: DbExecutor, openingId: string): Promise<PullViewRow[]> {
   const rows = await db
     .select({
@@ -231,10 +242,27 @@ export async function listOpeningPulls(db: DbExecutor, openingId: string): Promi
       capturedAt: media.capturedAt,
     })
     .from(boosterPulls)
+    .innerJoin(boosterOpenings, eq(boosterOpenings.id, boosterPulls.openingId))
     .innerJoin(cards, eq(cards.id, boosterPulls.cardId))
     .innerJoin(media, eq(media.id, cards.mediaId))
     .leftJoin(author, eq(author.id, cards.authorId))
-    .where(eq(boosterPulls.openingId, openingId))
+    .where(
+      and(
+        eq(boosterPulls.openingId, openingId),
+        eq(cards.status, 'active'),
+        exists(
+          db
+            .select({ one: sql`1` })
+            .from(cardCopies)
+            .where(
+              and(
+                eq(cardCopies.cardId, boosterPulls.cardId),
+                eq(cardCopies.ownerId, boosterOpenings.userId),
+              ),
+            ),
+        ),
+      ),
+    )
     .orderBy(asc(boosterPulls.slot))
   return rows.map(parseVariants)
 }
