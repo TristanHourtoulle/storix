@@ -17,6 +17,19 @@ export const AUDIT_ACTIONS = [
   'copy.recycled',
   'copy.crafted',
   'copy.foil_upgraded',
+  'league.settings_updated',
+  'league.ownership_transferred',
+  'league.deleted',
+  'member.left',
+  'card.hidden',
+  'card.unhidden',
+  'card.deleted',
+  'card.withdrawn',
+  'card.tier_pinned',
+  'card.bounds_set',
+  'card.capture_date_validated',
+  'card.removed',
+  'account.deleted',
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]

@@ -29,6 +29,18 @@ describe('updateLeagueSettingsBodySchema', () => {
     ).toBe(false)
   })
 
+  it('rejects a join gift above the max stock', () => {
+    const booster = { ...valid.booster, maxStock: 3 }
+    expect(
+      updateLeagueSettingsBodySchema.safeParse({ ...valid, booster: { ...booster, joinGift: 4 } })
+        .success,
+    ).toBe(false)
+    expect(
+      updateLeagueSettingsBodySchema.safeParse({ ...valid, booster: { ...booster, joinGift: 3 } })
+        .success,
+    ).toBe(true)
+  })
+
   it('bounds the new-card delay to 0..10080 integers', () => {
     expect(
       updateLeagueSettingsBodySchema.safeParse({ ...valid, newCardDelayMinutes: -1 }).success,
@@ -46,8 +58,13 @@ describe('updateLeagueSettingsBodySchema', () => {
 })
 
 describe('resolveLeagueSettings', () => {
+  it('clamps a stored join gift to the max stock', () => {
+    const booster = { intervalMinutes: 60, maxStock: 2, joinGift: 5 }
+    expect(resolveLeagueSettings({ booster }).booster).toEqual({ ...booster, joinGift: 2 })
+  })
+
   it('resolves stored settings field by field', () => {
-    expect(resolveLeagueSettings(null).newCardDelayMinutes).toBe(720)
+    expect(resolveLeagueSettings(null).newCardDelayMinutes).toBe(60)
     const partial = resolveLeagueSettings({ uploadQuotaPerDay: 3, booster: 'garbage' })
     expect(partial.uploadQuotaPerDay).toBe(3)
     expect(partial.booster).toEqual({ intervalMinutes: 240, maxStock: 6, joinGift: 2 })

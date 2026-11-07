@@ -79,7 +79,7 @@ Tiers: Common, Uncommon, Rare, Epic, Legendary (computed); **Mythic** (admin onl
 - **Cold start** (fewer than 20 cards): fixed thresholds on the score, no computed Legendary below 15 cards.
 - **Precedence**: rarity pinned by the admin / Mythic > admin min/max bounds > computation. Every override is logged.
 - **Recompute**: provisional at upload, full every night and on every settings change. Changes are historized.
-- **New card**: out of boosters for 12 h (provisional), so an admin has time to react; the author receives a copy immediately.
+- **New card**: out of boosters for 1 h by default (provisional), so an admin has time to react; the author receives a copy immediately.
 
 ### 5.2 Copies
 
@@ -202,7 +202,7 @@ Exact table and index breakdown, internal folder structure of each app, endpoint
 - Card disappearance = owners compensated; admin hiding = reversible, no compensation.
 - Fallbacks if the Railway bucket fails: presigned PUT → upload through the API → Cloudflare R2.
 - Craft costs 4× and foil 2× the recycle value.
-- New card out of boosters for 12 h; the author receives their copy immediately.
+- New card out of boosters for 1 h by default; the author receives their copy immediately.
 - Exchanges tab visible but greyed out "soon" (no exchanges in the MVP, Tristan's decision).
 - pnpm monorepo, the API serves the SPA in prod, no Redis.
 

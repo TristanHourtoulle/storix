@@ -77,10 +77,37 @@ describe('dust', () => {
     })
     expect(craftDecision({ ...base, isBoosterEligible: false }).reason).toBe('provisional')
     expect(craftDecision({ ...base, dust: 99 }).reason).toBe('insufficient_dust')
-    const foil = { currentTier: 'epic' as const, ownsNormal: true, ownsFoil: false, dust: 200 }
+    const foil = {
+      currentTier: 'epic' as const,
+      normalTierAtMint: 'epic' as const,
+      ownsFoil: false,
+      dust: 200,
+    }
     expect(foilUpgradeDecision(foil)).toEqual({ cost: 200, allowed: true, reason: null })
-    expect(foilUpgradeDecision({ ...foil, ownsNormal: false }).reason).toBe('no_normal')
+    expect(foilUpgradeDecision({ ...foil, normalTierAtMint: null })).toEqual({
+      cost: 200,
+      allowed: false,
+      reason: 'no_normal',
+    })
     expect(foilUpgradeDecision({ ...foil, ownsFoil: true }).reason).toBe('foil_owned')
     expect(foilUpgradeDecision({ ...foil, dust: 199 }).reason).toBe('insufficient_dust')
+  })
+  it('prices the foil upgrade on the normal copy tier at mint, like its recycle value', () => {
+    const dropped = {
+      currentTier: 'common' as const,
+      normalTierAtMint: 'legendary' as const,
+      ownsFoil: false,
+      dust: 799,
+    }
+    expect(foilUpgradeDecision(dropped)).toEqual({
+      cost: 800,
+      allowed: false,
+      reason: 'insufficient_dust',
+    })
+    expect(foilUpgradeDecision({ ...dropped, dust: 800 }).allowed).toBe(true)
+    expect(
+      foilUpgradeDecision({ ...dropped, currentTier: 'legendary', normalTierAtMint: 'common' })
+        .cost,
+    ).toBe(10)
   })
 })

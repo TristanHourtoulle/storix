@@ -1,81 +1,81 @@
 import type { Database } from '@storix/db'
 import type {
-  CardDetail,
-  CardPage,
-  CardSummary,
+  CollectionPage,
   ListCardsQuery,
-  MediaVariantSize,
+  ReactionCounts,
+  ViewerCardDetail,
 } from '@storix/shared'
 import { notFound } from '../../lib/errors'
 import type { MediaSigner } from '../../lib/media-signer'
+import { countCardCopies } from '../copies/copies.repository'
 import type { Membership } from '../leagues/leagues.service'
-import { toImageSet } from './image-set'
-import { countCards, findCard, listCards, type CardRow } from './cards.repository'
+import { countReactions } from '../reactions/reactions.repository'
+import { findWallet } from '../wallets/wallets.repository'
+import { isOwned, toCardDetail, toCollectionCard } from './card-views'
+import { countCollection, findCardForViewer, listCollection } from './cards.repository'
 
-const SUMMARY_SIZES: readonly MediaVariantSize[] = [256, 768]
-const DETAIL_SIZES: readonly MediaVariantSize[] = [256, 768, 1600]
+const NO_REACTIONS: ReactionCounts = {
+  fire: { count: 0, isMine: false },
+  heart: { count: 0, isMine: false },
+  star: { count: 0, isMine: false },
+}
 
 export interface CardsService {
-  listCards(m: Membership, query: ListCardsQuery): Promise<CardPage>
-  getCard(m: Membership, cardId: string): Promise<CardDetail>
+  listCards(m: Membership, query: ListCardsQuery): Promise<CollectionPage>
+  getCard(m: Membership, cardId: string): Promise<ViewerCardDetail>
 }
 
-function toSummary(
-  row: CardRow,
-  sizes: readonly MediaVariantSize[],
-  signer: MediaSigner,
-): CardSummary {
-  return {
-    id: row.id,
-    number: row.number,
-    title: row.title,
-    tier: row.tier,
-    isProvisional: row.isProvisional,
-    author: { userId: row.authorId, displayUsername: row.authorName },
-    thumbhash: row.thumbhash,
-    dominantColor: row.dominantColor,
-    width: row.width,
-    height: row.height,
-    image: toImageSet(row.variants, sizes, signer),
-  }
+export interface CardsServiceDeps {
+  db: Database
+  signer: MediaSigner
+  clock: () => Date
 }
 
-/** Builds the cards service. */
-export function createCardsService(deps: { db: Database; signer: MediaSigner }): CardsService {
-  const { db, signer } = deps
+/** Builds the cards service serving the viewer's owned cards and locked silhouettes. */
+export function createCardsService({ db, signer, clock }: CardsServiceDeps): CardsService {
   return {
     async listCards(m, query) {
-      const [rows, total] = await Promise.all([
-        listCards(db, {
-          leagueId: m.leagueId,
-          authorId: query.authorId,
-          beforeNumber: query.cursor,
-          limit: query.limit,
-        }),
-        countCards(db, { leagueId: m.leagueId, authorId: query.authorId }),
+      const filters = {
+        leagueId: m.leagueId,
+        viewerId: m.userId,
+        authorId: query.authorId,
+        tier: query.tier,
+      }
+      const [rows, counts] = await Promise.all([
+        listCollection(db, { ...filters, beforeNumber: query.cursor, limit: query.limit }),
+        countCollection(db, filters),
       ])
       const page = rows.slice(0, query.limit)
       const last = page.at(-1)
       return {
-        cards: page.map((row) => toSummary(row, SUMMARY_SIZES, signer)),
+        cards: page.map((row) => toCollectionCard(row, signer)),
         nextCursor: rows.length > query.limit && last !== undefined ? last.number : null,
-        total,
+        total: counts.total,
+        ownedCount: counts.owned,
       }
     },
 
     async getCard(m, cardId) {
-      const row = await findCard(db, m.leagueId, cardId)
+      const row = await findCardForViewer(db, {
+        leagueId: m.leagueId,
+        cardId,
+        viewerId: m.userId,
+      })
       if (row === null) throw notFound('Card not found')
-      return {
-        ...toSummary(row, DETAIL_SIZES, signer),
-        capturedAt: row.capturedAt?.toISOString() ?? null,
-        isCaptureDateValidated: row.isCaptureDateValidated,
-        createdAt: row.createdAt.toISOString(),
-        tagged: row.tagged.map((person) => ({
-          userId: person.userId,
-          displayUsername: person.displayUsername,
-        })),
-      }
+      const owned = isOwned(row)
+      const [wallet, reactions, copiesInLeague] = await Promise.all([
+        findWallet(db, m.leagueId, m.userId),
+        owned ? countReactions(db, { cardId, viewerId: m.userId }) : NO_REACTIONS,
+        owned ? countCardCopies(db, cardId) : 0,
+      ])
+      return toCardDetail(row, {
+        viewerId: m.userId,
+        signer,
+        now: clock(),
+        dust: wallet?.dust ?? 0,
+        reactions,
+        copiesInLeague,
+      })
     },
   }
 }

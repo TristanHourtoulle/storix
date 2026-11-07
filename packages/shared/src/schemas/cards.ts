@@ -25,24 +25,11 @@ export const cardSummarySchema = z.object({
   image: imageSetSchema,
 })
 
-export const cardDetailSchema = cardSummarySchema.extend({
-  capturedAt: isoDateSchema.nullable(),
-  isCaptureDateValidated: z.boolean(),
-  createdAt: isoDateSchema,
-  tagged: z.array(cardPersonSchema),
-})
-
 export const listCardsQuerySchema = z.object({
   authorId: idSchema.optional(),
   tier: cardTierSchema.optional(),
   cursor: z.coerce.number().int().positive().optional(),
   limit: z.coerce.number().int().min(1).max(200).default(120),
-})
-
-export const cardPageSchema = z.object({
-  cards: z.array(cardSummarySchema),
-  nextCursor: z.int().positive().nullable(),
-  total: z.int().min(0),
 })
 
 export const copyVariantSchema = z.enum(COPY_VARIANTS)
@@ -165,9 +152,7 @@ export const cardParamsSchema = z.object({ leagueId: z.uuid(), cardId: z.uuid() 
 
 export type CardPerson = z.infer<typeof cardPersonSchema>
 export type CardSummary = z.infer<typeof cardSummarySchema>
-export type CardDetail = z.infer<typeof cardDetailSchema>
 export type ListCardsQuery = z.infer<typeof listCardsQuerySchema>
-export type CardPage = z.infer<typeof cardPageSchema>
 export type OwnedCardSummary = z.infer<typeof ownedCardSummarySchema>
 export type HiddenCardSummary = z.infer<typeof hiddenCardSummarySchema>
 export type LockedCardSummary = z.infer<typeof lockedCardSummarySchema>

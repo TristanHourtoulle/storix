@@ -4,10 +4,16 @@ import {
   type BoosterCadence,
   type WalletState,
 } from '@storix/shared'
+import type { PoolAvailability } from '../boosters/pool-availability'
 import type { WalletRow } from './wallets.repository'
 
 /** Projects a stored wallet to its API state at `now` without persisting the refill. */
-export function toWalletState(row: WalletRow, cadence: BoosterCadence, now: Date): WalletState {
+export function toWalletState(
+  row: WalletRow,
+  cadence: BoosterCadence,
+  now: Date,
+  pool: PoolAvailability,
+): WalletState {
   const stock = computeBoosterStock(
     { stock: row.boosterStock, anchor: row.boosterStockAt },
     now,
@@ -21,6 +27,14 @@ export function toWalletState(row: WalletRow, cadence: BoosterCadence, now: Date
       nextAt: stock.nextAt === null ? null : stock.nextAt.toISOString(),
       intervalSeconds: cadence.intervalMinutes * 60,
     },
-    pity: pitySummary({ sinceEpic: row.pitySinceEpic, sinceLegendary: row.pitySinceLegendary }),
+    pool: {
+      drawableCount: pool.drawableCount,
+      nextEligibleAt: pool.nextEligibleAt === null ? null : pool.nextEligibleAt.toISOString(),
+    },
+    pity: {
+      ...pitySummary({ sinceEpic: row.pitySinceEpic, sinceLegendary: row.pitySinceLegendary }),
+      epicAvailable: pool.hasEpicOrBetter,
+      legendaryAvailable: pool.hasLegendaryOrBetter,
+    },
   }
 }

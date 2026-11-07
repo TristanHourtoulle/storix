@@ -25,11 +25,16 @@ export const RARITY_RECOMPUTE_SEND_OPTIONS = {
 export const STORAGE_DELETE_JOB = 'storage.delete'
 export const STORAGE_GC_JOB = 'storage.gc'
 
+const STORAGE_KEY_PREFIX_PATTERN = /^(img|incoming)\//
+
+function isSafeStorageKey(key: string): boolean {
+  if (!STORAGE_KEY_PREFIX_PATTERN.test(key)) return false
+  if (key.includes('\\') || key.includes('\u0000')) return false
+  return key.split('/').every((segment) => segment !== '' && segment !== '.' && segment !== '..')
+}
+
 export const storageDeletePayloadSchema = z.object({
-  keys: z
-    .array(z.string().regex(/^(img\/|incoming\/)/))
-    .min(1)
-    .max(1000),
+  keys: z.array(z.string().refine(isSafeStorageKey)).min(1).max(1000),
 })
 
 export const STORAGE_DELETE_SEND_OPTIONS = {

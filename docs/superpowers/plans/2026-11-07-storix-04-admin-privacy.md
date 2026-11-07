@@ -32,7 +32,7 @@
 - Files 200-400 lines max. No `console.*` (pino in api/worker; `apps/web/src/lib/logger.ts` only).
 - Ports: web 5180, api 3020, postgres 5440, prod preview 3021, MinIO 9100/9101. Dev servers only through Portly (`storix/api`, `storix/web`, `storix/worker`): `portly status --json` first, reuse healthy servers, `portly restart <name> --json` after changes, `portly logs <name>` to read output.
 - Invariants kept: `/media` route (HMAC windows, `public, immutable`, never `Set-Cookie`); `/api/*` `Cache-Control: no-store`; locked and hidden cards never carry a `/media/` URL or a title outside the admin and "photos où tu apparais" views; booster opening idempotency; dust never negative.
-- Values: Mythic cap `3` per league (active + hidden cards with `pinned_tier = 'mythic'`); default new-card delay `720` minutes (12 h); default upload quota `10` per member per rolling 24 h; default cadence `240` min / max stock `6` / join gift `2`; dust values from Plan 3 `DUST_VALUES`, foil ×2; fresh-session window for passkey re-auth `5` minutes; tombstone retention `35` days; removal sync initial window `30` days and overlap `10` minutes; GC grace `24` h for `img/` and `48` h for `incoming/`; GC cron `0 4 * * 0` Europe/Paris.
+- Values: Mythic cap `3` per league (active + hidden cards with `pinned_tier = 'mythic'`); default new-card delay `60` minutes (1 h, user decision 2026-11-07); default upload quota `10` per member per rolling 24 h; default cadence `240` min / max stock `6` / join gift `2`; dust values from Plan 3 `DUST_VALUES`, foil ×2; fresh-session window for passkey re-auth `5` minutes; tombstone retention `35` days; removal sync initial window `30` days and overlap `10` minutes; GC grace `24` h for `img/` and `48` h for `incoming/`; GC cron `0 4 * * 0` Europe/Paris.
 
 ## Review Focus
 
@@ -103,7 +103,7 @@ README.md  docs/superpowers/plans/2026-11-07-storix-roadmap.md
 **Interfaces (exported from `@storix/shared/domain` and `@storix/shared`):**
 - Consumes: `CardTier`, `ComputedTier`, `tierRank`, `dustValue`, `CopyVariant` (Plan 3), `LeagueRole`.
 - Produces:
-  - `cards.ts`: replace `BOOSTER_ELIGIBILITY_DELAY_MS` with `DEFAULT_NEW_CARD_DELAY_MINUTES = 720`; `boosterEligibleBefore(now: Date, delayMinutes: number): Date`; `isBoosterEligible(createdAt: Date, now: Date, delayMinutes: number): boolean`; `boosterEligibleAt(createdAt: Date, delayMinutes: number): Date`. Update every Plan 3 caller (they pass the league setting from Task 6; until then pass `DEFAULT_NEW_CARD_DELAY_MINUTES`).
+  - `cards.ts`: replace `BOOSTER_ELIGIBILITY_DELAY_MS` with `DEFAULT_NEW_CARD_DELAY_MINUTES = 60`; `boosterEligibleBefore(now: Date, delayMinutes: number): Date`; `isBoosterEligible(createdAt: Date, now: Date, delayMinutes: number): boolean`; `boosterEligibleAt(createdAt: Date, delayMinutes: number): Date`. Update every Plan 3 caller (they pass the league setting from Task 6; until then pass `DEFAULT_NEW_CARD_DELAY_MINUTES`).
   - `compensation.ts`: `interface RemovedCopy { ownerId: string; cardId: string; tierAtMint: CardTier; variant: CopyVariant }`; `interface OwnerCompensation { ownerId: string; dust: number; perCard: readonly { cardId: string; dust: number }[] }`; `compensateRemovedCopies(copies: readonly RemovedCopy[]): OwnerCompensation[]` — sums `dustValue(tierAtMint, variant)` per owner and per card, sorted by `ownerId` ascending (the lock order used by the API), `perCard` sorted by `cardId`.
   - `moderation.ts`:
     - `MYTHIC_CAP = 3`
@@ -264,7 +264,7 @@ it('rejects all-zero weights, bad cadence and quota', () => {
   expect(updateLeagueSettingsBodySchema.safeParse({ ...valid, newCardDelayMinutes: 10_081 }).success).toBe(false)
 })
 it('resolves stored settings field by field', () => {
-  expect(resolveLeagueSettings(null).newCardDelayMinutes).toBe(720)
+  expect(resolveLeagueSettings(null).newCardDelayMinutes).toBe(60)
   const partial = resolveLeagueSettings({ uploadQuotaPerDay: 3, booster: 'garbage' })
   expect(partial.uploadQuotaPerDay).toBe(3)
   expect(partial.booster).toEqual({ intervalMinutes: 240, maxStock: 6, joinGift: 2 })

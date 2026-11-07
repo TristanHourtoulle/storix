@@ -7,8 +7,15 @@ interface RecentRevealsProps {
 
 const REVEAL_SIZES = '108px'
 
-function RevealCard({ card }: { card: RecentReveal['card'] }) {
-  return <CollectionCardView card={card} size="md" sizes={REVEAL_SIZES} />
+function RevealCard({ reveal }: { reveal: RecentReveal }) {
+  return (
+    <CollectionCardView
+      card={reveal.card}
+      tier={reveal.tierAtMint}
+      size="md"
+      sizes={REVEAL_SIZES}
+    />
+  )
 }
 
 export function RecentReveals({ reveals }: RecentRevealsProps) {
@@ -22,7 +29,7 @@ export function RecentReveals({ reveals }: RecentRevealsProps) {
       <ul className="cards-row">
         {reveals.map((reveal) => (
           <li key={`${reveal.card.id}-${reveal.variant}-${reveal.pulledAt}`} className="mini">
-            <RevealCard card={reveal.card} />
+            <RevealCard reveal={reveal} />
             <p className="mini-by">
               tirée par {reveal.pulledBy.displayUsername ?? 'un ancien membre'}
             </p>

@@ -3,15 +3,18 @@ import {
   DeleteObjectsCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   PutBucketCorsCommand,
   PutObjectCommand,
   S3Client,
   S3ServiceException,
 } from '@aws-sdk/client-s3'
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post'
+import type { StoredObject } from '@storix/shared/domain'
 import type { StorageEnv } from './config'
 
 const DELETE_CHUNK_SIZE = 1000
+const LIST_PAGE_SIZE = 1000
 const CORS_MAX_AGE_SECONDS = 3600
 
 export interface PresignUploadInput {
@@ -49,6 +52,8 @@ export interface ObjectStorage {
   }): Promise<void>
   delete(keys: readonly string[]): Promise<void>
   setCors(origins: readonly string[]): Promise<void>
+  /** Lists every object under a prefix, following pagination. */
+  list(prefix: string): AsyncIterable<StoredObject>
 }
 
 function isMissing(error: unknown): boolean {
@@ -188,6 +193,25 @@ export function createObjectStorage(env: StorageEnv): ObjectStorage {
         const failed = (result.Errors ?? []).map((item) => item.Key ?? '?')
         if (failed.length > 0) throw new Error(`Failed to delete objects: ${failed.join(', ')}`)
       }
+    },
+
+    list: async function* (prefix) {
+      let continuationToken: string | undefined
+      do {
+        const page = await client.send(
+          new ListObjectsV2Command({
+            Bucket,
+            Prefix: prefix,
+            MaxKeys: LIST_PAGE_SIZE,
+            ContinuationToken: continuationToken,
+          }),
+        )
+        for (const item of page.Contents ?? []) {
+          if (item.Key === undefined || item.LastModified === undefined) continue
+          yield { key: item.Key, lastModified: item.LastModified }
+        }
+        continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined
+      } while (continuationToken !== undefined)
     },
 
     setCors: async (origins) => {

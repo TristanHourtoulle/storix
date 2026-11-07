@@ -1,4 +1,12 @@
-import { boosterOpenings, boosterPulls, cards, media, user, type DbExecutor } from '@storix/db'
+import {
+  boosterOpenings,
+  boosterPulls,
+  cardCopies,
+  cards,
+  media,
+  user,
+  type DbExecutor,
+} from '@storix/db'
 import {
   mediaVariantsSchema,
   type CardTier,
@@ -8,11 +16,18 @@ import {
   type PoolCard,
   type PulledCopyOutcome,
 } from '@storix/shared'
-import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, gt, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 
 export interface BoosterPoolCard extends PoolCard {
   leagueId: string
+}
+
+export interface PoolAvailabilityRow {
+  drawableCount: number
+  hasEpicOrBetter: boolean
+  hasLegendaryOrBetter: boolean
+  nextCreatedAt: Date | null
 }
 
 export interface OpeningRecord {
@@ -108,6 +123,14 @@ function parseVariants<T extends { variants: unknown }>(
   return { ...row, variants: mediaVariantsSchema.parse(row.variants) }
 }
 
+function activeLeagueCards(leagueId: string) {
+  return and(eq(cards.leagueId, leagueId), eq(cards.status, 'active'))
+}
+
+function isDrawable(eligibleBefore: Date) {
+  return lte(cards.createdAt, eligibleBefore)
+}
+
 /** Lists the active cards of a league created at or before `eligibleBefore`, by number. */
 export async function listBoosterPool(
   db: DbExecutor,
@@ -122,14 +145,35 @@ export async function listBoosterPool(
       tier: cards.tier,
     })
     .from(cards)
-    .where(
-      and(
-        eq(cards.leagueId, input.leagueId),
-        eq(cards.status, 'active'),
-        lte(cards.createdAt, input.eligibleBefore),
-      ),
-    )
+    .where(and(activeLeagueCards(input.leagueId), isDrawable(input.eligibleBefore)))
     .orderBy(asc(cards.number))
+}
+
+/** Aggregates the booster pool over the same predicate as `listBoosterPool`, with the next card to enter it. */
+export async function findPoolAvailability(
+  db: DbExecutor,
+  input: { leagueId: string; eligibleBefore: Date },
+): Promise<PoolAvailabilityRow> {
+  const drawable = isDrawable(input.eligibleBefore)
+  const rows = await db
+    .select({
+      drawableCount: sql<number>`count(*) filter (where ${drawable})`.mapWith(Number),
+      hasEpicOrBetter: sql<boolean>`count(*) filter (where ${drawable} and ${cards.tier} >= 'epic') > 0`,
+      hasLegendaryOrBetter: sql<boolean>`count(*) filter (where ${drawable} and ${cards.tier} >= 'legendary') > 0`,
+      nextCreatedAt:
+        sql<Date | null>`min(${cards.createdAt}) filter (where ${gt(cards.createdAt, input.eligibleBefore)})`.mapWith(
+          cards.createdAt,
+        ),
+    })
+    .from(cards)
+    .where(activeLeagueCards(input.leagueId))
+  const row = rows[0]
+  return {
+    drawableCount: row?.drawableCount ?? 0,
+    hasEpicOrBetter: row?.hasEpicOrBetter ?? false,
+    hasLegendaryOrBetter: row?.hasLegendaryOrBetter ?? false,
+    nextCreatedAt: row?.nextCreatedAt ?? null,
+  }
 }
 
 /** Finds the opening a member already made with this client request id. */
@@ -179,7 +223,10 @@ export async function insertPulls(
   await db.insert(boosterPulls).values(rows.map((row) => ({ ...row, openingId })))
 }
 
-/** Lists the pulls of an opening by slot with their card and media, skipping pulls whose card was deleted. */
+/**
+ * Lists the pulls of an opening by slot with their card and media, skipping pulls whose card was deleted,
+ * is no longer active, or of which the opener no longer owns any copy.
+ */
 export async function listOpeningPulls(db: DbExecutor, openingId: string): Promise<PullViewRow[]> {
   const rows = await db
     .select({
@@ -195,10 +242,27 @@ export async function listOpeningPulls(db: DbExecutor, openingId: string): Promi
       capturedAt: media.capturedAt,
     })
     .from(boosterPulls)
+    .innerJoin(boosterOpenings, eq(boosterOpenings.id, boosterPulls.openingId))
     .innerJoin(cards, eq(cards.id, boosterPulls.cardId))
     .innerJoin(media, eq(media.id, cards.mediaId))
     .leftJoin(author, eq(author.id, cards.authorId))
-    .where(eq(boosterPulls.openingId, openingId))
+    .where(
+      and(
+        eq(boosterPulls.openingId, openingId),
+        eq(cards.status, 'active'),
+        exists(
+          db
+            .select({ one: sql`1` })
+            .from(cardCopies)
+            .where(
+              and(
+                eq(cardCopies.cardId, boosterPulls.cardId),
+                eq(cardCopies.ownerId, boosterOpenings.userId),
+              ),
+            ),
+        ),
+      ),
+    )
     .orderBy(asc(boosterPulls.slot))
   return rows.map(parseVariants)
 }

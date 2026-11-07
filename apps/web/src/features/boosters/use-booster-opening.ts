@@ -31,7 +31,7 @@ export function useBoosterOpening(
   }, [queryClient, leagueId, openingId, wallet])
 
   useEffect(() => {
-    if (errorCode !== 'BOOSTER_STOCK_EMPTY') return
+    if (errorCode !== 'BOOSTER_STOCK_EMPTY' && errorCode !== 'BOOSTER_POOL_EMPTY') return
     void queryClient.invalidateQueries({ queryKey: walletQueryOptions(leagueId).queryKey })
   }, [queryClient, leagueId, errorCode])
 

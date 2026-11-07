@@ -37,8 +37,8 @@ describe('tier helpers', () => {
 describe('booster eligibility', () => {
   const now = new Date('2026-11-07T12:00:00Z')
 
-  it('defaults to a 12 hour delay', () => {
-    expect(DEFAULT_NEW_CARD_DELAY_MINUTES).toBe(720)
+  it('defaults to a 1 hour delay', () => {
+    expect(DEFAULT_NEW_CARD_DELAY_MINUTES).toBe(60)
   })
 
   it('applies the league new-card delay', () => {

@@ -22,7 +22,7 @@ export class InvalidBoosterCadenceError extends Error {
   }
 }
 
-/** Computes the boosters available at `now` from the stored stock and its refill anchor. */
+/** Computes the boosters available at `now` from the stored stock and its refill anchor, never above the max stock. */
 export function computeBoosterStock(
   state: BoosterStockState,
   now: Date,
@@ -30,7 +30,7 @@ export function computeBoosterStock(
 ): { available: number; anchor: Date; nextAt: Date | null } {
   if (cadence.intervalMinutes < 1 || cadence.maxStock < 1) throw new InvalidBoosterCadenceError()
   if (state.stock >= cadence.maxStock) {
-    return { available: state.stock, anchor: now, nextAt: null }
+    return { available: cadence.maxStock, anchor: now, nextAt: null }
   }
   const intervalMs = cadence.intervalMinutes * 60_000
   const elapsed = Math.max(0, Math.floor((now.getTime() - state.anchor.getTime()) / intervalMs))
