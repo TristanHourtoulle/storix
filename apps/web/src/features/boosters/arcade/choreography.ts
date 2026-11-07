@@ -200,29 +200,43 @@ export async function revealLong(
   await flip(d, index, tier, name)
 }
 
-/** Flat reveal of a card already owned: the face settles in the center without build-up. */
-export async function revealFlat(d: Director, index: number): Promise<void> {
+async function flipQuick(d: Director, index: number): Promise<void> {
+  const { root, flipper } = cardAt(d, index)
+  d.fire(
+    d.tween(
+      root,
+      [{ transform: T({ y: CY - 24, s: 1.1 }), offset: 0.4 }, { transform: T({ y: CY }) }],
+      { duration: 520, easing: 'cubic-bezier(.2,.7,.3,1.1)' },
+    ),
+  )
+  await d.tween(flipper, [{ transform: 'rotateY(0deg)' }, { transform: 'rotateY(180deg)' }], {
+    duration: 520,
+    easing: 'cubic-bezier(.2,.7,.2,1)',
+  })
+  d.flash(0.12, 260)
+}
+
+/** Short reveal of a card already owned: a brief rise, then the flip without aura or shake. */
+export async function revealQuick(d: Director, index: number): Promise<void> {
   const card = cardAt(d, index)
-  const { root, flipper, dim } = card
+  const { root, dim } = card
   root.style.zIndex = '22'
-  dim.style.opacity = '0'
   layoutDeck(d, index + 1, true, 300)
   if (d.isReduced) {
+    dim.style.opacity = '0'
+    root.style.transform = T({ y: CY })
     card.front.style.opacity = '1'
     card.back.style.opacity = '0'
-    root.style.transform = T({ y: CY })
     await d.tween(root, [{ opacity: 0 }, { opacity: 1 }], { duration: 200 })
     return
   }
-  flipper.style.transform = 'rotateY(180deg)'
+  d.fire(d.tween(dim, { opacity: 0 }, { duration: 220 }))
   await d.tween(
     root,
-    [
-      { transform: T({ y: CY, s: 0.94 }), opacity: 0 },
-      { transform: T({ y: CY }), opacity: 1 },
-    ],
-    { duration: 180, easing: 'cubic-bezier(.2,.8,.3,1)' },
+    [{ transform: T({ y: CY - 30, s: 1.12, r: -5 }), offset: 0.6 }, { transform: T({ y: CY }) }],
+    { duration: 320, easing: 'cubic-bezier(.3,.9,.4,1)' },
   )
+  await flipQuick(d, index)
 }
 
 function slotOffset(d: Director, index: number): { x: number; y: number } {
