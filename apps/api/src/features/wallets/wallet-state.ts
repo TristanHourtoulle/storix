@@ -1,5 +1,6 @@
 import {
   computeBoosterStock,
+  MIN_DRAWABLE_CARDS_FOR_BOOSTER,
   pitySummary,
   type BoosterCadence,
   type WalletState,
@@ -29,6 +30,7 @@ export function toWalletState(
     },
     pool: {
       drawableCount: pool.drawableCount,
+      minimumCards: MIN_DRAWABLE_CARDS_FOR_BOOSTER,
       nextEligibleAt: pool.nextEligibleAt === null ? null : pool.nextEligibleAt.toISOString(),
     },
     pity: {
