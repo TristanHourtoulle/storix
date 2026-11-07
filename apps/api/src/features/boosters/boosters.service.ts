@@ -249,6 +249,7 @@ function toRevealCard(row: RevealRow): CollectionCardBase {
     id: row.cardId,
     number: row.number,
     title: row.title,
+    status: row.status,
     tier: row.tier,
     isProvisional: row.isProvisional,
     authorId: row.authorId,

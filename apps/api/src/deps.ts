@@ -15,6 +15,10 @@ import {
 import { createLeaguesService, type LeaguesService } from './features/leagues/leagues.service'
 import { createMediaService, type MediaService } from './features/media/media.service'
 import { createMeService, type MeService } from './features/me/me.service'
+import {
+  createModerationService,
+  type ModerationService,
+} from './features/moderation/moderation.service'
 import { createMembersService, type MembersService } from './features/members/members.service'
 import {
   createReactionsService,
@@ -52,6 +56,7 @@ export interface Services {
   me: MeService
   media: MediaService
   members: MembersService
+  moderation: ModerationService
   reactions: ReactionsService
   removals: RemovalsService
   resetCodes: ResetCodesService
@@ -75,13 +80,14 @@ export function createAppDeps(env: Env, db: Database, jobs: JobQueue): AppDeps {
 
 /** Builds every feature service from the app dependencies. */
 export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
+  const cardRemoval = createCardRemoval({ jobs: deps.jobs, logger })
   return {
     boosters: createBoostersService({
       db: deps.db,
       signer: deps.mediaSigner,
       clock: deps.clock,
     }),
-    cardRemoval: createCardRemoval({ jobs: deps.jobs, logger }),
+    cardRemoval,
     cards: createCardsService({ db: deps.db, signer: deps.mediaSigner, clock: deps.clock }),
     copies: createCopiesService({ db: deps.db, clock: deps.clock }),
     health: createHealthService(deps.db),
@@ -99,6 +105,14 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       clock: deps.clock,
     }),
     members: createMembersService(deps.db),
+    moderation: createModerationService({
+      db: deps.db,
+      signer: deps.mediaSigner,
+      clock: deps.clock,
+      jobs: deps.jobs,
+      cardRemoval,
+      logger,
+    }),
     reactions: createReactionsService({ db: deps.db }),
     removals: createRemovalsService({ db: deps.db, clock: deps.clock }),
     resetCodes: createResetCodesService({

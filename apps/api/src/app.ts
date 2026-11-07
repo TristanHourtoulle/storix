@@ -19,6 +19,7 @@ import { leaguesRoutes } from './features/leagues/leagues.routes'
 import { mediaRoutes } from './features/media/media.routes'
 import { meRoutes } from './features/me/me.routes'
 import { membersRoutes } from './features/members/members.routes'
+import { moderationRoutes } from './features/moderation/moderation.routes'
 import { reactionsRoutes } from './features/reactions/reactions.routes'
 import { removalsRoutes } from './features/removals/removals.routes'
 import { resetCodesRoutes } from './features/reset-codes/reset-codes.routes'
@@ -87,6 +88,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(copiesRoutes(services.copies), { prefix: '/api' })
   await app.register(reactionsRoutes(services.reactions), { prefix: '/api' })
   await app.register(removalsRoutes(services.removals), { prefix: '/api' })
+  await app.register(moderationRoutes(services.moderation), { prefix: '/api' })
   await app.register(mediaRoutes(services.media))
 
   if (isProduction) {

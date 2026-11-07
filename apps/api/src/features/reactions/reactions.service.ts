@@ -32,7 +32,7 @@ export function createReactionsService({ db }: ReactionsServiceDeps): ReactionsS
           cardId,
           viewerId: m.userId,
         })
-        if (card === null) throw notFound('Card not found')
+        if (card === null || card.status !== 'active') throw notFound('Card not found')
         const key = { cardId, userId: m.userId, type }
         if (isOn) {
           const owned = await lockOwnedVariants(tx, {
