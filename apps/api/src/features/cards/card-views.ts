@@ -110,6 +110,38 @@ function ownedCopies(row: CollectionRow): { variant: CopyVariant; dust: number }
   )
 }
 
+/** Decides whether the viewer may craft the card, shared by the card detail and the craft action. */
+export function craftDecisionFor(
+  row: CollectionRow & { createdAt: Date },
+  now: Date,
+  dust: number,
+): ReturnType<typeof craftDecision> {
+  return craftDecision({
+    currentTier: row.tier,
+    ownsAnyCopy: isOwned(row),
+    isBoosterEligible: isBoosterEligible(row.createdAt, now, DEFAULT_NEW_CARD_DELAY_MINUTES),
+    dust,
+  })
+}
+
+/** Decides whether the viewer may upgrade their normal copy to foil, shared by the detail and the action. */
+export function foilUpgradeDecisionFor(
+  row: CollectionRow,
+  dust: number,
+): ReturnType<typeof foilUpgradeDecision> {
+  return foilUpgradeDecision({
+    currentTier: row.tier,
+    ownsNormal: row.normalTier !== null,
+    ownsFoil: row.foilTier !== null,
+    dust,
+  })
+}
+
+/** Returns true when the viewer may react to the card, shared by the detail and the reaction action. */
+export function canReactTo(row: CollectionRow, viewerId: string): boolean {
+  return canReact({ isAuthor: row.authorId === viewerId, ownsCopy: isOwned(row) })
+}
+
 /** Projects a collection row to what the viewer may see: the full card if owned, a silhouette otherwise. */
 export function toCollectionCard(row: CollectionRow, signer: MediaSigner): CollectionCard {
   return isOwned(row) ? toOwnedSummary(row, SUMMARY_SIZES, signer) : toLockedSummary(row)
@@ -130,16 +162,7 @@ export function toCardDetail(row: CardViewerRow, ctx: CardDetailContext): Viewer
       createdAt,
       discoveredBy,
       canWithdraw,
-      craft: craftDecision({
-        currentTier: row.tier,
-        ownsAnyCopy: false,
-        isBoosterEligible: isBoosterEligible(
-          row.createdAt,
-          ctx.now,
-          DEFAULT_NEW_CARD_DELAY_MINUTES,
-        ),
-        dust: ctx.dust,
-      }),
+      craft: craftDecisionFor(row, ctx.now, ctx.dust),
     }
   }
   return {
@@ -154,16 +177,11 @@ export function toCardDetail(row: CardViewerRow, ctx: CardDetailContext): Viewer
     discoveredBy,
     copiesInLeague: ctx.copiesInLeague,
     reactions: ctx.reactions,
-    canReact: canReact({ isAuthor, ownsCopy: true }),
+    canReact: canReactTo(row, ctx.viewerId),
     canWithdraw,
     actions: {
       recycle: ownedCopies(row),
-      foilUpgrade: foilUpgradeDecision({
-        currentTier: row.tier,
-        ownsNormal: row.normalTier !== null,
-        ownsFoil: row.foilTier !== null,
-        dust: ctx.dust,
-      }),
+      foilUpgrade: foilUpgradeDecisionFor(row, ctx.dust),
     },
   }
 }
