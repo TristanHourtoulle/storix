@@ -1,16 +1,20 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
 import type { RemovedCard } from '@storix/shared'
-import { STORAGE_KEYS, readStorage, writeStorage } from '@/lib/storage'
+import { ApiError } from '@/lib/http'
 import { logger } from '@/lib/logger'
+import { STORAGE_KEYS, readStorage, writeStorage } from '@/lib/storage'
+import { clearLastLeagueId } from '@/features/leagues/last-league'
 import { fetchRemovedCards } from './removals.api'
-import { purgeLeagueApiEntries, purgeMediaPrefixes } from './purge-cache'
+import { purgeLeagueCaches, purgeRemovedCards } from './purge-cache'
 
 const MAX_PAGES = 50
 const MAX_ACKNOWLEDGED = 200
 
-interface RemovalSync {
-  removed: readonly RemovedCard[]
+interface PendingRemoval {
+  cardId: string
+  compensation: number
 }
 
 interface RemovalNoticeState {
@@ -18,18 +22,35 @@ interface RemovalNoticeState {
   dust: number
 }
 
-function readAcknowledged(userId: string, leagueId: string): string[] {
-  const raw = readStorage(STORAGE_KEYS.acknowledgedRemovals(userId, leagueId))
+function isPendingRemoval(value: unknown): value is PendingRemoval {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'cardId' in value &&
+    typeof value.cardId === 'string' &&
+    'compensation' in value &&
+    typeof value.compensation === 'number'
+  )
+}
+
+function readJsonList<T>(key: string, guard: (value: unknown) => value is T): T[] {
+  const raw = readStorage(key)
   if (raw === null) return []
   try {
     const parsed: unknown = JSON.parse(raw)
-    return Array.isArray(parsed)
-      ? parsed.filter((value): value is string => typeof value === 'string')
-      : []
+    return Array.isArray(parsed) ? parsed.filter(guard) : []
   } catch (error) {
-    logger.warn('Acknowledged removals unreadable', { error })
+    logger.warn('Stored list unreadable', { key, error })
     return []
   }
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string'
+}
+
+function isMissingLeagueError(error: unknown): boolean {
+  return error instanceof ApiError && (error.status === 403 || error.status === 404)
 }
 
 /** Syncs cards removed from a league, purges their cached media and exposes a compensation notice. */
@@ -38,32 +59,52 @@ export function useRemovedCardsSync(
   leagueId: string,
 ): { notice: RemovalNoticeState | null; acknowledge: () => void } {
   const queryClient = useQueryClient()
-  const queryKey = useMemo(() => ['leagues', leagueId, 'removed-cards'] as const, [leagueId])
-  const [acknowledged, setAcknowledged] = useState<readonly string[]>(() =>
-    readAcknowledged(userId, leagueId),
-  )
+  const navigate = useNavigate()
+  const [version, setVersion] = useState(0)
+  const pendingKey = STORAGE_KEYS.pendingRemovals(userId, leagueId)
+  const acknowledgedKey = STORAGE_KEYS.acknowledgedRemovals(userId, leagueId)
 
-  const { data } = useQuery({
-    queryKey,
+  const { data, error } = useQuery({
+    queryKey: ['leagues', leagueId, 'removed-cards'],
     refetchOnWindowFocus: true,
     staleTime: 60_000,
-    queryFn: async (): Promise<RemovalSync> => {
+    retry: (failureCount, caught) => !isMissingLeagueError(caught) && failureCount < 3,
+    queryFn: async (): Promise<{ syncedAt: number }> => {
       const cursorKey = STORAGE_KEYS.removalCursor(userId, leagueId)
       let since = readStorage(cursorKey) ?? undefined
       let after: string | undefined
       const fresh: RemovedCard[] = []
+      let isComplete = false
       for (let page = 0; page < MAX_PAGES; page += 1) {
         const response = await fetchRemovedCards(leagueId, { since, after })
         fresh.push(...response.removed)
         since = response.cursor
         after = response.after ?? undefined
-        if (!response.hasMore) break
+        if (!response.hasMore) {
+          isComplete = true
+          break
+        }
       }
+      if (!isComplete) logger.warn('Removed cards sync hit the page limit', { leagueId })
       if (fresh.length > 0) {
-        await Promise.all([
-          purgeMediaPrefixes(fresh.map((card) => card.mediaPrefix)),
-          purgeLeagueApiEntries(leagueId),
-        ])
+        const acknowledged = new Set(readJsonList(acknowledgedKey, isString))
+        const pending = readJsonList(pendingKey, isPendingRemoval)
+        const known = new Set(pending.map((entry) => entry.cardId))
+        const added = fresh.filter(
+          (card) =>
+            card.compensation > 0 && !known.has(card.cardId) && !acknowledged.has(card.cardId),
+        )
+        writeStorage(
+          pendingKey,
+          JSON.stringify([
+            ...pending,
+            ...added.map((card) => ({ cardId: card.cardId, compensation: card.compensation })),
+          ]),
+        )
+        const isPurged = await purgeRemovedCards(
+          fresh.map((card) => card.mediaPrefix),
+          leagueId,
+        )
         for (const card of fresh) {
           queryClient.removeQueries({
             queryKey: ['leagues', leagueId, 'cards', 'detail', card.cardId],
@@ -72,32 +113,44 @@ export function useRemovedCardsSync(
         for (const segment of ['cards', 'wallet', 'reveals', 'admin']) {
           void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, segment] })
         }
+        if (!isPurged) {
+          logger.warn('Removed cards purge incomplete, cursor kept for retry', { leagueId })
+          return { syncedAt: Date.now() }
+        }
       }
       if (since !== undefined) writeStorage(cursorKey, since)
-      const previous = queryClient.getQueryData<RemovalSync>(queryKey)?.removed ?? []
-      const known = new Set(previous.map((card) => card.cardId))
-      return { removed: [...previous, ...fresh.filter((card) => !known.has(card.cardId))] }
+      return { syncedAt: Date.now() }
     },
   })
 
+  useEffect(() => {
+    if (!isMissingLeagueError(error)) return
+    clearLastLeagueId(userId)
+    void purgeLeagueCaches(queryClient, leagueId).then(() => navigate({ to: '/', replace: true }))
+  }, [error, userId, leagueId, queryClient, navigate])
+
   const notice = useMemo((): RemovalNoticeState | null => {
-    const seen = new Set(acknowledged)
-    const pending = (data?.removed ?? []).filter(
-      (card) => card.compensation > 0 && !seen.has(card.cardId),
+    void data
+    void version
+    const acknowledged = new Set(readJsonList(acknowledgedKey, isString))
+    const pending = readJsonList(pendingKey, isPendingRemoval).filter(
+      (entry) => !acknowledged.has(entry.cardId),
     )
     if (pending.length === 0) return null
     return {
       count: pending.length,
-      dust: pending.reduce((total, card) => total + card.compensation, 0),
+      dust: pending.reduce((total, entry) => total + entry.compensation, 0),
     }
-  }, [data, acknowledged])
+  }, [data, version, pendingKey, acknowledgedKey])
 
   const acknowledge = useCallback((): void => {
-    const ids = (data?.removed ?? []).map((card) => card.cardId)
-    const next = [...new Set([...acknowledged, ...ids])].slice(-MAX_ACKNOWLEDGED)
-    writeStorage(STORAGE_KEYS.acknowledgedRemovals(userId, leagueId), JSON.stringify(next))
-    setAcknowledged(next)
-  }, [data, acknowledged, userId, leagueId])
+    const pending = readJsonList(pendingKey, isPendingRemoval)
+    const acknowledged = readJsonList(acknowledgedKey, isString)
+    const next = [...new Set([...acknowledged, ...pending.map((entry) => entry.cardId)])]
+    writeStorage(acknowledgedKey, JSON.stringify(next.slice(-MAX_ACKNOWLEDGED)))
+    writeStorage(pendingKey, JSON.stringify([]))
+    setVersion((current) => current + 1)
+  }, [pendingKey, acknowledgedKey])
 
   return { notice, acknowledge }
 }

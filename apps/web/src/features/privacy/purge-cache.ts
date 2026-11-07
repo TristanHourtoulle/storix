@@ -3,7 +3,10 @@ import { leagueMediaPrefix, mediaCachePathPrefix } from '@storix/shared/domain'
 import { logger } from '@/lib/logger'
 import { API_CACHE_NAME, MEDIA_CACHE_NAME } from '@/features/pwa/cache-names'
 
-async function deleteMatching(cacheName: string, pathPrefixes: readonly string[]): Promise<number> {
+async function deleteMatching(
+  cacheName: string,
+  pathPrefixes: readonly string[],
+): Promise<number | null> {
   if (pathPrefixes.length === 0 || !('caches' in window)) return 0
   try {
     const cache = await caches.open(cacheName)
@@ -16,13 +19,25 @@ async function deleteMatching(cacheName: string, pathPrefixes: readonly string[]
     return results.filter(Boolean).length
   } catch (error) {
     logger.warn('Cache purge failed', { cacheName, error })
-    return 0
+    return null
   }
 }
 
 /** Deletes media cache entries stored under the given storage prefixes; returns the deleted count. */
-export function purgeMediaPrefixes(prefixes: readonly string[]): Promise<number> {
-  return deleteMatching(MEDIA_CACHE_NAME, prefixes.map(mediaCachePathPrefix))
+export async function purgeMediaPrefixes(prefixes: readonly string[]): Promise<number> {
+  return (await deleteMatching(MEDIA_CACHE_NAME, prefixes.map(mediaCachePathPrefix))) ?? 0
+}
+
+/** Purges the media of removed cards and the league API entries; resolves false when any purge failed. */
+export async function purgeRemovedCards(
+  prefixes: readonly string[],
+  leagueId: string,
+): Promise<boolean> {
+  const results = await Promise.all([
+    deleteMatching(MEDIA_CACHE_NAME, prefixes.map(mediaCachePathPrefix)),
+    deleteMatching(API_CACHE_NAME, [`/api/leagues/${encodeURIComponent(leagueId)}`]),
+  ])
+  return results.every((result) => result !== null)
 }
 
 /** Deletes the offline API cache entries of one league. */

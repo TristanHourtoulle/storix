@@ -4,6 +4,8 @@ export const STORAGE_KEYS = {
   lastLeagueId: (userId: string): string => `storix.lastLeagueId.${userId}`,
   removalCursor: (userId: string, leagueId: string): string =>
     `storix.removalCursor.${userId}.${leagueId}`,
+  pendingRemovals: (userId: string, leagueId: string): string =>
+    `storix.pendingRemovals.${userId}.${leagueId}`,
   acknowledgedRemovals: (userId: string, leagueId: string): string =>
     `storix.acknowledgedRemovals.${userId}.${leagueId}`,
   iosHintDismissed: 'storix.iosHintDismissed',
