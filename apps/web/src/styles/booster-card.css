@@ -21,11 +21,29 @@
     will-change: opacity, transform;
   }
   .ar-card[data-t='M'] .ar-aura {
+    background: none;
+  }
+  .ar-card[data-t='M'] .ar-aura-spin {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 380px;
+    height: 380px;
+    margin: -190px 0 0 -190px;
+    border-radius: 50%;
     background: var(--ar-rainbow);
     mask: radial-gradient(closest-side, #000 58%, transparent 100%);
   }
-  .ar-card[data-t='M'].is-lit .ar-aura {
-    animation: ar-spin 2.6s linear infinite;
+  .ar-card[data-t='M'].is-lit .ar-aura-spin {
+    animation: ar-rotate 2.6s linear infinite;
+  }
+  .ar-dim {
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
   }
   .ar-rings {
     position: absolute;
@@ -100,7 +118,6 @@
       linear-gradient(#000 0 0) content-box,
       linear-gradient(#000 0 0);
     mask-composite: exclude;
-    animation: ar-spin 2s linear infinite;
   }
   .ar-bk-pat {
     position: absolute;
@@ -146,21 +163,12 @@
     letter-spacing: 0.34em;
     color: var(--color-muted);
   }
-  .rm .ar-face {
-    transition: opacity 0.28s ease;
-  }
   .rm .ar-front {
     transform: none;
     opacity: 0;
   }
-  .rm .is-face .ar-front {
-    opacity: 1;
-  }
-  .rm .is-face .ar-back {
-    opacity: 0;
-  }
-  .rm .ar-aura,
-  .rm .ar-card[data-t='M'].is-lit .ar-aura,
+  .rm .ar-aura-spin,
+  .rm .ar-card[data-t='M'].is-lit .ar-aura-spin,
   .rm .ar-slot.is-filled {
     animation: none;
   }

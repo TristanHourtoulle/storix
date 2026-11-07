@@ -2,8 +2,10 @@ import { useCallback, useEffect, useReducer, useRef, useState, type RefObject } 
 import type { BoosterPull } from '@storix/shared'
 import { TIER_LABELS } from '@/features/cards/tier-labels'
 import { logger } from '@/lib/logger'
-import { PACK_TAPS, burstPack, hitPack, revealFlat, revealLong, stash } from './arcade/choreography'
+import { revealFlat, revealLong, stash } from './arcade/choreography'
 import { Director, collectLayers, isStale } from './arcade/director'
+import { STAGE_HEIGHT } from './arcade/geometry'
+import { PACK_TAPS, burstPack, hitPack } from './arcade/pack-choreography'
 import { tierFx } from './arcade/tiers'
 import { pullLabel } from './pull-label'
 
@@ -143,27 +145,38 @@ export function useArcadeOpening(
     if (!stage) return
     const director = new Director(collectLayers(stage), isReduced, canvasRef.current)
     directorRef.current = director
-    const onResize = () => director.fx?.resize()
-    window.addEventListener('resize', onResize)
+    const observer = new ResizeObserver(() => {
+      const scale = stage.clientHeight / STAGE_HEIGHT
+      stage.style.setProperty('--ar-k', String(scale))
+      director.resize(scale)
+    })
+    observer.observe(stage)
     return () => {
-      window.removeEventListener('resize', onResize)
+      observer.disconnect()
       director.destroy()
-      directorRef.current = null
+      if (directorRef.current === director) directorRef.current = null
     }
   }, [stageRef, canvasRef, isReduced])
 
-  const run = useCallback(async (task: (director: Director) => Promise<void>) => {
-    const director = directorRef.current
-    if (!director || busyRef.current) return
-    busyRef.current = true
-    try {
-      await task(director)
-    } catch (error) {
-      if (!isStale(error)) logger.error('Booster reveal failed', { error })
-    } finally {
-      busyRef.current = false
-    }
-  }, [])
+  const run = useCallback(
+    async (task: (director: Director) => Promise<void>) => {
+      const director = directorRef.current
+      if (!director || busyRef.current) return
+      busyRef.current = true
+      try {
+        await task(director)
+      } catch (error) {
+        if (isStale(error)) return
+        logger.error('Booster reveal failed', { error })
+        director.destroy()
+        directorRef.current = null
+        dispatch({ type: 'summary', announcement: summarize(pulls) })
+      } finally {
+        busyRef.current = false
+      }
+    },
+    [pulls],
+  )
 
   const open = useCallback(
     () =>
@@ -227,6 +240,7 @@ export function useArcadeOpening(
   const revealAll = useCallback(() => {
     if (stateRef.current.phase === 'summary') return
     directorRef.current?.destroy()
+    directorRef.current = null
     busyRef.current = true
     dispatch({ type: 'summary', announcement: summarize(pulls) })
   }, [pulls])

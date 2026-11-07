@@ -21,7 +21,7 @@ interface BoosterStageProps {
   opening: BoosterOpening
 }
 
-const STAGE_STYLE = { height: STAGE_HEIGHT, '--cy': `${CENTER_Y}px` } as CSSProperties
+const WORLD_STYLE = { height: STAGE_HEIGHT, '--cy': `${CENTER_Y}px` } as CSSProperties
 const STAMP_STYLE = { top: STAMP_TOP }
 
 export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
@@ -65,19 +65,21 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
           </Link>
         }
       />
-      <div ref={stageRef} className={`ar-stage${isReduced ? ' rm' : ''}`} style={STAGE_STYLE}>
-        <div className="ar-world" aria-hidden="true">
-          <div className="ar-tint" />
-          <div className="ar-rays" />
-          <ArcadePack count={pullCount} />
-          {pulls.map((pull, index) => (
-            <ArcadeCard key={pull.slot} pull={pull} registerImage={register(index)} />
-          ))}
-          <canvas ref={canvasRef} className="ar-fx" />
-          <div className="ar-flash" />
-          <ArcadeHand pulls={pulls} stashed={state.stashed} />
-          <ArcadeMeta pull={shownPull} />
-          <p className="ar-stamp" style={STAMP_STYLE} />
+      <div ref={stageRef} className={`ar-stage${isReduced ? ' rm' : ''}`}>
+        <div className="ar-scaler" style={WORLD_STYLE} aria-hidden="true">
+          <div className="ar-world">
+            <div className="ar-tint" />
+            <div className="ar-rays" />
+            <ArcadePack count={pullCount} />
+            {pulls.map((pull, index) => (
+              <ArcadeCard key={pull.slot} pull={pull} registerImage={register(index)} />
+            ))}
+            <canvas ref={canvasRef} className="ar-fx" />
+            <div className="ar-flash" />
+            <ArcadeHand pulls={pulls} stashed={state.stashed} />
+            <ArcadeMeta pull={shownPull} />
+            <p className="ar-stamp" style={STAMP_STYLE} />
+          </div>
         </div>
         <button
           type="button"

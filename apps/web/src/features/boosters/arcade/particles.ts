@@ -94,6 +94,8 @@ function draw(g: CanvasRenderingContext2D, p: Particle, k: number): void {
 
 /**
  * Runs a capped particle system on one canvas, outside React. The loop only runs while particles are alive.
+ * Particles are mutated in place on purpose: allocating every particle on every frame would cost more.
+ * The canvas is sized from its layout box, so a scaled parent does not change its resolution.
  * Returns null when the canvas has no 2D context.
  */
 export function createParticles(canvas: HTMLCanvasElement): Particles | null {
@@ -109,10 +111,9 @@ export function createParticles(canvas: HTMLCanvasElement): Particles | null {
   let dpr = 1
 
   function resize(): void {
-    const rect = canvas.getBoundingClientRect()
     dpr = Math.min(2, window.devicePixelRatio || 1)
-    width = rect.width
-    height = rect.height
+    width = canvas.offsetWidth
+    height = canvas.offsetHeight
     canvas.width = Math.round(width * dpr)
     canvas.height = Math.round(height * dpr)
   }

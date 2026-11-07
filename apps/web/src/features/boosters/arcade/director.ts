@@ -9,6 +9,9 @@ export interface CardLayer {
   aura: HTMLDivElement
   flipper: HTMLDivElement
   rings: HTMLDivElement
+  front: HTMLDivElement
+  back: HTMLDivElement
+  dim: HTMLDivElement
 }
 
 export interface PackLayer {
@@ -76,6 +79,9 @@ export function collectLayers(stage: HTMLDivElement): ArcadeLayers {
       aura: one(root, '.ar-aura'),
       flipper: one(root, '.ar-flipper'),
       rings: one(root, '.ar-rings'),
+      front: one(root, '.ar-front'),
+      back: one(root, '.ar-back'),
+      dim: one(root, '.ar-dim'),
     })),
     pack: {
       halo: one(stage, '.ar-pack-halo'),
@@ -101,6 +107,7 @@ function applyFinal(el: Animatable, frame: Keyframe): void {
 
 /**
  * Owns one run of the arcade choreography: Web Animations, screen effects and particles.
+ * Coordinates are in the unscaled 572 px world; `scale` is the factor applied to it on screen.
  * `destroy` cancels everything and makes pending waits and tweens reject as stale.
  */
 export class Director {
@@ -108,7 +115,9 @@ export class Director {
   private isAlive = true
   private readonly running = new WeakMap<Animatable, Animation>()
   private readonly live = new Set<Animation>()
-  private readonly timers = new Set<ReturnType<typeof setTimeout>>()
+  private readonly timers = new Map<ReturnType<typeof setTimeout>, (reason: unknown) => void>()
+  private worldWidth: number
+  private worldScale = 1
 
   constructor(
     readonly layers: ArcadeLayers,
@@ -116,15 +125,30 @@ export class Director {
     canvas: HTMLCanvasElement | null,
   ) {
     this.fx = isReduced || !canvas ? null : createParticles(canvas)
+    this.worldWidth = layers.world.offsetWidth
   }
 
   get width(): number {
-    return this.layers.stage.clientWidth
+    return this.worldWidth
+  }
+
+  get scale(): number {
+    return this.worldScale
+  }
+
+  /** Refreshes the cached world size and on-screen scale after the stage was resized. */
+  resize(scale: number): void {
+    this.worldScale = scale
+    this.worldWidth = this.layers.world.offsetWidth
+    this.fx?.resize()
   }
 
   destroy(): void {
     this.isAlive = false
-    this.timers.forEach(clearTimeout)
+    this.timers.forEach((reject, timer) => {
+      clearTimeout(timer)
+      reject(STALE)
+    })
     this.timers.clear()
     this.live.forEach((animation) => animation.cancel())
     this.live.clear()
@@ -138,7 +162,7 @@ export class Director {
         if (this.isAlive) resolve()
         else reject(STALE)
       }, ms)
-      this.timers.add(timer)
+      this.timers.set(timer, reject)
     })
   }
 
@@ -235,7 +259,11 @@ export class Director {
       tint.classList.toggle('is-rainbow', tier.key === 'M')
       tint.style.setProperty('--rc', tier.color)
     }
-    this.fire(this.tween(tint, { opacity }, { duration }))
+    this.fire(
+      this.tween(tint, { opacity }, { duration }).then(() => {
+        if (opacity === 0) tint.classList.remove('is-rainbow')
+      }),
+    )
   }
 
   burst(...args: Parameters<Particles['burst']>): void {

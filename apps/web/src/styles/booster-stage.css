@@ -1,12 +1,6 @@
-@property --ang {
-  syntax: '<angle>';
-  inherits: true;
-  initial-value: 0deg;
-}
-
-@keyframes ar-spin {
+@keyframes ar-rotate {
   to {
-    --ang: 360deg;
+    transform: rotate(360deg);
   }
 }
 
@@ -31,8 +25,9 @@
     gap: 12px;
   }
   .ar-stage {
+    --ar-chrome: calc(238px + env(safe-area-inset-top) + env(safe-area-inset-bottom));
+    --ar-k: 1;
     --ar-rainbow: conic-gradient(
-      from var(--ang),
       #f87171,
       #fbbf24,
       #4ade80,
@@ -44,6 +39,7 @@
     );
     position: relative;
     flex: none;
+    height: clamp(440px, calc(100dvh - var(--ar-chrome)), 572px);
     overflow: hidden;
     isolation: isolate;
     border-radius: 28px;
@@ -69,6 +65,14 @@
   }
   .ar-stage [data-t='M'] {
     --tc: #e879f9;
+  }
+  .ar-scaler {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: calc(100% / var(--ar-k));
+    transform: translateX(-50%) scale(var(--ar-k));
+    transform-origin: top center;
   }
   .ar-world {
     position: absolute;
@@ -118,7 +122,6 @@
   .ar-tint.is-rainbow {
     background: var(--ar-rainbow);
     mask: radial-gradient(70% 55% at 50% var(--cy), rgba(0, 0, 0, 0.55), transparent 80%);
-    animation: ar-spin 4s linear infinite;
   }
   .ar-rays {
     --rc: #a78bfa;
@@ -126,21 +129,19 @@
     left: 50%;
     top: var(--cy);
     z-index: 2;
-    width: 820px;
-    height: 820px;
-    margin: -410px 0 0 -410px;
+    width: 600px;
+    height: 600px;
+    margin: -300px 0 0 -300px;
     opacity: 0;
     pointer-events: none;
     background: repeating-conic-gradient(
-      from var(--ang),
       color-mix(in srgb, var(--rc) 70%, transparent) 0deg 5deg,
       transparent 5deg 19deg
     );
     mask: radial-gradient(closest-side, #000 12%, transparent 72%);
-    mix-blend-mode: screen;
   }
   .ar-rays.is-on {
-    animation: ar-spin 4s linear infinite;
+    animation: ar-rotate 4s linear infinite;
   }
   .ar-flash {
     position: absolute;
@@ -194,6 +195,12 @@
     height: calc(308px * var(--k));
     overflow: hidden;
     border-radius: 7px;
+  }
+  .ar-screen .ar-stage .ar-mini .card.lg::before,
+  .ar-screen .ar-stage .ar-mini .card.lg .card-holo,
+  .ar-screen .ar-stage .ar-summary-mini .card.lg::before,
+  .ar-screen .ar-stage .ar-summary-mini .card.lg .card-holo {
+    animation: none;
   }
   .ar-mini .card,
   .ar-summary-mini .card {
@@ -273,12 +280,20 @@
     transform: translate(-50%, -50%) rotate(-8deg);
   }
   .ar-stamp[data-t='M'] {
-    background: var(--ar-rainbow);
+    background: linear-gradient(
+      100deg,
+      #f87171,
+      #fbbf24,
+      #4ade80,
+      #22d3ee,
+      #60a5fa,
+      #c084fc,
+      #f472b6
+    );
     box-shadow:
       0 0 0 3px var(--color-bg),
       0 0 0 5px #f0abfc,
       0 10px 30px rgba(0, 0, 0, 0.5);
-    animation: ar-spin 3s linear infinite;
   }
   .ar-stamp.is-small {
     padding: 5px 11px;

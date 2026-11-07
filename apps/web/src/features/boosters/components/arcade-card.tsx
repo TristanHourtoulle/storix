@@ -58,7 +58,9 @@ interface ArcadeCardProps {
 export function ArcadeCard({ pull, registerImage }: ArcadeCardProps) {
   return (
     <div className="ar-card" data-t={tierKey(pull.card.tier)}>
-      <div className="ar-aura" />
+      <div className="ar-aura">
+        <div className="ar-aura-spin" />
+      </div>
       <div className="ar-rings" />
       <div className="ar-flipper">
         <div className="ar-face ar-back">
@@ -68,6 +70,7 @@ export function ArcadeCard({ pull, registerImage }: ArcadeCardProps) {
           <PulledFace pull={pull} isHighPriority registerImage={registerImage} />
         </div>
       </div>
+      <div className="ar-dim" />
     </div>
   )
 }

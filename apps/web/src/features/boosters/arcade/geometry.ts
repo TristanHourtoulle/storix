@@ -4,10 +4,11 @@ export const STAGE_HEIGHT = 572
 export const CENTER_Y = 280
 export const PACK_TOP = CENTER_Y - 145
 export const PIPS_TOP = CENTER_Y + 160
-export const STAMP_TOP = CENTER_Y + 150
+export const STAMP_TOP = CENTER_Y + 170
 export const CARD_WIDTH = 220
 export const SLOT_WIDTH = 40
 export const SLOT_SCALE = SLOT_WIDTH / CARD_WIDTH
+export const DIM_OPACITY = 0.4
 
 const DECK_Y = 512
 const DECK_SCALE = 0.34
