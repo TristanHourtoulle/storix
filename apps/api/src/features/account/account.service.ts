@@ -10,17 +10,17 @@ import {
 import type { AuthGateway, AuthSession } from '../../auth/auth.gateway'
 import type { JobQueue } from '../../jobs/job-queue'
 import type { ErrorLogger } from '../../lib/error-logger'
-import { AppError, notFound } from '../../lib/errors'
+import { AppError, isDeadlock, notFound } from '../../lib/errors'
 import { runInTransaction } from '../../lib/transaction'
 import { insertAuditEntry } from '../audit/audit.repository'
 import { deleteUploads, listOpenUploadKeys } from '../card-removal/card-removal.repository'
-import type { CardRemoval, RemovalOutcome } from '../card-removal/card-removal.service'
+import type { CardRemoval } from '../card-removal/card-removal.service'
 import { afterDetach, detachMember, type DetachOutcome } from '../members/members.service'
 import {
   countAuthoredCardsByLeague,
   deleteLeague,
   deleteUserRow,
-  listLeagueCardIds,
+  listLeagueVariantKeys,
   listMembershipLeagueIds,
   listOwnedLeagues,
   lockLeagueEconomyExclusive,
@@ -28,6 +28,7 @@ import {
   lockOwnMemberships,
   lockUserRow,
   type AuthoredCardsInLeague,
+  type OwnMembershipLock,
 } from './account.repository'
 
 export const FRESH_SESSION_MS = 5 * 60_000
@@ -49,7 +50,6 @@ export interface AccountServiceDeps {
 }
 
 interface DeletionOutcome {
-  deletedLeagues: { leagueId: string; removal: RemovalOutcome }[]
   detached: { leagueId: string; outcome: DetachOutcome }[]
   objectKeys: string[]
 }
@@ -59,6 +59,26 @@ class MembershipsChangedError extends Error {
     super('Memberships changed while deleting the account')
     this.name = 'MembershipsChangedError'
   }
+}
+
+function deletionConflict(): AppError {
+  return new AppError(
+    'ACCOUNT_DELETION_CONFLICT',
+    409,
+    'Your leagues changed during the deletion, please retry',
+  )
+}
+
+function isRetryable(error: unknown): boolean {
+  return error instanceof MembershipsChangedError || isDeadlock(error)
+}
+
+function sameMemberships(
+  left: readonly OwnMembershipLock[],
+  right: readonly OwnMembershipLock[],
+): boolean {
+  const keyOf = (lock: OwnMembershipLock) => `${lock.leagueId}:${lock.role}`
+  return left.map(keyOf).join(',') === right.map(keyOf).join(',')
 }
 
 function toLeagueRef(league: OwnedLeague): { leagueId: string; name: string } {
@@ -109,6 +129,7 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
    * Deletes everything the user holds in one transaction.
    * Locks, in order: every economy lock in sorted league id order (so concurrent removals and other deletions never deadlock),
    * then the user's membership rows, the open uploads, the owned league rows (blocking joins), and the user row (blocking new references).
+   * The memberships are re-read after the user row lock, so a join committed in between restarts the attempt.
    */
   async function deleteInTx(
     tx: DbExecutor,
@@ -128,18 +149,16 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
       memberships.filter((membership) => membership.role === 'owner').map((m) => m.leagueId),
     )
     if (!(await lockUserRow(tx, userId))) throw notFound('Account not found')
+    if (!sameMemberships(memberships, await lockOwnMemberships(tx, userId))) {
+      throw new MembershipsChangedError()
+    }
 
     const plan = accountDeletionPlan(await listOwnedLeagues(tx, userId))
     if (plan.blocking.length > 0) throw ownershipTransferRequired(plan.blocking)
     const openUploads = await listOpenUploadKeys(tx, { userId })
 
-    const deletedLeagues = await mapInOrder(plan.solo, async (league) => {
-      const removal = await cardRemoval.removeInTx(tx, {
-        leagueId: league.leagueId,
-        cardIds: await listLeagueCardIds(tx, league.leagueId),
-        reason: 'league_deleted',
-        actorId: userId,
-      })
+    const deletedLeagueKeys = await mapInOrder(plan.solo, async (league) => {
+      const variantKeys = await listLeagueVariantKeys(tx, league.leagueId)
       const leftoverKeys = await deleteLeague(tx, league.leagueId)
       await insertAuditEntry(tx, {
         leagueId: null,
@@ -148,7 +167,7 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
         action: 'league.deleted',
         metadata: { leagueId: league.leagueId, name: league.name },
       })
-      return { leagueId: league.leagueId, removal, leftoverKeys }
+      return [...variantKeys, ...leftoverKeys]
     })
 
     const soloIds = new Set(plan.solo.map((league) => league.leagueId))
@@ -185,11 +204,10 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
 
     const objectKeys = [
       ...openUploads.map((upload) => upload.objectKey),
-      ...deletedLeagues.flatMap((league) => [...league.removal.objectKeys, ...league.leftoverKeys]),
+      ...deletedLeagueKeys.flat(),
       ...detached.flatMap((entry) => entry.outcome.uploadKeys),
     ]
     return {
-      deletedLeagues: deletedLeagues.map(({ leagueId, removal }) => ({ leagueId, removal })),
       detached,
       objectKeys: [...new Set(objectKeys)],
     }
@@ -204,10 +222,9 @@ export function createAccountService(deps: AccountServiceDeps): AccountService {
     try {
       return await runInTransaction(db, (tx) => deleteInTx(tx, session, lockedLeagueIds, photos))
     } catch (error) {
-      if (error instanceof MembershipsChangedError && attempt < MAX_ATTEMPTS) {
-        return runDeletion(session, photos, attempt + 1)
-      }
-      throw error
+      if (!isRetryable(error)) throw error
+      if (attempt >= MAX_ATTEMPTS) throw deletionConflict()
+      return runDeletion(session, photos, attempt + 1)
     }
   }
 

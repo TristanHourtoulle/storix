@@ -1,12 +1,13 @@
 import { accountDeletionPreviewSchema, deleteAccountBodySchema } from '@storix/shared'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { authenticate } from '../../http/authenticate'
-import { rateLimits } from '../../http/rate-limit'
+import { perUserRateLimit, rateLimits } from '../../http/rate-limit'
 import type { AccountService } from './account.service'
 
 /** Registers the account deletion preview and the self-service account deletion routes. */
 export function accountRoutes(service: AccountService): FastifyPluginAsyncZod {
   return async (app) => {
+    const accountDeleteLimit = perUserRateLimit(app, 'account-delete', rateLimits.accountDelete)
     app.get(
       '/me/account-deletion',
       {
@@ -18,7 +19,7 @@ export function accountRoutes(service: AccountService): FastifyPluginAsyncZod {
     app.delete(
       '/me',
       {
-        preHandler: authenticate,
+        preHandler: [authenticate, accountDeleteLimit],
         config: { rateLimit: rateLimits.accountDelete },
         schema: { body: deleteAccountBodySchema },
       },

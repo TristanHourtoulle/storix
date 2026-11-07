@@ -30,6 +30,7 @@ const MESSAGES: Record<ErrorCode, string> = {
   LEAVE_NOT_ALLOWED: 'Le propriétaire doit transférer la ligue avant de la quitter.',
   REAUTH_REQUIRED: 'Confirme ton identité pour continuer.',
   CONFIRMATION_MISMATCH: "Le nom d'utilisateur ne correspond pas.",
+  ACCOUNT_DELETION_CONFLICT: 'Tes ligues ont changé pendant la suppression, réessaie.',
   BOOSTER_CONTENT_REMOVED: 'Une carte de ce booster a été retirée de la ligue.',
   INTERNAL_ERROR: 'Une erreur est survenue.',
 }

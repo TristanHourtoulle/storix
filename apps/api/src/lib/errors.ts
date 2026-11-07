@@ -35,12 +35,21 @@ export function unauthenticated(message = 'Authentication required'): AppError {
   return new AppError('UNAUTHENTICATED', 401, message)
 }
 
-/** Tells whether the error, or any error in its cause chain, is a Postgres unique violation. */
-export function isUniqueViolation(error: unknown): boolean {
+function hasPostgresCode(error: unknown, code: string): boolean {
   let current: unknown = error
   for (let depth = 0; depth < 5 && typeof current === 'object' && current !== null; depth += 1) {
-    if ('code' in current && current.code === '23505') return true
+    if ('code' in current && current.code === code) return true
     current = 'cause' in current ? current.cause : undefined
   }
   return false
+}
+
+/** Tells whether the error, or any error in its cause chain, is a Postgres unique violation. */
+export function isUniqueViolation(error: unknown): boolean {
+  return hasPostgresCode(error, '23505')
+}
+
+/** Tells whether the error, or any error in its cause chain, is a Postgres deadlock. */
+export function isDeadlock(error: unknown): boolean {
+  return hasPostgresCode(error, '40P01')
 }

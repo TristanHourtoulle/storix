@@ -42,11 +42,7 @@ export function membersRoutes(service: MembersService): FastifyPluginAsyncZod {
         schema: { params: memberParamsSchema, body: removeMemberBodySchema },
       },
       async (request, reply) => {
-        await service.removeMember(
-          request.membership,
-          request.params.userId,
-          request.body.photos,
-        )
+        await service.removeMember(request.membership, request.params.userId, request.body.photos)
         return reply.code(204).send()
       },
     )

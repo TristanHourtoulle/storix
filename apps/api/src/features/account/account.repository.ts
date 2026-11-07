@@ -1,5 +1,5 @@
-import { cards, leagueMembers, leagues, uploads, user, type DbExecutor } from '@storix/db'
-import type { LeagueRole, OwnedLeague } from '@storix/shared'
+import { cards, leagueMembers, leagues, media, uploads, user, type DbExecutor } from '@storix/db'
+import { mediaVariantsSchema, type LeagueRole, type OwnedLeague } from '@storix/shared'
 import { and, asc, count, eq, inArray, sql } from 'drizzle-orm'
 
 export { lockLeagueEconomyExclusive } from '@storix/db'
@@ -68,14 +68,15 @@ export async function lockUserRow(db: DbExecutor, userId: string): Promise<boole
   return rows.length > 0
 }
 
-/** Lists the ids of every card of a league, sorted. */
-export async function listLeagueCardIds(db: DbExecutor, leagueId: string): Promise<string[]> {
+/** Lists the object keys of every media variant of a league. */
+export async function listLeagueVariantKeys(db: DbExecutor, leagueId: string): Promise<string[]> {
   const rows = await db
-    .select({ id: cards.id })
-    .from(cards)
-    .where(eq(cards.leagueId, leagueId))
-    .orderBy(asc(cards.id))
-  return rows.map((row) => row.id)
+    .select({ variants: media.variants })
+    .from(media)
+    .where(eq(media.leagueId, leagueId))
+  return rows.flatMap((row) =>
+    mediaVariantsSchema.parse(row.variants).map((variant) => variant.key),
+  )
 }
 
 /** Counts the cards the user authored in each league, telling whether the user is still a member there, ordered by league id. */
@@ -101,7 +102,7 @@ export function countAuthoredCardsByLeague(
     .orderBy(asc(cards.leagueId))
 }
 
-/** Deletes a league with everything it cascades to and returns the object keys of the uploads it still held. */
+/** Deletes a league with everything it cascades to (cards, media, copies, tombstones) and returns the object keys of the uploads it still held. */
 export async function deleteLeague(db: DbExecutor, leagueId: string): Promise<string[]> {
   const leftovers = await db
     .select({ objectKey: uploads.objectKey })
