@@ -7,6 +7,7 @@ import {
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod'
 import { authRoutes } from './auth/auth.routes'
+import { clientIpPolicy } from './config/client-ip'
 import { buildServices, type AppDeps } from './deps'
 import { healthRoutes } from './features/health/health.routes'
 import { registerErrorHandling } from './http/error-handler'
@@ -19,7 +20,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const { env } = deps
   const app = Fastify({
     logger: buildLoggerOptions(env),
-    trustProxy: env.NODE_ENV === 'production',
+    trustProxy: clientIpPolicy(env).trustProxy,
   }).withTypeProvider<ZodTypeProvider>()
 
   app.setValidatorCompiler(validatorCompiler)

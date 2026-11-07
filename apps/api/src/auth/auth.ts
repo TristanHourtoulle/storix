@@ -3,6 +3,7 @@ import { schema, type Database } from '@storix/db'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { username } from 'better-auth/plugins'
+import { clientIpPolicy } from '../config/client-ip'
 import type { Env } from '../config/env'
 
 /** Builds the Better Auth instance for the given database and environment. */
@@ -27,7 +28,7 @@ export function createAuth(input: { db: Database; env: Env }) {
     },
     session: { cookieCache: { enabled: false } },
     plugins: [
-      username({ minUsernameLength: 3, maxUsernameLength: 24 }),
+      username({ minUsernameLength: 3, maxUsernameLength: 24, immutableUsername: true }),
       passkey({ rpID: env.PASSKEY_RP_ID, rpName: 'Storix', origin: env.APP_ORIGIN }),
     ],
     rateLimit: {
@@ -39,7 +40,7 @@ export function createAuth(input: { db: Database; env: Env }) {
         '/change-password': { window: 60, max: 5 },
       },
     },
-    advanced: { ipAddress: { ipAddressHeaders: ['x-forwarded-for'] } },
+    advanced: { ipAddress: { ipAddressHeaders: clientIpPolicy(env).ipAddressHeaders } },
   })
 }
 

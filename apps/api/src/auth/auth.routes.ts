@@ -4,14 +4,22 @@ import { rateLimits } from '../http/rate-limit'
 import { notFound } from '../lib/errors'
 import type { AuthGateway } from './auth.gateway'
 
-const BLOCKED_PREFIXES: readonly string[] = [
-  '/api/auth/sign-up',
-  '/api/auth/request-password-reset',
-  '/api/auth/reset-password',
-  '/api/auth/change-email',
-  '/api/auth/send-verification-email',
-  '/api/auth/verify-email',
-]
+const AUTH_PREFIX = '/api/auth/'
+
+const ALLOWED_PATHS: ReadonlySet<string> = new Set(
+  [
+    'get-session',
+    'sign-in/username',
+    'sign-out',
+    'change-password',
+    'list-sessions',
+    'revoke-session',
+    'revoke-sessions',
+    'revoke-other-sessions',
+  ].map((path) => `${AUTH_PREFIX}${path}`),
+)
+
+const ALLOWED_PREFIXES: readonly string[] = [`${AUTH_PREFIX}passkey/`]
 
 const SKIPPED_RESPONSE_HEADERS: ReadonlySet<string> = new Set([
   'set-cookie',
@@ -21,13 +29,18 @@ const SKIPPED_RESPONSE_HEADERS: ReadonlySet<string> = new Set([
   'connection',
 ])
 
-function isBlocked(pathname: string): boolean {
-  return BLOCKED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix))
+function isAllowed(pathname: string): boolean {
+  return (
+    ALLOWED_PATHS.has(pathname) ||
+    ALLOWED_PREFIXES.some(
+      (prefix) => pathname.startsWith(prefix) && pathname.length > prefix.length,
+    )
+  )
 }
 
-function toFetchRequest(request: FastifyRequest, appOrigin: string): Request {
+function toFetchRequest(request: FastifyRequest, url: URL): Request {
   const hasBody = request.body !== undefined && request.body !== null
-  return new Request(new URL(request.url, appOrigin), {
+  return new Request(url, {
     method: request.method,
     headers: fromNodeHeaders(request.headers),
     ...(hasBody ? { body: JSON.stringify(request.body) } : {}),
@@ -53,9 +66,9 @@ export function authRoutes(gateway: AuthGateway, appOrigin: string): FastifyPlug
       url: '/api/auth/*',
       config: { rateLimit: rateLimits.auth },
       async handler(request, reply) {
-        const { pathname } = new URL(request.url, appOrigin)
-        if (isBlocked(pathname)) throw notFound('Route not found')
-        const response = await gateway.handle(toFetchRequest(request, appOrigin))
+        const url = new URL(request.url, appOrigin)
+        if (!isAllowed(url.pathname)) throw notFound('Route not found')
+        const response = await gateway.handle(toFetchRequest(request, url))
         return sendFetchResponse(reply, response)
       },
     })

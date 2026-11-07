@@ -31,8 +31,8 @@ function isUsernameTaken(error: unknown): boolean {
 export function createAuthGateway(auth: Auth): AuthGateway {
   async function getSession(headers: Headers): Promise<AuthSession | null> {
     const result = await auth.api.getSession({ headers })
-    if (result === null) return null
-    const username = result.user.username ?? ''
+    const username = result?.user.username
+    if (result === null || username === null || username === undefined) return null
     return {
       userId: result.user.id,
       username,
