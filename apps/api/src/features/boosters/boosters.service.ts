@@ -1,6 +1,7 @@
 import type { Database, DbExecutor } from '@storix/db'
 import {
   boosterEligibleBefore,
+  DEFAULT_NEW_CARD_DELAY_MINUTES,
   boosterPoolDigestInput,
   consumeBooster,
   copyKey,
@@ -148,7 +149,7 @@ async function openNewBooster(
   }
   const pool = await listBoosterPool(ctx.tx, {
     leagueId: ctx.m.leagueId,
-    eligibleBefore: boosterEligibleBefore(ctx.now),
+    eligibleBefore: boosterEligibleBefore(ctx.now, DEFAULT_NEW_CARD_DELAY_MINUTES),
   })
   if (pool.length === 0) {
     throw new AppError('BOOSTER_POOL_EMPTY', 409, 'No card can be drawn from this league yet')
