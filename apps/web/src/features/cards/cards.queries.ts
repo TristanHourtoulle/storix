@@ -1,10 +1,16 @@
+import type { CardTier } from '@storix/shared'
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
 import { fetchCardDetail, fetchCardPage } from './cards.api'
 
-export function cardsInfiniteQueryOptions(leagueId: string, authorId: string | null) {
+export interface CollectionFilters {
+  authorId: string | null
+  tier: CardTier | null
+}
+
+export function cardsInfiniteQueryOptions(leagueId: string, filters: CollectionFilters) {
   return infiniteQueryOptions({
-    queryKey: ['leagues', leagueId, 'cards', { authorId }],
-    queryFn: ({ pageParam }) => fetchCardPage(leagueId, { authorId, cursor: pageParam }),
+    queryKey: ['leagues', leagueId, 'cards', filters],
+    queryFn: ({ pageParam }) => fetchCardPage(leagueId, { ...filters, cursor: pageParam }),
     initialPageParam: undefined as number | undefined,
     getNextPageParam: (page) => page.nextCursor ?? undefined,
   })

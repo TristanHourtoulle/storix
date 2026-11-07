@@ -44,9 +44,9 @@ export function craftCost(currentTier: CardTier): number | null {
   return DUST_VALUES[currentTier] * CRAFT_COST_MULTIPLIER
 }
 
-/** Returns the dust needed to turn an owned normal copy into a foil one. */
-export function foilUpgradeCost(currentTier: CardTier): number {
-  return DUST_VALUES[currentTier] * FOIL_UPGRADE_COST_MULTIPLIER
+/** Returns the dust needed to turn a normal copy into a foil one, from the copy's tier at mint. */
+export function foilUpgradeCost(tierAtMint: CardTier): number {
+  return DUST_VALUES[tierAtMint] * FOIL_UPGRADE_COST_MULTIPLIER
 }
 
 /** Builds the key of one variant of a card in an owned-copies map. */
@@ -119,16 +119,16 @@ export function craftDecision(input: {
   return { cost, allowed: true, reason: null }
 }
 
-/** Decides whether a member may upgrade their normal copy of a card to foil. */
+/** Decides whether a member may upgrade their normal copy to foil, priced on that copy's tier at mint. */
 export function foilUpgradeDecision(input: {
   currentTier: CardTier
-  ownsNormal: boolean
+  normalTierAtMint: CardTier | null
   ownsFoil: boolean
   dust: number
 }): { cost: number; allowed: boolean; reason: FoilUpgradeBlock | null } {
-  const cost = foilUpgradeCost(input.currentTier)
+  const cost = foilUpgradeCost(input.normalTierAtMint ?? input.currentTier)
   const block = (reason: FoilUpgradeBlock) => ({ cost, allowed: false, reason })
-  if (!input.ownsNormal) return block('no_normal')
+  if (input.normalTierAtMint === null) return block('no_normal')
   if (input.ownsFoil) return block('foil_owned')
   if (input.dust < cost) return block('insufficient_dust')
   return { cost, allowed: true, reason: null }

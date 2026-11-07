@@ -1,7 +1,5 @@
 import type { RecentReveal } from '@storix/shared'
-import { CardFace } from '@/features/cards/components/card-face'
-import { CardImage } from '@/features/cards/components/card-image'
-import { useThumbhashUrl } from '@/features/cards/use-thumbhash-url'
+import { CollectionCardView } from '@/features/cards/components/collection-card-view'
 
 interface RecentRevealsProps {
   reveals: RecentReveal[]
@@ -9,46 +7,14 @@ interface RecentRevealsProps {
 
 const REVEAL_SIZES = '108px'
 
-function LockedArt({ thumbhash }: { thumbhash: string }) {
-  const placeholder = useThumbhashUrl(thumbhash)
+function RevealCard({ reveal }: { reveal: RecentReveal }) {
   return (
-    <div
-      className="absolute inset-0 bg-surface-2 bg-cover bg-center blur-[2px]"
-      style={placeholder ? { backgroundImage: `url(${placeholder})` } : undefined}
-    />
-  )
-}
-
-function RevealCard({ card }: { card: RecentReveal['card'] }) {
-  if (card.kind === 'hidden') {
-    return (
-      <CardFace size="md" title="Masquée" tier={card.tier} isProvisional={false}>
-        <LockedArt thumbhash={card.thumbhash} />
-      </CardFace>
-    )
-  }
-  if (card.kind === 'locked') {
-    return (
-      <CardFace size="md" title="???" tier={card.tier} isProvisional={card.isProvisional}>
-        <LockedArt thumbhash={card.thumbhash} />
-      </CardFace>
-    )
-  }
-  return (
-    <CardFace
+    <CollectionCardView
+      card={reveal.card}
+      tier={reveal.tierAtMint}
       size="md"
-      title={card.title}
-      tier={card.displayTier}
-      isProvisional={card.isProvisional}
-    >
-      <CardImage
-        image={card.image}
-        thumbhash={card.thumbhash}
-        width={card.width}
-        height={card.height}
-        sizes={REVEAL_SIZES}
-      />
-    </CardFace>
+      sizes={REVEAL_SIZES}
+    />
   )
 }
 
@@ -63,7 +29,7 @@ export function RecentReveals({ reveals }: RecentRevealsProps) {
       <ul className="cards-row">
         {reveals.map((reveal) => (
           <li key={`${reveal.card.id}-${reveal.variant}-${reveal.pulledAt}`} className="mini">
-            <RevealCard card={reveal.card} />
+            <RevealCard reveal={reveal} />
             <p className="mini-by">
               tirée par {reveal.pulledBy.displayUsername ?? 'un ancien membre'}
             </p>

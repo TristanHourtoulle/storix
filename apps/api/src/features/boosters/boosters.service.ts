@@ -16,12 +16,14 @@ import {
   type BoosterOpening,
   type CardTier,
   type CopySettlement,
+  type RecentReveal,
   type WalletState,
 } from '@storix/shared'
 import { generateBoosterSeed, sha256Hex } from '../../lib/crypto'
 import { AppError, isUniqueViolation } from '../../lib/errors'
 import type { MediaSigner } from '../../lib/media-signer'
 import { runInTransaction } from '../../lib/transaction'
+import { toCollectionCard, withViewerCopies, type CollectionCardBase } from '../cards/card-views'
 import { insertCopy, listOwnedCopies, updateCopyTier } from '../copies/copies.repository'
 import { findLeagueSettings } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
@@ -39,15 +41,21 @@ import {
   insertPulls,
   listBoosterPool,
   listOpeningPulls,
+  listRecentReveals,
   type BoosterPoolCard,
   type InsertPullRow,
   type OpeningRecord,
+  type RevealRow,
 } from './boosters.repository'
 import { toBoosterPull } from './opening-view'
 
 export interface BoostersService {
   openBooster(m: Membership, requestId: string): Promise<BoosterOpening>
+  listRecentReveals(m: Membership): Promise<RecentReveal[]>
 }
+
+const REVEALS_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
+const REVEALS_LIMIT = 6
 
 export interface BoostersServiceDeps {
   db: Database
@@ -219,6 +227,23 @@ async function openNewBooster(
   return present(ctx, { ...opening, dustGained }, walletState, signer)
 }
 
+function toRevealCard(row: RevealRow): CollectionCardBase {
+  return {
+    id: row.cardId,
+    number: row.number,
+    title: row.title,
+    tier: row.tier,
+    isProvisional: row.isProvisional,
+    authorId: row.authorId,
+    authorName: row.authorName,
+    thumbhash: row.thumbhash,
+    dominantColor: row.dominantColor,
+    width: row.width,
+    height: row.height,
+    variants: row.variants,
+  }
+}
+
 /** Builds the service opening boosters in one idempotent, member-serialized transaction. */
 export function createBoostersService({ db, signer, clock }: BoostersServiceDeps): BoostersService {
   const withContext = <T>(
@@ -252,6 +277,26 @@ export function createBoostersService({ db, signer, clock }: BoostersServiceDeps
   }
 
   return {
+    async listRecentReveals(m) {
+      const rows = await listRecentReveals(db, {
+        leagueId: m.leagueId,
+        since: new Date(clock().getTime() - REVEALS_WINDOW_MS),
+        limit: REVEALS_LIMIT,
+      })
+      const copies = await listOwnedCopies(db, {
+        leagueId: m.leagueId,
+        ownerId: m.userId,
+        cardIds: [...new Set(rows.map((row) => row.cardId))],
+      })
+      return rows.map((row) => ({
+        pulledBy: { userId: row.pulledById, displayUsername: row.pulledByName },
+        pulledAt: row.pulledAt.toISOString(),
+        variant: row.variant,
+        tierAtMint: row.tierAtMint,
+        card: toCollectionCard(withViewerCopies(toRevealCard(row), copies), signer),
+      }))
+    },
+
     async openBooster(m, requestId) {
       try {
         return await withContext(

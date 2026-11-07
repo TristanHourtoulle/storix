@@ -56,6 +56,25 @@ export async function listOwnedCopies(
     )
 }
 
+/** Lists the variants of a card a member owns in a league, holding a share lock on those copies. */
+export async function lockOwnedVariants(
+  db: DbExecutor,
+  input: { leagueId: string; cardId: string; ownerId: string },
+): Promise<CopyVariant[]> {
+  const rows = await db
+    .select({ variant: cardCopies.variant })
+    .from(cardCopies)
+    .where(
+      and(
+        eq(cardCopies.leagueId, input.leagueId),
+        eq(cardCopies.cardId, input.cardId),
+        eq(cardCopies.ownerId, input.ownerId),
+      ),
+    )
+    .for('share')
+  return rows.map((row) => row.variant)
+}
+
 /** Inserts a new owned copy. */
 export async function insertCopy(db: DbExecutor, row: InsertCopyRow): Promise<void> {
   await db.insert(cardCopies).values(row)
