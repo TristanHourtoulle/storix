@@ -10,7 +10,7 @@ export const COMPUTED_TIERS = ['common', 'uncommon', 'rare', 'epic', 'legendary'
 
 export type ComputedTier = (typeof COMPUTED_TIERS)[number]
 
-export const DEFAULT_NEW_CARD_DELAY_MINUTES = 720
+export const DEFAULT_NEW_CARD_DELAY_MINUTES = 60
 
 const MS_PER_MINUTE = 60_000
 

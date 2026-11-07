@@ -47,7 +47,7 @@ describe('updateLeagueSettingsBodySchema', () => {
 
 describe('resolveLeagueSettings', () => {
   it('resolves stored settings field by field', () => {
-    expect(resolveLeagueSettings(null).newCardDelayMinutes).toBe(720)
+    expect(resolveLeagueSettings(null).newCardDelayMinutes).toBe(60)
     const partial = resolveLeagueSettings({ uploadQuotaPerDay: 3, booster: 'garbage' })
     expect(partial.uploadQuotaPerDay).toBe(3)
     expect(partial.booster).toEqual({ intervalMinutes: 240, maxStock: 6, joinGift: 2 })
