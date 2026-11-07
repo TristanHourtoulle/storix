@@ -3,6 +3,7 @@ import { createObjectStorage, type ObjectStorage } from '@storix/storage'
 import { createAuth } from './auth/auth'
 import { createAuthGateway, type AuthGateway } from './auth/auth.gateway'
 import type { Env } from './config/env'
+import { createAccountService, type AccountService } from './features/account/account.service'
 import { createCardRemoval, type CardRemoval } from './features/card-removal/card-removal.service'
 import { createBoostersService, type BoostersService } from './features/boosters/boosters.service'
 import { createCardsService, type CardsService } from './features/cards/cards.service'
@@ -54,6 +55,7 @@ export interface AppDeps {
 }
 
 export interface Services {
+  account: AccountService
   boosters: BoostersService
   cardRemoval: CardRemoval
   cards: CardsService
@@ -92,6 +94,14 @@ export function createAppDeps(env: Env, db: Database, jobs: JobQueue): AppDeps {
 export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
   const cardRemoval = createCardRemoval({ jobs: deps.jobs, logger })
   return {
+    account: createAccountService({
+      db: deps.db,
+      auth: deps.auth,
+      cardRemoval,
+      jobs: deps.jobs,
+      logger,
+      clock: deps.clock,
+    }),
     boosters: createBoostersService({
       db: deps.db,
       signer: deps.mediaSigner,

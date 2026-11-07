@@ -9,6 +9,7 @@ export interface AuthSession {
   userId: string
   username: string
   displayUsername: string
+  sessionCreatedAt: Date
 }
 
 export class CredentialUserCreationError extends Error {
@@ -25,9 +26,35 @@ export interface AuthGateway {
   deleteUser(userId: string): Promise<void>
   setPassword(userId: string, password: string): Promise<void>
   revokeAllSessions(userId: string): Promise<void>
+  verifyPassword(userId: string, password: string): Promise<boolean>
+  expiredSessionCookies(): Promise<string[]>
 }
 
 const SYNTHETIC_EMAIL_DOMAIN = 'users.storix.invalid'
+const CREDENTIAL_PROVIDER_ID = 'credential'
+
+interface CookieAttributes {
+  domain?: string | undefined
+  path?: string | undefined
+  httpOnly?: boolean | undefined
+  secure?: boolean | undefined
+  sameSite?: string | undefined
+  partitioned?: boolean | undefined
+}
+
+function expiredCookieHeader(name: string, attributes: CookieAttributes): string {
+  const sameSite = attributes.sameSite
+  return [
+    `${name}=`,
+    'Max-Age=0',
+    ...(attributes.domain ? [`Domain=${attributes.domain}`] : []),
+    ...(attributes.path ? [`Path=${attributes.path}`] : []),
+    ...(attributes.httpOnly ? ['HttpOnly'] : []),
+    ...(attributes.secure ? ['Secure'] : []),
+    ...(sameSite ? [`SameSite=${sameSite.charAt(0).toUpperCase()}${sameSite.slice(1)}`] : []),
+    ...(attributes.partitioned ? ['Partitioned'] : []),
+  ].join('; ')
+}
 
 function isUsernameTaken(error: unknown): boolean {
   if (isAPIError(error) && error.body?.code === 'USERNAME_IS_ALREADY_TAKEN') return true
@@ -44,6 +71,7 @@ export function createAuthGateway(auth: Auth): AuthGateway {
       userId: result.user.id,
       username,
       displayUsername: result.user.displayUsername ?? username,
+      sessionCreatedAt: result.session.createdAt,
     }
   }
 
@@ -82,6 +110,21 @@ export function createAuthGateway(auth: Auth): AuthGateway {
     async revokeAllSessions(userId) {
       const ctx = await auth.$context
       await ctx.internalAdapter.deleteUserSessions(userId)
+    },
+    async verifyPassword(userId, password) {
+      const ctx = await auth.$context
+      const accounts = await ctx.internalAdapter.findAccounts(userId)
+      const hash = accounts.find(
+        (account) => account.providerId === CREDENTIAL_PROVIDER_ID,
+      )?.password
+      if (hash === null || hash === undefined) return false
+      return ctx.password.verify({ hash, password })
+    },
+    async expiredSessionCookies() {
+      const { authCookies } = await auth.$context
+      return [authCookies.sessionToken, authCookies.sessionData, authCookies.dontRememberToken].map(
+        (cookie) => expiredCookieHeader(cookie.name, cookie.attributes),
+      )
     },
   }
 }
