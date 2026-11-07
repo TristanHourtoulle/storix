@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { isSafeRedirectPath } from '@/lib/redirect'
-import { BrandMark } from '@/components/ui/brand-mark'
+import { BrandLogo } from '@/components/ui/brand-logo'
 import { LoginForm } from '@/features/auth/components/login-form'
 
 export const Route = createFileRoute('/login')({
@@ -18,7 +18,7 @@ function LoginScreen() {
 
   return (
     <main className="screen">
-      <BrandMark />
+      <BrandLogo size="lg" />
       <h1>Connexion</h1>
       <LoginForm
         {...(redirect ? { redirectTo: redirect } : {})}

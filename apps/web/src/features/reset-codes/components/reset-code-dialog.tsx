@@ -19,15 +19,24 @@ export function ResetCodeDialog({ leagueId, member, onClose }: ResetCodeDialogPr
   const { issue, result, isPending, errorMessage } = useIssueResetCode(leagueId, member.userId)
 
   return (
-    <Dialog open title={`Code pour ${member.displayUsername}`} onClose={onClose}>
+    <Dialog
+      open
+      title={`Code pour ${member.displayUsername}`}
+      onClose={onClose}
+      isDismissible={!isPending}
+    >
+      <div role="status" className="text-center empty:-mb-4">
+        {result ? (
+          <>
+            <span className="sr-only">Code de réinitialisation</span>
+            <p className="m-0 font-display text-[28px] font-bold tabular-nums tracking-wider">
+              {result.code}
+            </p>
+          </>
+        ) : null}
+      </div>
       {result ? (
         <>
-          <p
-            aria-label="Code de réinitialisation"
-            className="m-0 text-center font-display text-[28px] font-bold tabular-nums tracking-wider"
-          >
-            {result.code}
-          </p>
           <p className="m-0 text-center text-sm text-muted">
             Expire le {formatExpiry(result.expiresAt)}
           </p>

@@ -29,9 +29,11 @@ function LeagueLayout() {
   return (
     <div className="flex min-h-dvh flex-col">
       <Outlet />
-      <IosInstallHint />
       <PasskeyPrompt userId={me.user.id} displayUsername={me.user.displayUsername} />
-      <BottomNav leagueId={leagueId} active={active} />
+      <div className="sticky bottom-0 mt-auto">
+        <IosInstallHint />
+        <BottomNav leagueId={leagueId} active={active} />
+      </div>
     </div>
   )
 }

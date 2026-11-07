@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { useSuspenseQuery } from '@tanstack/react-query'
 import type { MemberSummary } from '@storix/shared'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Notice } from '@/components/ui/notice'
 import { ResetCodeDialog } from '@/features/reset-codes/components/reset-code-dialog'
-import { membersQueryOptions } from '../members.queries'
+import { useMembers } from '../use-members'
 import { useChangeRole } from '../use-change-role'
 import { useRemoveMember } from '../use-remove-member'
 import { MemberRow } from './member-row'
@@ -15,11 +14,17 @@ interface MemberListProps {
 }
 
 export function MemberList({ leagueId }: MemberListProps) {
-  const { data: members } = useSuspenseQuery(membersQueryOptions(leagueId))
+  const members = useMembers(leagueId)
   const roleChange = useChangeRole(leagueId)
   const removal = useRemoveMember(leagueId)
   const [removeTarget, setRemoveTarget] = useState<MemberSummary | null>(null)
   const [resetTarget, setResetTarget] = useState<MemberSummary | null>(null)
+
+  const selectRemoveTarget = (target: MemberSummary | null) => {
+    removal.reset()
+    roleChange.reset()
+    setRemoveTarget(target)
+  }
 
   return (
     <section aria-label="Membres" className="flex flex-col gap-3">
@@ -36,7 +41,7 @@ export function MemberList({ leagueId }: MemberListProps) {
                 role: target.role === 'admin' ? 'member' : 'admin',
               })
             }
-            onRemove={setRemoveTarget}
+            onRemove={selectRemoveTarget}
             onResetCode={setResetTarget}
           />
         ))}
@@ -45,7 +50,7 @@ export function MemberList({ leagueId }: MemberListProps) {
         <Dialog
           open
           title={`Retirer ${removeTarget.displayUsername} de la ligue ?`}
-          onClose={() => setRemoveTarget(null)}
+          onClose={() => selectRemoveTarget(null)}
         >
           <p className="m-0 text-sm leading-snug text-muted">
             Ce membre perdra l'accès à la ligue. Il pourra la rejoindre à nouveau avec une
@@ -53,7 +58,7 @@ export function MemberList({ leagueId }: MemberListProps) {
           </p>
           {removal.errorMessage ? <Notice tone="error">{removal.errorMessage}</Notice> : null}
           <div className="flex gap-2">
-            <Button variant="ghost" block onClick={() => setRemoveTarget(null)}>
+            <Button variant="ghost" block onClick={() => selectRemoveTarget(null)}>
               Annuler
             </Button>
             <Button
@@ -61,7 +66,7 @@ export function MemberList({ leagueId }: MemberListProps) {
               block
               className="!bg-danger"
               isLoading={removal.isPending}
-              onClick={() => removal.remove(removeTarget.userId, () => setRemoveTarget(null))}
+              onClick={() => removal.remove(removeTarget.userId, () => selectRemoveTarget(null))}
             >
               Retirer
             </Button>

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { BrandMark } from '@/components/ui/brand-mark'
+import { BrandLogo } from '@/components/ui/brand-logo'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Notice } from '@/components/ui/notice'
 import { meQueryOptions } from '@/features/auth/session.queries'
@@ -34,7 +34,7 @@ function JoinScreen() {
   if (preview.isPending || me.isPending) {
     return (
       <main className="screen">
-        <BrandMark />
+        <BrandLogo size="lg" />
       </main>
     )
   }
@@ -43,7 +43,7 @@ function JoinScreen() {
     const isRejected = isInvitationRejected(preview.error)
     return (
       <main className="screen">
-        <BrandMark />
+        <BrandLogo size="lg" />
         {isRejected ? (
           <InvalidLink />
         ) : (
@@ -56,7 +56,7 @@ function JoinScreen() {
   if (me.isError) {
     return (
       <main className="screen">
-        <BrandMark />
+        <BrandLogo size="lg" />
         <Notice tone="error">Impossible de vérifier ta session. Réessaie plus tard.</Notice>
       </main>
     )
@@ -67,7 +67,7 @@ function JoinScreen() {
 
   return (
     <main className="screen">
-      <BrandMark />
+      <BrandLogo size="lg" />
       {status !== 'valid' || !league ? (
         <InvalidLink />
       ) : (
