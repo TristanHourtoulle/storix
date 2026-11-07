@@ -8,7 +8,7 @@ import {
 } from '@storix/shared'
 import { and, desc, eq, gt, lt, sql, type SQL } from 'drizzle-orm'
 
-export { lockLeagueEconomyExclusive, lockLeagueModeration } from '@storix/db'
+export { lockLeagueEconomyExclusive, lockLeagueModeration, lockLeagueRarity } from '@storix/db'
 
 export type AdminCardFilter = AdminCardsQuery['filter']
 
@@ -80,13 +80,14 @@ const authorName = sql<
   string | null
 >`coalesce(${user.displayUsername}, ${user.username}, ${user.name})`
 
-function copyCounts(db: DbExecutor) {
+function copyCounts(db: DbExecutor, leagueId: string) {
   return db
     .select({
       cardId: cardCopies.cardId,
       total: sql<number>`count(*)::int`.as('copies_total'),
     })
     .from(cardCopies)
+    .where(eq(cardCopies.leagueId, leagueId))
     .groupBy(cardCopies.cardId)
     .as('copy_counts')
 }
@@ -108,10 +109,11 @@ function filterCondition(filter: AdminCardFilter, eligibleBefore: Date): SQL | u
 
 async function selectAdminCards(
   db: DbExecutor,
+  leagueId: string,
   where: SQL | undefined,
   limit: number,
 ): Promise<AdminCardRow[]> {
-  const counts = copyCounts(db)
+  const counts = copyCounts(db, leagueId)
   const rows = await db
     .select({
       id: cards.id,
@@ -140,7 +142,7 @@ async function selectAdminCards(
     .innerJoin(media, eq(media.id, cards.mediaId))
     .leftJoin(user, eq(user.id, cards.authorId))
     .leftJoin(counts, eq(counts.cardId, cards.id))
-    .where(where)
+    .where(and(eq(cards.leagueId, leagueId), where))
     .orderBy(desc(cards.number))
     .limit(limit)
   return rows.map((row) => ({ ...row, variants: mediaVariantsSchema.parse(row.variants) }))
@@ -159,8 +161,8 @@ export async function listAdminCards(
 ): Promise<AdminCardRow[]> {
   return selectAdminCards(
     db,
+    input.leagueId,
     and(
-      eq(cards.leagueId, input.leagueId),
       filterCondition(input.filter, input.eligibleBefore),
       input.beforeNumber === undefined ? undefined : lt(cards.number, input.beforeNumber),
     ),
@@ -173,11 +175,7 @@ export async function findAdminCard(
   db: DbExecutor,
   input: { leagueId: string; cardId: string },
 ): Promise<AdminCardRow | null> {
-  const rows = await selectAdminCards(
-    db,
-    and(eq(cards.id, input.cardId), eq(cards.leagueId, input.leagueId)),
-    1,
-  )
+  const rows = await selectAdminCards(db, input.leagueId, eq(cards.id, input.cardId), 1)
   return rows[0] ?? null
 }
 

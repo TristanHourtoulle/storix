@@ -1,8 +1,13 @@
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { cardRarityHistory, cards, leagues, type DbExecutor } from '@storix/db'
 import type { CardTier, ComputedTier, TierSource } from '@storix/shared/domain'
 
-export { listRarityInputs, lockLeagueEconomyShared, type RarityInputRow } from '@storix/db'
+export {
+  listRarityInputs,
+  lockLeagueEconomyShared,
+  lockLeagueRarity,
+  type RarityInputRow,
+} from '@storix/db'
 
 export interface RarityUpdateRow {
   cardId: string
@@ -22,11 +27,6 @@ export interface RarityHistoryRow {
   score: number
   percentile: number
   computedAt: Date
-}
-
-/** Serializes rarity recomputes of one league for the rest of the transaction. */
-export async function lockLeagueRarity(db: DbExecutor, leagueId: string): Promise<void> {
-  await db.execute(sql`select pg_advisory_xact_lock(hashtext(${'rarity:' + leagueId}))`)
 }
 
 /** Reads the raw settings column of a league. */
