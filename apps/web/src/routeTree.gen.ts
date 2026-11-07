@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ResetRouteImport } from './routes/reset'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
+import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as AuthedLLeagueIdRouteImport } from './routes/_authed/l.$leagueId'
 import { Route as AuthedLeaguesNewRouteImport } from './routes/_authed/leagues.new'
 import { Route as AuthedLLeagueIdIndexRouteImport } from './routes/_authed/l.$leagueId.index'
@@ -29,10 +31,20 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetRoute = ResetRouteImport.update({
+  id: '/reset',
+  path: '/reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthedIndexRoute = AuthedIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthedRoute,
+} as any)
+const JoinTokenRoute = JoinTokenRouteImport.update({
+  id: '/join/$token',
+  path: '/join/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedLLeagueIdRoute = AuthedLLeagueIdRouteImport.update({
   id: '/l/$leagueId',
@@ -74,6 +86,8 @@ const AuthedLLeagueIdProfileRoute = AuthedLLeagueIdProfileRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/login': typeof LoginRoute
+  '/reset': typeof ResetRoute
+  '/join/$token': typeof JoinTokenRoute
   '/l/$leagueId': typeof AuthedLLeagueIdRouteWithChildren
   '/leagues/new': typeof AuthedLeaguesNewRoute
   '/l/$leagueId/add': typeof AuthedLLeagueIdAddRoute
@@ -84,6 +98,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/reset': typeof ResetRoute
+  '/join/$token': typeof JoinTokenRoute
   '/': typeof AuthedIndexRoute
   '/leagues/new': typeof AuthedLeaguesNewRoute
   '/l/$leagueId/add': typeof AuthedLLeagueIdAddRoute
@@ -96,6 +112,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
+  '/reset': typeof ResetRoute
+  '/join/$token': typeof JoinTokenRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/l/$leagueId': typeof AuthedLLeagueIdRouteWithChildren
   '/_authed/leagues/new': typeof AuthedLeaguesNewRoute
@@ -110,6 +128,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/reset'
+    | '/join/$token'
     | '/l/$leagueId'
     | '/leagues/new'
     | '/l/$leagueId/add'
@@ -120,6 +140,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/reset'
+    | '/join/$token'
     | '/'
     | '/leagues/new'
     | '/l/$leagueId/add'
@@ -131,6 +153,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authed'
     | '/login'
+    | '/reset'
+    | '/join/$token'
     | '/_authed/'
     | '/_authed/l/$leagueId'
     | '/_authed/leagues/new'
@@ -144,6 +168,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ResetRoute: typeof ResetRoute
+  JoinTokenRoute: typeof JoinTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -162,12 +188,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset': {
+      id: '/reset'
+      path: '/reset'
+      fullPath: '/reset'
+      preLoaderRoute: typeof ResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed/': {
       id: '/_authed/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthedIndexRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/join/$token': {
+      id: '/join/$token'
+      path: '/join/$token'
+      fullPath: '/join/$token'
+      preLoaderRoute: typeof JoinTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authed/l/$leagueId': {
       id: '/_authed/l/$leagueId'
@@ -259,6 +299,8 @@ const AuthedRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
   LoginRoute: LoginRoute,
+  ResetRoute: ResetRoute,
+  JoinTokenRoute: JoinTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

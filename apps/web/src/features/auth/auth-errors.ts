@@ -1,4 +1,5 @@
 const AUTH_MESSAGES: Record<string, string> = {
+  INVALID_USERNAME_OR_PASSWORD: 'Pseudo ou mot de passe incorrect.',
   INVALID_PASSWORD: 'Mot de passe actuel incorrect.',
   PASSWORD_TOO_SHORT: 'Le mot de passe doit faire au moins 10 caractères.',
   PASSWORD_TOO_LONG: 'Le mot de passe est trop long.',
