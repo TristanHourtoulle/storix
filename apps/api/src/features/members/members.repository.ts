@@ -1,4 +1,12 @@
-import { cardTags, cards, leagueMembers, reactions, user, type DbExecutor } from '@storix/db'
+import {
+  cardCopies,
+  cardTags,
+  cards,
+  leagueMembers,
+  reactions,
+  user,
+  type DbExecutor,
+} from '@storix/db'
 import type { LeagueRole } from '@storix/shared'
 import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 
@@ -140,6 +148,16 @@ export async function transferOwnership(
     )
     .returning({ userId: leagueMembers.userId })
   if (promoted.length === 0) throw new Error('Target admin not found')
+}
+
+/** Deletes a member's own copies in a league, so a departing member is never compensated. */
+export async function deleteMemberCopies(
+  db: DbExecutor,
+  input: { leagueId: string; userId: string },
+): Promise<void> {
+  await db
+    .delete(cardCopies)
+    .where(and(eq(cardCopies.leagueId, input.leagueId), eq(cardCopies.ownerId, input.userId)))
 }
 
 /** Deletes a member's tags and reactions on a league's cards and drops their discovery credit, keeping the date. */

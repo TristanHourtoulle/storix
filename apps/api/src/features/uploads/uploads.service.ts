@@ -110,7 +110,7 @@ export function createUploadsService(deps: {
         expiresInSeconds: UPLOAD_PRESIGN_TTL_SECONDS,
       })
       await runInTransaction(db, async (tx) => {
-        await lockMemberRow(tx, m.leagueId, m.userId)
+        if (!(await lockMemberRow(tx, m.leagueId, m.userId))) throw notFound()
         const limit = await quotaLimitOf(tx, m.leagueId)
         const used = await countUsed(tx, m, now)
         const quota = checkUploadQuota({ limit, used, requested: 1 })

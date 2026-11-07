@@ -21,10 +21,12 @@ import {
 import type { CardRemoval, RemovalOutcome } from '../card-removal/card-removal.service'
 import { findOwnerIds } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
+import { deleteUnusedCodesFromHomeLeague } from '../reset-codes/reset-codes.repository'
 import { lockLeagueEconomyExclusive } from '../wallets/wallets.repository'
 import {
   clearMemberTraces,
   deleteMember,
+  deleteMemberCopies,
   findMembership,
   listMembers,
   lockMemberships,
@@ -93,6 +95,10 @@ function toSummary(
   }
 }
 
+function leaveNotAllowed(): AppError {
+  return new AppError('LEAVE_NOT_ALLOWED', 409, 'The owner must transfer the league first')
+}
+
 function roleOf(locks: readonly MemberLock[], userId: string): LeagueRole | null {
   return locks.find((lock) => lock.userId === userId)?.role ?? null
 }
@@ -130,6 +136,7 @@ export function createMembersService(deps: MembersServiceDeps): MembersService {
       leagueId: m.leagueId,
       userId: targetUserId,
     })
+    await deleteMemberCopies(tx, { leagueId: m.leagueId, userId: targetUserId })
     const removal = await cardRemoval.removeInTx(tx, {
       leagueId: m.leagueId,
       cardIds: await findCardIdsByAuthor(tx, { leagueId: m.leagueId, authorId: targetUserId }),
@@ -141,6 +148,7 @@ export function createMembersService(deps: MembersServiceDeps): MembersService {
       openUploads.map((upload) => upload.id),
     )
     await clearMemberTraces(tx, { leagueId: m.leagueId, userId: targetUserId })
+    await deleteUnusedCodesFromHomeLeague(tx, { userId: targetUserId, leagueId: m.leagueId })
     if ((await deleteMember(tx, m.leagueId, targetUserId)) === 0) {
       throw notFound('Member not found')
     }
@@ -176,10 +184,14 @@ export function createMembersService(deps: MembersServiceDeps): MembersService {
     },
 
     async changeRole(m, targetUserId, nextRole) {
-      const targetRole = await findTargetRole(m.leagueId, targetUserId)
       const isSelf = targetUserId === m.userId
-      if (!canChangeRole({ actorRole: m.role, targetRole, nextRole, isSelf })) throw forbidden()
+      const precheckRole = await findTargetRole(m.leagueId, targetUserId)
+      if (!canChangeRole({ actorRole: m.role, targetRole: precheckRole, nextRole, isSelf })) {
+        throw forbidden()
+      }
       await runInTransaction(db, async (tx) => {
+        const { actorRole, targetRole } = await lockPair(tx, m, targetUserId)
+        if (!canChangeRole({ actorRole, targetRole, nextRole, isSelf })) throw forbidden()
         if ((await updateMemberRole(tx, m.leagueId, targetUserId, nextRole)) === 0) {
           throw notFound('Member not found')
         }
@@ -218,14 +230,14 @@ export function createMembersService(deps: MembersServiceDeps): MembersService {
 
     async leaveLeague(m) {
       if (!canLeaveLeague(m.role)) {
-        throw new AppError('LEAVE_NOT_ALLOWED', 409, 'The owner must transfer the league first')
+        throw leaveNotAllowed()
       }
       const outcome = await runInTransaction(db, async (tx) => {
         await lockLeagueEconomyExclusive(tx, m.leagueId)
         const [own] = await lockMemberships(tx, m.leagueId, [m.userId])
         if (own === undefined) throw notFound()
         if (!canLeaveLeague(own.role)) {
-          throw new AppError('LEAVE_NOT_ALLOWED', 409, 'The owner must transfer the league first')
+          throw leaveNotAllowed()
         }
         const detached = await detachMember(tx, m, m.userId, 'member_left')
         await insertAuditEntry(tx, {
