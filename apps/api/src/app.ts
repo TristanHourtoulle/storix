@@ -10,6 +10,8 @@ import { authRoutes } from './auth/auth.routes'
 import { clientIpPolicy } from './config/client-ip'
 import { buildServices, type AppDeps } from './deps'
 import { healthRoutes } from './features/health/health.routes'
+import { leaguesRoutes } from './features/leagues/leagues.routes'
+import { meRoutes } from './features/me/me.routes'
 import { registerErrorHandling } from './http/error-handler'
 import { registerOriginCheck } from './http/origin-check'
 import { AppError } from './lib/errors'
@@ -47,8 +49,11 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   app.decorate('authGateway', deps.auth)
 
   const services = buildServices(deps)
+  app.decorate('services', services)
   await app.register(authRoutes(deps.auth, env.APP_ORIGIN))
   await app.register(healthRoutes(services.health), { prefix: '/api' })
+  await app.register(meRoutes(services.me), { prefix: '/api' })
+  await app.register(leaguesRoutes(services.leagues), { prefix: '/api' })
 
   return app
 }
