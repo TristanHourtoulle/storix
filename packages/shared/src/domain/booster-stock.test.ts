@@ -34,8 +34,17 @@ describe('booster stock', () => {
       anchor: at(6000),
       nextAt: null,
     }))
-  it('keeps a stock above the max', () =>
-    expect(computeBoosterStock({ stock: 8, anchor: t0 }, at(10), cadence).available).toBe(8))
+  it('clamps a stored stock above the max', () => {
+    expect(computeBoosterStock({ stock: 8, anchor: t0 }, at(10), cadence)).toEqual({
+      available: 6,
+      anchor: at(10),
+      nextAt: null,
+    })
+    expect(consumeBooster({ stock: 8, anchor: t0 }, at(10), cadence)).toEqual({
+      stock: 5,
+      anchor: at(10),
+    })
+  })
   it('ignores a clock earlier than the anchor', () =>
     expect(computeBoosterStock({ stock: 1, anchor: at(60) }, t0, cadence)).toEqual({
       available: 1,

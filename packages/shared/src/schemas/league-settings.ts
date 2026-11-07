@@ -20,6 +20,14 @@ const hasPositiveWeight = (w: { uploaderScarcity: number; photoAge: number; reac
 
 const rarityWeightsSchema = rarityWeightsShape.refine(hasPositiveWeight)
 
+const joinGiftWithinMaxStock = (b: { maxStock: number; joinGift: number }) =>
+  b.joinGift <= b.maxStock
+
+const joinGiftPathIssue = {
+  path: ['booster', 'joinGift'],
+  message: 'The join gift cannot exceed the max stock',
+}
+
 const weightsPathIssue = {
   path: ['rarityWeights'],
   message: 'At least one weight must be positive',
@@ -49,6 +57,7 @@ export const updateLeagueSettingsBodySchema = z
     newCardDelayMinutes: newCardDelaySchema,
   })
   .refine((body) => hasPositiveWeight(body.rarityWeights), weightsPathIssue)
+  .refine((body) => joinGiftWithinMaxStock(body.booster), joinGiftPathIssue)
 
 const tierCountSchema = z.int().min(0)
 
@@ -94,9 +103,10 @@ export function resolveLeagueSettings(raw: unknown): LeagueSettings {
     const parsed = schema.safeParse(source[key])
     return parsed.success ? parsed.data : defaults[key]
   }
+  const booster = pick('booster', boosterSchema)
   return {
     rarityWeights: pick('rarityWeights', rarityWeightsSchema),
-    booster: pick('booster', boosterSchema),
+    booster: { ...booster, joinGift: Math.min(booster.joinGift, booster.maxStock) },
     uploadQuotaPerDay: pick('uploadQuotaPerDay', uploadQuotaSchema),
     newCardDelayMinutes: pick('newCardDelayMinutes', newCardDelaySchema),
   }
