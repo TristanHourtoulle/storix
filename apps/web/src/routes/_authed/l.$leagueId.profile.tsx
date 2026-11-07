@@ -8,7 +8,6 @@ import { PasskeyList } from '@/features/auth/components/passkey-list'
 import { meQueryOptions } from '@/features/auth/session.queries'
 import { useLogout } from '@/features/auth/use-logout'
 import { LeagueList } from '@/features/leagues/components/league-list'
-import { leagueDetailQueryOptions } from '@/features/leagues/leagues.queries'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/profile')({
   component: Profile,
@@ -17,7 +16,6 @@ export const Route = createFileRoute('/_authed/l/$leagueId/profile')({
 function Profile() {
   const { leagueId } = Route.useParams()
   const { data: me } = useSuspenseQuery(meQueryOptions)
-  const { data: league } = useSuspenseQuery(leagueDetailQueryOptions(leagueId))
   const { logout, isPending, errorMessage } = useLogout()
 
   if (!me) return null
@@ -30,11 +28,7 @@ function Profile() {
       </header>
       <PasskeyList displayUsername={me.user.displayUsername} />
       <ChangePasswordForm />
-      <LeagueList
-        leagues={me.leagues}
-        currentLeagueId={leagueId}
-        canAdministerCurrent={league.myRole !== 'member'}
-      />
+      <LeagueList leagues={me.leagues} currentLeagueId={leagueId} />
       {errorMessage ? <Notice tone="error">{errorMessage}</Notice> : null}
       <Button variant="ghost" block isLoading={isPending} onClick={() => logout()}>
         Se déconnecter
