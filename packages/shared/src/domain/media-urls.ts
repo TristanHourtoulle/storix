@@ -29,6 +29,7 @@ export function isMediaWindowAccepted(windowStart: number, now: Date): boolean {
 
 /** Returns the seconds until a URL signed for `windowStart` stops being accepted. */
 export function mediaMaxAgeSeconds(windowStart: number, now: Date): number {
+  if (!isMediaWindowAccepted(windowStart, now)) return 0
   const seconds = windowStart + 2 * MEDIA_WINDOW_SECONDS - nowSeconds(now)
   return Math.max(0, Math.floor(seconds))
 }

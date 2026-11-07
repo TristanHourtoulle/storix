@@ -26,6 +26,8 @@ describe('media urls', () => {
     expect(mediaMaxAgeSeconds(1793923200, now)).toBe(50400)
     expect(mediaMaxAgeSeconds(1793836800, now)).toBe(0)
   })
+  it('returns zero max-age for a future window', () =>
+    expect(mediaMaxAgeSeconds(1794096000, now)).toBe(0))
   it('builds and parses media paths', () => {
     const path = buildMediaPath(1794009600, sig, key)
     expect(path).toBe(`/media/1794009600/${sig}/${key}`)

@@ -1,8 +1,9 @@
 export const PHASH_SIZE = 32
 export const PHASH_DUPLICATE_MAX_DISTANCE = 6
+export const PHASH_MIN_DETAIL = 400
 
 const BLOCK = 8
-const MEDIAN_DEAD_ZONE = 8
+const RELATIVE_EPSILON = 1e-9
 const HASH_PATTERN = /^[0-9a-f]{16}$/
 
 const COS_TABLE: readonly (readonly number[])[] = Array.from({ length: BLOCK }, (_, u) =>
@@ -11,8 +12,7 @@ const COS_TABLE: readonly (readonly number[])[] = Array.from({ length: BLOCK }, 
   ),
 )
 
-/** Computes a 64-bit DCT perceptual hash of a 32x32 grayscale image as 16 hex chars. */
-export function perceptualHash(gray: Uint8Array): string {
+function dctBlock(gray: Uint8Array): number[] {
   if (gray.length !== PHASH_SIZE * PHASH_SIZE) {
     throw new Error(`Expected ${PHASH_SIZE * PHASH_SIZE} grayscale bytes, got ${gray.length}`)
   }
@@ -38,14 +38,28 @@ export function perceptualHash(gray: Uint8Array): string {
       coefficients.push(sum)
     }
   }
+  return coefficients
+}
+
+function maxAbsAc(coefficients: readonly number[]): number {
+  return coefficients.slice(1).reduce((max, c) => Math.max(max, Math.abs(c)), 0)
+}
+
+/** Computes a 64-bit DCT perceptual hash of a 32x32 grayscale image as 16 hex chars. */
+export function perceptualHash(gray: Uint8Array): string {
+  const coefficients = dctBlock(gray)
   const sorted = coefficients.slice(1).sort((a, b) => a - b)
-  const middle = sorted.length >> 1
-  const median = ((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2
+  const threshold = (sorted[31] ?? 0) + RELATIVE_EPSILON * maxAbsAc(coefficients)
   let bits = 0n
   for (const coefficient of coefficients) {
-    bits = (bits << 1n) | (coefficient > median + MEDIAN_DEAD_ZONE ? 1n : 0n)
+    bits = (bits << 1n) | (coefficient > threshold ? 1n : 0n)
   }
   return bits.toString(16).padStart(16, '0')
+}
+
+/** Tells whether an image has enough texture for its perceptual hash to be comparable. */
+export function hasEnoughDetailForDedup(pixels: Uint8Array): boolean {
+  return maxAbsAc(dctBlock(pixels)) >= PHASH_MIN_DETAIL
 }
 
 /** Counts differing bits between two 16-hex perceptual hashes. */

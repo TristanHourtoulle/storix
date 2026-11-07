@@ -7,7 +7,7 @@ export const UPLOAD_QUOTA_WINDOW_MS = 86_400_000
 export const CLIENT_MAX_EDGE_PX = 2048
 export const MIN_CAPTURE_DATE = new Date('1990-01-01T00:00:00Z')
 
-const DAY_MS = 86_400_000
+export const CAPTURE_DATE_FUTURE_TOLERANCE_MS = 86_400_000
 
 /** Returns how many uploads are still allowed, never below zero. */
 export function remainingUploadQuota(input: { limit: number; used: number }): number {
@@ -21,7 +21,9 @@ export function checkUploadQuota(input: {
   requested: number
 }): { allowed: true } | { allowed: false; remaining: number } {
   const remaining = remainingUploadQuota(input)
-  return input.requested <= remaining ? { allowed: true } : { allowed: false, remaining }
+  return input.requested > 0 && input.requested <= remaining
+    ? { allowed: true }
+    : { allowed: false, remaining }
 }
 
 /** Returns the start of the rolling 24 h quota window. */
@@ -35,6 +37,6 @@ export function sanitizeCaptureDate(raw: Date | null, now: Date): Date | null {
   const time = raw.getTime()
   if (Number.isNaN(time)) return null
   if (time < MIN_CAPTURE_DATE.getTime()) return null
-  if (time > now.getTime() + DAY_MS) return null
+  if (time > now.getTime() + CAPTURE_DATE_FUTURE_TOLERANCE_MS) return null
   return raw
 }

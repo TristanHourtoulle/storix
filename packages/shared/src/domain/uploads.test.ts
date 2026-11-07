@@ -22,6 +22,16 @@ describe('uploads', () => {
       remaining: 2,
     })
   })
+  it('rejects non-positive requests', () => {
+    expect(checkUploadQuota({ limit: 10, used: 0, requested: 0 })).toEqual({
+      allowed: false,
+      remaining: 10,
+    })
+    expect(checkUploadQuota({ limit: 10, used: 0, requested: -1 })).toEqual({
+      allowed: false,
+      remaining: 10,
+    })
+  })
   it('uses a rolling 24h window', () =>
     expect(uploadQuotaWindowStart(new Date('2026-11-07T10:00:00Z')).toISOString()).toBe(
       '2026-11-06T10:00:00.000Z',
