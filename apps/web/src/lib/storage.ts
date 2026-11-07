@@ -2,6 +2,10 @@ import { logger } from './logger'
 
 export const STORAGE_KEYS = {
   lastLeagueId: (userId: string): string => `storix.lastLeagueId.${userId}`,
+  removalCursor: (userId: string, leagueId: string): string =>
+    `storix.removalCursor.${userId}.${leagueId}`,
+  acknowledgedRemovals: (userId: string, leagueId: string): string =>
+    `storix.acknowledgedRemovals.${userId}.${leagueId}`,
   iosHintDismissed: 'storix.iosHintDismissed',
   passkeyPromptDismissed: (userId: string): string => `storix.passkeyPromptDismissed.${userId}`,
 } as const
