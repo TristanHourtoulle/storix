@@ -10,6 +10,7 @@ import { authRoutes } from './auth/auth.routes'
 import { clientIpPolicy } from './config/client-ip'
 import { buildServices, type AppDeps } from './deps'
 import { healthRoutes } from './features/health/health.routes'
+import { invitationsRoutes } from './features/invitations/invitations.routes'
 import { leaguesRoutes } from './features/leagues/leagues.routes'
 import { meRoutes } from './features/me/me.routes'
 import { registerErrorHandling } from './http/error-handler'
@@ -54,6 +55,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(healthRoutes(services.health), { prefix: '/api' })
   await app.register(meRoutes(services.me), { prefix: '/api' })
   await app.register(leaguesRoutes(services.leagues), { prefix: '/api' })
+  await app.register(invitationsRoutes(services.invitations), { prefix: '/api' })
 
   return app
 }
