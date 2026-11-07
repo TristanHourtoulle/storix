@@ -12,6 +12,10 @@ export type IconName =
   | 'calendar'
   | 'shield'
   | 'check'
+  | 'fire'
+  | 'heart'
+  | 'star'
+  | 'lock'
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -27,6 +31,10 @@ const PATHS: Record<IconName, string> = {
   calendar: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
   shield: 'M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z',
   check: 'M5 12.5l4.5 4.5L19 7.5',
+  fire: 'M12 3c.8 3.6 5 5.2 5 10a5 5 0 0 1-10 0c0-2.6 1.4-3.8 2.2-6 1.2.9 2 1.8 2.3 3.2C12.6 8 12.4 5.6 12 3z',
+  heart: 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z',
+  star: 'M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.6l-5.3 2.8 1.2-6-4.5-4.1 6-.7z',
+  lock: 'M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z',
 }
 
 interface IconProps {
