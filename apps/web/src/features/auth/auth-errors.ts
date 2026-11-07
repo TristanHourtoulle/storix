@@ -6,6 +6,10 @@ const AUTH_MESSAGES: Record<string, string> = {
   ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED: 'Cet appareil a déjà une passkey enregistrée.',
   ERROR_CEREMONY_ABORTED: 'Ajout annulé. Tu peux réessayer quand tu veux.',
   AUTH_CANCELLED: 'Ajout annulé. Tu peux réessayer quand tu veux.',
+  ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY:
+    "Ajout annulé ou refusé par l'appareil. Vérifie que le trousseau / gestionnaire de passkeys est activé, puis réessaie.",
+  ERROR_INVALID_DOMAIN: "Ce domaine n'est pas autorisé pour les passkeys.",
+  ERROR_INVALID_RP_ID: "Ce domaine n'est pas autorisé pour les passkeys.",
 }
 
 interface AuthErrorShape {

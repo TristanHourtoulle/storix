@@ -29,6 +29,10 @@ const passkeyListSchema = z.array(
 async function registerPasskey(displayUsername: string): Promise<void> {
   const result = await authClient.passkey.addPasskey({ name: displayUsername })
   if (result?.error) {
+    logger.warn('Passkey registration failed', {
+      code: 'code' in result.error ? result.error.code : undefined,
+      status: result.error.status,
+    })
     throw new Error(authErrorMessage(result.error, "Impossible d'ajouter la passkey."))
   }
   const registered = registeredPasskeySchema.safeParse(result?.data)
