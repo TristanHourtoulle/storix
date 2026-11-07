@@ -165,8 +165,9 @@
   .cards-row {
     display: flex;
     gap: 12px;
-    margin: 0;
-    padding: 0 0 4px;
+    margin: -18px -16px -14px;
+    padding: 18px 16px 18px;
+    scroll-padding-inline: 16px;
     list-style: none;
     overflow-x: auto;
   }
