@@ -7,7 +7,6 @@ import {
   RARITY_RECOMPUTE_QUEUE_OPTIONS,
   STORAGE_DELETE_JOB,
   STORAGE_DELETE_SEND_OPTIONS,
-  STORAGE_GC_JOB,
 } from '@storix/shared'
 import { assertStorageReachable, createObjectStorage } from '@storix/storage'
 import { PgBoss } from 'pg-boss'
@@ -100,7 +99,6 @@ async function start(): Promise<void> {
   const storageGc = createStorageGcService({ db: database.db, storage, clock, logger })
   await registerStorageDeleteJob(boss, storageDelete, logger)
   await registerStorageGcJob(boss, storageGc)
-  await boss.send(STORAGE_GC_JOB, null)
   logger.info({ concurrency: env.MEDIA_CONCURRENCY }, 'Worker started')
 }
 
