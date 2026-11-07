@@ -127,13 +127,57 @@ The repository uses TypeScript 6.0.x, not 7.x: `typescript-eslint` 8.72.1 declar
 
 ## Production
 
-- Target: Railway, served at `https://storix.tristanhourtoulle.fr` (the Railway-generated domain is the origin until DNS resolves).
-- Services: PostgreSQL, a bucket (S3-compatible object storage), `api` and `worker`, both built from this repository.
-  - `api`: build `pnpm build:api`, pre-deploy `pnpm migrate:prod`, start `pnpm start`, health check `/api/health`.
-  - `worker`: build `pnpm build:worker`, start `pnpm start:worker`.
-- `NODE_ENV=production` makes the API serve the built web app (`apps/web/dist`, override with `WEB_DIST_DIR`) with an SPA fallback for HTML navigations. `/api/*` and `/media/*` never fall back to the SPA.
-- Variables for the api: `NODE_ENV=production`, `DATABASE_URL`, `BETTER_AUTH_SECRET`, `APP_ORIGIN`, `PASSKEY_RP_ID`, `MEDIA_URL_SECRET`, `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE=false` (virtual-hosted style), `PORT` (provided by Railway). The worker needs `NODE_ENV=production`, the database and S3 variables, plus optional `MEDIA_CONCURRENCY` (default 2). Both the api and the worker probe the bucket at startup and exit with a fatal log when it is unreachable or the credentials are rejected.
-- `pnpm migrate:prod` reads `DATABASE_URL` and the migrations from `packages/db/drizzle` (override with `MIGRATIONS_DIR`); the server does not migrate on boot.
-- First user: run `BOOTSTRAP_PASSWORD=... node apps/api/dist/bootstrap.js --username <name> --league <league name>` in the api service.
-- Custom domain: add `storix.tristanhourtoulle.fr` to the api service, create the CNAME record Railway shows at the DNS provider, wait for the certificate, then set `APP_ORIGIN=https://storix.tristanhourtoulle.fr` and `PASSKEY_RP_ID=storix.tristanhourtoulle.fr` and redeploy.
-- Behind Railway the client IP is read from the `x-real-ip` header (one trusted proxy hop) for rate limiting. Do not expose the service without that proxy.
+- Host: Railway, project `storix`, environment `production`, region EU West (Amsterdam).
+- Live origin until the custom domain is switched: `https://api-production-2b79.up.railway.app`. Target: `https://storix.tristanhourtoulle.fr`.
+- Deploys: pushing `main` to `TristanHourtoulle/storix` builds `api` and `worker` (Railpack, Node 24, pnpm from `packageManager`); each service only rebuilds when its watch patterns change.
+
+### Services
+
+| Service        | Role                                                                                                     | Config                                                                                                                                     |
+| -------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Postgres`     | PostgreSQL 18, 5 GB volume                                                                               | private network only                                                                                                                       |
+| `storix-media` | Bucket (S3-compatible, virtual-hosted style), browser uploads go to `https://<bucket>.t3.storageapi.dev` | CORS set with `pnpm --filter @storix/storage set-cors --origins ...`                                                                       |
+| `api`          | Fastify API + built web app                                                                              | build `pnpm build:api`, pre-deploy `pnpm migrate:prod`, start `pnpm start`, health check `/api/health`, CDN enabled (purge HTML on deploy) |
+| `worker`       | pg-boss media jobs (process + sweep)                                                                     | build `pnpm build:worker`, start `pnpm start:worker`                                                                                       |
+
+### Variables
+
+- Both services: `NODE_ENV=production`, `LOG_LEVEL=info`, `RAILPACK_NODE_VERSION=24`, `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `S3_ENDPOINT=${{storix-media.ENDPOINT}}`, `S3_BUCKET=${{storix-media.BUCKET}}`, `S3_ACCESS_KEY_ID=${{storix-media.ACCESS_KEY_ID}}`, `S3_SECRET_ACCESS_KEY=${{storix-media.SECRET_ACCESS_KEY}}`, `S3_REGION=auto`, `S3_FORCE_PATH_STYLE=false`. The worker also accepts `MEDIA_CONCURRENCY` (default 2).
+- api only: `BETTER_AUTH_SECRET` and `MEDIA_URL_SECRET` (each `openssl rand -base64 32`, set with `--stdin`), `APP_ORIGIN`, `PASSKEY_RP_ID`. `PORT` is injected by Railway.
+- `NODE_ENV=production` makes the API serve `apps/web/dist` (override with `WEB_DIST_DIR`) with an SPA fallback for HTML navigations; `/api/*` and `/media/*` never fall back to the SPA. Both services probe the bucket at startup and exit with a fatal log when it is unreachable.
+- `pnpm migrate:prod` reads `DATABASE_URL` and `packages/db/drizzle` (override with `MIGRATIONS_DIR`); the server does not migrate on boot.
+
+### Caching
+
+- `/media/*` responses are `public, max-age=..., immutable` and cached by the CDN (`x-cache: HIT` from the second GET; HEAD requests bypass the CDN). Invalid signatures return `403` with `no-store` and are never cached.
+- `/api/*`, `/sw.js` and HTML are `no-store`.
+
+### Client IP and rate limiting
+
+- The Railway edge overwrites `X-Real-IP` with the client address and rebuilds `X-Forwarded-For` as `<client>, <cdn edge>` (client-supplied values are dropped). Fastify trusts two proxy hops so `request.ip` is the client; Better Auth reads `X-Real-IP`. Do not expose the service without the Railway edge.
+
+### First user
+
+Generate a password with `openssl rand -base64 18`, then pipe it over SSH so it never lands on a command line:
+
+```sh
+printf '%s\n' "$PASSWORD" | ssh <service-instance>@ssh.railway.com \
+  'IFS= read -r P; BOOTSTRAP_PASSWORD="$P" node apps/api/dist/bootstrap.js --username <name> --league "<league name>"'
+```
+
+(`railway ssh --service api` works too once `ssh.railway.com` is in `known_hosts`; `railway ssh config --service api --dry-run` shows the instance user.)
+
+### Custom domain `storix.tristanhourtoulle.fr`
+
+The domain is attached to the `api` service. DNS records in the Hostinger zone `tristanhourtoulle.fr`:
+
+| Type  | Name                     | Value                                                                             |
+| ----- | ------------------------ | --------------------------------------------------------------------------------- |
+| CNAME | `storix`                 | `605y2uyf.up.railway.app`                                                         |
+| TXT   | `_railway-verify.storix` | `railway-verify=14bdb557eccc0ec20b1b39efa98dbf65020bd345c2aa60460a5136b2f7708402` |
+
+Switch procedure, once `railway domain status storix.tristanhourtoulle.fr --service api --json` shows the domain verified and the certificate issued:
+
+1. `railway variable set APP_ORIGIN=https://storix.tristanhourtoulle.fr PASSKEY_RP_ID=storix.tristanhourtoulle.fr --service api` (one deploy).
+2. Passkeys registered on the Railway domain stop working and must be added again; password login keeps working.
+3. The bucket CORS rules already allow `https://storix.tristanhourtoulle.fr`.
