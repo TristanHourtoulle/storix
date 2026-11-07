@@ -3,7 +3,9 @@ import { createObjectStorage, type ObjectStorage } from '@storix/storage'
 import { createAuth } from './auth/auth'
 import { createAuthGateway, type AuthGateway } from './auth/auth.gateway'
 import type { Env } from './config/env'
+import { createBoostersService, type BoostersService } from './features/boosters/boosters.service'
 import { createCardsService, type CardsService } from './features/cards/cards.service'
+import { createCopiesService, type CopiesService } from './features/copies/copies.service'
 import { createHealthService, type HealthService } from './features/health/health.service'
 import {
   createInvitationsService,
@@ -14,10 +16,15 @@ import { createMediaService, type MediaService } from './features/media/media.se
 import { createMeService, type MeService } from './features/me/me.service'
 import { createMembersService, type MembersService } from './features/members/members.service'
 import {
+  createReactionsService,
+  type ReactionsService,
+} from './features/reactions/reactions.service'
+import {
   createResetCodesService,
   type ResetCodesService,
 } from './features/reset-codes/reset-codes.service'
 import { createUploadsService, type UploadsService } from './features/uploads/uploads.service'
+import { createWalletsService, type WalletsService } from './features/wallets/wallets.service'
 import type { JobQueue } from './jobs/job-queue'
 import type { ErrorLogger } from './lib/error-logger'
 import { createMediaSigner, type MediaSigner } from './lib/media-signer'
@@ -33,15 +40,19 @@ export interface AppDeps {
 }
 
 export interface Services {
+  boosters: BoostersService
   cards: CardsService
+  copies: CopiesService
   health: HealthService
   invitations: InvitationsService
   leagues: LeaguesService
   me: MeService
   media: MediaService
   members: MembersService
+  reactions: ReactionsService
   resetCodes: ResetCodesService
   uploads: UploadsService
+  wallets: WalletsService
 }
 
 /** Wires the runtime dependencies for the given environment, database and job queue. */
@@ -61,7 +72,13 @@ export function createAppDeps(env: Env, db: Database, jobs: JobQueue): AppDeps {
 /** Builds every feature service from the app dependencies. */
 export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
   return {
-    cards: createCardsService({ db: deps.db, signer: deps.mediaSigner }),
+    boosters: createBoostersService({
+      db: deps.db,
+      signer: deps.mediaSigner,
+      clock: deps.clock,
+    }),
+    cards: createCardsService({ db: deps.db, signer: deps.mediaSigner, clock: deps.clock }),
+    copies: createCopiesService({ db: deps.db, clock: deps.clock }),
     health: createHealthService(deps.db),
     invitations: createInvitationsService({
       db: deps.db,
@@ -77,6 +94,7 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       clock: deps.clock,
     }),
     members: createMembersService(deps.db),
+    reactions: createReactionsService({ db: deps.db }),
     resetCodes: createResetCodesService({
       db: deps.db,
       auth: deps.auth,
@@ -89,5 +107,6 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       jobs: deps.jobs,
       clock: deps.clock,
     }),
+    wallets: createWalletsService({ db: deps.db, clock: deps.clock }),
   }
 }

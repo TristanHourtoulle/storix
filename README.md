@@ -1,7 +1,7 @@
 # Storix
 
 Storix is an invite-only, mobile-first PWA where friends share photos inside private leagues and turn them into collectible cards opened from boosters.
-This repository holds the foundation: accounts, leagues, members, invitations and the installable app shell.
+This repository holds the accounts, leagues, members and invitations, the photo-to-card pipeline, and the card game: boosters, collection, reactions and the dust economy.
 See the [design spec](docs/superpowers/specs/2026-11-07-storix-design.md) and the [roadmap](docs/superpowers/plans/2026-11-07-storix-roadmap.md).
 
 ## Prerequisites
@@ -87,9 +87,9 @@ For the production preview, copy `.env` to `.env.preview` (gitignored) and set `
 ```
 apps/web         React 19, Vite, TanStack Router and Query, Tailwind v4, Serwist (PWA)
 apps/api         Fastify 5, Better Auth, Zod type provider, pino
-apps/worker      pg-boss consumer: image pipeline (sharp), cards, upload sweep
-packages/storage S3 gateway (presigned POST, object reads and writes)
-packages/shared  Zod schemas and the pure domain (roles, invitations, reset codes)
+apps/worker      pg-boss consumer: image pipeline (sharp), cards, upload sweep, rarity recompute, storage deletes and GC
+packages/storage S3 gateway (presigned POST, object reads, writes and deletes)
+packages/shared  Zod schemas and the pure domain (roles, invitations, reset codes, rarity, boosters, pity, dust)
 packages/db      Drizzle schema, client and migrations
 ```
 
@@ -123,12 +123,82 @@ The repository uses TypeScript 6.0.x, not 7.x: `typescript-eslint` 8.72.1 declar
 - Worker pipeline: completing an upload enqueues a pg-boss job. The worker downloads the original, strips EXIF and GPS, produces AVIF and WebP variants, a thumbhash and a dominant color, creates the card and deletes the original. A scheduled sweep removes stranded uploads.
 - Serving: `GET /media/{windowStart}/{hmac}/{objectKey}`. The HMAC-SHA256 covers `windowStart` and `objectKey` with `MEDIA_URL_SECRET`; windows are 24 h UTC and the current and previous ones are accepted. Successes are `Cache-Control: public, max-age=<seconds until the URL expires>, immutable` with no cookie and no session lookup; errors are `no-store`.
 - CDN: because `/media` responses are public and immutable, a CDN in front of the API can cache them per URL.
-- Service worker: media are cached under a key without the window and signature segments (`/media/img/...`, cache `storix-media-v1`), so a rotated URL still hits the cache. Card reads use NetworkFirst in `storix-api-v1`, which is deleted on logout. `sw.js`, `index.html` and `manifest.webmanifest` are served `no-store` so a CDN can never keep a stale shell after a deploy; the precache keeps the shell available offline.
+- Service worker: media are cached under a key without the window and signature segments (`/media/img/...`, cache `storix-media-v1`), so a rotated URL still hits the cache. Card reads use NetworkFirst in `storix-api-v2`, which is deleted on logout and on a session change; older `storix-api-v*` caches are purged on activation (v1 could hold image URLs of cards that are now locked). `sw.js`, `index.html` and `manifest.webmanifest` are served `no-store` so a CDN can never keep a stale shell after a deploy; the precache keeps the shell available offline.
+
+## Game
+
+### Rules summary
+
+- **Tiers:** common, uncommon, rare, epic, legendary, mythic. A card's tier is computed per league by the rarity engine (uploader scarcity, photo age and reactions, weighted by `rarityWeights`), using percentile quotas with hysteresis, fixed score thresholds for small leagues (cold start), and pins/bounds that take precedence (their admin UI is Plan 4).
+- **New cards:** a card enters the booster pool `newCardDelayMinutes` after its creation (default **60 minutes**). Crafting a card that is still inside this delay is refused.
+- **Booster stock:** one booster every `booster.intervalMinutes` (default 240), up to `booster.maxStock` (default 6), computed lazily from the wallet anchor. A member joining a league gets `booster.joinGift` boosters (default 2, clamped to `maxStock`); migration 0003 backfilled wallets for existing members.
+- **Booster contents:** 5 slots. Slots 1-3 common 80 / uncommon 20, slot 4 uncommon 70 / rare 30, slot 5 rare 72 / epic 20 / legendary 7 / mythic 1. Inside a tier the author is picked uniformly first, then one of their cards, so a prolific uploader does not flood boosters. Own cards are pullable. Each copy is foil with 1/15 odds.
+- **Empty tier fallback:** a rolled tier with no card falls back to the nearest lower tier, then the nearest higher one. Under the Epic guarantee, slot 5 searches from the rolled tier down to Epic, then upward (Legendary, Mythic), and only goes below Epic when nothing at Epic or above exists.
+- **Empty pool:** when no card is old enough, the booster is refused without being consumed, and the home screen shows the pool-empty state with the time the next card becomes eligible.
+- **Pity:** the 10th consecutive booster without an Epic or better guarantees one (at most 9 in a row without). From the 26th booster without a Legendary, slot 5 gains +1 % Legendary per booster, taken from Rare then Epic. The home text is honest: when no Epic card exists in the league yet it reads "Épique garantie dès qu'une carte Épique existera", and the Legendary bonus is shown as a chance, not a guarantee.
+- **Copies:** each copy keeps its `tier_at_mint` and variant (normal or foil). A pulled card you already own at the same variant is a duplicate and turns into dust; a pull of a higher tier upgrades the copy.
+- **Dust:** common 5, uncommon 10, rare 25, epic 100, legendary 400, mythic 1000, doubled for foil. Recycling a copy gives its value. Crafting a missing card costs 4x its current tier (mythic is not craftable) and creates a normal copy. A foil upgrade costs 2x the copy's mint tier and turns the normal copy into a foil one; it is refused when a foil is already owned.
+- **Reactions:** `fire`, `heart`, `star`, only on cards you own a copy of and did not author; they stay after a recycle and feed the next rarity run.
+- **Discovered by:** the first member to pull a card is frozen as its discoverer; crafting never sets it.
+- **Collection:** owned cards show the copy's mint tier (the detail adds "Actuellement {tier}" when it changed); cards you do not own are silhouettes (`???`) with no image URL in the API response.
+
+### Endpoints
+
+All under `/api`, authenticated, member of the league, `cache-control: no-store`.
+
+| Method   | Path                                               | Purpose                                                                                                 |
+| -------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/leagues/:leagueId/wallet`                        | Dust, booster stock (`stock`, `maxStock`, `nextAt`, `intervalSeconds`), pool availability, pity summary |
+| `POST`   | `/leagues/:leagueId/boosters`                      | Open a booster. Body `{ requestId }` (client UUID); idempotent per member and `requestId`               |
+| `GET`    | `/leagues/:leagueId/reveals`                       | Recent reveals in the league                                                                            |
+| `GET`    | `/leagues/:leagueId/cards`                         | Collection: owned cards and locked silhouettes, with member and rarity filters                          |
+| `GET`    | `/leagues/:leagueId/cards/:cardId`                 | Card detail (rarity, foil, author, capture date, discoverer, copies, reactions)                         |
+| `POST`   | `/leagues/:leagueId/cards/:cardId/recycle`         | Recycle one copy. Body `{ variant }`                                                                    |
+| `POST`   | `/leagues/:leagueId/cards/:cardId/craft`           | Craft a missing card with dust                                                                          |
+| `POST`   | `/leagues/:leagueId/cards/:cardId/foil`            | Upgrade the normal copy to foil                                                                         |
+| `PUT`    | `/leagues/:leagueId/cards/:cardId/reactions/:type` | Add a reaction                                                                                          |
+| `DELETE` | `/leagues/:leagueId/cards/:cardId/reactions/:type` | Remove a reaction                                                                                       |
+
+The web app opens a booster with a `useQuery` keyed by the `requestId` carried in the URL, so a reload or a retry replays the same booster instead of opening a new one.
+
+### Booster replay fields
+
+Every opening is one transaction that writes a `booster_openings` row and its `booster_pulls`:
+
+- `seed`: the CSPRNG seed that drove every roll (per slot: tier, author, card, foil).
+- `table_version`: the drop table version (`DROP_TABLE_VERSION`, currently **2**; version 1 is the fallback without the Epic floor).
+- `pity_before`: the `{ sinceEpic, sinceLegendary }` counters before the opening.
+- `pool_digest`: a SHA-256 digest of the eligible pool (the pool itself is not stored).
+- `dust_gained`, `request_id` (unique per league and member) and `opened_at`.
+
+With the seed, the table version, the pity and the pool identified by its digest, `drawBooster` in `packages/shared` reproduces the pulls. No replay tool is built yet.
+
+### Rarity job schedule (worker)
+
+- `rarity.recompute`: one queued job per league, debounced, after every new card, and fanned out by the nightly job. Each run logs `Rarity recomputed` with the card and change counts and writes the tier history.
+- `rarity.nightly`: 03:00 Europe/Paris, enqueues a recompute for every league. It is also sent once when the worker starts.
+- Reactions are picked up by the next run, not instantly. A recompute on settings change is wired in Plan 4.
+- `storage.gc`: weekly orphan GC, Sundays 04:00 Europe/Paris (never at boot), with a mass-delete breaker. `storage.delete` removes the objects of deleted cards.
+
+### Testing with a one-minute cadence
+
+There is no settings UI yet (Plan 4). Edit the league's `settings` JSON directly (read through `resolveLeagueSettings`: each missing or invalid key falls back to its default):
+
+```sql
+UPDATE leagues
+SET settings = jsonb_build_object(
+  'booster', jsonb_build_object('intervalMinutes', 1, 'maxStock', 6, 'joinGift', 2),
+  'newCardDelayMinutes', 0
+)
+WHERE id = '<league id>';
+```
+
+A booster then refills every minute and new cards are drawable right away. Reset with `UPDATE leagues SET settings = NULL WHERE id = '<league id>';` (only on a local or test league).
 
 ## Production
 
 - Host: Railway, project `storix`, environment `production`, region EU West (Amsterdam).
-- Live origin until the custom domain is switched: `https://api-production-2b79.up.railway.app`. Target: `https://storix.tristanhourtoulle.fr`.
+- Live origin: `https://storix.tristanhourtoulle.fr` (`APP_ORIGIN`). The Railway service domain `https://api-production-2b79.up.railway.app` still answers.
 - Deploys: pushing `main` to `TristanHourtoulle/storix` builds `api` and `worker` (Railpack, Node 24, pnpm from `packageManager`); each service only rebuilds when its watch patterns change.
 
 ### Services
@@ -138,7 +208,7 @@ The repository uses TypeScript 6.0.x, not 7.x: `typescript-eslint` 8.72.1 declar
 | `Postgres`     | PostgreSQL 18, 5 GB volume                                                                               | private network only                                                                                                                       |
 | `storix-media` | Bucket (S3-compatible, virtual-hosted style), browser uploads go to `https://<bucket>.t3.storageapi.dev` | CORS set with `pnpm --filter @storix/storage set-cors --origins ...`                                                                       |
 | `api`          | Fastify API + built web app                                                                              | build `pnpm build:api`, pre-deploy `pnpm migrate:prod`, start `pnpm start`, health check `/api/health`, CDN enabled (purge HTML on deploy) |
-| `worker`       | pg-boss media jobs (process + sweep)                                                                     | build `pnpm build:worker`, start `pnpm start:worker`                                                                                       |
+| `worker`       | pg-boss jobs (media process + sweep, rarity recompute + nightly, storage delete + weekly GC)             | build `pnpm build:worker`, start `pnpm start:worker`                                                                                       |
 
 ### Variables
 

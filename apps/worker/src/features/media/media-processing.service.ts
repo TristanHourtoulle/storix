@@ -11,6 +11,7 @@ import {
 } from '@storix/shared/domain'
 import { cardTitleSchema, type MediaVariant, type UploadRejectionReason } from '@storix/shared'
 import { ObjectTooLargeError, type ObjectStorage } from '@storix/storage'
+import type { RarityQueue } from '../../jobs/rarity-queue'
 import type { WorkerLogger } from '../../lib/logger'
 import { runInTransaction } from '../../lib/transaction'
 import type { ImagePipeline, RenderedFile } from './image-pipeline'
@@ -29,6 +30,7 @@ interface Deps {
   pipeline: ImagePipeline
   clock: () => Date
   logger: WorkerLogger
+  rarity: RarityQueue
 }
 
 interface DuplicateMatch {
@@ -61,7 +63,7 @@ async function findLeagueDuplicate(
 
 /** Creates the use case turning an uploaded JPEG into card media. */
 export function createMediaProcessingService(deps: Deps): MediaProcessingService {
-  const { db, storage, pipeline, clock, logger } = deps
+  const { db, storage, pipeline, clock, logger, rarity } = deps
 
   async function readSource(
     objectKey: string,
@@ -253,6 +255,9 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
       return
     }
     await storage.delete([upload.objectKey])
+    await bestEffort({ leagueId: upload.leagueId }, 'Failed to enqueue rarity recompute', () =>
+      rarity.enqueueRecompute({ leagueId: upload.leagueId }),
+    )
     logger.info(
       { uploadId: upload.id, cardId: outcome.cardId, number: outcome.number },
       'Card created',

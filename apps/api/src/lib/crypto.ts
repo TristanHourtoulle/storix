@@ -2,11 +2,17 @@ import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto
 import { RESET_CODE_ALPHABET, RESET_CODE_LENGTH } from '@storix/shared'
 
 const INVITATION_TOKEN_BYTES = 32
+const BOOSTER_SEED_BYTES = 16
 const HEX_PATTERN = /^[0-9a-f]*$/i
 
 /** Generates an invitation token: 32 random bytes encoded as 43 base64url characters. */
 export function generateInvitationToken(): string {
   return randomBytes(INVITATION_TOKEN_BYTES).toString('base64url')
+}
+
+/** Generates a CSPRNG booster seed: 16 random bytes as 32 lowercase hex characters. */
+export function generateBoosterSeed(): string {
+  return randomBytes(BOOSTER_SEED_BYTES).toString('hex')
 }
 
 /** Generates a reset code drawn uniformly from the reset code alphabet. */

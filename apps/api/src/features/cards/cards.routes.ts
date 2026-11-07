@@ -1,9 +1,9 @@
 import {
-  cardDetailSchema,
-  cardPageSchema,
   cardParamsSchema,
+  collectionPageSchema,
   leagueParamsSchema,
   listCardsQuerySchema,
+  viewerCardDetailSchema,
 } from '@storix/shared'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { authenticate } from '../../http/authenticate'
@@ -20,7 +20,7 @@ export function cardsRoutes(service: CardsService): FastifyPluginAsyncZod {
         schema: {
           params: leagueParamsSchema,
           querystring: listCardsQuerySchema,
-          response: { 200: cardPageSchema },
+          response: { 200: collectionPageSchema },
         },
       },
       (request) => service.listCards(request.membership, request.query),
@@ -29,7 +29,7 @@ export function cardsRoutes(service: CardsService): FastifyPluginAsyncZod {
       '/leagues/:leagueId/cards/:cardId',
       {
         preHandler: [authenticate, requireLeagueRole('member')],
-        schema: { params: cardParamsSchema, response: { 200: cardDetailSchema } },
+        schema: { params: cardParamsSchema, response: { 200: viewerCardDetailSchema } },
       },
       (request) => service.getCard(request.membership, request.params.cardId),
     )

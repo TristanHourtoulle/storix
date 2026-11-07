@@ -8,17 +8,21 @@ import {
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod'
 import { authRoutes } from './auth/auth.routes'
-import { clientIpPolicy } from './config/client-ip'
+import { clientIpPolicy, rateLimitKeyGenerator } from './config/client-ip'
 import { buildServices, type AppDeps } from './deps'
+import { boostersRoutes } from './features/boosters/boosters.routes'
 import { cardsRoutes } from './features/cards/cards.routes'
+import { copiesRoutes } from './features/copies/copies.routes'
 import { healthRoutes } from './features/health/health.routes'
 import { invitationsRoutes } from './features/invitations/invitations.routes'
 import { leaguesRoutes } from './features/leagues/leagues.routes'
 import { mediaRoutes } from './features/media/media.routes'
 import { meRoutes } from './features/me/me.routes'
 import { membersRoutes } from './features/members/members.routes'
+import { reactionsRoutes } from './features/reactions/reactions.routes'
 import { resetCodesRoutes } from './features/reset-codes/reset-codes.routes'
 import { uploadsRoutes } from './features/uploads/uploads.routes'
+import { walletsRoutes } from './features/wallets/wallets.routes'
 import { registerErrorHandling } from './http/error-handler'
 import { registerOriginCheck } from './http/origin-check'
 import { registerStatic } from './http/static'
@@ -44,6 +48,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
   await app.register(rateLimit, {
     global: false,
+    keyGenerator: rateLimitKeyGenerator(env),
     errorResponseBuilder: (_request, context) =>
       new AppError('RATE_LIMITED', 429, 'Too many requests', { retryAfter: context.after }),
   })
@@ -76,6 +81,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(resetCodesRoutes(services.resetCodes), { prefix: '/api' })
   await app.register(uploadsRoutes(services.uploads), { prefix: '/api' })
   await app.register(cardsRoutes(services.cards), { prefix: '/api' })
+  await app.register(walletsRoutes(services.wallets), { prefix: '/api' })
+  await app.register(boostersRoutes(services.boosters), { prefix: '/api' })
+  await app.register(copiesRoutes(services.copies), { prefix: '/api' })
+  await app.register(reactionsRoutes(services.reactions), { prefix: '/api' })
   await app.register(mediaRoutes(services.media))
 
   if (isProduction) {

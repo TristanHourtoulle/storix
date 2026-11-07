@@ -1,7 +1,11 @@
 @import 'tailwindcss';
+@import './game.css';
+@import './booster.css';
+@import './collection.css';
+@import './card-detail.css';
 
 @theme {
-  --spacing-nav: calc(84px + env(safe-area-inset-bottom));
+  --spacing-nav: calc(68px + env(safe-area-inset-bottom));
   --color-board: #050508;
   --color-bg: #0a0a10;
   --color-surface: #15151e;
@@ -26,6 +30,7 @@
   --color-tier-epic: #c084fc;
   --color-tier-legendary: #fbbf24;
   --color-tier-legendary-soft: #fcd34d;
+  --color-tier-mythic: #c084fc;
   --color-locked: #6b6b80;
   --font-display: 'Space Grotesk Variable', 'Space Grotesk', sans-serif;
   --font-sans: 'Inter Variable', Inter, system-ui, sans-serif;
@@ -121,22 +126,22 @@
     box-shadow: 0 0 0 2px var(--tc);
   }
   .card.t-C {
-    --tc: #a1a1aa;
+    --tc: var(--color-tier-common);
   }
   .card.t-U {
-    --tc: #4ade80;
+    --tc: var(--color-tier-uncommon);
   }
   .card.t-R {
-    --tc: #60a5fa;
+    --tc: var(--color-tier-rare);
   }
   .card.t-E {
-    --tc: #c084fc;
+    --tc: var(--color-tier-epic);
   }
   .card.t-L {
-    --tc: #fbbf24;
+    --tc: var(--color-tier-legendary);
   }
   .card.t-M {
-    --tc: #c084fc;
+    --tc: var(--color-tier-mythic);
   }
   .card.sm {
     width: 80px;

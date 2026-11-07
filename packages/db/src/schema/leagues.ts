@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
   index,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
@@ -17,6 +18,7 @@ export const leagueRole = pgEnum('league_role', LEAGUE_ROLES)
 export const leagues = pgTable('leagues', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
+  settings: jsonb('settings').$type<unknown>(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 

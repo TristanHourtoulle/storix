@@ -1,5 +1,6 @@
 import {
   boolean,
+  doublePrecision,
   index,
   integer,
   pgEnum,
@@ -16,6 +17,7 @@ import { leagues } from './leagues'
 import { media } from './media'
 
 export const cardTier = pgEnum('card_tier', CARD_TIERS)
+export const tierSource = pgEnum('tier_source', ['computed', 'bounded', 'pinned'])
 export const cardStatus = pgEnum('card_status', ['active', 'hidden'])
 
 export const cards = pgTable(
@@ -34,11 +36,22 @@ export const cards = pgTable(
     title: text('title').notNull(),
     tier: cardTier('tier').notNull().default('common'),
     isProvisional: boolean('is_provisional').notNull().default(true),
+    computedTier: cardTier('computed_tier'),
+    tierSource: tierSource('tier_source').notNull().default('computed'),
+    score: doublePrecision('score'),
+    percentile: doublePrecision('percentile'),
+    pinnedTier: cardTier('pinned_tier'),
+    minTier: cardTier('min_tier'),
+    maxTier: cardTier('max_tier'),
+    rarityComputedAt: timestamp('rarity_computed_at', { withTimezone: true }),
+    discoveredById: text('discovered_by_id').references(() => user.id, { onDelete: 'set null' }),
+    discoveredAt: timestamp('discovered_at', { withTimezone: true }),
     status: cardStatus('status').notNull().default('active'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     unique('cards_league_number_unique').on(t.leagueId, t.number),
+    index('cards_league_status_created_idx').on(t.leagueId, t.status, t.createdAt),
     index('cards_league_author_number_idx').on(t.leagueId, t.authorId, t.number.desc()),
   ],
 )
