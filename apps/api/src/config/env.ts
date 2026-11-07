@@ -1,22 +1,25 @@
+import { storageEnvSchema } from '@storix/storage'
 import { z } from 'zod'
 
-const envSchema = z
-  .object({
-    NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-    PORT: z.coerce.number().int().min(1).max(65535).default(3020),
-    DATABASE_URL: z.url(),
-    APP_ORIGIN: z.url(),
-    BETTER_AUTH_SECRET: z.string().min(32),
-    PASSKEY_RP_ID: z.string().min(1),
-    LOG_LEVEL: z
-      .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
-      .default('info'),
-    WEB_DIST_DIR: z.string().optional(),
-  })
-  .refine((env) => new URL(env.APP_ORIGIN).hostname === env.PASSKEY_RP_ID, {
-    path: ['PASSKEY_RP_ID'],
-    message: 'PASSKEY_RP_ID must equal the hostname of APP_ORIGIN',
-  })
+const baseEnvSchema = z.object({
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  PORT: z.coerce.number().int().min(1).max(65535).default(3020),
+  DATABASE_URL: z.url(),
+  APP_ORIGIN: z.url(),
+  BETTER_AUTH_SECRET: z.string().min(32),
+  PASSKEY_RP_ID: z.string().min(1),
+  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  WEB_DIST_DIR: z.string().optional(),
+})
+
+const envSchema = baseEnvSchema
+  .extend(storageEnvSchema.shape)
+  .extend({ MEDIA_URL_SECRET: z.string().min(32) })
+  .refine(
+    (env) =>
+      !URL.canParse(env.APP_ORIGIN) || new URL(env.APP_ORIGIN).hostname === env.PASSKEY_RP_ID,
+    { path: ['PASSKEY_RP_ID'], message: 'PASSKEY_RP_ID must equal the hostname of APP_ORIGIN' },
+  )
 
 export type Env = z.infer<typeof envSchema>
 

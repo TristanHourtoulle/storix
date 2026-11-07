@@ -11,6 +11,10 @@ function body(
   return { error: details === undefined ? { code, message } : { code, message, details } }
 }
 
+function isMediaUrl(url: string): boolean {
+  return url === '/media' || url.startsWith('/media/') || url.startsWith('/media?')
+}
+
 function isFastifyError(error: unknown): error is FastifyError {
   return error instanceof Error && 'statusCode' in error
 }
@@ -21,6 +25,7 @@ export function registerErrorHandling(
   options: { handleNotFound: boolean } = { handleNotFound: true },
 ): void {
   app.setErrorHandler((error: unknown, request, reply) => {
+    if (isMediaUrl(request.url)) reply.header('Cache-Control', 'no-store')
     if (error instanceof AppError) {
       if (error.status >= 500) request.log.error({ err: error, reqId: request.id }, error.message)
       return reply.status(error.status).send(body(error.code, error.message, error.details))
@@ -50,6 +55,12 @@ export function registerErrorHandling(
   app.setNotFoundHandler((request, reply) => {
     if (request.url.startsWith('/api/') || request.url === '/api') {
       return reply.status(404).send(body('NOT_FOUND', 'Route not found'))
+    }
+    if (isMediaUrl(request.url)) {
+      return reply
+        .status(404)
+        .header('Cache-Control', 'no-store')
+        .send(body('NOT_FOUND', 'Route not found'))
     }
     return reply.status(404).send()
   })

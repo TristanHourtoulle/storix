@@ -34,7 +34,10 @@ export async function registerStatic(app: FastifyInstance, distDir: string): Pro
 
   app.setNotFoundHandler(async (request, reply) => {
     if (isReserved(request.url)) {
-      return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Route not found' } })
+      return reply
+        .status(404)
+        .header('Cache-Control', NO_STORE)
+        .send({ error: { code: 'NOT_FOUND', message: 'Route not found' } })
     }
     reply.header('Vary', 'Accept')
     const accept = request.headers.accept ?? ''

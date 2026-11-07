@@ -13,6 +13,7 @@ import { buildServices, type AppDeps } from './deps'
 import { healthRoutes } from './features/health/health.routes'
 import { invitationsRoutes } from './features/invitations/invitations.routes'
 import { leaguesRoutes } from './features/leagues/leagues.routes'
+import { mediaRoutes } from './features/media/media.routes'
 import { meRoutes } from './features/me/me.routes'
 import { membersRoutes } from './features/members/members.routes'
 import { resetCodesRoutes } from './features/reset-codes/reset-codes.routes'
@@ -46,7 +47,11 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   })
   await app.register(helmet, {
     contentSecurityPolicy: {
-      directives: { defaultSrc: ["'self'"], imgSrc: ["'self'", 'data:', 'blob:'] },
+      directives: {
+        defaultSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'blob:'],
+        connectSrc: ["'self'", deps.storage.uploadOrigin],
+      },
     },
   })
   registerOriginCheck(app, env.APP_ORIGIN)
@@ -67,6 +72,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(invitationsRoutes(services.invitations), { prefix: '/api' })
   await app.register(membersRoutes(services.members), { prefix: '/api' })
   await app.register(resetCodesRoutes(services.resetCodes), { prefix: '/api' })
+  await app.register(mediaRoutes(services.media))
 
   if (isProduction) {
     await registerStatic(app, env.WEB_DIST_DIR ?? defaultWebDistDir())

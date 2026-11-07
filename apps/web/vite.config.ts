@@ -22,6 +22,9 @@ export default defineConfig({
   server: {
     port: Number(process.env.PORT ?? 5180),
     strictPort: true,
-    proxy: { '/api': { target: 'http://localhost:3020', changeOrigin: false } },
+    proxy: {
+      '/api': { target: 'http://localhost:3020', changeOrigin: false },
+      '/media': { target: 'http://localhost:3020', changeOrigin: false },
+    },
   },
 })
