@@ -2,24 +2,30 @@ import { useEffect } from 'react'
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
+import type { CollectionCard } from '@storix/shared'
 import { TIER_LABELS } from '../tier-labels'
-import { cardsInfiniteQueryOptions } from '../cards.queries'
+import { cardsInfiniteQueryOptions, type CollectionFilters } from '../cards.queries'
 import { useGridMetrics } from '../use-grid-metrics'
-import { CardFace } from './card-face'
-import { CardImage } from './card-image'
+import { CollectionCardView } from './collection-card-view'
 
 interface CollectionGridProps {
   leagueId: string
-  authorId: string | null
+  filters: CollectionFilters
 }
 
 const COLUMNS = 3
 const GAP = 12
 const CARD_SIZES = '(max-width: 480px) 31vw, 140px'
 
-export function CollectionGrid({ leagueId, authorId }: CollectionGridProps) {
+function cardLabel(card: CollectionCard): string {
+  if (card.kind === 'owned') return `${card.title}, ${TIER_LABELS[card.displayTier]}`
+  if (card.kind === 'hidden') return 'Carte masquée'
+  return `Carte à découvrir, ${TIER_LABELS[card.tier]}`
+}
+
+export function CollectionGrid({ leagueId, filters }: CollectionGridProps) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
-    cardsInfiniteQueryOptions(leagueId, authorId),
+    cardsInfiniteQueryOptions(leagueId, filters),
   )
   const cards = data.pages.flatMap((page) => page.cards)
   const { containerRef, width, offsetTop } = useGridMetrics()
@@ -62,25 +68,15 @@ export function CollectionGrid({ leagueId, authorId }: CollectionGridProps) {
               key={card.id}
               to="/l/$leagueId/cards/$cardId"
               params={{ leagueId, cardId: card.id }}
-              aria-label={`${card.title}, ${TIER_LABELS[card.tier]}`}
+              aria-label={cardLabel(card)}
               className="block"
             >
-              <CardFace
+              <CollectionCardView
+                card={card}
                 size="md"
-                title={card.title}
-                tier={card.tier}
-                isProvisional={card.isProvisional}
-              >
-                <CardImage
-                  image={card.image}
-                  thumbhash={card.thumbhash}
-                  width={card.width}
-                  height={card.height}
-                  sizes={CARD_SIZES}
-                  isEager={row.index === 0}
-                  isHighPriority={row.index === 0}
-                />
-              </CardFace>
+                sizes={CARD_SIZES}
+                isEager={row.index === 0}
+              />
             </Link>
           ))}
         </div>

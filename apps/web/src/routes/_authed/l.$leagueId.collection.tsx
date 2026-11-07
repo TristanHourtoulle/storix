@@ -2,16 +2,32 @@ import { Suspense } from 'react'
 import { useQuery, useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
-import type { MemberSummary } from '@storix/shared'
+import { CARD_TIERS, type CardTier, type MemberSummary } from '@storix/shared'
 import { buttonClassName } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Segmented } from '@/components/ui/segmented'
 import { CollectionGrid } from '@/features/cards/components/collection-grid'
+import { CollectionProgress } from '@/features/cards/components/collection-progress'
 import { MemberFilter } from '@/features/cards/components/member-filter'
-import { cardsInfiniteQueryOptions } from '@/features/cards/cards.queries'
+import { RarityFilter } from '@/features/cards/components/rarity-filter'
+import { cardsInfiniteQueryOptions, type CollectionFilters } from '@/features/cards/cards.queries'
+import { DustBalance } from '@/features/game/components/dust-balance'
+import { useWallet } from '@/features/game/use-wallet'
 import { membersQueryOptions } from '@/features/members/members.queries'
 
+type FilterMode = 'member' | 'rarity'
+
+const FILTER_MODES = [
+  { id: 'member', label: 'Par membre' },
+  { id: 'rarity', label: 'Par rareté' },
+] as const
+
 export const Route = createFileRoute('/_authed/l/$leagueId/collection')({
-  validateSearch: z.object({ author: z.string().optional() }),
+  validateSearch: z.object({
+    author: z.string().optional(),
+    tier: z.enum(CARD_TIERS).optional(),
+    by: z.enum(['member', 'rarity']).optional(),
+  }),
   loader: ({ context, params }) =>
     context.queryClient
       .ensureQueryData(membersQueryOptions(params.leagueId))
@@ -24,83 +40,94 @@ const LOADING = <p className="m-0 text-sm text-muted">Chargement…</p>
 
 function Collection() {
   const { leagueId } = Route.useParams()
-  const { author } = Route.useSearch()
+  const { author, tier, by } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
   const members = useQuery(membersQueryOptions(leagueId)).data ?? NO_MEMBERS
-  const authorId = author ?? null
-  const authorName = members.find((member) => member.userId === authorId)?.displayUsername ?? null
+  const { data: wallet } = useWallet(leagueId)
+  const mode: FilterMode = by ?? 'member'
+  const filters: CollectionFilters = { authorId: author ?? null, tier: tier ?? null }
+  const authorName = members.find((member) => member.userId === filters.authorId)?.displayUsername
+
+  function selectAuthor(id: string | null) {
+    void navigate({ search: (prev) => ({ ...prev, author: id ?? undefined }), replace: true })
+  }
+
+  function selectTier(next: CardTier | null) {
+    void navigate({ search: (prev) => ({ ...prev, tier: next ?? undefined }), replace: true })
+  }
+
+  function selectMode(next: FilterMode) {
+    void navigate({ search: (prev) => ({ ...prev, by: next }), replace: true })
+  }
 
   return (
     <main className="screen">
-      <Suspense fallback={<h1>Collection</h1>}>
-        <CollectionTitle leagueId={leagueId} authorId={authorId} />
-      </Suspense>
-      {members.length > 0 && (
-        <MemberFilter
-          members={members}
-          selectedId={authorId}
-          onSelect={(id) => void navigate({ search: { author: id ?? undefined }, replace: true })}
-        />
+      <div className="flex items-center justify-between gap-3">
+        <h1>Collection</h1>
+        <DustBalance dust={wallet?.dust} />
+      </div>
+      <Segmented options={FILTER_MODES} value={mode} onChange={selectMode} />
+      {mode === 'rarity' ? (
+        <RarityFilter selected={filters.tier} onSelect={selectTier} />
+      ) : (
+        members.length > 0 && (
+          <MemberFilter members={members} selectedId={filters.authorId} onSelect={selectAuthor} />
+        )
       )}
       <Suspense fallback={LOADING}>
-        <CollectionBody leagueId={leagueId} authorId={authorId} authorName={authorName} />
+        <CollectionBody
+          leagueId={leagueId}
+          filters={filters}
+          label={authorName ? `Cartes de ${authorName}` : 'Toutes les cartes'}
+        />
       </Suspense>
     </main>
   )
 }
 
-interface CollectionPartProps {
+interface CollectionBodyProps {
   leagueId: string
-  authorId: string | null
+  filters: CollectionFilters
+  label: string
 }
 
-function useTotal({ leagueId, authorId }: CollectionPartProps): number {
-  const { data } = useSuspenseInfiniteQuery(cardsInfiniteQueryOptions(leagueId, authorId))
-  return data.pages[0]?.total ?? 0
-}
+function CollectionBody({ leagueId, filters, label }: CollectionBodyProps) {
+  const { data } = useSuspenseInfiniteQuery(cardsInfiniteQueryOptions(leagueId, filters))
+  const firstPage = data.pages[0]
+  const total = firstPage?.total ?? 0
+  const owned = firstPage?.ownedCount ?? 0
+  const isFiltered = filters.authorId !== null || filters.tier !== null
 
-function CollectionTitle(props: CollectionPartProps) {
-  const total = useTotal(props)
-  return (
-    <div className="flex items-baseline justify-between">
-      <h1>Collection</h1>
-      <span className="font-display text-[15px] font-semibold text-muted">
-        <strong className="text-ink">{total}</strong> {total > 1 ? 'cartes' : 'carte'}
-      </span>
-    </div>
-  )
-}
-
-function CollectionBody({
-  leagueId,
-  authorId,
-  authorName,
-}: CollectionPartProps & { authorName: string | null }) {
-  const total = useTotal({ leagueId, authorId })
+  if (total === 0) {
+    return isFiltered ? (
+      <p className="m-0 text-sm text-muted">Aucune carte ne correspond à ce filtre.</p>
+    ) : (
+      <EmptyState
+        icon="collection"
+        title="Aucune carte pour l'instant"
+        body="Ajoute tes premières photos pour créer des cartes."
+        action={
+          <Link
+            to="/l/$leagueId/add"
+            params={{ leagueId }}
+            className={buttonClassName({ variant: 'primary' })}
+          >
+            Ajouter des photos
+          </Link>
+        }
+      />
+    )
+  }
 
   return (
     <>
-      <p className="m-0 font-display text-sm font-semibold text-ink-3">
-        {authorName ? `Cartes de ${authorName} · ${total}` : `Toutes les cartes · ${total}`}
-      </p>
-      {total === 0 ? (
-        <EmptyState
-          icon="collection"
-          title="Aucune carte pour l'instant"
-          body="Ajoute tes premières photos pour créer des cartes."
-          action={
-            <Link
-              to="/l/$leagueId/add"
-              params={{ leagueId }}
-              className={buttonClassName({ variant: 'primary' })}
-            >
-              Ajouter des photos
-            </Link>
-          }
-        />
-      ) : (
-        <CollectionGrid leagueId={leagueId} authorId={authorId} />
+      <CollectionProgress owned={owned} total={total} label={label} />
+      {owned === 0 && (
+        <p className="m-0 text-sm text-muted">
+          Ouvre un booster pour découvrir tes premières cartes.
+        </p>
       )}
+      <CollectionGrid leagueId={leagueId} filters={filters} />
     </>
   )
 }
