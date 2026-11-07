@@ -124,7 +124,7 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       clock: deps.clock,
       logger,
     }),
-    me: createMeService(deps.db),
+    me: createMeService({ db: deps.db, clock: deps.clock }),
     media: createMediaService({
       storage: deps.storage,
       signer: deps.mediaSigner,

@@ -32,6 +32,7 @@ const MESSAGES: Record<ErrorCode, string> = {
   CONFIRMATION_MISMATCH: "Le nom d'utilisateur ne correspond pas.",
   ACCOUNT_DELETION_CONFLICT: 'Tes ligues ont changé pendant la suppression, réessaie.',
   BOOSTER_CONTENT_REMOVED: 'Une carte de ce booster a été retirée de la ligue.',
+  DISPLAY_NAME_RESERVED: 'Ce nom est l’identifiant de connexion d’un autre membre.',
   INTERNAL_ERROR: 'Une erreur est survenue.',
 }
 

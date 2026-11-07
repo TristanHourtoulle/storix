@@ -31,6 +31,7 @@ export const AUDIT_ACTIONS = [
   'card.removed',
   'account.deleted',
   'league.renamed',
+  'account.display_name_changed',
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]
