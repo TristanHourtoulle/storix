@@ -85,17 +85,19 @@ export async function markUploadProcessing(db: DbExecutor, uploadId: string): Pr
   return rows.length > 0
 }
 
-/** Marks a processable upload as rejected with a reason. */
+/** Marks a processable upload as rejected; false when another job already settled it. */
 export async function markUploadRejected(
   db: DbExecutor,
   uploadId: string,
   reason: UploadRejectionReason,
   now: Date,
-): Promise<void> {
-  await db
+): Promise<boolean> {
+  const rows = await db
     .update(uploads)
     .set({ status: 'rejected', rejectionReason: reason, processedAt: now })
     .where(and(eq(uploads.id, uploadId), inArray(uploads.status, PROCESSABLE)))
+    .returning({ id: uploads.id })
+  return rows.length > 0
 }
 
 /** Marks a processable upload as failed. */

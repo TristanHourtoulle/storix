@@ -37,7 +37,8 @@ interface DuplicateMatch {
 }
 
 type CommitOutcome =
-  { kind: 'ready'; cardId: string; number: number } | { kind: 'duplicate'; match: DuplicateMatch }
+  | { kind: 'ready'; cardId: string; number: number }
+  | { kind: 'duplicate'; match: DuplicateMatch; rejected: boolean }
 
 function sha256Hex(buffer: Buffer): string {
   return createHash('sha256').update(buffer).digest('hex')
@@ -70,9 +71,10 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
     upload: repository.UploadForProcessing,
     reason: UploadRejectionReason,
   ): Promise<void> {
-    await repository.markUploadRejected(db, upload.id, reason, clock())
+    const rejected = await repository.markUploadRejected(db, upload.id, reason, clock())
     await storage.delete([upload.objectKey])
-    logger.info({ uploadId: upload.id, reason }, 'Upload rejected')
+    if (rejected) logger.info({ uploadId: upload.id, reason }, 'Upload rejected')
+    else logger.info({ uploadId: upload.id }, 'Upload already settled by another job')
   }
 
   async function commit(
@@ -89,8 +91,8 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
       })
       const now = clock()
       if (match) {
-        await repository.markUploadRejected(tx, upload.id, 'DUPLICATE_PHOTO', now)
-        return { kind: 'duplicate', match }
+        const rejected = await repository.markUploadRejected(tx, upload.id, 'DUPLICATE_PHOTO', now)
+        return { kind: 'duplicate', match, rejected }
       }
       const mediaId = await repository.insertMedia(tx, row)
       const number = await repository.nextCardNumber(tx, upload.leagueId)
@@ -198,7 +200,9 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
       await storage.delete([upload.objectKey])
       logger.info(
         { uploadId: upload.id, duplicateOf: outcome.match.mediaId },
-        'Upload rejected as duplicate after lock',
+        outcome.rejected
+          ? 'Upload rejected as duplicate after lock'
+          : 'Upload already settled by another job',
       )
       return
     }

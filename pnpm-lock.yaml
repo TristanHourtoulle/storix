@@ -358,6 +358,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@opentelemetry/api':
+        specifier: 1.10.0
+        version: 1.10.0
       '@storix/shared':
         specifier: workspace:*
         version: link:../shared
