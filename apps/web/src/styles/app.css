@@ -1,0 +1,109 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-board: #050508;
+  --color-bg: #0a0a10;
+  --color-surface: #15151e;
+  --color-surface-2: #1e1e2a;
+  --color-nav: #0f0f17;
+  --color-line: #2a2a3a;
+  --color-line-strong: #34344a;
+  --color-line-nav: #20202e;
+  --color-ink: #f2f2f7;
+  --color-ink-2: #d4d4e0;
+  --color-ink-3: #c9c9da;
+  --color-muted: #9a9ab0;
+  --color-faint: #8a8aa0;
+  --color-accent: #a78bfa;
+  --color-accent-hover: #c4b5fd;
+  --color-cyan: #22d3ee;
+  --color-danger: #f87171;
+  --color-tier-common: #a1a1aa;
+  --color-tier-uncommon: #4ade80;
+  --color-tier-rare: #60a5fa;
+  --color-tier-epic: #c084fc;
+  --color-tier-legendary: #fbbf24;
+  --color-tier-legendary-soft: #fcd34d;
+  --color-locked: #6b6b80;
+  --font-display: 'Space Grotesk Variable', 'Space Grotesk', sans-serif;
+  --font-sans: 'Inter Variable', Inter, system-ui, sans-serif;
+  --radius-thumb: 10px;
+  --radius-input: 12px;
+  --radius-control: 14px;
+  --radius-plus: 16px;
+  --radius-card-lg: 18px;
+  --radius-panel: 24px;
+  --shadow-hairline: inset 0 0 0 1px #2a2a3a;
+  --shadow-hairline-strong: inset 0 0 0 1px #34344a;
+  --shadow-nav: inset 0 1px 0 #20202e;
+  --animate-shine: shine 5s linear infinite;
+  @keyframes shine {
+    0% {
+      background-position: 110% 0;
+    }
+    100% {
+      background-position: -110% 0;
+    }
+  }
+}
+
+@layer base {
+  html {
+    background: var(--color-bg);
+    color-scheme: dark;
+  }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1 {
+    margin: 0;
+    font: 700 28px var(--font-display);
+  }
+  h2 {
+    margin: 0;
+    font: 700 17px var(--font-display);
+  }
+  dialog {
+    color: inherit;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility screen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 480px;
+  margin-inline: auto;
+  box-sizing: border-box;
+  padding: max(16px, env(safe-area-inset-top)) 16px 16px;
+}
+
+@utility icon-btn {
+  appearance: none;
+  border: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-hairline);
+  cursor: pointer;
+}
