@@ -25,6 +25,7 @@ export function createRarityRecomputeService(deps: Deps): RarityRecomputeService
   return {
     async recomputeLeague(leagueId) {
       const outcome = await runInTransaction(db, async (tx) => {
+        await repository.lockLeagueEconomyShared(tx, leagueId)
         await repository.lockLeagueRarity(tx, leagueId)
         const settings = resolveLeagueSettings(await repository.findLeagueSettings(tx, leagueId))
         const inputs = await repository.listRarityInputs(tx, leagueId)

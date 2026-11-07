@@ -7,4 +7,6 @@ export const rateLimits = {
   uploadCreate: { max: 30, timeWindow: '1 minute' },
   boosterOpen: { max: 30, timeWindow: '1 minute' },
   cardAction: { max: 60, timeWindow: '1 minute' },
+  adminAction: { max: 60, timeWindow: '1 minute' },
+  accountDelete: { max: 5, timeWindow: '15 minutes' },
 } as const

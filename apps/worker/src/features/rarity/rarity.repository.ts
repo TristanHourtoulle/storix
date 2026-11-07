@@ -2,7 +2,7 @@ import { eq, sql } from 'drizzle-orm'
 import { cardRarityHistory, cards, leagues, type DbExecutor } from '@storix/db'
 import type { CardTier, ComputedTier, TierSource } from '@storix/shared/domain'
 
-export { listRarityInputs, type RarityInputRow } from '@storix/db'
+export { listRarityInputs, lockLeagueEconomyShared, type RarityInputRow } from '@storix/db'
 
 export interface RarityUpdateRow {
   cardId: string
