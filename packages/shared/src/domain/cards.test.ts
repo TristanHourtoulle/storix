@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  BOOSTER_ELIGIBILITY_DELAY_MS,
+  DEFAULT_NEW_CARD_DELAY_MINUTES,
+  boosterEligibleAt,
   boosterEligibleBefore,
   isBoosterEligible,
   isTierAtLeast,
@@ -36,14 +37,21 @@ describe('tier helpers', () => {
 describe('booster eligibility', () => {
   const now = new Date('2026-11-07T12:00:00Z')
 
-  it('computes the 12 hour cutoff', () => {
-    expect(boosterEligibleBefore(now).toISOString()).toBe('2026-11-07T00:00:00.000Z')
-    expect(BOOSTER_ELIGIBILITY_DELAY_MS).toBe(43_200_000)
+  it('defaults to a 12 hour delay', () => {
+    expect(DEFAULT_NEW_CARD_DELAY_MINUTES).toBe(720)
   })
 
-  it('is eligible exactly at 12 hours and not one millisecond before', () => {
-    expect(isBoosterEligible(new Date('2026-11-07T00:00:00.000Z'), now)).toBe(true)
-    expect(isBoosterEligible(new Date('2026-11-07T00:00:00.001Z'), now)).toBe(false)
-    expect(isBoosterEligible(new Date('2026-11-06T00:00:00Z'), now)).toBe(true)
+  it('applies the league new-card delay', () => {
+    expect(boosterEligibleBefore(now, 720)).toEqual(new Date('2026-11-07T00:00:00Z'))
+    expect(isBoosterEligible(new Date('2026-11-07T00:00:00Z'), now, 720)).toBe(true)
+    expect(isBoosterEligible(new Date('2026-11-07T00:00:01Z'), now, 720)).toBe(false)
+    expect(isBoosterEligible(now, now, 0)).toBe(true)
+    expect(boosterEligibleAt(now, 60)).toEqual(new Date('2026-11-07T13:00:00Z'))
+  })
+
+  it('is eligible exactly at the delay and not one millisecond before', () => {
+    expect(isBoosterEligible(new Date('2026-11-07T00:00:00.000Z'), now, 720)).toBe(true)
+    expect(isBoosterEligible(new Date('2026-11-07T00:00:00.001Z'), now, 720)).toBe(false)
+    expect(isBoosterEligible(new Date('2026-11-06T00:00:00Z'), now, 720)).toBe(true)
   })
 })

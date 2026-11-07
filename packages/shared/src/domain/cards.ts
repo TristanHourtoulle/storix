@@ -10,7 +10,9 @@ export const COMPUTED_TIERS = ['common', 'uncommon', 'rare', 'epic', 'legendary'
 
 export type ComputedTier = (typeof COMPUTED_TIERS)[number]
 
-export const BOOSTER_ELIGIBILITY_DELAY_MS = 12 * 3_600_000
+export const DEFAULT_NEW_CARD_DELAY_MINUTES = 720
+
+const MS_PER_MINUTE = 60_000
 
 /** Returns the index of the tier in `CARD_TIERS`, from common (0) to mythic. */
 export function tierRank(tier: CardTier): number {
@@ -33,11 +35,16 @@ export function isTierAtLeast(tier: CardTier, min: CardTier): boolean {
 }
 
 /** Returns the latest creation instant a card may have to enter boosters at `now`. */
-export function boosterEligibleBefore(now: Date): Date {
-  return new Date(now.getTime() - BOOSTER_ELIGIBILITY_DELAY_MS)
+export function boosterEligibleBefore(now: Date, delayMinutes: number): Date {
+  return new Date(now.getTime() - delayMinutes * MS_PER_MINUTE)
+}
+
+/** Returns the instant a card created at `createdAt` enters boosters. */
+export function boosterEligibleAt(createdAt: Date, delayMinutes: number): Date {
+  return new Date(createdAt.getTime() + delayMinutes * MS_PER_MINUTE)
 }
 
 /** Returns true when a card created at `createdAt` may appear in boosters at `now`. */
-export function isBoosterEligible(createdAt: Date, now: Date): boolean {
-  return createdAt.getTime() <= boosterEligibleBefore(now).getTime()
+export function isBoosterEligible(createdAt: Date, now: Date, delayMinutes: number): boolean {
+  return createdAt.getTime() <= boosterEligibleBefore(now, delayMinutes).getTime()
 }

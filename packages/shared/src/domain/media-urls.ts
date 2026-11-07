@@ -80,3 +80,18 @@ export function mediaCacheKey(pathname: string): string | null {
   const parsed = parseMediaPath(pathname)
   return parsed === null ? null : `${MEDIA_PREFIX}${parsed.objectKey}`
 }
+
+/** Returns the storage prefix holding every variant of one source image. */
+export function mediaPrefix(input: { leagueId: string; sourceSha256: string }): string {
+  return `img/${input.leagueId}/${input.sourceSha256}/`
+}
+
+/** Returns the storage prefix holding every image of a league. */
+export function leagueMediaPrefix(leagueId: string): string {
+  return `img/${leagueId}/`
+}
+
+/** Returns the media path prefix that service worker cache keys start with. */
+export function mediaCachePathPrefix(prefix: string): string {
+  return `${MEDIA_PREFIX}${prefix}`
+}
