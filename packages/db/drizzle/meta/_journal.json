@@ -43,6 +43,13 @@
       "when": 1794051681369,
       "tag": "0005_wise_garia",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794064435457,
+      "tag": "0006_rainy_amazoness",
+      "breakpoints": true
     }
   ]
 }
