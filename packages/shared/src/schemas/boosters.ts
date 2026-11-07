@@ -32,7 +32,7 @@ export const boosterPullSchema = z.object({
 export const boosterOpeningSchema = z.object({
   id: z.uuid(),
   openedAt: isoDateSchema,
-  pulls: z.array(boosterPullSchema).length(5),
+  pulls: z.array(boosterPullSchema).max(5),
   dustGained: z.int().min(0),
   wallet: walletStateSchema,
 })

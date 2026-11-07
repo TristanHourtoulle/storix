@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './game.css';
 
 @theme {
   --spacing-nav: calc(68px + env(safe-area-inset-bottom));

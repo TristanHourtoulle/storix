@@ -10,6 +10,7 @@ import {
 import { authRoutes } from './auth/auth.routes'
 import { clientIpPolicy } from './config/client-ip'
 import { buildServices, type AppDeps } from './deps'
+import { boostersRoutes } from './features/boosters/boosters.routes'
 import { cardsRoutes } from './features/cards/cards.routes'
 import { healthRoutes } from './features/health/health.routes'
 import { invitationsRoutes } from './features/invitations/invitations.routes'
@@ -78,6 +79,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(uploadsRoutes(services.uploads), { prefix: '/api' })
   await app.register(cardsRoutes(services.cards), { prefix: '/api' })
   await app.register(walletsRoutes(services.wallets), { prefix: '/api' })
+  await app.register(boostersRoutes(services.boosters), { prefix: '/api' })
   await app.register(mediaRoutes(services.media))
 
   if (isProduction) {

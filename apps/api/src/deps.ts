@@ -3,6 +3,7 @@ import { createObjectStorage, type ObjectStorage } from '@storix/storage'
 import { createAuth } from './auth/auth'
 import { createAuthGateway, type AuthGateway } from './auth/auth.gateway'
 import type { Env } from './config/env'
+import { createBoostersService, type BoostersService } from './features/boosters/boosters.service'
 import { createCardsService, type CardsService } from './features/cards/cards.service'
 import { createHealthService, type HealthService } from './features/health/health.service'
 import {
@@ -34,6 +35,7 @@ export interface AppDeps {
 }
 
 export interface Services {
+  boosters: BoostersService
   cards: CardsService
   health: HealthService
   invitations: InvitationsService
@@ -63,6 +65,11 @@ export function createAppDeps(env: Env, db: Database, jobs: JobQueue): AppDeps {
 /** Builds every feature service from the app dependencies. */
 export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
   return {
+    boosters: createBoostersService({
+      db: deps.db,
+      signer: deps.mediaSigner,
+      clock: deps.clock,
+    }),
     cards: createCardsService({ db: deps.db, signer: deps.mediaSigner }),
     health: createHealthService(deps.db),
     invitations: createInvitationsService({
