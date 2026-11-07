@@ -70,7 +70,7 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       signer: deps.mediaSigner,
       clock: deps.clock,
     }),
-    cards: createCardsService({ db: deps.db, signer: deps.mediaSigner }),
+    cards: createCardsService({ db: deps.db, signer: deps.mediaSigner, clock: deps.clock }),
     health: createHealthService(deps.db),
     invitations: createInvitationsService({
       db: deps.db,
