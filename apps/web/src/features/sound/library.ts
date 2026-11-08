@@ -1,6 +1,6 @@
 import * as booster from './library-booster'
 import type { SoundRequest } from './sound-types'
-import { midiToHz as N, type Voice } from './synth'
+import { midiToHz as N, times, type Voice } from './synth'
 
 function blip(v: Voice, m: number, t = 0, d = 0.1, g = 0.06, lp = 4000): void {
   v.tone({ f: N(m), t, d, type: 'square', g, lp })
@@ -23,9 +23,7 @@ function locked(v: Voice): number {
 }
 
 function reactFire(v: Voice): number {
-  Array.from({ length: 5 }, (_, i) =>
-    v.noise({ t: i * 0.035, d: 0.03, g: 0.12, f: 900 + i * 300, q: 3 }),
-  )
+  times(5, (i) => v.noise({ t: i * 0.035, d: 0.03, g: 0.12, f: 900 + i * 300, q: 3 }))
   v.noise({ d: 0.2, g: 0.06, type: 'lowpass', f: 800 })
   return 0.22
 }
@@ -80,9 +78,7 @@ function pinMythic(v: Voice): number {
       lp2: 3500,
     }),
   )
-  Array.from({ length: 6 }, (_, i) =>
-    v.bell(N(91 + (booster.PENTATONIC[i] ?? 0)), 0.3 + i * 0.07, 0.4, 0.035),
-  )
+  times(6, (i) => v.bell(N(91 + (booster.PENTATONIC[i] ?? 0)), 0.3 + i * 0.07, 0.4, 0.035))
   return 1.1
 }
 

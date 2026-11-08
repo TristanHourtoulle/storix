@@ -31,6 +31,11 @@ export interface NoiseSpec {
 
 const NODE_TAIL = 0.05
 
+/** Runs `step` for each index from 0 to `count - 1`. */
+export function times(count: number, step: (index: number) => void): void {
+  for (let index = 0; index < count; index += 1) step(index)
+}
+
 /** Frequency in hertz of a MIDI note number. */
 export function midiToHz(note: number): number {
   return 440 * Math.pow(2, (note - 69) / 12)

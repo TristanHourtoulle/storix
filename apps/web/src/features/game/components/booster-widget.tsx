@@ -8,6 +8,7 @@ import { StockPips } from './stock-pips'
 
 interface BoosterWidgetProps {
   wallet: WalletState
+  isFresh: boolean
   onOpen: () => void
   onElapsed: () => void
 }
@@ -53,13 +54,13 @@ function PoolTooSmallMeta({
   )
 }
 
-export function BoosterWidget({ wallet, onOpen, onElapsed }: BoosterWidgetProps) {
+export function BoosterWidget({ wallet, isFresh, onOpen, onElapsed }: BoosterWidgetProps) {
   const { stock, maxStock, nextAt } = wallet.booster
   const { pool } = wallet
   const isPoolTooSmall = !canOpenBooster(pool.drawableCount)
   const remainingMs = useCountdown(nextAt, onElapsed)
   const nextCardMs = useCountdown(isPoolTooSmall ? pool.nextEligibleAt : null, onElapsed)
-  useBoosterReadySound(stock, remainingMs)
+  useBoosterReadySound(stock, remainingMs, isFresh)
 
   return (
     <section className="hero" aria-label="Boosters">
@@ -77,7 +78,12 @@ export function BoosterWidget({ wallet, onOpen, onElapsed }: BoosterWidgetProps)
         ) : (
           <StockMeta remainingMs={remainingMs} />
         )}
-        <Button variant="primary" onClick={onOpen} disabled={stock === 0 || isPoolTooSmall}>
+        <Button
+          variant="primary"
+          sound="none"
+          onClick={onOpen}
+          disabled={stock === 0 || isPoolTooSmall}
+        >
           Ouvrir
         </Button>
       </div>

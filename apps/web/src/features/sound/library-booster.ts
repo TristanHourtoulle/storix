@@ -1,4 +1,4 @@
-import { midiToHz as N, type Voice } from './synth'
+import { midiToHz as N, times, type Voice } from './synth'
 
 export const PENTATONIC = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24] as const
 
@@ -62,7 +62,7 @@ export function aura(v: Voice, l: number, d: number): number {
   if (l >= 3) v.tone({ f: N(36), d, g: 0.12 + l * 0.03, a: d * 0.8 })
   if (l >= 4) {
     const sparkles = 6 + (l - 4) * 8
-    Array.from({ length: sparkles }, (_, i) =>
+    times(sparkles, (i) =>
       v.tone({ f: N(84 + pent(i * 3)), t: d * (0.35 + (0.6 * i) / sparkles), d: 0.25, g: 0.035 }),
     )
   }
@@ -123,7 +123,7 @@ function stampLegendary(v: Voice): void {
   ;[79, 84, 88, 91].forEach((m, i) =>
     v.tone({ f: N(m), t: 0.05 + i * 0.06, d: 0.2, type: 'square', g: 0.05, lp: 4000 }),
   )
-  Array.from({ length: 7 }, (_, i) => v.bell(N(96 + pent((i * 2) % 8)), 0.35 + i * 0.07, 0.4, 0.04))
+  times(7, (i) => v.bell(N(96 + pent((i * 2) % 8)), 0.35 + i * 0.07, 0.4, 0.04))
 }
 
 function stampMythic(v: Voice): void {
@@ -147,7 +147,7 @@ function stampMythic(v: Voice): void {
   ;[72, 76, 79, 84, 88, 91].forEach((m, i) =>
     v.tone({ f: N(m), t: 0.05 + i * 0.05, d: 0.2, type: 'square', g: 0.045, lp: 4500 }),
   )
-  Array.from({ length: 14 }, (_, i) => v.bell(N(88 + pent(i)), 0.4 + i * 0.06, 0.45, 0.035))
+  times(14, (i) => v.bell(N(88 + pent(i)), 0.4 + i * 0.06, 0.45, 0.035))
 }
 
 const STAMP_DURATIONS = [0.35, 0.42, 0.6, 0.9, 1.1, 1.6] as const
@@ -180,7 +180,7 @@ export function coin(v: Voice, t0 = 0, g = 0.09): number {
 
 /** One fast cascade for "Tout révéler", whatever the number of cards. */
 export function revealAll(v: Voice): number {
-  Array.from({ length: 8 }, (_, i) => {
+  times(8, (i) => {
     v.noise({ t: i * 0.065, d: 0.06, g: 0.12, f: 2000 + i * 300, q: 2 })
     v.tone({ f: N(72 + pent(i)), t: i * 0.065, d: 0.07, type: 'square', g: 0.045, lp: 4000 })
   })

@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, MouseEvent } from 'react'
-import { playSound } from '@/features/sound/sound'
+import { emitUiSound, type UiSound } from '@/lib/ui-sound'
 
 type ButtonVariant = 'primary' | 'ghost' | 'danger'
 
@@ -7,6 +7,14 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant: ButtonVariant
   block?: boolean
   isLoading?: boolean
+  /** Feedback sound on press; defaults to `tap` for primary and `destructive` for danger. */
+  sound?: UiSound | 'none'
+}
+
+const DEFAULT_SOUND: Record<ButtonVariant, UiSound | 'none'> = {
+  primary: 'tap',
+  ghost: 'none',
+  danger: 'destructive',
 }
 
 const VARIANTS = {
@@ -34,11 +42,11 @@ export function Button({
   className = '',
   children,
   onClick,
+  sound = DEFAULT_SOUND[variant],
   ...rest
 }: ButtonProps) {
   function handleClick(event: MouseEvent<HTMLButtonElement>) {
-    if (variant === 'primary') playSound({ name: 'tap' })
-    if (variant === 'danger') playSound({ name: 'destructive' })
+    if (sound !== 'none') emitUiSound(sound)
     onClick?.(event)
   }
 

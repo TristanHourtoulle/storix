@@ -1,6 +1,4 @@
-import { useEffect } from 'react'
 import { Notice } from '@/components/ui/notice'
-import { playSound } from '@/features/sound/sound'
 
 interface RemovalNoticeProps {
   count: number
@@ -9,10 +7,6 @@ interface RemovalNoticeProps {
 }
 
 export function RemovalNotice({ count, dust, onClose }: RemovalNoticeProps) {
-  useEffect(() => {
-    playSound({ name: 'cardRemoved' })
-  }, [])
-
   const label = count > 1 ? 'cartes retirées' : 'carte retirée'
   return (
     <Notice tone="info">

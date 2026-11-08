@@ -157,7 +157,7 @@ export function useArcadeOpening(
   })
 
   useEffect(() => {
-    void preloadSound()
+    preloadSound()
     return stopSounds
   }, [])
 

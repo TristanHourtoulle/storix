@@ -46,6 +46,7 @@ export function useAccountDeletion(
   })
 
   const deletion = useMutation({
+    meta: { sound: 'error-only' },
     mutationFn: async (body: DeleteAccountBody): Promise<void> => {
       await deleteAccount(body)
       setLoggingOut(true)

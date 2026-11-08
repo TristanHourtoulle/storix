@@ -104,7 +104,13 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
       {isComplete ? (
         <div className="flex flex-col gap-3">
           {hasStock ? (
-            <Button variant="primary" block onClick={openAnother} disabled={isOpeningNext}>
+            <Button
+              variant="primary"
+              block
+              sound="none"
+              onClick={openAnother}
+              disabled={isOpeningNext}
+            >
               Ouvrir un autre
             </Button>
           ) : null}

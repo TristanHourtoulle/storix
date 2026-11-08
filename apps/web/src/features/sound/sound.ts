@@ -1,14 +1,15 @@
 import { logger } from '@/lib/logger'
-import type { SoundEngine } from './engine'
+import { setUiSoundHandler } from '@/lib/ui-sound'
+import { installAudioUnlock, playableContext, suspendAudio, unlockAudioNow } from './audio-unlock'
+import type { SoundEngine, createSoundEngine as CreateSoundEngine } from './engine'
 import { getSoundSettings, isCategoryEnabled, onSoundSettingsChange } from './sound-settings'
 import { SOUND_CATEGORY, type SoundRequest } from './sound-types'
 
-const GESTURE_EVENTS = ['pointerdown', 'touchend', 'keydown', 'click'] as const
 const IDLE_PRELOAD_MS = 1500
 
+let createEngine: typeof CreateSoundEngine | null = null
+let loading: Promise<void> | null = null
 let engine: SoundEngine | null = null
-let loading: Promise<SoundEngine | null> | null = null
-let isUnlocked = false
 
 function volumeLevel(): number {
   return getSoundSettings().volume / 100
@@ -19,20 +20,25 @@ function hasAnySound(): boolean {
   return isBoosterEnabled || isInterfaceEnabled
 }
 
-/** Loads the synth chunk ahead of the first tap so unlocking never waits on the network. */
-export function preloadSound(): Promise<SoundEngine | null> {
+/** Fetches the synth chunk ahead of time when any sound is enabled; never plays anything. */
+export function preloadSound(): void {
+  if (!hasAnySound()) return
   loading ??= import('./engine').then(
-    ({ createSoundEngine }) => {
-      engine = createSoundEngine(volumeLevel())
-      return engine
+    (module) => {
+      createEngine = module.createSoundEngine
     },
     (error: unknown) => {
       logger.warn('Sound engine failed to load', { error })
       loading = null
-      return null
     },
   )
-  return loading
+}
+
+function readyEngine(): SoundEngine | null {
+  const ctx = playableContext()
+  if (!ctx || !createEngine) return null
+  engine ??= createEngine(ctx, volumeLevel())
+  return engine
 }
 
 function hapticPattern(request: SoundRequest): readonly number[] | null {
@@ -42,26 +48,21 @@ function hapticPattern(request: SoundRequest): readonly number[] | null {
   return null
 }
 
-function vibrate(pattern: readonly number[], delay: number): void {
-  if (typeof navigator.vibrate !== 'function') return
-  const run = () => navigator.vibrate([...pattern])
-  if (delay > 0) setTimeout(run, delay * 1000)
-  else run()
+function vibrate(pattern: readonly number[]): void {
+  if (typeof navigator.vibrate === 'function') navigator.vibrate([...pattern])
 }
 
 /**
  * Plays a sound when its category is enabled, `delay` seconds from now.
- * Does nothing (not even loading the synth) when the category is off.
+ * The sound is dropped, never queued, while the synth chunk is loading or the context is not running.
  */
 export function playSound(request: SoundRequest, delay = 0): void {
   if (!isCategoryEnabled(SOUND_CATEGORY[request.name])) return
-  const pattern = hapticPattern(request)
-  if (pattern) vibrate(pattern, delay)
-  if (engine) {
-    engine.play(request, delay)
-    return
-  }
-  void preloadSound().then((loaded) => loaded?.play(request, delay))
+  const pattern = delay === 0 ? hapticPattern(request) : null
+  if (pattern) vibrate(pattern)
+  const ready = readyEngine()
+  if (ready) ready.play(request, delay)
+  else preloadSound()
 }
 
 /** Fades out and cuts every sound playing or scheduled. */
@@ -69,41 +70,31 @@ export function stopSounds(): void {
   engine?.stopAll()
 }
 
-/** Plays a short coin at the current volume, whatever the category settings. */
+/** Plays a short coin at the current volume; call it from a gesture handler. */
 export function previewSound(): void {
-  void preloadSound().then((loaded) => {
-    void loaded?.unlock()
-    loaded?.play({ name: 'coin' }, 0)
-  })
-}
-
-function removeGestureListeners(): void {
-  GESTURE_EVENTS.forEach((type) => window.removeEventListener(type, handleGesture, true))
-}
-
-function handleGesture(): void {
-  if (isUnlocked || !hasAnySound()) return
-  if (!engine) {
-    void preloadSound()
-    return
-  }
-  void engine.unlock().then((isRunning) => {
-    if (!isRunning || isUnlocked) return
-    isUnlocked = true
-    removeGestureListeners()
-  })
+  unlockAudioNow()
+  const ready = readyEngine()
+  if (ready) ready.play({ name: 'coin' }, 0)
+  else preloadSound()
 }
 
 /**
- * Unlocks the AudioContext synchronously inside the first real gesture (touch, pen, mouse or key),
- * keeps the device volume in sync and preloads the synth once the app is idle.
+ * Arms the gesture unlock, routes interface sounds from `lib/ui-sound`, keeps the volume in sync,
+ * suspends audio when every category is off and preloads the synth once the app is idle.
  */
 export function installSound(): void {
-  GESTURE_EVENTS.forEach((type) =>
-    window.addEventListener(type, handleGesture, { capture: true, passive: true }),
-  )
-  onSoundSettingsChange(() => engine?.setVolume(volumeLevel()))
-  setTimeout(() => {
-    if (hasAnySound()) void preloadSound()
-  }, IDLE_PRELOAD_MS)
+  installAudioUnlock({
+    isWanted: hasAnySound,
+    onGesture: preloadSound,
+    onRunning: (isLate) => {
+      if (isLate) stopSounds()
+    },
+    onStopped: stopSounds,
+  })
+  setUiSoundHandler((name) => playSound({ name }))
+  onSoundSettingsChange(() => {
+    engine?.setVolume(volumeLevel())
+    if (!hasAnySound()) suspendAudio()
+  })
+  setTimeout(preloadSound, IDLE_PRELOAD_MS)
 }

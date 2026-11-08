@@ -23,7 +23,7 @@ function LeagueHome() {
   const navigate = useNavigate()
   const { data: league } = useSuspenseQuery(leagueDetailQueryOptions(leagueId))
   const queryClient = useQueryClient()
-  const { data: wallet, isError, refetch } = useWallet(leagueId)
+  const { data: wallet, isError, refetch, isFetchedAfterMount } = useWallet(leagueId)
   const { data: reveals } = useQuery(recentRevealsQueryOptions(leagueId))
   const leagues = useMyLeagues()
   const { me } = Route.useRouteContext()
@@ -55,7 +55,12 @@ function LeagueHome() {
       ) : null}
       {wallet ? (
         <>
-          <BoosterWidget wallet={wallet} onOpen={openBooster} onElapsed={invalidateWallet} />
+          <BoosterWidget
+            wallet={wallet}
+            isFresh={isFetchedAfterMount}
+            onOpen={openBooster}
+            onElapsed={invalidateWallet}
+          />
           <PityBar pity={wallet.pity} />
         </>
       ) : isError ? (

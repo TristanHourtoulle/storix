@@ -49,6 +49,7 @@ export function useCreateCards(
     const queue = drafts.filter(isSendable)
     if (!controller || isRunningRef.current || queue.length === 0) return
     isRunningRef.current = true
+    let createdCount = 0
     setIsRunning(true)
     setHasStarted(true)
 
@@ -60,7 +61,7 @@ export function useCreateCards(
         progressRef.current = { ...progressRef.current, [draftId]: progress }
       },
       setPhase: (draftId, phase, extra) => {
-        if (phase === 'created') playSound({ name: 'cardCreated' })
+        if (phase === 'created') createdCount += 1
         setPhase(draftId, phase, extra)
       },
     }
@@ -76,6 +77,7 @@ export function useCreateCards(
     }
 
     void run().finally(() => {
+      if (createdCount > 0 && !controller.signal.aborted) playSound({ name: 'cardCreated' })
       isRunningRef.current = false
       setIsRunning(false)
       void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'cards'] })
