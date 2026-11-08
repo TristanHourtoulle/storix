@@ -11,7 +11,7 @@ export class UserFacingError extends Error {
 
 /** Converts any thrown value to a French message safe to display. */
 export function userMessage(error: unknown): string {
-  if (error instanceof ApiError) return errorMessage(error.code)
+  if (error instanceof ApiError) return errorMessage(error.code, error.details)
   if (error instanceof UserFacingError) return error.message
   return errorMessage('INTERNAL_ERROR')
 }
