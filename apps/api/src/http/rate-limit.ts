@@ -16,6 +16,7 @@ export const rateLimits = {
   accountDelete: { max: 5, timeWindow: '15 minutes' },
   displayNameChange: { max: 10, timeWindow: '1 hour' },
   displayNameChangeIp: { max: 60, timeWindow: '1 hour' },
+  pushSubscription: { max: 20, timeWindow: '1 hour' },
 } as const
 
 export interface RateLimit {
