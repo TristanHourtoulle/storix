@@ -159,6 +159,7 @@ export default tseslint.config(
                 '@aws-sdk/*',
                 'sharp',
                 'pg-boss',
+                'web-push',
               ],
               message:
                 'Layer rule: services have no SQL, no auth library, no S3 SDK, no image or queue library and no dependency on routes.',
@@ -195,6 +196,7 @@ export default tseslint.config(
           paths: [
             banned('@storix/db', 'Layer rule: jobs parse a payload and call one service.'),
             banned('sharp', 'Layer rule: jobs parse a payload and call one service.'),
+            banned('web-push', 'Layer rule: jobs parse a payload and call one service.'),
           ],
           patterns: [
             {
