@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto'
 import type { Database, DbExecutor } from '@storix/db'
 import {
-  UPLOAD_MAX_BYTES,
   findDuplicate,
   hasEnoughDetailForDedup,
   mediaVariantKey,
@@ -14,14 +13,19 @@ import {
   type UploadRejectionReason,
   type UploadStatus,
 } from '@storix/shared'
-import { ObjectTooLargeError, type ObjectStorage } from '@storix/storage'
+import type { ObjectStorage } from '@storix/storage'
 import type { RarityQueue } from '../../jobs/rarity-queue'
 import { createBestEffort } from '../../lib/best-effort'
 import type { WorkerLogger } from '../../lib/logger'
 import { runInTransaction } from '../../lib/transaction'
+import {
+  toPortraitUpload,
+  type PortraitProcessingService,
+} from '../portraits/portrait-processing.service'
 import { insertCardForMedia } from './card-creation'
 import type { ImagePipeline, RenderedFile } from './image-pipeline'
 import * as repository from './media.repository'
+import { readUploadSource } from './upload-source'
 
 const VARIANT_CACHE_CONTROL = 'public, max-age=31536000, immutable'
 const TERMINAL_STATUSES = new Set(['ready', 'rejected', 'failed'])
@@ -37,6 +41,7 @@ interface Deps {
   clock: () => Date
   logger: WorkerLogger
   rarity: RarityQueue
+  portraits: PortraitProcessingService
 }
 
 interface DuplicateMatch {
@@ -75,19 +80,7 @@ async function findLeagueDuplicate(
 
 /** Creates the use case turning an uploaded JPEG into card media. */
 export function createMediaProcessingService(deps: Deps): MediaProcessingService {
-  const { db, storage, pipeline, clock, logger, rarity } = deps
-
-  async function readSource(
-    objectKey: string,
-  ): Promise<{ buffer: Buffer } | { buffer: null; reason: string }> {
-    try {
-      const buffer = await storage.getBuffer(objectKey, UPLOAD_MAX_BYTES)
-      return buffer === null ? { buffer: null, reason: 'MISSING_OBJECT' } : { buffer }
-    } catch (error) {
-      if (error instanceof ObjectTooLargeError) return { buffer: null, reason: 'TOO_LARGE' }
-      throw error
-    }
-  }
+  const { db, storage, pipeline, clock, logger, rarity, portraits } = deps
 
   const bestEffort = createBestEffort(logger)
 
@@ -203,7 +196,7 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
       await failUpload(upload, trace)
       return
     }
-    const source = await readSource(upload.objectKey)
+    const source = await readUploadSource(storage, upload.objectKey)
     if (source.buffer === null) {
       logger.debug({ uploadId: upload.id, reason: source.reason }, 'Upload source unavailable')
       await reject(upload, 'INVALID_IMAGE')
@@ -326,9 +319,16 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
         return
       }
       if (!(await repository.markUploadProcessing(db, uploadId))) return
+      const { kind } = upload
+      if (kind !== 'card') {
+        const portrait = toPortraitUpload({ ...upload, kind, userId })
+        if (portrait === null) await reject(upload, 'INVALID_IMAGE')
+        else await portraits.processUpload(portrait, input)
+        return
+      }
       const trace: RenderTrace = { sha: null, variantKeys: [] }
       if (!repository.isCardUpload(upload)) {
-        logger.error({ uploadId, kind: upload.kind }, 'No processing path for this upload kind')
+        logger.error({ uploadId }, 'Card upload has no league; failing without retries')
         await failUpload(upload, trace)
         return
       }

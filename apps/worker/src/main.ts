@@ -16,6 +16,7 @@ import { configureImagePipeline, imagePipeline } from './features/media/image-pi
 import { createCardPublishService } from './features/media/card-publish.service'
 import { createMediaProcessingService } from './features/media/media-processing.service'
 import { createMediaSweepService } from './features/media/media-sweep.service'
+import { createPortraitProcessingService } from './features/portraits/portrait-processing.service'
 import { createStorageDeleteService } from './features/storage/storage-delete.service'
 import { createStorageGcService } from './features/storage/storage-gc.service'
 import { createRarityRecomputeService } from './features/rarity/rarity-recompute.service'
@@ -79,6 +80,15 @@ async function start(): Promise<void> {
   await boss.updateQueue(STORAGE_DELETE_JOB, STORAGE_DELETE_SEND_OPTIONS)
   await createStorageGcQueue(boss)
 
+  const storageDelete = createStorageDeleteService({ db: database.db, storage, logger })
+  const portraits = createPortraitProcessingService({
+    db: database.db,
+    storage,
+    pipeline: imagePipeline,
+    clock,
+    logger,
+    storageDelete,
+  })
   const processing = createMediaProcessingService({
     db: database.db,
     storage,
@@ -86,8 +96,8 @@ async function start(): Promise<void> {
     clock,
     logger,
     rarity: rarityQueue,
+    portraits,
   })
-  const storageDelete = createStorageDeleteService({ db: database.db, storage, logger })
   const sweep = createMediaSweepService({
     db: database.db,
     storage,

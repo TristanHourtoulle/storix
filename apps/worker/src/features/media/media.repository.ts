@@ -322,13 +322,14 @@ export async function insertCardTags(
 export async function insertAuditEntry(
   db: DbExecutor,
   entry: {
-    leagueId: string
+    leagueId: string | null
     actorId: string | null
+    targetUserId?: string | null
     action: AuditAction
     metadata: Record<string, unknown>
   },
 ): Promise<void> {
-  await db.insert(auditLog).values({ ...entry, targetUserId: null })
+  await db.insert(auditLog).values({ targetUserId: null, ...entry })
 }
 
 /** Lists abandoned pending uploads and uploaded or processing ones that look stuck. */
