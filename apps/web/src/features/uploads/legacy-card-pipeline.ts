@@ -233,7 +233,7 @@ async function processDraft(ctx: PipelineContext, draft: PhotoDraft): Promise<Dr
   }
 }
 
-/** Processes drafts with bounded parallelism and returns the ones stopped by a lost connection. */
+/** Legacy titled-card pipeline used by the old add screen; processes drafts with bounded parallelism and returns the ones stopped by a lost connection. */
 export async function processDrafts(
   ctx: PipelineContext,
   drafts: readonly PhotoDraft[],

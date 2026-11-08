@@ -7,7 +7,7 @@ import {
   waitForNetwork,
   type PipelineContext,
   type UploadProgress,
-} from './upload-pipeline'
+} from './legacy-card-pipeline'
 import { uploadQuotaQueryKey } from './use-upload-quota'
 import type { DraftPhase, PhaseExtra, PhotoDraft } from './use-photo-drafts'
 
