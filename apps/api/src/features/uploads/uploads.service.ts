@@ -143,15 +143,16 @@ export function createUploadsService(deps: {
       if (isUploadReservationExpired(row.createdAt, now)) {
         throw new AppError('UPLOAD_EXPIRED', 410, 'The upload reservation has expired')
       }
-      await assertTaggedMembers(m, body.taggedUserIds)
+      const taggedUserIds = body.taggedUserIds ?? []
+      await assertTaggedMembers(m, taggedUserIds)
       if ((await storage.head(row.objectKey)) === null) {
         throw new AppError('UPLOAD_NOT_READY', 409, 'The file has not been uploaded yet')
       }
       const capturedAt = body.capturedAt === null ? null : new Date(body.capturedAt)
       const marked = await markUploaded(db, {
         id: row.id,
-        title: body.title,
-        taggedUserIds: body.taggedUserIds,
+        title: body.title ?? null,
+        taggedUserIds,
         clientCapturedAt: sanitizeCaptureDate(capturedAt, now),
         now,
       })

@@ -69,7 +69,7 @@ export async function markUploaded(
   db: DbExecutor,
   input: {
     id: string
-    title: string
+    title: string | null
     taggedUserIds: string[]
     clientCapturedAt: Date | null
     now: Date

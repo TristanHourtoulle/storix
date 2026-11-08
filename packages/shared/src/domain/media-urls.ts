@@ -6,7 +6,7 @@ export type MediaVariantSize = (typeof MEDIA_VARIANT_SIZES)[number]
 export type MediaFormat = (typeof MEDIA_FORMATS)[number]
 
 export const MEDIA_OBJECT_KEY_PATTERN =
-  /^img\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[0-9a-f]{64}\/(256|768|1600)\.(avif|webp)$/
+  /^img\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[0-9a-f]{64}\/(?:c[0-9a-f]{16}\/)?(256|768|1600)\.(avif|webp)$/
 
 const SIGNATURE_PATTERN = /^[0-9a-f]{64}$/
 const WINDOW_PATTERN = /^[1-9][0-9]*$/
@@ -47,6 +47,17 @@ export function mediaVariantKey(input: {
   format: MediaFormat
 }): string {
   return `img/${input.leagueId}/${input.sourceSha256}/${input.size}.${input.format}`
+}
+
+/** Builds the storage key of an image variant rendered through a crop. */
+export function mediaCropVariantKey(input: {
+  leagueId: string
+  sourceSha256: string
+  cropId: string
+  size: MediaVariantSize
+  format: MediaFormat
+}): string {
+  return `img/${input.leagueId}/${input.sourceSha256}/c${input.cropId}/${input.size}.${input.format}`
 }
 
 /** Builds the public path of a signed media URL. */

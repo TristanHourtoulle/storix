@@ -7,6 +7,18 @@ export const mediaProcessPayloadSchema = z.object({ uploadId: z.uuid() })
 
 export type MediaProcessPayload = z.infer<typeof mediaProcessPayloadSchema>
 
+export const MEDIA_PUBLISH_JOB = 'media.publish'
+
+export const mediaPublishPayloadSchema = z.object({ uploadId: z.uuid() })
+
+export type MediaPublishPayload = z.infer<typeof mediaPublishPayloadSchema>
+
+export const MEDIA_PUBLISH_SEND_OPTIONS = {
+  retryLimit: 3,
+  retryDelay: 15,
+  retryBackoff: true,
+} as const
+
 export const RARITY_RECOMPUTE_JOB = 'rarity.recompute'
 export const RARITY_NIGHTLY_JOB = 'rarity.nightly'
 
