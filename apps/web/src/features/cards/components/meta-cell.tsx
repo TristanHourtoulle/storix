@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { CardPerson } from '@storix/shared'
 
 const DATE_FORMAT = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' })
@@ -13,11 +14,24 @@ export function discovererLabel(person: CardPerson | null): string {
   return person.displayUsername ?? 'Ancien membre'
 }
 
-export function MetaCell({ label, value }: { label: string; value: string }) {
+interface MetaCellProps {
+  label: string
+  value: string
+  leading?: ReactNode
+}
+
+export function MetaCell({ label, value, leading }: MetaCellProps) {
   return (
     <div className="meta-cell">
       <p className="meta-k">{label}</p>
-      <p className="meta-v">{value}</p>
+      {leading ? (
+        <div className="mt-1 flex min-w-0 items-center gap-2">
+          {leading}
+          <p className="meta-v !m-0 min-w-0 truncate">{value}</p>
+        </div>
+      ) : (
+        <p className="meta-v">{value}</p>
+      )}
     </div>
   )
 }

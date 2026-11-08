@@ -1,15 +1,16 @@
 import { inArray, lt } from 'drizzle-orm'
-import { cardRemovals, media, uploads, type DbExecutor } from '@storix/db'
+import { cardRemovals, listLivePortraitPrefixes, media, uploads, type DbExecutor } from '@storix/db'
 import { mediaPrefix } from '@storix/shared'
 
 const LIVE_UPLOAD_STATUSES = ['pending', 'uploaded', 'processing', 'staged', 'publishing'] as const
 
-/** Returns the storage prefix of every media row. */
+/** Returns the storage prefix of every media row, of every portrait row and of every portrait upload being rendered. */
 export async function listLiveMediaPrefixes(db: DbExecutor): Promise<Set<string>> {
   const rows = await db
     .select({ leagueId: media.leagueId, sourceSha256: media.sourceSha256 })
     .from(media)
-  return new Set(rows.map((row) => mediaPrefix(row)))
+  const portraitPrefixes = await listLivePortraitPrefixes(db)
+  return new Set([...rows.map((row) => mediaPrefix(row)), ...portraitPrefixes])
 }
 
 /** Returns the object keys of uploads still waiting for or undergoing processing. */

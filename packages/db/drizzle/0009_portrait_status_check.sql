@@ -1,0 +1,1 @@
+ALTER TABLE "uploads" ADD CONSTRAINT "uploads_portrait_status_check" CHECK ("uploads"."kind" = 'card' or "uploads"."status"::text not in ('staged', 'publishing', 'discarded'));

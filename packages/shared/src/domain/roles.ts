@@ -14,6 +14,11 @@ export function canManageInvitations(role: LeagueRole): boolean {
   return hasRoleAtLeast(role, 'admin')
 }
 
+/** Returns true when the role may set, replace or remove the league photo. */
+export function canManageLeaguePhoto(role: LeagueRole): boolean {
+  return hasRoleAtLeast(role, 'admin')
+}
+
 /** Returns true when the actor may move the target to `nextRole`; only the owner, never on self, the owner, to owner or to the same role. */
 export function canChangeRole(input: {
   actorRole: LeagueRole

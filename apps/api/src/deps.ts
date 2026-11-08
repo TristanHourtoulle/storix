@@ -26,6 +26,10 @@ import {
 } from './features/moderation/moderation.service'
 import { createMembersService, type MembersService } from './features/members/members.service'
 import {
+  createPortraitsService,
+  type PortraitsService,
+} from './features/portraits/portraits.service'
+import {
   createReactionsService,
   type ReactionsService,
 } from './features/reactions/reactions.service'
@@ -72,6 +76,7 @@ export interface Services {
   media: MediaService
   members: MembersService
   moderation: ModerationService
+  portraits: PortraitsService
   reactions: ReactionsService
   removals: RemovalsService
   resetCodes: ResetCodesService
@@ -103,6 +108,7 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       db: deps.db,
       auth: deps.auth,
       cardRemoval,
+      storage: deps.storage,
       jobs: deps.jobs,
       logger,
       clock: deps.clock,
@@ -122,26 +128,39 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       clock: deps.clock,
       appOrigin: deps.env.APP_ORIGIN,
     }),
-    leagues: createLeaguesService(deps.db),
+    leagues: createLeaguesService({ db: deps.db, signer: deps.mediaSigner }),
     leagueSettings: createLeagueSettingsService({
       db: deps.db,
       jobs: deps.jobs,
       clock: deps.clock,
       logger,
     }),
-    me: createMeService({ db: deps.db, clock: deps.clock }),
+    me: createMeService({ db: deps.db, clock: deps.clock, signer: deps.mediaSigner }),
     media: createMediaService({
       storage: deps.storage,
       signer: deps.mediaSigner,
       clock: deps.clock,
     }),
-    members: createMembersService({ db: deps.db, cardRemoval, jobs: deps.jobs, logger }),
+    members: createMembersService({
+      db: deps.db,
+      signer: deps.mediaSigner,
+      cardRemoval,
+      jobs: deps.jobs,
+      logger,
+    }),
     moderation: createModerationService({
       db: deps.db,
       signer: deps.mediaSigner,
       clock: deps.clock,
       jobs: deps.jobs,
       cardRemoval,
+      logger,
+    }),
+    portraits: createPortraitsService({
+      db: deps.db,
+      storage: deps.storage,
+      jobs: deps.jobs,
+      clock: deps.clock,
       logger,
     }),
     reactions: createReactionsService({ db: deps.db }),

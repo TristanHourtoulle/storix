@@ -33,7 +33,11 @@ interface OwnerScope {
 }
 
 function ownedBy(scope: OwnerScope) {
-  return and(eq(uploads.leagueId, scope.leagueId), eq(uploads.userId, scope.userId))
+  return and(
+    eq(uploads.kind, 'card'),
+    eq(uploads.leagueId, scope.leagueId),
+    eq(uploads.userId, scope.userId),
+  )
 }
 
 /** Finds an upload owned by the user within the league. */

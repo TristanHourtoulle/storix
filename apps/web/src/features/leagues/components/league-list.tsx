@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { hasRoleAtLeast, type LeagueSummary } from '@storix/shared'
 import { buttonClassName } from '@/components/ui/button'
 import { ROLE_LABELS } from '../role-labels'
+import { LeagueAvatar } from './league-avatar'
 
 interface LeagueListProps {
   leagues: LeagueSummary[]
@@ -26,7 +27,10 @@ export function LeagueList({ leagues, currentLeagueId }: LeagueListProps) {
                 aria-current={isCurrent ? 'true' : undefined}
                 className="flex min-h-12 min-w-0 flex-1 items-center justify-between gap-3 px-3 py-2 text-ink no-underline"
               >
-                <span className="min-w-0 truncate text-sm font-medium">{league.name}</span>
+                <span className="flex min-w-0 items-center gap-3">
+                  <LeagueAvatar name={league.name} photo={league.photo} size="sm" />
+                  <span className="min-w-0 truncate text-sm font-medium">{league.name}</span>
+                </span>
                 <span className="flex flex-none items-center gap-2 text-xs text-muted">
                   {isCurrent ? <span className="font-semibold text-accent">Actuelle</span> : null}
                   {ROLE_LABELS[league.role]}

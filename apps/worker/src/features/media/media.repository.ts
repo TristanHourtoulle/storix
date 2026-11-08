@@ -1,10 +1,11 @@
-import { and, eq, inArray, isNull, lt, not, notExists, or, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, lt, ne, not, notExists, or, sql } from 'drizzle-orm'
 import {
   auditLog,
   cards,
   cardTags,
   leagueMembers,
   media,
+  portraits,
   uploads,
   type AuditAction,
   type DbExecutor,
@@ -15,13 +16,15 @@ import {
   type CardTier,
   type CropRect,
   type MediaVariant,
+  type UploadKind,
   type UploadRejectionReason,
   type UploadStatus,
 } from '@storix/shared'
 
 export interface UploadForProcessing {
   id: string
-  leagueId: string
+  kind: UploadKind
+  leagueId: string | null
   userId: string | null
   objectKey: string
   status: UploadStatus
@@ -33,7 +36,26 @@ export interface UploadForProcessing {
   hasInvalidCrop: boolean
 }
 
-export type OwnedUpload = UploadForProcessing & { userId: string }
+export type CardUpload = UploadForProcessing & { kind: 'card'; leagueId: string }
+
+export type OwnedUpload = CardUpload & { userId: string }
+
+/** Tells whether an upload is a card upload, which always has a league. */
+export function isCardUpload(upload: UploadForProcessing): upload is CardUpload {
+  return upload.kind === 'card' && upload.leagueId !== null
+}
+
+/** Returns the league of a row that can only be a card upload; throws for the impossible null. */
+export function requireLeagueId(row: { id: string; leagueId: string | null }): string {
+  if (row.leagueId === null) throw new Error(`Upload ${row.id} has no league`)
+  return row.leagueId
+}
+
+/** Returns an upload that can only be a card upload; throws when it is a portrait upload. */
+export function requireCardUpload(upload: UploadForProcessing): CardUpload {
+  if (!isCardUpload(upload)) throw new Error(`Upload ${upload.id} is not a card upload`)
+  return upload
+}
 
 export interface NewMediaRow {
   leagueId: string
@@ -66,10 +88,12 @@ export interface StaleUpload {
 }
 
 const PROCESSABLE: UploadStatus[] = ['uploaded', 'processing']
+const SETTLED_PORTRAIT_STATUSES: UploadStatus[] = ['rejected', 'failed']
 const LEAGUE_MEDIA_LOCK_NAMESPACE = 7201
 
 export const uploadColumns = {
   id: uploads.id,
+  kind: uploads.kind,
   leagueId: uploads.leagueId,
   userId: uploads.userId,
   objectKey: uploads.objectKey,
@@ -94,6 +118,7 @@ export function toUploadForProcessing(row: RawUploadRow): UploadForProcessing {
   const crop = cropRectSchema.nullable().safeParse(row.crop ?? null)
   return {
     id: row.id,
+    kind: row.kind,
     leagueId: row.leagueId,
     userId: row.userId,
     objectKey: row.objectKey,
@@ -299,13 +324,14 @@ export async function insertCardTags(
 export async function insertAuditEntry(
   db: DbExecutor,
   entry: {
-    leagueId: string
+    leagueId: string | null
     actorId: string | null
+    targetUserId?: string | null
     action: AuditAction
     metadata: Record<string, unknown>
   },
 ): Promise<void> {
-  await db.insert(auditLog).values({ ...entry, targetUserId: null })
+  await db.insert(auditLog).values({ targetUserId: null, ...entry })
 }
 
 /** Lists abandoned pending uploads and uploaded or processing ones that look stuck. */
@@ -348,4 +374,25 @@ export async function deleteUploads(db: DbExecutor, ids: readonly string[]): Pro
     )
     .returning({ id: uploads.id })
   return rows.length
+}
+
+/** Deletes rejected or failed portrait uploads processed before `before` that no portrait references; returns their object keys. */
+export async function deleteSettledPortraitUploads(db: DbExecutor, before: Date): Promise<string[]> {
+  const rows = await db
+    .delete(uploads)
+    .where(
+      and(
+        ne(uploads.kind, 'card'),
+        inArray(uploads.status, SETTLED_PORTRAIT_STATUSES),
+        lt(uploads.processedAt, before),
+        notExists(
+          db
+            .select({ one: sql`1` })
+            .from(portraits)
+            .where(eq(portraits.uploadId, uploads.id)),
+        ),
+      ),
+    )
+    .returning({ objectKey: uploads.objectKey })
+  return rows.map((row) => row.objectKey)
 }

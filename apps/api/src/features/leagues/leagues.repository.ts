@@ -1,6 +1,11 @@
-import { leagueMembers, leagues, type DbExecutor } from '@storix/db'
+import { leagueMembers, leagues, portraits, type DbExecutor } from '@storix/db'
 import type { LeagueSummary } from '@storix/shared'
 import { and, asc, count, eq, inArray } from 'drizzle-orm'
+
+export type LeagueSummaryRow = Omit<LeagueSummary, 'photo'> & {
+  photoUploadId: string | null
+  photoColor: string | null
+}
 
 export interface LeagueRecord {
   id: string
@@ -53,26 +58,28 @@ export async function lockLeagueById(db: DbExecutor, id: string): Promise<League
   return rows[0] ?? null
 }
 
-/** Lists the user's leagues with their role and member count in a single query. */
-export async function listLeaguesForUser(db: DbExecutor, userId: string): Promise<LeagueSummary[]> {
+/** Lists the user's leagues with their role, member count and photo in a single query. */
+export function listLeaguesForUser(db: DbExecutor, userId: string): Promise<LeagueSummaryRow[]> {
   const memberCounts = db
     .select({ leagueId: leagueMembers.leagueId, total: count().as('total') })
     .from(leagueMembers)
     .groupBy(leagueMembers.leagueId)
     .as('member_counts')
-  const rows = await db
+  return db
     .select({
       id: leagues.id,
       name: leagues.name,
       role: leagueMembers.role,
       memberCount: memberCounts.total,
+      photoUploadId: portraits.uploadId,
+      photoColor: portraits.dominantColor,
     })
     .from(leagueMembers)
     .innerJoin(leagues, eq(leagues.id, leagueMembers.leagueId))
     .innerJoin(memberCounts, eq(memberCounts.leagueId, leagueMembers.leagueId))
+    .leftJoin(portraits, eq(portraits.leagueId, leagueMembers.leagueId))
     .where(eq(leagueMembers.userId, userId))
     .orderBy(asc(leagueMembers.joinedAt), asc(leagues.id))
-  return rows
 }
 
 /** Counts the members of a league. */

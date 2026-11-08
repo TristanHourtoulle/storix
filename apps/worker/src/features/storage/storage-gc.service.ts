@@ -2,8 +2,8 @@ import type { Database } from '@storix/db'
 import {
   classifyOrphans,
   evaluateGcSafety,
-  MEDIA_OBJECT_KEY_PATTERN,
-  mediaPrefixOfKey,
+  filterDeletableKeys,
+  isMediaObjectKey,
   type StoredObject,
 } from '@storix/shared'
 import type { ObjectStorage } from '@storix/storage'
@@ -14,6 +14,7 @@ const DAY_MS = 86_400_000
 const TOMBSTONE_RETENTION_MS = 35 * DAY_MS
 const DELETE_CHUNK_SIZE = 500
 const IMG_PREFIX = 'img/'
+const PIC_PREFIX = 'pic/'
 const INCOMING_PREFIX = 'incoming/'
 
 export interface StorageGcResult {
@@ -48,10 +49,13 @@ export function createStorageGcService(deps: Deps): StorageGcService {
       const now = clock()
       const liveMediaPrefixes = await repository.listLiveMediaPrefixes(db)
       const liveIncomingKeys = await repository.listLiveIncomingKeys(db)
-      const images = await listAll(storage, IMG_PREFIX)
+      const images = [
+        ...(await listAll(storage, IMG_PREFIX)),
+        ...(await listAll(storage, PIC_PREFIX)),
+      ]
       const incoming = await listAll(storage, INCOMING_PREFIX)
 
-      const wellFormedImages = images.filter(({ key }) => MEDIA_OBJECT_KEY_PATTERN.test(key))
+      const wellFormedImages = images.filter(({ key }) => isMediaObjectKey(key))
       const malformed = images.length - wellFormedImages.length
       if (malformed > 0) logger.warn({ malformed }, 'Skipped malformed image keys')
 
@@ -62,7 +66,7 @@ export function createStorageGcService(deps: Deps): StorageGcService {
       const verdict = evaluateGcSafety({
         liveMediaPrefixCount: liveMediaPrefixes.size,
         imagesScanned: images.length,
-        imageCandidates: orphans.filter((key) => key.startsWith(IMG_PREFIX)).length,
+        imageCandidates: orphans.filter((key) => !key.startsWith(INCOMING_PREFIX)).length,
       })
       if (!verdict.safe) {
         logger.error(
@@ -76,11 +80,11 @@ export function createStorageGcService(deps: Deps): StorageGcService {
       let dropped = 0
       for (let start = 0; start < orphans.length; start += DELETE_CHUNK_SIZE) {
         const chunk = orphans.slice(start, start + DELETE_CHUNK_SIZE)
-        const freshMediaPrefixes = await repository.listLiveMediaPrefixes(db)
-        const freshIncomingKeys = await repository.listLiveIncomingKeys(db)
-        const safeKeys = chunk.filter(
-          (key) => !freshMediaPrefixes.has(mediaPrefixOfKey(key)) && !freshIncomingKeys.has(key),
-        )
+        const { deletable: safeKeys } = filterDeletableKeys({
+          keys: chunk,
+          liveMediaPrefixes: await repository.listLiveMediaPrefixes(db),
+          liveIncomingKeys: await repository.listLiveIncomingKeys(db),
+        })
         dropped += chunk.length - safeKeys.length
         if (safeKeys.length === 0) continue
         await storage.delete(safeKeys)

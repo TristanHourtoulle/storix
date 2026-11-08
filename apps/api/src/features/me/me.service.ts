@@ -2,9 +2,13 @@ import type { Database } from '@storix/db'
 import type { MeResponse } from '@storix/shared'
 import type { AuthSession } from '../../auth/auth.gateway'
 import { AppError, notFound } from '../../lib/errors'
+import type { MediaSigner } from '../../lib/media-signer'
 import { runInTransaction } from '../../lib/transaction'
 import { insertAuditEntry } from '../audit/audit.repository'
+import { toLeagueSummary } from '../leagues/league-views'
 import { listLeaguesForUser } from '../leagues/leagues.repository'
+import { toPortraitView } from '../portraits/portrait-view'
+import { findPortraitForOwner } from '../portraits/portraits.repository'
 import {
   findUserByUsername,
   findUserHomeLeague,
@@ -18,18 +22,24 @@ export interface MeService {
 }
 
 /** Builds the service describing the current user and changing their display name. */
-export function createMeService(deps: { db: Database; clock: () => Date }): MeService {
-  const { db, clock } = deps
+export function createMeService(deps: {
+  db: Database
+  clock: () => Date
+  signer: MediaSigner
+}): MeService {
+  const { db, clock, signer } = deps
 
   const describe = async (session: AuthSession, displayUsername: string): Promise<MeResponse> => {
-    const [home, leagues] = await Promise.all([
+    const [home, leagues, avatar] = await Promise.all([
       findUserHomeLeague(db, session.userId),
       listLeaguesForUser(db, session.userId),
+      findPortraitForOwner(db, { kind: 'avatar', ownerId: session.userId }),
     ])
     return {
       user: { id: session.userId, username: session.username, displayUsername },
       homeLeagueId: home?.homeLeagueId ?? null,
-      leagues,
+      leagues: leagues.map((row) => toLeagueSummary(row, signer)),
+      avatar: avatar === null ? null : toPortraitView(avatar, signer),
     }
   }
 

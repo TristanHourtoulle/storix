@@ -28,6 +28,7 @@ export async function countUploadsSince(
     .from(uploads)
     .where(
       and(
+        eq(uploads.kind, 'card'),
         eq(uploads.leagueId, input.leagueId),
         eq(uploads.userId, input.userId),
         or(
@@ -52,6 +53,7 @@ export async function countOpenDrafts(
     .from(uploads)
     .where(
       and(
+        eq(uploads.kind, 'card'),
         eq(uploads.leagueId, input.leagueId),
         eq(uploads.userId, input.userId),
         or(
@@ -71,7 +73,7 @@ export async function insertUpload(
   await db.insert(uploads).values(input)
 }
 
-/** Finds an upload by id within a league. */
+/** Finds a card upload by id within a league. */
 export async function findUpload(
   db: DbExecutor,
   leagueId: string,
@@ -80,7 +82,7 @@ export async function findUpload(
   const rows = await db
     .select()
     .from(uploads)
-    .where(and(eq(uploads.id, uploadId), eq(uploads.leagueId, leagueId)))
+    .where(and(eq(uploads.id, uploadId), eq(uploads.kind, 'card'), eq(uploads.leagueId, leagueId)))
     .limit(1)
   return rows[0] ?? null
 }

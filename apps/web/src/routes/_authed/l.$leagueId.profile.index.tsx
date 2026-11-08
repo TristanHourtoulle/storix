@@ -49,7 +49,7 @@ function Profile() {
         aria-label={`${me.user.displayUsername}, @${me.user.username}, modifier le pseudo affiché`}
         className="flex items-center gap-3.5 rounded-control p-1 text-ink no-underline hover:bg-surface"
       >
-        <Avatar label={me.user.displayUsername} size="lg" />
+        <Avatar label={me.user.displayUsername} portrait={me.avatar} size="lg" />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate font-display text-2xl leading-tight font-semibold">
             {me.user.displayUsername}
@@ -60,6 +60,16 @@ function Profile() {
       </Link>
       {currentLeague ? <LeagueScopeCard league={currentLeague} leagues={leagues} /> : null}
       <SettingsGroup title="Mon compte">
+        <li>
+          <Link to="/l/$leagueId/profile/photo" params={params} className={settingsRowClassName()}>
+            <SettingsRowContent
+              icon="photo"
+              label="Photo de profil"
+              value={me.avatar ? 'Définie' : 'Aucune'}
+              hasChevron
+            />
+          </Link>
+        </li>
         <li>
           <Link to="/l/$leagueId/profile/pseudo" params={params} className={settingsRowClassName()}>
             <SettingsRowContent

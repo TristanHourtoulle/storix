@@ -3,6 +3,7 @@ import {
   cardTags,
   cards,
   leagueMembers,
+  portraits,
   reactions,
   user,
   type DbExecutor,
@@ -23,6 +24,8 @@ export interface MemberRow {
   joinedAt: Date
   homeLeagueId: string | null
   authoredCardCount: number
+  avatarUploadId: string | null
+  avatarColor: string | null
 }
 
 export interface MemberLock {
@@ -57,7 +60,7 @@ export async function findMembership(
   return rows[0] ?? null
 }
 
-/** Lists a league's members with their home league and authored card count, ordered owner, admins, members, then by name. */
+/** Lists a league's members with their home league, authored card count and avatar, ordered owner, admins, members, then by name. */
 export function listMembers(db: DbExecutor, leagueId: string): Promise<MemberRow[]> {
   const displayName = sql<string>`coalesce(${user.displayUsername}, ${user.username}, ${user.name})`
   return db
@@ -72,9 +75,12 @@ export function listMembers(db: DbExecutor, leagueId: string): Promise<MemberRow
         sql<number>`(select count(*) from ${cards} where ${cards.leagueId} = ${leagueMembers.leagueId} and ${cards.authorId} = ${leagueMembers.userId})`.mapWith(
           Number,
         ),
+      avatarUploadId: portraits.uploadId,
+      avatarColor: portraits.dominantColor,
     })
     .from(leagueMembers)
     .innerJoin(user, eq(user.id, leagueMembers.userId))
+    .leftJoin(portraits, eq(portraits.userId, leagueMembers.userId))
     .where(eq(leagueMembers.leagueId, leagueId))
     .orderBy(asc(leagueMembers.role), asc(sql`lower(${displayName})`), asc(leagueMembers.userId))
 }

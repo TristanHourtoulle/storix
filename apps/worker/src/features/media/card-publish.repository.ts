@@ -1,7 +1,12 @@
 import { and, eq, isNull, lt, or } from 'drizzle-orm'
 import { leagueMembers, media, uploads, type DbExecutor } from '@storix/db'
 import { cropRectSchema, type CropRect, type MediaVariant } from '@storix/shared'
-import { toUploadForProcessing, uploadColumns, type UploadForProcessing } from './media.repository'
+import {
+  requireCardUpload,
+  toUploadForProcessing,
+  uploadColumns,
+  type CardUpload,
+} from './media.repository'
 
 export interface PublishMedia {
   id: string
@@ -12,7 +17,7 @@ export interface PublishMedia {
   variants: MediaVariant[]
 }
 
-export type PublishRow = UploadForProcessing & {
+export type PublishRow = CardUpload & {
   publishRequestedAt: Date | null
   cardId: string | null
   media: PublishMedia | null
@@ -35,7 +40,7 @@ function selectPublishRow(db: DbExecutor, uploadId: string) {
     .select(publishColumns)
     .from(uploads)
     .leftJoin(media, eq(media.uploadId, uploads.id))
-    .where(eq(uploads.id, uploadId))
+    .where(and(eq(uploads.id, uploadId), eq(uploads.kind, 'card')))
 }
 
 type RawPublishRow = Awaited<ReturnType<typeof selectPublishRow>>[number]
@@ -50,18 +55,21 @@ function toPublishRow(row: RawPublishRow): PublishRow {
     mediaHeight !== null &&
     row.variants !== null
   return {
-    ...toUploadForProcessing({
-      id: row.id,
-      leagueId: row.leagueId,
-      userId: row.userId,
-      objectKey: row.objectKey,
-      status: row.status,
-      title: row.title,
-      taggedUserIds: row.taggedUserIds,
-      clientCapturedAt: row.clientCapturedAt,
-      stageOnly: row.stageOnly,
-      crop: row.crop,
-    }),
+    ...requireCardUpload(
+      toUploadForProcessing({
+        id: row.id,
+        kind: row.kind,
+        leagueId: row.leagueId,
+        userId: row.userId,
+        objectKey: row.objectKey,
+        status: row.status,
+        title: row.title,
+        taggedUserIds: row.taggedUserIds,
+        clientCapturedAt: row.clientCapturedAt,
+        stageOnly: row.stageOnly,
+        crop: row.crop,
+      }),
+    ),
     publishRequestedAt,
     cardId,
     media: hasMedia

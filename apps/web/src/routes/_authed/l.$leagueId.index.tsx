@@ -44,6 +44,7 @@ function LeagueHome() {
     <main className="screen">
       <LeagueHeader
         name={league.name}
+        photo={league.photo}
         memberCount={league.memberCount}
         leagues={leagues}
         currentLeagueId={leagueId}

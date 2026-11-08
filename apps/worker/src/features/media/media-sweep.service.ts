@@ -21,6 +21,8 @@ const UPLOADED_MAX_AGE_MS = 10 * MINUTE_MS
 const PROCESSING_MAX_AGE_MS = 30 * MINUTE_MS
 const MAX_PROCESS_JOBS = 3
 const MAX_PUBLISH_JOBS = 3
+const SETTLED_PORTRAIT_RETENTION_MS = 24 * 60 * MINUTE_MS
+const INCOMING_PREFIX = 'incoming/'
 
 if (UPLOAD_PRESIGN_TTL_SECONDS * 1000 >= PENDING_MAX_AGE_MS) {
   throw new Error('Pending uploads must outlive their presigned POST before being swept')
@@ -67,7 +69,7 @@ export function createMediaSweepService(deps: Deps): MediaSweepService {
     )
     if (row.variantKeys.length > 0) {
       await bestEffort(context, 'Failed to delete the variants of a swept draft', () =>
-        storageDelete.deleteObjects(row.variantKeys),
+        storageDelete.deleteObjects(row.variantKeys, { requestedAt: clock() }),
       )
     }
     return true
@@ -105,6 +107,20 @@ export function createMediaSweepService(deps: Deps): MediaSweepService {
       }
     }
     return { draftsDeleted, publishRecovered }
+  }
+
+  async function sweepSettledPortraitUploads(now: Date): Promise<number> {
+    const keys = await repository.deleteSettledPortraitUploads(
+      db,
+      new Date(now.getTime() - SETTLED_PORTRAIT_RETENTION_MS),
+    )
+    const incoming = keys.filter((key) => key.startsWith(INCOMING_PREFIX))
+    if (incoming.length > 0) {
+      await bestEffort({ count: incoming.length }, 'Failed to delete settled portrait sources', () =>
+        storage.delete(incoming),
+      )
+    }
+    return keys.length
   }
 
   async function recover(upload: repository.StaleUpload): Promise<StuckOutcome> {
@@ -147,10 +163,12 @@ export function createMediaSweepService(deps: Deps): MediaSweepService {
         }
       }
       const drafts = await sweepDrafts(clock())
+      const portraitUploadsDeleted = await sweepSettledPortraitUploads(clock())
       const count = (kind: StuckOutcome) => outcomes.filter((outcome) => outcome === kind).length
       logger.info(
         {
           ...drafts,
+          portraitUploadsDeleted,
           deleted,
           waiting: count('waiting'),
           requeued: count('requeued'),

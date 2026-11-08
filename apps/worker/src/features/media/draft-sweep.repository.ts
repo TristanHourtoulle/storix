@@ -14,6 +14,7 @@ import {
 import { cards, leagueMembers, media, uploads, type DbExecutor } from '@storix/db'
 import { DISCARDED_SWEEP_DELAY_MS, PUBLISH_STUCK_MS, storedMediaKeys } from '@storix/shared/domain'
 import type { UploadStatus } from '@storix/shared'
+import { requireLeagueId } from './media.repository'
 
 export interface DraftSweepRow {
   id: string
@@ -71,22 +72,25 @@ export async function findDraftSweepCandidates(
     .from(uploads)
     .leftJoin(media, eq(media.uploadId, uploads.id))
     .where(
-      or(
-        and(
-          eq(uploads.status, 'discarded'),
-          olderThanOrNull(uploads.processedAt, new Date(now - DISCARDED_SWEEP_DELAY_MS)),
-        ),
-        and(
-          eq(uploads.status, 'publishing'),
-          olderThanOrNull(uploads.publishRequestedAt, new Date(now - PUBLISH_STUCK_MS)),
-        ),
-        and(
-          eq(uploads.status, 'staged'),
-          eq(uploads.stageOnly, true),
-          or(
-            lt(uploads.createdAt, input.stagedBefore),
-            isNull(uploads.userId),
-            not(isOwnerMemberOf(db)),
+      and(
+        eq(uploads.kind, 'card'),
+        or(
+          and(
+            eq(uploads.status, 'discarded'),
+            olderThanOrNull(uploads.processedAt, new Date(now - DISCARDED_SWEEP_DELAY_MS)),
+          ),
+          and(
+            eq(uploads.status, 'publishing'),
+            olderThanOrNull(uploads.publishRequestedAt, new Date(now - PUBLISH_STUCK_MS)),
+          ),
+          and(
+            eq(uploads.status, 'staged'),
+            eq(uploads.stageOnly, true),
+            or(
+              lt(uploads.createdAt, input.stagedBefore),
+              isNull(uploads.userId),
+              not(isOwnerMemberOf(db)),
+            ),
           ),
         ),
       ),
@@ -96,7 +100,11 @@ export async function findDraftSweepCandidates(
     variantKeys:
       sourceSha256 === null
         ? []
-        : storedMediaKeys({ leagueId: row.leagueId, sourceSha256, variants: variants ?? [] }),
+        : storedMediaKeys({
+            leagueId: requireLeagueId(row),
+            sourceSha256,
+            variants: variants ?? [],
+          }),
   }))
 }
 

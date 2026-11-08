@@ -8,6 +8,7 @@ import { loadEnv, type Env } from '../config/env'
 import { createLeaguesService } from '../features/leagues/leagues.service'
 import { findUserByUsername } from '../features/users/users.repository'
 import { buildLoggerOptions } from '../lib/logger'
+import { createMediaSigner } from '../lib/media-signer'
 
 function readArgs(argv: string[]): { username: string; league: string } {
   const { values } = parseArgs({
@@ -44,7 +45,11 @@ async function main(env: Env, logger: Logger): Promise<void> {
     const gateway = createAuthGateway(createAuth({ db: database.db, env }))
     const { userId } = await gateway.createCredentialUser({ username, password })
     try {
-      const created = await createLeaguesService(database.db).createLeague(userId, league, {
+      const leagues = createLeaguesService({
+        db: database.db,
+        signer: createMediaSigner(env.MEDIA_URL_SECRET, () => new Date()),
+      })
+      const created = await leagues.createLeague(userId, league, {
         setHomeLeague: true,
         source: 'bootstrap',
       })
