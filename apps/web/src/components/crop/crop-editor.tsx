@@ -152,7 +152,7 @@ export function CropEditor({
         <button
           type="button"
           onClick={onCancel}
-          className="cursor-pointer justify-self-start border-0 bg-transparent py-2 text-[15px] text-info"
+          className="-ml-2 min-h-11 min-w-11 cursor-pointer justify-self-start border-0 bg-transparent px-2 py-2 text-[15px] text-info"
         >
           Annuler
         </button>
@@ -165,7 +165,7 @@ export function CropEditor({
         <button
           type="button"
           onClick={() => onConfirm(cropRectOrNull(view, imageSize, frame))}
-          className="cursor-pointer justify-self-end border-0 bg-transparent py-2 text-[15px] font-semibold text-info"
+          className="-mr-2 min-h-11 min-w-11 cursor-pointer justify-self-end border-0 bg-transparent px-2 py-2 text-[15px] font-semibold text-info"
         >
           {confirmLabel}
         </button>
