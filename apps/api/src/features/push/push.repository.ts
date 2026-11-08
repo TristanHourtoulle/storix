@@ -1,5 +1,5 @@
 import { leagues, memberWallets, pushSubscriptions, type DbExecutor } from '@storix/db'
-import { and, count, desc, eq, inArray, isNull, notInArray } from 'drizzle-orm'
+import { and, asc, count, desc, eq, inArray, isNull, notInArray } from 'drizzle-orm'
 
 export interface UpsertSubscriptionInput {
   userId: string
@@ -79,8 +79,8 @@ export async function deleteUserSubscription(
     .where(and(eq(pushSubscriptions.userId, userId), eq(pushSubscriptions.endpoint, endpoint)))
 }
 
-/** Lists the wallets of a user whose booster-full marker is armed, with their league settings. */
-export async function listArmedWallets(db: DbExecutor, userId: string): Promise<ArmedWallet[]> {
+/** Locks, in league id order, the wallets of a user whose booster-full marker is armed, with their league settings. */
+export async function lockArmedWallets(db: DbExecutor, userId: string): Promise<ArmedWallet[]> {
   return db
     .select({
       leagueId: memberWallets.leagueId,
@@ -91,6 +91,8 @@ export async function listArmedWallets(db: DbExecutor, userId: string): Promise<
     .from(memberWallets)
     .innerJoin(leagues, eq(leagues.id, memberWallets.leagueId))
     .where(and(eq(memberWallets.userId, userId), isNull(memberWallets.boosterFullNotifiedAt)))
+    .orderBy(asc(memberWallets.leagueId))
+    .for('update', { of: memberWallets })
 }
 
 /** Sets the booster-full marker on the given armed wallets of a user. */

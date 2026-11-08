@@ -28,7 +28,7 @@ export function pushRoutes(service: PushService): FastifyPluginAsyncZod {
       '/push/subscriptions',
       {
         preHandler: [authenticate, subscriptionLimit],
-        config: { rateLimit: rateLimits.pushSubscription },
+        config: { rateLimit: rateLimits.pushSubscriptionIp },
         schema: { body: pushSubscriptionBodySchema },
       },
       async (request, reply) => {
@@ -40,7 +40,7 @@ export function pushRoutes(service: PushService): FastifyPluginAsyncZod {
       '/push/subscriptions/remove',
       {
         preHandler: [authenticate, subscriptionLimit],
-        config: { rateLimit: rateLimits.pushSubscription },
+        config: { rateLimit: rateLimits.pushSubscriptionIp },
         schema: { body: pushUnsubscribeBodySchema },
       },
       async (request, reply) => {

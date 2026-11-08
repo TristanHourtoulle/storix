@@ -17,6 +17,7 @@ export const rateLimits = {
   displayNameChange: { max: 10, timeWindow: '1 hour' },
   displayNameChangeIp: { max: 60, timeWindow: '1 hour' },
   pushSubscription: { max: 20, timeWindow: '1 hour' },
+  pushSubscriptionIp: { max: 120, timeWindow: '1 hour' },
 } as const
 
 export interface RateLimit {

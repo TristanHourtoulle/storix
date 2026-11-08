@@ -12,7 +12,7 @@ import { runInTransaction } from '../../lib/transaction'
 import {
   countUserSubscriptions,
   deleteUserSubscription,
-  listArmedWallets,
+  lockArmedWallets,
   markWalletsNotified,
   pruneUserSubscriptions,
   upsertSubscription,
@@ -49,7 +49,11 @@ export function createPushService({ db, clock, publicKey }: PushServiceDeps): Pu
       runInTransaction(db, async (tx) => {
         const now = clock()
         const { userId } = session
-        const before = await countUserSubscriptions(tx, userId)
+        if ((await countUserSubscriptions(tx, userId)) === 0) {
+          const armed = await lockArmedWallets(tx, userId)
+          const due = armed.filter((wallet) => isDue(wallet, now)).map((wallet) => wallet.leagueId)
+          await markWalletsNotified(tx, userId, due, now)
+        }
         await upsertSubscription(tx, {
           userId,
           endpoint: body.endpoint,
@@ -58,10 +62,6 @@ export function createPushService({ db, clock, publicKey }: PushServiceDeps): Pu
           now,
         })
         await pruneUserSubscriptions(tx, userId, PUSH_SUBSCRIPTIONS_PER_USER_MAX)
-        if (before > 0) return
-        const armed = await listArmedWallets(tx, userId)
-        const due = armed.filter((wallet) => isDue(wallet, now)).map((wallet) => wallet.leagueId)
-        await markWalletsNotified(tx, userId, due, now)
       }),
 
     async unsubscribe(session, endpoint) {
