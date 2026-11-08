@@ -4,6 +4,8 @@ import {
   evaluateGcSafety,
   filterDeletableKeys,
   mediaPrefixOfKey,
+  spareFreshObjects,
+  STORAGE_DELETE_FRESHNESS_MARGIN_MS,
 } from './storage-gc'
 
 const L = '0b6f7c1e-3a59-4c1e-9d7e-2f1a6c3b4d5e'
@@ -196,5 +198,53 @@ describe('portrait keys in storage rules', () => {
         liveIncomingKeys: new Set(['incoming/u1/x']),
       }),
     ).toEqual({ deletable: ['incoming/u1/y', `img/${L}/${sha('b')}/256.webp`], refused: [] })
+  })
+})
+
+describe('spareFreshObjects', () => {
+  const requestedAt = new Date('2026-11-08T12:00:00Z')
+  const at = (iso: string) => new Date(iso)
+
+  it('spareFreshObjects keeps objects written after the request (minus 5 s) and drops missing keys', () => {
+    const result = spareFreshObjects({
+      keys: [
+        `img/${L}/${SHA}/256.webp`,
+        `img/${L}/${SHA}/768.webp`,
+        `img/${L}/${SHA}/1600.webp`,
+        `img/${L}/${SHA}/256.avif`,
+      ],
+      objects: [
+        { key: `img/${L}/${SHA}/256.webp`, lastModified: at('2026-11-08T11:30:00Z') },
+        { key: `img/${L}/${SHA}/768.webp`, lastModified: at('2026-11-08T11:59:56Z') },
+        { key: `img/${L}/${SHA}/1600.webp`, lastModified: at('2026-11-08T12:10:00Z') },
+      ],
+      requestedAt,
+    })
+    expect(result).toEqual({
+      deletable: [`img/${L}/${SHA}/256.webp`],
+      spared: [`img/${L}/${SHA}/768.webp`, `img/${L}/${SHA}/1600.webp`],
+      missing: [`img/${L}/${SHA}/256.avif`],
+    })
+  })
+
+  it('an object exactly at requestedAt - 5 s is deletable', () => {
+    expect(STORAGE_DELETE_FRESHNESS_MARGIN_MS).toBe(5_000)
+    const key = `img/${L}/${SHA}/256.webp`
+    const boundary = new Date(requestedAt.getTime() - STORAGE_DELETE_FRESHNESS_MARGIN_MS)
+    expect(
+      spareFreshObjects({ keys: [key], objects: [{ key, lastModified: boundary }], requestedAt }),
+    ).toEqual({ deletable: [key], spared: [], missing: [] })
+    const justAfter = new Date(boundary.getTime() + 1)
+    expect(
+      spareFreshObjects({ keys: [key], objects: [{ key, lastModified: justAfter }], requestedAt }),
+    ).toEqual({ deletable: [], spared: [key], missing: [] })
+  })
+
+  it('returns empty lists for no keys', () => {
+    expect(spareFreshObjects({ keys: [], objects: [], requestedAt })).toEqual({
+      deletable: [],
+      spared: [],
+      missing: [],
+    })
   })
 })

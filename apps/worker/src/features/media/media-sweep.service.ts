@@ -67,7 +67,7 @@ export function createMediaSweepService(deps: Deps): MediaSweepService {
     )
     if (row.variantKeys.length > 0) {
       await bestEffort(context, 'Failed to delete the variants of a swept draft', () =>
-        storageDelete.deleteObjects(row.variantKeys),
+        storageDelete.deleteObjects(row.variantKeys, { requestedAt: clock() }),
       )
     }
     return true

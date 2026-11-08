@@ -2,6 +2,7 @@ export const GC_IMG_GRACE_MS = 86_400_000
 export const GC_INCOMING_GRACE_MS = 172_800_000
 export const GC_MAX_IMG_ORPHAN_RATIO = 0.25
 export const GC_MAX_IMG_ORPHAN_COUNT = 3
+export const STORAGE_DELETE_FRESHNESS_MARGIN_MS = 5_000
 
 export interface StoredObject {
   key: string
@@ -40,6 +41,28 @@ export function filterDeletableKeys(input: {
   return {
     deletable: keys.filter(isDeletable),
     refused: keys.filter((key) => !isDeletable(key)),
+  }
+}
+
+/**
+ * Splits keys by the age of their listed object: deletable when written at or before
+ * `requestedAt` minus the freshness margin, spared when newer, missing when not listed. Input order is kept.
+ */
+export function spareFreshObjects(input: {
+  keys: readonly string[]
+  objects: readonly StoredObject[]
+  requestedAt: Date
+}): { deletable: string[]; spared: string[]; missing: string[] } {
+  const cutoff = input.requestedAt.getTime() - STORAGE_DELETE_FRESHNESS_MARGIN_MS
+  const modifiedAt = new Map(
+    input.objects.map(({ key, lastModified }) => [key, lastModified.getTime()]),
+  )
+  const isListed = (key: string): boolean => modifiedAt.has(key)
+  const isOld = (key: string): boolean => (modifiedAt.get(key) ?? Infinity) <= cutoff
+  return {
+    deletable: input.keys.filter((key) => isListed(key) && isOld(key)),
+    spared: input.keys.filter((key) => isListed(key) && !isOld(key)),
+    missing: input.keys.filter((key) => !isListed(key)),
   }
 }
 
