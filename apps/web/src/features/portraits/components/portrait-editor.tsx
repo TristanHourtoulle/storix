@@ -53,6 +53,7 @@ export function PortraitEditor({
   const uploader = usePortraitUpload(target, current)
   const remover = useRemovePortrait(target, current)
   const photoRef = useRef(photo)
+  const isConfirmingRef = useRef(false)
 
   useEffect(() => {
     photoRef.current = photo
@@ -94,7 +95,8 @@ export function PortraitEditor({
 
   async function handleConfirm(rect: CropRect | null): Promise<void> {
     const picked = photoRef.current
-    if (!picked) return
+    if (!picked || isConfirmingRef.current) return
+    isConfirmingRef.current = true
     setLastAction('upload')
     setIsPreparing(true)
     try {
@@ -104,6 +106,7 @@ export function PortraitEditor({
       logger.warn('Portrait crop failed', { error })
       setLocalError(userMessage(error))
     } finally {
+      isConfirmingRef.current = false
       setIsPreparing(false)
       closeEditor()
     }
