@@ -95,11 +95,13 @@ async function start(): Promise<void> {
     logger,
     rarity: rarityQueue,
   })
+  const storageDelete = createStorageDeleteService({ db: database.db, storage, logger })
   const sweep = createMediaSweepService({
     db: database.db,
     storage,
     clock,
     logger,
+    storageDelete,
     queue,
   })
   await registerMediaProcessJob(boss, processing, logger, { concurrency: env.MEDIA_CONCURRENCY })
@@ -121,7 +123,6 @@ async function start(): Promise<void> {
   await registerRarityRecomputeJob(boss, rarity, logger)
   await registerRarityNightlyJob(boss, rarity)
   await boss.send(RARITY_NIGHTLY_JOB, null)
-  const storageDelete = createStorageDeleteService({ db: database.db, storage, logger })
   const storageGc = createStorageGcService({ db: database.db, storage, clock, logger })
   await registerStorageDeleteJob(boss, storageDelete, logger)
   await registerStorageGcJob(boss, storageGc)

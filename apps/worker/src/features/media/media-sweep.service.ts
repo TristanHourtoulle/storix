@@ -1,8 +1,16 @@
 import type { Database } from '@storix/db'
-import { UPLOAD_PRESIGN_TTL_SECONDS } from '@storix/shared/domain'
+import {
+  DRAFT_TTL_MS,
+  UPLOAD_PRESIGN_TTL_SECONDS,
+  classifyDraftForSweep,
+} from '@storix/shared/domain'
 import type { ObjectStorage } from '@storix/storage'
 import type { MediaQueue } from '../../jobs/media-queue'
 import type { WorkerLogger } from '../../lib/logger'
+import { runInTransaction } from '../../lib/transaction'
+import type { StorageDeleteService } from '../storage/storage-delete.service'
+import * as publishRepository from './card-publish.repository'
+import * as draftRepository from './draft-sweep.repository'
 import * as repository from './media.repository'
 
 const MINUTE_MS = 60 * 1000
@@ -10,6 +18,7 @@ const PENDING_MAX_AGE_MS = 60 * MINUTE_MS
 const UPLOADED_MAX_AGE_MS = 10 * MINUTE_MS
 const PROCESSING_MAX_AGE_MS = 30 * MINUTE_MS
 const MAX_PROCESS_JOBS = 3
+const MAX_PUBLISH_JOBS = 3
 
 if (UPLOAD_PRESIGN_TTL_SECONDS * 1000 >= PENDING_MAX_AGE_MS) {
   throw new Error('Pending uploads must outlive their presigned POST before being swept')
@@ -24,14 +33,82 @@ interface Deps {
   storage: ObjectStorage
   clock: () => Date
   logger: WorkerLogger
-  queue: Pick<MediaQueue, 'enqueueMediaProcess' | 'processJobHistory'>
+  storageDelete: StorageDeleteService
+  queue: Pick<
+    MediaQueue,
+    'enqueueMediaProcess' | 'processJobHistory' | 'enqueueMediaPublish' | 'publishJobHistory'
+  >
 }
 
 type StuckOutcome = 'waiting' | 'requeued' | 'failed'
+type PublishRecovery = 'waiting' | 'requeued' | 'reverted'
+
+interface DraftSweepCounts {
+  draftsDeleted: number
+  publishRecovered: number
+}
 
 /** Creates the use case cleaning abandoned uploads and recovering stuck processing. */
 export function createMediaSweepService(deps: Deps): MediaSweepService {
-  const { db, storage, clock, logger, queue } = deps
+  const { db, storage, clock, logger, queue, storageDelete } = deps
+
+  async function bestEffort(context: object, message: string, task: () => Promise<unknown>) {
+    try {
+      await task()
+    } catch (error) {
+      logger.error({ ...context, err: error }, message)
+    }
+  }
+
+  async function deleteDraft(row: draftRepository.DraftSweepRow): Promise<boolean> {
+    const deleted = await runInTransaction(db, (tx) =>
+      draftRepository.deleteDraftRows(tx, { uploadId: row.id, mediaId: row.mediaId }),
+    )
+    if (!deleted) return false
+    const context = { uploadId: row.id }
+    await bestEffort(context, 'Failed to delete the source of a swept draft', () =>
+      storage.delete([row.objectKey]),
+    )
+    if (row.variantKeys.length > 0) {
+      await bestEffort(context, 'Failed to delete the variants of a swept draft', () =>
+        storageDelete.deleteObjects(row.variantKeys),
+      )
+    }
+    return true
+  }
+
+  async function recoverPublish(row: draftRepository.DraftSweepRow): Promise<PublishRecovery> {
+    const history = await queue.publishJobHistory(row.id)
+    if (history.live > 0) return 'waiting'
+    if (history.total < MAX_PUBLISH_JOBS) {
+      await queue.enqueueMediaPublish({ uploadId: row.id })
+      return 'requeued'
+    }
+    await publishRepository.revertPublishing(db, row.id)
+    logger.warn({ uploadId: row.id, jobs: history.total }, 'Stuck publish sent back to staged')
+    return 'reverted'
+  }
+
+  async function sweepDrafts(now: Date): Promise<DraftSweepCounts> {
+    const rows = await draftRepository.findDraftSweepCandidates(db, {
+      stagedBefore: new Date(now.getTime() - DRAFT_TTL_MS),
+      now,
+    })
+    let draftsDeleted = 0
+    let publishRecovered = 0
+    for (const row of rows) {
+      const verdict = classifyDraftForSweep({ ...row, hasOwner: row.userId !== null, now })
+      try {
+        if (verdict === 'delete' && (await deleteDraft(row))) draftsDeleted += 1
+        if (verdict === 'recover-publish' && (await recoverPublish(row)) !== 'waiting') {
+          publishRecovered += 1
+        }
+      } catch (error) {
+        logger.error({ uploadId: row.id, verdict, err: error }, 'Failed to sweep a draft')
+      }
+    }
+    return { draftsDeleted, publishRecovered }
+  }
 
   async function recover(upload: repository.StaleUpload): Promise<StuckOutcome> {
     const history = await queue.processJobHistory(upload.id)
@@ -72,9 +149,11 @@ export function createMediaSweepService(deps: Deps): MediaSweepService {
           logger.error({ uploadId: upload.id, err: error }, 'Failed to recover stuck upload')
         }
       }
+      const drafts = await sweepDrafts(clock())
       const count = (kind: StuckOutcome) => outcomes.filter((outcome) => outcome === kind).length
       logger.info(
         {
+          ...drafts,
           deleted,
           waiting: count('waiting'),
           requeued: count('requeued'),
