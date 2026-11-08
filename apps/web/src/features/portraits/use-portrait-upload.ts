@@ -86,8 +86,13 @@ function settledMessage(state: UploadState): string | null {
   return errorMessage('INTERNAL_ERROR')
 }
 
-function failureMessage(error: unknown): string {
+function isForbidden(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 403
+}
+
+function failureMessage(error: unknown, target: PortraitTarget): string {
   if (error instanceof PortraitUploadError) return error.message
+  if (target.kind === 'league' && isForbidden(error)) return NOT_ALLOWED_MESSAGE
   if (error instanceof TypeError) return UPLOAD_FAILED_MESSAGE
   return userMessage(error)
 }
@@ -172,7 +177,7 @@ export function usePortraitUpload(
           if (isStopped) return
           logger.warn('Portrait upload failed', { error })
           setPhase('error')
-          setMessage(failureMessage(error))
+          setMessage(failureMessage(error, uploadTarget))
         },
       )
     },
