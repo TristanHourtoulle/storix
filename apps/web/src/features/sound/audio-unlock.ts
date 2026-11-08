@@ -2,7 +2,7 @@ import { logger } from '@/lib/logger'
 
 const GESTURE_EVENTS = ['pointerdown', 'touchend', 'keydown', 'click'] as const
 const PENDING_GRACE_MS = 250
-const LATE_START_MS = 300
+const STALE_PENDING_MS = 1500
 
 interface WindowWithWebkitAudio {
   webkitAudioContext?: typeof AudioContext
@@ -11,7 +11,7 @@ interface WindowWithWebkitAudio {
 interface AudioUnlockOptions {
   isWanted: () => boolean
   onGesture: () => void
-  onRunning: (isLate: boolean) => void
+  onRunning: (hasStalePlays: boolean) => void
   onStopped: () => void
 }
 
@@ -44,11 +44,11 @@ function createContext(): AudioContext | null {
 function handleStateChange(): void {
   if (!ctx) return
   if (ctx.state === 'running') {
-    const isLate =
-      firstPendingPlayAt !== null && performance.now() - firstPendingPlayAt > LATE_START_MS
+    const isStale =
+      firstPendingPlayAt !== null && performance.now() - firstPendingPlayAt > STALE_PENDING_MS
     firstPendingPlayAt = null
     disarm()
-    options?.onRunning(isLate)
+    options?.onRunning(isStale)
     return
   }
   firstPendingPlayAt = null

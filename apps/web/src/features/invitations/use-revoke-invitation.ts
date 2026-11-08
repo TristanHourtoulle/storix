@@ -12,6 +12,7 @@ export function useRevokeInvitation(leagueId: string): {
 } {
   const queryClient = useQueryClient()
   const mutation = useMutation({
+    meta: { sound: 'error-only' },
     mutationFn: (invitationId: string) => revokeInvitation(leagueId, invitationId),
     onSettled: () =>
       queryClient.invalidateQueries({ queryKey: invitationsQueryOptions(leagueId).queryKey }),

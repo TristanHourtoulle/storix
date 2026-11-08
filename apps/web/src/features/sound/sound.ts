@@ -5,8 +5,6 @@ import type { SoundEngine, createSoundEngine as CreateSoundEngine } from './engi
 import { getSoundSettings, isCategoryEnabled, onSoundSettingsChange } from './sound-settings'
 import { SOUND_CATEGORY, type SoundRequest } from './sound-types'
 
-const IDLE_PRELOAD_MS = 1500
-
 let createEngine: typeof CreateSoundEngine | null = null
 let loading: Promise<void> | null = null
 let engine: SoundEngine | null = null
@@ -80,14 +78,14 @@ export function previewSound(): void {
 
 /**
  * Arms the gesture unlock, routes interface sounds from `lib/ui-sound`, keeps the volume in sync,
- * suspends audio when every category is off and preloads the synth once the app is idle.
+ * suspends audio when every category is off and starts loading the synth right away.
  */
 export function installSound(): void {
   installAudioUnlock({
     isWanted: hasAnySound,
     onGesture: preloadSound,
-    onRunning: (isLate) => {
-      if (isLate) stopSounds()
+    onRunning: (hasStalePlays) => {
+      if (hasStalePlays) stopSounds()
     },
     onStopped: stopSounds,
   })
@@ -96,5 +94,5 @@ export function installSound(): void {
     engine?.setVolume(volumeLevel())
     if (!hasAnySound()) suspendAudio()
   })
-  setTimeout(preloadSound, IDLE_PRELOAD_MS)
+  preloadSound()
 }
