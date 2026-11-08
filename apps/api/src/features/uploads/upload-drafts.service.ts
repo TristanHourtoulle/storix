@@ -2,8 +2,10 @@ import type { Database } from '@storix/db'
 import {
   canEditDraft,
   CARD_CROP_FRAME,
+  DISCARDED_SWEEP_DELAY_MS,
   DRAFT_TTL_MS,
   planPublish,
+  storedMediaKeys,
   type EditUploadBody,
   type MediaVariantSize,
   type PublishPlan,
@@ -19,12 +21,14 @@ import { toImageSet } from '../cards/image-set'
 import type { Membership } from '../leagues/leagues.service'
 import { assertTaggedMembers } from './assert-tagged-members'
 import {
+  deleteCardlessMediaOfUploads,
   findOwnedUploadRow,
   listDrafts,
   listOwnedStates,
   lockPublishCandidates,
   markDiscarded,
   markPublishing,
+  touchPublishRequested,
   updateDraftFields,
   type DraftRow,
   type LockedPublishCandidate,
@@ -139,7 +143,14 @@ export function createUploadDraftsService(deps: {
         const marked = await markPublishing(tx, { ...scope, ids: plan.publish, now })
         if (marked !== plan.publish.length) throw new Error('Publish candidates changed under lock')
       }
-      return publishJobIds(ids, plan, candidates, now)
+      const jobIds = publishJobIds(ids, plan, candidates, now)
+      const fresh = new Set(plan.publish)
+      await touchPublishRequested(tx, {
+        ...scope,
+        ids: jobIds.filter((id) => !fresh.has(id)),
+        now,
+      })
+      return jobIds
     })
   }
 
@@ -154,6 +165,18 @@ export function createUploadDraftsService(deps: {
         )
         return
       }
+    }
+  }
+
+  async function enqueueDiscardedFilesDeletion(m: Membership, keys: readonly string[]) {
+    if (keys.length === 0) return
+    try {
+      await jobs.enqueueStorageDelete(keys, { delaySeconds: DISCARDED_SWEEP_DELAY_MS / 1000 })
+    } catch (error) {
+      logger.error(
+        { err: error, leagueId: m.leagueId, keys: keys.length },
+        'Failed to enqueue discarded draft files deletion; the sweep and the GC will recover them',
+      )
     }
   }
 
@@ -194,10 +217,20 @@ export function createUploadDraftsService(deps: {
     listStates: statesOf,
 
     async discard(m, ids) {
-      await runInTransaction(db, async (tx) => {
-        if ((await lockMemberRole(tx, m.leagueId, m.userId)) === null) return
-        await markDiscarded(tx, { leagueId: m.leagueId, userId: m.userId, ids, now: clock() })
+      const keys = await runInTransaction(db, async (tx) => {
+        if ((await lockMemberRole(tx, m.leagueId, m.userId)) === null) return []
+        const scope = { leagueId: m.leagueId, userId: m.userId }
+        const discarded = await markDiscarded(tx, { ...scope, ids, now: clock() })
+        const removed = await deleteCardlessMediaOfUploads(
+          tx,
+          discarded.map((upload) => upload.id),
+        )
+        return [
+          ...removed.flatMap((row) => storedMediaKeys(row)),
+          ...discarded.map((upload) => upload.objectKey),
+        ]
       })
+      await enqueueDiscardedFilesDeletion(m, keys)
     },
 
     async publish(m, ids) {

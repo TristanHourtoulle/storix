@@ -2,13 +2,13 @@ import {
   MEDIA_PROCESS_JOB,
   MEDIA_PUBLISH_JOB,
   MEDIA_PUBLISH_QUEUE_OPTIONS,
-  MEDIA_PUBLISH_SEND_OPTIONS,
   RARITY_RECOMPUTE_JOB,
   RARITY_RECOMPUTE_QUEUE_OPTIONS,
   RARITY_RECOMPUTE_SEND_OPTIONS,
   STORAGE_DELETE_JOB,
   STORAGE_DELETE_SEND_OPTIONS,
   mediaPublishPayloadSchema,
+  mediaPublishSendOptions,
   rarityRecomputePayloadSchema,
   storageDeletePayloadSchema,
   type MediaProcessPayload,
@@ -25,7 +25,7 @@ export interface JobQueue {
   enqueueMediaProcess(payload: MediaProcessPayload): Promise<void>
   enqueueMediaPublish(payload: MediaPublishPayload): Promise<void>
   enqueueRarityRecompute(payload: RarityRecomputePayload): Promise<void>
-  enqueueStorageDelete(keys: readonly string[]): Promise<void>
+  enqueueStorageDelete(keys: readonly string[], options?: { delaySeconds?: number }): Promise<void>
   stop(): Promise<void>
 }
 
@@ -65,10 +65,7 @@ export async function startJobQueue(input: {
     },
     async enqueueMediaPublish(payload) {
       const data = mediaPublishPayloadSchema.parse(payload)
-      await boss.send(MEDIA_PUBLISH_JOB, data, {
-        ...MEDIA_PUBLISH_SEND_OPTIONS,
-        singletonKey: data.uploadId,
-      })
+      await boss.send(MEDIA_PUBLISH_JOB, data, mediaPublishSendOptions(data.uploadId))
     },
     async enqueueRarityRecompute(payload) {
       const data = rarityRecomputePayloadSchema.parse(payload)
@@ -77,10 +74,14 @@ export async function startJobQueue(input: {
         singletonKey: data.leagueId,
       })
     },
-    async enqueueStorageDelete(keys) {
+    async enqueueStorageDelete(keys, options) {
+      const startAfter = options?.delaySeconds
       for (const part of chunk([...new Set(keys)], STORAGE_DELETE_CHUNK_SIZE)) {
         const data = storageDeletePayloadSchema.parse({ keys: part })
-        await boss.send(STORAGE_DELETE_JOB, data, STORAGE_DELETE_SEND_OPTIONS)
+        await boss.send(STORAGE_DELETE_JOB, data, {
+          ...STORAGE_DELETE_SEND_OPTIONS,
+          ...(startAfter === undefined ? {} : { startAfter }),
+        })
       }
     },
     stop: () => boss.stop({ graceful: true }),

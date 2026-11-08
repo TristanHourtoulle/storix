@@ -1,5 +1,10 @@
 import { cards, leagueMembers, leagues, media, uploads, user, type DbExecutor } from '@storix/db'
-import { mediaVariantsSchema, type LeagueRole, type OwnedLeague } from '@storix/shared'
+import {
+  mediaVariantsSchema,
+  storedMediaKeys,
+  type LeagueRole,
+  type OwnedLeague,
+} from '@storix/shared'
 import { and, asc, count, eq, inArray, sql } from 'drizzle-orm'
 
 export { lockLeagueEconomyExclusive } from '@storix/db'
@@ -82,14 +87,18 @@ export async function lockUserRow(db: DbExecutor, userId: string): Promise<boole
   return rows.length > 0
 }
 
-/** Lists the object keys of every media variant of a league. */
+/** Lists every stored object key of the media of a league: listed, full-frame and cropped variants. */
 export async function listLeagueVariantKeys(db: DbExecutor, leagueId: string): Promise<string[]> {
   const rows = await db
-    .select({ variants: media.variants })
+    .select({ sourceSha256: media.sourceSha256, variants: media.variants })
     .from(media)
     .where(eq(media.leagueId, leagueId))
   return rows.flatMap((row) =>
-    mediaVariantsSchema.parse(row.variants).map((variant) => variant.key),
+    storedMediaKeys({
+      leagueId,
+      sourceSha256: row.sourceSha256,
+      variants: mediaVariantsSchema.parse(row.variants),
+    }),
   )
 }
 

@@ -1,11 +1,11 @@
-import { media, uploads, type DbExecutor } from '@storix/db'
+import { cards, media, uploads, type DbExecutor } from '@storix/db'
 import {
   EDITABLE_DRAFT_STATUSES,
   type CropRect,
   type MediaVariant,
   type PublishCandidate,
 } from '@storix/shared'
-import { and, asc, eq, inArray, or } from 'drizzle-orm'
+import { and, asc, eq, inArray, notExists, or, sql } from 'drizzle-orm'
 import type { UploadRow } from './uploads.repository'
 
 export type LockedPublishCandidate = PublishCandidate & { publishRequestedAt: Date | null }
@@ -126,11 +126,11 @@ export function listOwnedStates(
     .where(and(ownedBy(input), inArray(uploads.id, [...input.ids])))
 }
 
-/** Marks the user's discardable uploads among the given ids as discarded; returns how many changed. Callers lock the member row first. */
+/** Marks the user's discardable uploads among the given ids as discarded and returns them. Callers lock the member row first. */
 export async function markDiscarded(
   db: DbExecutor,
   input: OwnerScope & { ids: readonly string[]; now: Date },
-): Promise<number> {
+): Promise<Array<{ id: string; objectKey: string }>> {
   const rows = await db
     .update(uploads)
     .set({ status: 'discarded', processedAt: input.now })
@@ -144,8 +144,48 @@ export async function markDiscarded(
         ),
       ),
     )
-    .returning({ id: uploads.id })
-  return rows.length
+    .returning({ id: uploads.id, objectKey: uploads.objectKey })
+  return rows
+}
+
+/** Deletes the card-less media of the given uploads and returns what they stored. */
+export function deleteCardlessMediaOfUploads(
+  tx: DbExecutor,
+  uploadIds: readonly string[],
+): Promise<Array<{ leagueId: string; sourceSha256: string; variants: MediaVariant[] }>> {
+  if (uploadIds.length === 0) return Promise.resolve([])
+  return tx
+    .delete(media)
+    .where(
+      and(
+        inArray(media.uploadId, [...uploadIds]),
+        notExists(
+          tx
+            .select({ one: sql`1` })
+            .from(cards)
+            .where(eq(cards.mediaId, media.id)),
+        ),
+      ),
+    )
+    .returning({
+      leagueId: media.leagueId,
+      sourceSha256: media.sourceSha256,
+      variants: media.variants,
+    })
+}
+
+/** Restarts the stuck-publish clock of the user's publishing uploads that are re-enqueued. */
+export async function touchPublishRequested(
+  tx: DbExecutor,
+  input: OwnerScope & { ids: readonly string[]; now: Date },
+): Promise<void> {
+  if (input.ids.length === 0) return
+  await tx
+    .update(uploads)
+    .set({ publishRequestedAt: input.now })
+    .where(
+      and(ownedBy(input), inArray(uploads.id, [...input.ids]), eq(uploads.status, 'publishing')),
+    )
 }
 
 /** Locks the user's requested uploads for update and reads what the publish plan needs. */
