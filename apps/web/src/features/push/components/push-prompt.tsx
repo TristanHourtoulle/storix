@@ -24,18 +24,20 @@ export function PushPrompt() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="primary"
-            className="flex-1"
-            isLoading={isPending}
-            onClick={() => {
-              dismiss()
-              setHasActivated(true)
-              void enable()
-            }}
-          >
-            Activer
-          </Button>
+          {status === 'denied' ? null : (
+            <Button
+              variant="primary"
+              className="flex-1"
+              isLoading={isPending}
+              onClick={() => {
+                dismiss()
+                setHasActivated(true)
+                void enable()
+              }}
+            >
+              Activer
+            </Button>
+          )}
           <Button
             variant="ghost"
             className="flex-1"
