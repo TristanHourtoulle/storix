@@ -1,0 +1,14 @@
+# Build context for apps/api/Dockerfile and apps/worker/Dockerfile (repo root)
+**/node_modules
+**/dist
+**/.turbo
+**/*.tsbuildinfo
+.git
+.env
+.env.*
+!.env.example
+.DS_Store
+.superpowers
+docs
+*.png
+.qa-sound-tmp
