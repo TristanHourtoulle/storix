@@ -25,6 +25,7 @@ import { moderationRoutes } from './features/moderation/moderation.routes'
 import { reactionsRoutes } from './features/reactions/reactions.routes'
 import { removalsRoutes } from './features/removals/removals.routes'
 import { resetCodesRoutes } from './features/reset-codes/reset-codes.routes'
+import { uploadDraftsRoutes } from './features/uploads/upload-drafts.routes'
 import { uploadsRoutes } from './features/uploads/uploads.routes'
 import { walletsRoutes } from './features/wallets/wallets.routes'
 import { withdrawalsRoutes } from './features/withdrawals/withdrawals.routes'
@@ -85,6 +86,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(invitationsRoutes(services.invitations), { prefix: '/api' })
   await app.register(membersRoutes(services.members), { prefix: '/api' })
   await app.register(resetCodesRoutes(services.resetCodes), { prefix: '/api' })
+  await app.register(uploadDraftsRoutes(services.uploadDrafts), { prefix: '/api' })
   await app.register(uploadsRoutes(services.uploads), { prefix: '/api' })
   await app.register(cardsRoutes(services.cards), { prefix: '/api' })
   await app.register(walletsRoutes(services.wallets), { prefix: '/api' })

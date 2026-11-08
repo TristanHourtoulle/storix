@@ -1,5 +1,5 @@
 import { leagueMembers, uploads, type DbExecutor } from '@storix/db'
-import type { LeagueRole } from '@storix/shared'
+import { QUOTA_COMPLETED_STATUSES, type LeagueRole } from '@storix/shared'
 import { and, count, eq, gte, inArray, or } from 'drizzle-orm'
 
 export type UploadRow = typeof uploads.$inferSelect
@@ -32,7 +32,7 @@ export async function countUploadsSince(
         eq(uploads.userId, input.userId),
         or(
           and(
-            inArray(uploads.status, ['uploaded', 'processing', 'ready']),
+            inArray(uploads.status, [...QUOTA_COMPLETED_STATUSES]),
             gte(uploads.createdAt, input.since),
           ),
           and(eq(uploads.status, 'pending'), gte(uploads.createdAt, input.pendingSince)),
@@ -64,7 +64,7 @@ export async function findUpload(
   return rows[0] ?? null
 }
 
-/** Moves a pending upload to uploaded with its card metadata; false when it was no longer pending. */
+/** Moves a pending upload to uploaded with its card metadata and stage mode; false when it was no longer pending. */
 export async function markUploaded(
   db: DbExecutor,
   input: {
@@ -72,6 +72,7 @@ export async function markUploaded(
     title: string | null
     taggedUserIds: string[]
     clientCapturedAt: Date | null
+    stageOnly: boolean
     now: Date
   },
 ): Promise<boolean> {
@@ -82,6 +83,7 @@ export async function markUploaded(
       title: input.title,
       taggedUserIds: input.taggedUserIds,
       clientCapturedAt: input.clientCapturedAt,
+      stageOnly: input.stageOnly,
       completedAt: input.now,
     })
     .where(and(eq(uploads.id, input.id), eq(uploads.status, 'pending')))

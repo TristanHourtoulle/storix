@@ -25,7 +25,8 @@ import { AppError, notFound } from '../../lib/errors'
 import { runInTransaction } from '../../lib/transaction'
 import { findLeagueSettings } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
-import { listMembers } from '../members/members.repository'
+import { assertTaggedMembers } from './assert-tagged-members'
+import { toUploadState } from './upload-state'
 import {
   countUploadsSince,
   findUpload,
@@ -42,15 +43,6 @@ export interface UploadsService {
   createUpload(m: Membership, body: CreateUploadBody): Promise<CreateUploadResponse>
   completeUpload(m: Membership, uploadId: string, body: CompleteUploadBody): Promise<UploadState>
   getUploadState(m: Membership, uploadId: string): Promise<UploadState>
-}
-
-function toState(row: UploadRow): UploadState {
-  return {
-    uploadId: row.id,
-    status: row.status,
-    cardId: row.cardId,
-    rejectionReason: row.rejectionReason,
-  }
 }
 
 function countUsed(db: DbExecutor, m: Membership, now: Date): Promise<number> {
@@ -93,16 +85,6 @@ export function createUploadsService(deps: {
     return row
   }
 
-  async function assertTaggedMembers(m: Membership, taggedUserIds: string[]): Promise<void> {
-    if (taggedUserIds.length === 0) return
-    const memberIds = new Set((await listMembers(db, m.leagueId)).map((row) => row.userId))
-    if (taggedUserIds.some((id) => !memberIds.has(id))) {
-      throw new AppError('VALIDATION_FAILED', 400, 'Tagged users must be league members', {
-        field: 'taggedUserIds',
-      })
-    }
-  }
-
   return {
     async getQuota(m) {
       const limit = await quotaLimitOf(db, m.leagueId)
@@ -138,13 +120,13 @@ export function createUploadsService(deps: {
 
     async completeUpload(m, uploadId, body) {
       const row = await findOwnedUpload(m, uploadId)
-      if (row.status !== 'pending') return toState(row)
+      if (row.status !== 'pending') return toUploadState(row)
       const now = clock()
       if (isUploadReservationExpired(row.createdAt, now)) {
         throw new AppError('UPLOAD_EXPIRED', 410, 'The upload reservation has expired')
       }
       const taggedUserIds = body.taggedUserIds ?? []
-      await assertTaggedMembers(m, taggedUserIds)
+      await assertTaggedMembers(db, m.leagueId, taggedUserIds)
       if ((await storage.head(row.objectKey)) === null) {
         throw new AppError('UPLOAD_NOT_READY', 409, 'The file has not been uploaded yet')
       }
@@ -154,15 +136,16 @@ export function createUploadsService(deps: {
         title: body.title ?? null,
         taggedUserIds,
         clientCapturedAt: sanitizeCaptureDate(capturedAt, now),
+        stageOnly: body.title === undefined,
         now,
       })
-      if (!marked) return toState(await findOwnedUpload(m, uploadId))
+      if (!marked) return toUploadState(await findOwnedUpload(m, uploadId))
       await jobs.enqueueMediaProcess({ uploadId: row.id })
       return { uploadId: row.id, status: 'uploaded', cardId: null, rejectionReason: null }
     },
 
     async getUploadState(m, uploadId) {
-      return toState(await findOwnedUpload(m, uploadId))
+      return toUploadState(await findOwnedUpload(m, uploadId))
     },
   }
 }

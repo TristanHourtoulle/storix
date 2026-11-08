@@ -34,6 +34,10 @@ import {
   createResetCodesService,
   type ResetCodesService,
 } from './features/reset-codes/reset-codes.service'
+import {
+  createUploadDraftsService,
+  type UploadDraftsService,
+} from './features/uploads/upload-drafts.service'
 import { createUploadsService, type UploadsService } from './features/uploads/uploads.service'
 import { createWalletsService, type WalletsService } from './features/wallets/wallets.service'
 import {
@@ -72,6 +76,7 @@ export interface Services {
   removals: RemovalsService
   resetCodes: ResetCodesService
   uploads: UploadsService
+  uploadDrafts: UploadDraftsService
   wallets: WalletsService
   withdrawals: WithdrawalsService
 }
@@ -151,6 +156,11 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       db: deps.db,
       storage: deps.storage,
       jobs: deps.jobs,
+      clock: deps.clock,
+    }),
+    uploadDrafts: createUploadDraftsService({
+      db: deps.db,
+      signer: deps.mediaSigner,
       clock: deps.clock,
     }),
     wallets: createWalletsService({ db: deps.db, clock: deps.clock }),

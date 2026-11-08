@@ -15,6 +15,8 @@ const MESSAGES: Record<ErrorCode, string> = {
   UPLOAD_QUOTA_EXCEEDED: "Tu as atteint ta limite de photos pour aujourd'hui.",
   UPLOAD_NOT_READY: "La photo n'est pas encore arrivée, réessaie.",
   UPLOAD_EXPIRED: "Ce lien d'envoi a expiré, recommence l'ajout de cette photo.",
+  UPLOAD_NOT_EDITABLE: 'Cette photo a changé ailleurs.',
+  PUBLISH_REJECTED: 'Certaines photos ne peuvent pas encore être publiées.',
   BOOSTER_STOCK_EMPTY: 'Plus de booster en stock, reviens un peu plus tard.',
   BOOSTER_POOL_EMPTY: 'Pas encore assez de cartes dans la ligue pour un booster.',
   INSUFFICIENT_DUST: 'Il te manque des paillettes.',
