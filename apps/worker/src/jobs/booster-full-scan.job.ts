@@ -42,5 +42,13 @@ export async function registerBoosterFullScanJob(
   service: BoosterFullService,
 ): Promise<void> {
   await boss.schedule(BOOSTER_FULL_SCAN_JOB, SCAN_CRON, null)
-  await boss.work(BOOSTER_FULL_SCAN_JOB, { batchSize: 1 }, () => service.scan())
+  await boss.work(BOOSTER_FULL_SCAN_JOB, { batchSize: 1 }, async ([job]) => {
+    await service.scan(job?.signal)
+  })
+}
+
+/** Removes the scan schedule left by an earlier keyed run, without creating the queue. */
+export async function unscheduleBoosterFullScan(boss: PgBoss): Promise<void> {
+  if ((await boss.getQueue(BOOSTER_FULL_SCAN_JOB)) === null) return
+  await boss.unschedule(BOOSTER_FULL_SCAN_JOB)
 }

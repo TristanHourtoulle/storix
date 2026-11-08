@@ -7,15 +7,15 @@ import {
   resolveLeagueSettings,
 } from '@storix/shared'
 import type { WorkerLogger } from '../../lib/logger'
-import type { PushSender } from '../../lib/push-sender'
+import type { PushSender, PushSendResult, PushTarget } from '../../lib/push-sender.types'
 import { runInTransaction } from '../../lib/transaction'
 import * as repository from './booster-full.repository'
 
-const CANDIDATE_LIMIT = 2000
+const CANDIDATE_PAGE_SIZE = 2000
 const NOTIFICATION_TITLE = 'Storix'
 
 export interface BoosterFullService {
-  scan(): Promise<void>
+  scan(signal?: AbortSignal): Promise<void>
 }
 
 interface Deps {
@@ -25,17 +25,32 @@ interface Deps {
   logger: WorkerLogger
 }
 
-interface SendCounts {
-  sent: number
-  gone: number
-  failed: number
-}
+type SendCounts = Readonly<Record<PushSendResult, number>>
 
-const NO_SENDS: SendCounts = { sent: 0, gone: 0, failed: 0 }
+const NO_SENDS: SendCounts = { sent: 0, gone: 0, refused: 0, failed: 0 }
 
 interface ClaimedFill {
   leagueName: string
   maxStock: number
+}
+
+function addCounts(a: SendCounts, b: SendCounts): SendCounts {
+  return {
+    sent: a.sent + b.sent,
+    gone: a.gone + b.gone,
+    refused: a.refused + b.refused,
+    failed: a.failed + b.failed,
+  }
+}
+
+/** Reduces an error to its name and driver code, since query errors embed SQL parameters such as push endpoints. */
+function errorSummary(error: unknown): { name?: string; code?: string } {
+  const cause = error instanceof Error && error.cause !== undefined ? error.cause : error
+  const code =
+    typeof cause === 'object' && cause !== null && 'code' in cause && typeof cause.code === 'string'
+      ? cause.code
+      : undefined
+  return { name: error instanceof Error ? error.name : undefined, code }
 }
 
 function dueMaxStock(
@@ -78,6 +93,24 @@ export function createBoosterFullService(deps: Deps): BoosterFullService {
     })
   }
 
+  async function sendToTarget(
+    leagueId: string,
+    target: PushTarget,
+    payload: Parameters<PushSender['send']>[1],
+  ): Promise<PushSendResult> {
+    const result = await sender.send(target, payload)
+    if (result !== 'gone' && result !== 'refused') return result
+    try {
+      await repository.deletePushSubscription(db, target.endpoint)
+    } catch (error) {
+      logger.error(
+        { leagueId, ...errorSummary(error) },
+        'Could not delete a dead push subscription',
+      )
+    }
+    return result
+  }
+
   async function notify(
     candidate: repository.BoosterFullCandidate,
     fill: ClaimedFill,
@@ -92,39 +125,48 @@ export function createBoosterFullService(deps: Deps): BoosterFullService {
     const targets = await repository.listUserPushTargets(db, candidate.userId)
     let counts = NO_SENDS
     for (const target of targets) {
-      const result = await sender.send(target, payload)
-      if (result === 'gone') await repository.deletePushSubscription(db, target.endpoint)
+      const result = await sendToTarget(candidate.leagueId, target, payload)
       counts = { ...counts, [result]: counts[result] + 1 }
     }
     return counts
   }
 
   return {
-    async scan() {
+    async scan(signal) {
       const now = clock()
-      const candidates = await repository.listBoosterFullCandidates(db, CANDIDATE_LIMIT)
       let claimed = 0
       let totals = NO_SENDS
-      for (const candidate of candidates) {
-        try {
-          if (dueMaxStock(candidate.settings, candidate, now) === null) continue
-          const fill = await claim(candidate, now)
-          if (fill === null) continue
-          claimed += 1
-          const counts = await notify(candidate, fill)
-          totals = {
-            sent: totals.sent + counts.sent,
-            gone: totals.gone + counts.gone,
-            failed: totals.failed + counts.failed,
+      let after: repository.CandidatePage['after'] = null
+      let isStopped = false
+      while (!isStopped) {
+        const page = await repository.listBoosterFullCandidates(db, {
+          limit: CANDIDATE_PAGE_SIZE,
+          after,
+        })
+        for (const candidate of page) {
+          if (signal?.aborted) {
+            isStopped = true
+            break
           }
-        } catch (error) {
-          logger.error(
-            { leagueId: candidate.leagueId, err: error },
-            'Booster-full notification failed',
-          )
+          try {
+            if (dueMaxStock(candidate.settings, candidate, now) === null) continue
+            const fill = await claim(candidate, now)
+            if (fill === null) continue
+            claimed += 1
+            totals = addCounts(totals, await notify(candidate, fill))
+          } catch (error) {
+            logger.error(
+              { leagueId: candidate.leagueId, ...errorSummary(error) },
+              'Booster-full notification failed',
+            )
+          }
         }
+        const last = page.at(-1)
+        if (last === undefined || page.length < CANDIDATE_PAGE_SIZE) break
+        after = { leagueId: last.leagueId, userId: last.userId }
       }
-      if (claimed > 0) logger.info({ claimed, ...totals }, 'Booster-full scan done')
+      if (isStopped) logger.warn({ claimed, ...totals }, 'Booster-full scan stopped: job expired')
+      else if (claimed > 0) logger.info({ claimed, ...totals }, 'Booster-full scan done')
     },
   }
 }

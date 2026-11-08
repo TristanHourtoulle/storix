@@ -24,6 +24,7 @@ import { createBoosterFullService } from './features/push/booster-full.service'
 import {
   ensureBoosterFullScanQueue,
   registerBoosterFullScanJob,
+  unscheduleBoosterFullScan,
 } from './jobs/booster-full-scan.job'
 import { registerMediaProcessJob } from './jobs/media-process.job'
 import { registerMediaPublishJob } from './jobs/media-publish.job'
@@ -95,7 +96,10 @@ async function start(): Promise<void> {
       : null
   const isPushEnabled = vapid !== null
   if (vapid) await ensureBoosterFullScanQueue(boss, logger)
-  else logger.warn('Push notifications disabled: VAPID keys missing')
+  else {
+    await unscheduleBoosterFullScan(boss)
+    logger.warn('Push notifications disabled: VAPID keys missing')
+  }
 
   const storageDelete = createStorageDeleteService({ db: database.db, storage, logger })
   const portraits = createPortraitProcessingService({

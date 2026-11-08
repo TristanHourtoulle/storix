@@ -1,6 +1,6 @@
-import { and, eq, exists, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, exists, isNull, sql } from 'drizzle-orm'
 import { leagues, memberWallets, pushSubscriptions, type DbExecutor } from '@storix/db'
-import type { PushTarget } from '../../lib/push-sender'
+import type { PushTarget } from '../../lib/push-sender.types'
 
 export interface BoosterFullCandidate {
   leagueId: string
@@ -19,15 +19,26 @@ export interface BoosterFullClaim {
   now: Date
 }
 
-/** Lists armed wallets (no marker) of users with at least one push subscription, with their league name and settings. */
+export interface CandidatePage {
+  limit: number
+  after: { leagueId: string; userId: string } | null
+}
+
+/**
+ * Lists one page of armed wallets (no marker) of users with at least one push subscription, in wallet key order
+ * after the given key, with their league name and settings.
+ */
 export async function listBoosterFullCandidates(
   db: DbExecutor,
-  limit: number,
+  page: CandidatePage,
 ): Promise<BoosterFullCandidate[]> {
   const subscribed = db
     .select({ id: pushSubscriptions.id })
     .from(pushSubscriptions)
     .where(eq(pushSubscriptions.userId, memberWallets.userId))
+  const afterKey = page.after
+    ? sql`(${memberWallets.leagueId}, ${memberWallets.userId}) > (${page.after.leagueId}::uuid, ${page.after.userId})`
+    : undefined
   return db
     .select({
       leagueId: memberWallets.leagueId,
@@ -39,8 +50,9 @@ export async function listBoosterFullCandidates(
     })
     .from(memberWallets)
     .innerJoin(leagues, eq(leagues.id, memberWallets.leagueId))
-    .where(and(isNull(memberWallets.boosterFullNotifiedAt), exists(subscribed)))
-    .limit(limit)
+    .where(and(isNull(memberWallets.boosterFullNotifiedAt), exists(subscribed), afterKey))
+    .orderBy(asc(memberWallets.leagueId), asc(memberWallets.userId))
+    .limit(page.limit)
 }
 
 export interface ClaimLeague {
