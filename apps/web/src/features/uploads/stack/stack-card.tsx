@@ -59,7 +59,7 @@ function TitleBand({
         onKeyDown={handleKeyDown}
         className="w-full rounded-lg border-0 bg-white/8 px-2 py-1.5 font-display text-[15px] font-semibold text-ink shadow-[inset_0_0_0_1px_rgb(255_255_255/0.16)] placeholder:text-ink/55 focus-visible:outline-2 focus-visible:outline-accent"
       />
-      <span className="card-tier tabular-nums">
+      <span className="card-tier text-[9px] tabular-nums">
         {card.title.length} / {CARD_TITLE_MAX_LENGTH} · rareté à la publication
       </span>
     </div>
@@ -70,7 +70,7 @@ function StaticBand({ card }: { card: StackCardModel }) {
   return (
     <div className="card-band">
       <span className="card-name">{isBlankTitle(card) ? 'Sans titre' : card.title.trim()}</span>
-      <span className="card-tier">Rareté calculée à la publication</span>
+      <span className="card-tier text-[9px]">Rareté calculée à la publication</span>
     </div>
   )
 }
@@ -79,7 +79,7 @@ function DuplicateBand() {
   return (
     <div className="card-band">
       <span className="card-name">Doublon</span>
-      <span className="card-tier">Ne deviendra pas une carte</span>
+      <span className="card-tier text-[9px]">Ne deviendra pas une carte</span>
     </div>
   )
 }

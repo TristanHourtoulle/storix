@@ -17,7 +17,7 @@ const TONES: Record<StackCardPhase, string> = {
 }
 
 /** French label of an upload phase (R18). */
-export function uploadStatusLabel(phase: StackCardPhase, progress: number): string {
+function uploadStatusLabel(phase: StackCardPhase, progress: number): string {
   switch (phase) {
     case 'preparing':
       return 'Préparation'

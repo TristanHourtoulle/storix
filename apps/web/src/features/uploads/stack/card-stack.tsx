@@ -76,6 +76,7 @@ export function CardStack({ session, members, onClose }: CardStackProps) {
   const underRef = useRef<HTMLDivElement | null>(null)
   const prevRef = useRef<HTMLDivElement | null>(null)
   const titleRef = useRef<HTMLInputElement | null>(null)
+  const deckRef = useRef<HTMLDivElement | null>(null)
   const current = state.cards[state.index]
   const cropCard = state.cards.find((card) => card.localId === cropFor) ?? null
   const canPrev = state.index > 0
@@ -89,10 +90,10 @@ export function CardStack({ session, members, onClose }: CardStackProps) {
     underRef,
     prevRef,
     titleRef,
+    deckRef,
   })
   const { bind, isDragging } = useStackGesture({
     canPrev,
-    isLast,
     reduced,
     isLocked: navigation.isLocked,
     topRef,
@@ -136,6 +137,7 @@ export function CardStack({ session, members, onClose }: CardStackProps) {
       {state.overflow ? <Notice tone="info">{overflowMessage(state.overflow)}</Notice> : null}
       {state.notice ? <Notice tone="info">{state.notice}</Notice> : null}
       <div
+        ref={deckRef}
         {...bind}
         className="-mx-4 grid h-[338px] touch-pan-y justify-center overflow-x-clip pt-1.5"
       >
@@ -153,6 +155,15 @@ export function CardStack({ session, members, onClose }: CardStackProps) {
           />
         ))}
       </div>
+      <div className="pb-1">
+        <StackControls
+          canPrev={canPrev}
+          isLast={isLast}
+          onPrev={() => void navigation.goPrev()}
+          onRemove={() => void navigation.removeCurrent()}
+          onNext={() => void navigation.goNext()}
+        />
+      </div>
       <StackFields
         card={current}
         previous={state.cards[state.index - 1] ?? null}
@@ -167,15 +178,6 @@ export function CardStack({ session, members, onClose }: CardStackProps) {
         onCopyPreviousTags={() => session.copyPreviousTags(current.localId)}
         onRetry={() => session.retry(current.localId)}
       />
-      <div className="sticky bottom-nav z-10 -mx-4 mt-auto bg-bg/95 px-4 py-3 shadow-nav backdrop-blur">
-        <StackControls
-          canPrev={canPrev}
-          isLast={isLast}
-          onPrev={() => void navigation.goPrev()}
-          onRemove={() => void navigation.removeCurrent()}
-          onNext={() => void navigation.goNext()}
-        />
-      </div>
       {cropCard ? (
         <CropDialog
           card={cropCard}

@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger'
 import { preparePhoto } from '../prepare-photo'
 import { discardUploads, fetchDrafts } from '../uploads.api'
 import { draftsQueryKey } from '../use-drafts'
-import type { DraftCapacity } from '../use-photo-drafts'
+import type { DraftCapacity } from '../draft-capacity'
 import { uploadQuotaQueryKey } from '../use-upload-quota'
 import { nextLocalId, remoteMediaPrefixes, slotsUsed, type EditPatch } from './session-fields'
 import {
@@ -96,8 +96,9 @@ export function useUploadSession(leagueId: string, capacity: DraftCapacity) {
   }, [])
 
   const add = useCallback(
-    async (files: File[]): Promise<void> => {
-      const slots = Math.max(0, capacity.slots - slotsUsed(stateRef.current.cards, capacity))
+    async (files: File[], alreadyStacked = 0): Promise<void> => {
+      const used = slotsUsed(stateRef.current.cards, capacity) + alreadyStacked
+      const slots = Math.max(0, capacity.slots - used)
       const accepted = files.slice(0, slots)
       const skipped = files.length - accepted.length
       const cards = accepted.map(() => createStackCard(nextLocalId()))

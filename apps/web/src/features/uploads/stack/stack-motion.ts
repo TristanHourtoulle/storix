@@ -12,7 +12,7 @@ const FADE_MS = 150
 const RUBBER_NUDGE_PX = 80
 
 /** Resting transform of the card right under the top card. */
-export const UNDER_TRANSFORM = 'translateY(10px) scale(.94)'
+const UNDER_TRANSFORM = 'translateY(10px) scale(.94)'
 const THROWN_TRANSFORM = 'translateX(150%) rotate(18deg)'
 const DROPPED_TRANSFORM = 'translateY(40%) scale(.8)'
 
@@ -89,10 +89,14 @@ async function play(
   }
 }
 
-/** Drops the final frames kept by commit animations, once the deck has re-rendered in its new order. */
-export function settleMotion(): void {
+/**
+ * Drops the final frames kept by commit animations and the drag styles of every card in the deck,
+ * once the deck has re-rendered in its new order.
+ */
+export function settleMotion(deck: HTMLElement | null): void {
   held.forEach((animation) => animation.cancel())
   held.clear()
+  deck?.querySelectorAll<HTMLElement>(':scope > *').forEach(clearInline)
 }
 
 function commit(el: HTMLElement, to: Partial<Pose>, reduced: boolean): Promise<void> {

@@ -1,4 +1,4 @@
-import { UNLIMITED_BATCH_SIZE, type DraftOverflow } from './use-photo-drafts'
+import { UNLIMITED_BATCH_SIZE, type DraftOverflow } from './draft-capacity'
 
 /** `"{count} {singular|plural}"`, French style: 0 and 1 take the singular. */
 export function plural(count: number, singular: string, pluralForm: string): string {

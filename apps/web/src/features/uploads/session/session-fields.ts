@@ -1,6 +1,6 @@
 import type { EditUploadBody } from '@storix/shared'
 import { imageSetPrefixes } from '../use-drafts'
-import type { DraftCapacity } from '../use-photo-drafts'
+import type { DraftCapacity } from '../draft-capacity'
 import type { CropRect } from '@storix/shared/domain'
 import type { StackCard } from './session-reducer'
 

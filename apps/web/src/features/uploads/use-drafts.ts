@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { ImageSet, UploadDraft } from '@storix/shared'
 import { mediaPrefixOfKey, parseMediaPath } from '@storix/shared/domain'
 import { purgeMediaPrefixes } from '@/features/privacy/purge-cache'
@@ -28,14 +28,18 @@ export function draftMediaPrefixes(drafts: readonly UploadDraft[]): string[] {
   return imageSetPrefixes(drafts.flatMap((draft) => (draft.media ? [draft.media.image] : [])))
 }
 
-/** The member's unpublished drafts in a league. */
-export function useDrafts(leagueId: string) {
-  return useQuery({
+export function draftsQueryOptions(leagueId: string) {
+  return queryOptions({
     queryKey: draftsQueryKey(leagueId),
     queryFn: () => fetchDrafts(leagueId),
     staleTime: DRAFTS_STALE_MS,
     refetchOnWindowFocus: true,
   })
+}
+
+/** The member's unpublished drafts in a league. */
+export function useDrafts(leagueId: string) {
+  return useQuery(draftsQueryOptions(leagueId))
 }
 
 /** Discards drafts, gives their quota back and purges their cached images. */

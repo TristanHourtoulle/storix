@@ -20,6 +20,7 @@ export interface StackNavigationInput {
   underRef: RefObject<HTMLElement | null>
   prevRef: RefObject<HTMLElement | null>
   titleRef: RefObject<HTMLInputElement | null>
+  deckRef: RefObject<HTMLElement | null>
 }
 
 export interface StackNavigation {
@@ -62,7 +63,7 @@ export function useStackNavigation(input: StackNavigationInput): StackNavigation
         const top = topRef.current
         if (top) await animateNext(top, underRef.current, reduced)
         flushSync(() => session.next())
-        settleMotion()
+        settleMotion(inputRef.current.deckRef.current)
         if (options.focusTitle) titleRef.current?.focus({ preventScroll: true })
       }),
     [runLocked],
@@ -80,7 +81,7 @@ export function useStackNavigation(input: StackNavigationInput): StackNavigation
         }
         if (top && prev) await animatePrev(prev, top, reduced)
         flushSync(() => session.prev())
-        settleMotion()
+        settleMotion(inputRef.current.deckRef.current)
       }),
     [runLocked],
   )
@@ -98,7 +99,7 @@ export function useStackNavigation(input: StackNavigationInput): StackNavigation
           under ? animatePromote(under, reduced) : null,
         ])
         flushSync(() => void session.remove(card.localId))
-        settleMotion()
+        settleMotion(inputRef.current.deckRef.current)
       }),
     [runLocked],
   )

@@ -1,154 +1,160 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
-import { Button, buttonClassName } from '@/components/ui/button'
+import { useEffect } from 'react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { z } from 'zod'
+import type { UploadDraft } from '@storix/shared'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Notice } from '@/components/ui/notice'
 import { TopBar } from '@/components/ui/top-bar'
 import { useMembers } from '@/features/members/use-members'
 import { membersQueryOptions } from '@/features/members/members.queries'
-import { CloseUploadButton } from '@/features/uploads/components/close-upload-button'
-import { DraftEditor } from '@/features/uploads/components/draft-editor'
-import { DraftThumbs } from '@/features/uploads/components/draft-thumbs'
+import { DraftBanner } from '@/features/uploads/components/draft-banner'
+import { LeaveDialog } from '@/features/uploads/components/leave-dialog'
 import { PhotoPicker } from '@/features/uploads/components/photo-picker'
-import { isSendable, useCreateCards } from '@/features/uploads/use-create-cards'
-import {
-  countQueuedDrafts,
-  draftCapacityOf,
-  UNLIMITED_BATCH_SIZE,
-  usePhotoDrafts,
-  type DraftOverflow,
-  type PhotoDraft,
-} from '@/features/uploads/use-photo-drafts'
+import { PublishDone } from '@/features/uploads/components/publish-done'
+import { UploadSummary } from '@/features/uploads/components/upload-summary'
+import { draftCapacityOf } from '@/features/uploads/draft-capacity'
+import { useUploadSession, type UploadSession } from '@/features/uploads/session/use-upload-session'
+import { CardStack } from '@/features/uploads/stack/card-stack'
+import { overflowMessage, plural } from '@/features/uploads/upload-copy'
+import { draftsQueryOptions, useDrafts } from '@/features/uploads/use-drafts'
+import { useLeaveGuard } from '@/features/uploads/use-leave-guard'
+import { usePublish } from '@/features/uploads/use-publish'
 import { uploadQuotaQueryOptions, useUploadQuota } from '@/features/uploads/use-upload-quota'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/add')({
+  validateSearch: z.object({ resume: z.boolean().optional() }),
   loader: ({ context, params }) =>
     Promise.all([
       context.queryClient.ensureQueryData(membersQueryOptions(params.leagueId)),
       context.queryClient.ensureQueryData(uploadQuotaQueryOptions(params.leagueId)),
+      context.queryClient
+        .ensureQueryData(draftsQueryOptions(params.leagueId))
+        .catch(() => undefined),
     ]),
   component: AddPhotos,
 })
 
-function plural(count: number, singular: string, pluralForm: string): string {
-  return `${count} ${count > 1 ? pluralForm : singular}`
+const NO_DRAFTS: UploadDraft[] = []
+
+interface StartScreenProps {
+  leagueId: string
+  session: UploadSession
+  drafts: readonly UploadDraft[]
 }
 
-function overflowMessage({ kind, skipped, accepted }: DraftOverflow): string {
-  const ignored = `${plural(skipped, "photo n'a", "photos n'ont")} pas été ajoutée${skipped > 1 ? 's' : ''}`
-  if (kind === 'batch') return `${UNLIMITED_BATCH_SIZE} photos max par envoi : ${ignored}.`
-  return accepted === 0
-    ? `Limite du jour atteinte : ${ignored}.`
-    : `Il ne te restait ${accepted === 1 ? "qu'une photo" : `que ${accepted} photos`} aujourd'hui, ${ignored}.`
-}
-
-function summary(drafts: readonly PhotoDraft[]): string {
-  const created = drafts.filter((draft) => draft.phase === 'created').length
-  const duplicates = drafts.filter((draft) => draft.phase === 'duplicate').length
-  const createdLine = plural(created, 'carte créée', 'cartes créées')
-  return duplicates > 0
-    ? `${createdLine} · ${plural(duplicates, 'doublon', 'doublons')}`
-    : createdLine
-}
-
-function AddPhotos() {
-  const { leagueId } = Route.useParams()
+function StartScreen({ leagueId, session, drafts }: StartScreenProps) {
   const quota = useUploadQuota(leagueId)
-  const members = useMembers(leagueId)
-  const capacity = draftCapacityOf(quota)
-  const photoDrafts = usePhotoDrafts(capacity)
-  const { drafts, selectedId, overflow } = photoDrafts
-  const creation = useCreateCards(leagueId, drafts, photoDrafts.setPhase)
+  const { overflow, cards } = session.state
 
-  const handlePick = (files: File[]): void => void photoDrafts.add(files)
-  const readyCount = drafts.filter((draft) => draft.phase === 'ready').length
-  const canCreate =
-    !creation.isRunning &&
-    readyCount > 0 &&
-    !drafts.some((draft) => draft.phase === 'preparing') &&
-    drafts.every((draft) => draft.phase !== 'ready' || isSendable(draft))
-  const canAddMore = !creation.hasStarted && countQueuedDrafts(drafts) < capacity.slots
-  const waitingMessage = drafts.find(
-    (draft) => draft.phase === 'ready' && draft.errorMessage,
-  )?.errorMessage
-  const selectedIndex = drafts.findIndex((draft) => draft.id === selectedId)
-  const selected = drafts[selectedIndex]
-
-  if (drafts.length === 0) {
-    return (
-      <main className="screen">
-        <TopBar title="Nouvelles cartes" />
-        {overflow ? <Notice tone="info">{overflowMessage(overflow)}</Notice> : null}
-        {quota.remaining === 0 ? (
-          <EmptyState
-            icon="plus"
-            title="Limite atteinte"
-            body="Tu pourras ajouter d'autres photos demain."
-          />
-        ) : (
-          <>
-            <p className="m-0 text-[13px] text-muted">
-              {quota.unlimited
-                ? 'Admin · uploads illimités'
-                : `Il te reste ${plural(quota.remaining, 'photo', 'photos')} aujourd'hui`}
-            </p>
-            <PhotoPicker variant="button" onPick={handlePick} />
-          </>
-        )}
-      </main>
-    )
+  const handlePick = (files: File[]): void => {
+    const shouldResume = cards.length === 0 && drafts.length > 0
+    if (shouldResume) session.resume([...drafts])
+    const stacked = shouldResume && quota.unlimited ? drafts.length : 0
+    void session.add(files, stacked)
   }
 
   return (
     <main className="screen">
-      <TopBar
-        title={`Nouvelles cartes · ${plural(drafts.length, 'photo', 'photos')}`}
-        start={<CloseUploadButton leagueId={leagueId} isRunning={creation.isRunning} />}
-      />
-      <DraftThumbs
-        drafts={drafts}
-        selectedId={selectedId}
-        onSelect={photoDrafts.select}
-        addTile={canAddMore ? <PhotoPicker variant="tile" onPick={handlePick} /> : null}
-      />
+      <TopBar title="Nouvelles cartes" />
       {overflow ? <Notice tone="info">{overflowMessage(overflow)}</Notice> : null}
-      {waitingMessage ? <Notice tone="info">{waitingMessage}</Notice> : null}
-      {selected ? (
-        <DraftEditor
-          draft={selected}
-          position={selectedIndex + 1}
-          total={drafts.length}
-          members={members}
-          isLocked={creation.hasStarted}
-          onTitleChange={(title) => photoDrafts.setTitle(selected.id, title)}
-          onToggleTag={(userId) => photoDrafts.toggleTag(selected.id, userId)}
-          onRemove={() => photoDrafts.remove(selected.id)}
-          onRetry={() => creation.retry(selected.id)}
+      <DraftBanner leagueId={leagueId} />
+      {quota.remaining === 0 ? (
+        <EmptyState
+          icon="plus"
+          title="Limite atteinte"
+          body="Tu pourras ajouter d'autres photos demain."
         />
-      ) : null}
-      {creation.isDone ? (
-        <>
-          <p role="status" className="m-0 text-center font-display text-[15px] font-semibold">
-            {summary(drafts)}
-          </p>
-          <Link
-            to="/l/$leagueId/collection"
-            params={{ leagueId }}
-            className={buttonClassName({ variant: 'primary', block: true })}
-          >
-            Voir la collection
-          </Link>
-        </>
       ) : (
-        <Button
-          variant="primary"
-          block
-          disabled={!canCreate}
-          isLoading={creation.isRunning}
-          onClick={creation.start}
-        >
-          {creation.isRunning ? 'Création…' : `Créer ${plural(readyCount, 'carte', 'cartes')}`}
-        </Button>
+        <>
+          <p className="m-0 text-[13px] text-muted">
+            {quota.unlimited
+              ? 'Admin · uploads illimités'
+              : `Il te reste ${plural(quota.remaining, 'photo', 'photos')} aujourd'hui`}
+          </p>
+          <PhotoPicker variant="button" onPick={handlePick} />
+        </>
       )}
     </main>
   )
+}
+
+function AddPhotos() {
+  const { leagueId } = Route.useParams()
+  const { resume } = Route.useSearch()
+  const navigate = useNavigate({ from: Route.fullPath })
+  const quota = useUploadQuota(leagueId)
+  const members = useMembers(leagueId)
+  const draftsQuery = useDrafts(leagueId)
+  const drafts = draftsQuery.data ?? NO_DRAFTS
+  const hasDrafts = draftsQuery.isSuccess
+  const session = useUploadSession(leagueId, draftCapacityOf(quota))
+  const { publish, isPublishing, progress } = usePublish(leagueId, session)
+  const leave = useLeaveGuard(leagueId, session, drafts)
+  const { state, stats, resume: resumeDrafts, dispatch, goTo } = session
+
+  useEffect(() => {
+    if (!resume || !hasDrafts) return
+    if (drafts.length > 0) resumeDrafts([...drafts])
+    void navigate({ search: {}, replace: true })
+  }, [resume, hasDrafts, drafts, resumeDrafts, navigate])
+
+  const close = (): void => void navigate({ to: '/l/$leagueId/collection', params: { leagueId } })
+
+  const leaveDialog = (
+    <LeaveDialog
+      open={leave.isOpen}
+      sent={stats.sent}
+      unsent={stats.unsent}
+      onKeep={leave.keep}
+      onStay={leave.stay}
+      onDiscardAll={leave.discardAll}
+    />
+  )
+
+  if (state.screen === 'done') {
+    return (
+      <PublishDone
+        leagueId={leagueId}
+        count={state.published?.count ?? 0}
+        duplicates={state.published?.duplicates ?? 0}
+        notice={state.notice}
+      />
+    )
+  }
+
+  if (state.screen === 'summary' || state.screen === 'publishing') {
+    return (
+      <>
+        <UploadSummary
+          cards={state.cards}
+          counts={{
+            publishable: stats.publishable.length,
+            missingTitles: stats.missingTitles,
+            busy: stats.busy,
+            duplicates: stats.duplicates,
+            errors: stats.errors,
+          }}
+          notice={state.notice}
+          isPublishing={isPublishing || state.screen === 'publishing'}
+          progress={progress}
+          onBack={() => dispatch({ type: 'screen', screen: 'stack' })}
+          onClose={close}
+          onSelect={goTo}
+          onPublish={() => void publish()}
+        />
+        {leaveDialog}
+      </>
+    )
+  }
+
+  if (state.screen === 'stack' && state.cards.length > 0) {
+    return (
+      <>
+        <CardStack session={session} members={members} onClose={close} />
+        {leaveDialog}
+      </>
+    )
+  }
+
+  return <StartScreen leagueId={leagueId} session={session} drafts={drafts} />
 }

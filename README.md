@@ -17,7 +17,7 @@ Live at **https://storix.tristanhourtoulle.fr**. See the [design spec](docs/supe
 
 ### Photos and cards
 
-- Upload from the phone: the client reads the capture date from EXIF, resizes, asks for a presigned POST and sends the file straight to the bucket, then completes the upload with a title and tagged members. A daily quota per member applies (`uploadQuotaPerDay`, default 10).
+- Upload from the phone as a swipeable stack of cards. Each photo is prepared on the device (EXIF capture date, resize, GPS stripped) and uploaded in the background as soon as it is picked: presigned POST straight to the bucket, then a completion without a title. The worker checks duplicates and renders the media, and the upload stays a private draft (`staged`) for 48 h that only its author sees. Title, tagged members and an optional crop at the card ratio (63:88) are autosaved on the draft; "Publier" turns the whole stack into cards in stack order, and the worker applies the crop when it creates each card. Leaving keeps the sent photos as a draft that can be resumed from the collection. A daily quota per member applies (`uploadQuotaPerDay`, default 10) and counts drafts; admins and owners are unlimited, with 30 photos per stack.
 - The worker strips EXIF and GPS, produces AVIF and WebP variants (256, 768, 1600), a thumbhash and a dominant color, rejects duplicates, creates the card and deletes the original.
 - Card detail: rarity, foil, author, capture date, discoverer, copies and reactions, with a holo tilt.
 
@@ -83,24 +83,25 @@ Layering rules, enforced by `no-restricted-imports` overrides in `eslint.config.
 
 ### Data model
 
-| Area     | Tables                                                                                                                                               |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Auth     | `user` (with `home_league_id`), `session`, `account`, `verification`, `passkey`                                                                      |
-| Leagues  | `leagues` (with the `settings` JSON), `league_members` (role), `invitations`, `password_reset_codes`                                                 |
-| Photos   | `uploads` (`user_id` nullable, set null on account deletion), `media` (variants, thumbhash, capture date)                                            |
-| Cards    | `cards` (tier, tier source, status `active` or `hidden`, pins and bounds, author, discoverer), `card_tags`, `card_rarity_history`                    |
-| Game     | `member_wallets`, `booster_openings` (seed, table version, pity, pool digest), `booster_pulls`, `card_copies` (`tier_at_mint`, variant), `reactions` |
-| Removals | `card_removals` (tombstones with the media prefix, kept 35 days), `card_compensations`                                                               |
-| Audit    | `audit_log`                                                                                                                                          |
+| Area     | Tables                                                                                                                                                                                                                                                                                                            |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Auth     | `user` (with `home_league_id`), `session`, `account`, `verification`, `passkey`                                                                                                                                                                                                                                   |
+| Leagues  | `leagues` (with the `settings` JSON), `league_members` (role), `invitations`, `password_reset_codes`                                                                                                                                                                                                              |
+| Photos   | `uploads` (`user_id` nullable, set null on account deletion; status `pending`, `uploaded`, `processing`, `staged`, `publishing`, `ready`, `rejected`, `failed` or `discarded`; `stage_only`, `crop`, `publish_requested_at`), `media` (variants, thumbhash, capture date, `crop` the variants were rendered with) |
+| Cards    | `cards` (tier, tier source, status `active` or `hidden`, pins and bounds, author, discoverer), `card_tags`, `card_rarity_history`                                                                                                                                                                                 |
+| Game     | `member_wallets`, `booster_openings` (seed, table version, pity, pool digest), `booster_pulls`, `card_copies` (`tier_at_mint`, variant), `reactions`                                                                                                                                                              |
+| Removals | `card_removals` (tombstones with the media prefix, kept 35 days), `card_compensations`                                                                                                                                                                                                                            |
+| Audit    | `audit_log`                                                                                                                                                                                                                                                                                                       |
 
-Migrations live in `packages/db/drizzle` (`0000` to `0006`). The server never migrates on boot.
+Migrations live in `packages/db/drizzle` (`0000` to `0007`). The server never migrates on boot.
 
 ### Background jobs (worker)
 
 | Job                | Trigger                                                                            | Work                                                                                                                                                                                   |
 | ------------------ | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `media.process`    | upload completed                                                                   | image pipeline, card creation, then a rarity recompute                                                                                                                                 |
-| `media.sweep`      | every 15 minutes                                                                   | removes stranded uploads                                                                                                                                                               |
+| `media.process`    | upload completed                                                                   | duplicate check and image pipeline; a draft upload stops at `staged`, a legacy titled upload also creates its card and queues a rarity recompute                                       |
+| `media.publish`    | "Publier", one job per draft in stack order                                        | renders the cropped 63:88 variants when a crop is set, creates the card, its number, tags and audit entry, then a rarity recompute                                                     |
+| `media.sweep`      | every 15 minutes                                                                   | removes stranded uploads, drafts older than 48 h or whose author left, and discarded drafts; sends stuck publishes back to their job or to `staged`                                    |
 | `rarity.recompute` | new card, settings change, moderation, nightly fan-out (one queued job per league) | recomputes tiers, writes the history, logs `Rarity recomputed`                                                                                                                         |
 | `rarity.nightly`   | 03:00 Europe/Paris, and once at worker startup                                     | enqueues a recompute for every league                                                                                                                                                  |
 | `storage.delete`   | after a card removal or account deletion commits                                   | deletes the bucket objects (refuses live keys)                                                                                                                                         |

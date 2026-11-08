@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent, type RefObject } from 'react'
-import { UNDER_TRANSFORM, animateCancel, animateRubberBand, rubberBand } from './stack-motion'
+import { animateCancel, animateRubberBand, rubberBand } from './stack-motion'
 
 const AXIS_LOCK_PX = 10
 const MIN_COMMIT_PX = 80
@@ -30,7 +30,6 @@ export function resolveSwipe(input: {
 
 export interface StackGestureInput {
   canPrev: boolean
-  isLast: boolean
   reduced: boolean
   isLocked: () => boolean
   topRef: RefObject<HTMLElement | null>
@@ -112,7 +111,7 @@ export function useStackGesture(input: StackGestureInput): {
       return
     }
     top.style.transform = `translateX(${dx * PREV_RESISTANCE}px)`
-    if (under) under.style.transform = UNDER_TRANSFORM
+    if (under) under.style.transform = ''
     if (prev) {
       prev.style.visibility = 'visible'
       prev.style.transform = `translateX(${(1 - progress) * 110}%)`

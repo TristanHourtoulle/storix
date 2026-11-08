@@ -1,7 +1,7 @@
 import type { ImageSet, UploadDraft } from '@storix/shared'
 import type { CropRect, ImageSize } from '@storix/shared/domain'
 import type { PreparedPhoto } from '../prepare-photo'
-import type { DraftOverflow } from '../use-photo-drafts'
+import type { DraftOverflow } from '../draft-capacity'
 
 export type StackCardPhase =
   'preparing' | 'queued' | 'sending' | 'processing' | 'staged' | 'duplicate' | 'error'
