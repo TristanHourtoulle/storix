@@ -64,7 +64,7 @@ export function createCopiesService({ db, clock }: CopiesServiceDeps): CopiesSer
       await ensureWallet(tx, {
         leagueId: m.leagueId,
         userId: m.userId,
-        joinGift: booster.joinGift,
+        cadence: booster,
         now,
       })
       const wallet = await lockWallet(tx, m.leagueId, m.userId)

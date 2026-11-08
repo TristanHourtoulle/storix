@@ -1,4 +1,5 @@
 import { lockLeagueEconomyShared, memberWallets, type DbExecutor } from '@storix/db'
+import { computeBoosterFullAt, type BoosterCadence } from '@storix/shared'
 import { and, eq } from 'drizzle-orm'
 
 export { lockLeagueEconomyExclusive, lockLeagueEconomyShared } from '@storix/db'
@@ -18,10 +19,11 @@ export interface WalletKey {
   userId: string
 }
 
-export interface EnsureWalletInput extends WalletKey {
-  joinGift: number
-  now: Date
-}
+export type EnsureWalletInput = WalletKey & { cadence: BoosterCadence; now: Date }
+
+export type WalletPatch = Partial<
+  Omit<WalletRow, 'leagueId' | 'userId'> & { boosterFullNotifiedAt: Date | null }
+>
 
 const walletColumns = {
   leagueId: memberWallets.leagueId,
@@ -37,15 +39,18 @@ function keyCondition(leagueId: string, userId: string) {
   return and(eq(memberWallets.leagueId, leagueId), eq(memberWallets.userId, userId))
 }
 
-/** Creates the wallet with the joining gift unless it already exists. */
+/** Creates the wallet with the joining gift unless it already exists, already marked as notified when the gift fills the stock. */
 export async function ensureWallet(db: DbExecutor, input: EnsureWalletInput): Promise<void> {
+  const { cadence, now } = input
+  const fullAt = computeBoosterFullAt({ stock: cadence.joinGift, anchor: now }, cadence)
   await db
     .insert(memberWallets)
     .values({
       leagueId: input.leagueId,
       userId: input.userId,
-      boosterStock: input.joinGift,
-      boosterStockAt: input.now,
+      boosterStock: cadence.joinGift,
+      boosterStockAt: now,
+      boosterFullNotifiedAt: fullAt.getTime() <= now.getTime() ? now : null,
     })
     .onConflictDoNothing()
 }
@@ -86,7 +91,7 @@ export async function lockWallet(
 export async function updateWallet(
   db: DbExecutor,
   key: WalletKey,
-  patch: Partial<Omit<WalletRow, 'leagueId' | 'userId'>>,
+  patch: WalletPatch,
 ): Promise<void> {
   await db
     .update(memberWallets)

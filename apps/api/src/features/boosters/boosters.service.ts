@@ -244,6 +244,7 @@ async function openNewBooster(
     boosterStockAt: consumed.anchor,
     pitySinceEpic: pityAfter.sinceEpic,
     pitySinceLegendary: pityAfter.sinceLegendary,
+    boosterFullNotifiedAt: null,
   }
   await updateWallet(ctx.tx, { leagueId: ctx.m.leagueId, userId: ctx.m.userId }, patch)
   const walletState = await walletStateFor(ctx, { ...wallet, ...patch })
@@ -282,7 +283,7 @@ export function createBoostersService({ db, signer, clock }: BoostersServiceDeps
       await ensureWallet(tx, {
         leagueId: m.leagueId,
         userId: m.userId,
-        joinGift: cadence.joinGift,
+        cadence,
         now: clock(),
       })
       const wallet = await lockWallet(tx, m.leagueId, m.userId)
