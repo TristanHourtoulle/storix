@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { idSchema, leagueRoleSchema } from './common'
+import { portraitSchema } from './portraits'
 
 export const leagueNameSchema = z.string().trim().min(2).max(40)
 
@@ -12,6 +13,7 @@ export const leagueSummarySchema = z.object({
   name: z.string(),
   role: leagueRoleSchema,
   memberCount: z.int().min(0),
+  photo: portraitSchema.nullable(),
 })
 
 export const leagueDetailSchema = z.object({
@@ -23,6 +25,7 @@ export const leagueDetailSchema = z.object({
     canManageInvitations: z.boolean(),
     canManageMembers: z.boolean(),
   }),
+  photo: portraitSchema.nullable(),
 })
 
 export const leagueParamsSchema = z.object({ leagueId: z.uuid() })
