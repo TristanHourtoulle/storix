@@ -128,6 +128,9 @@ export function panCropView(
   frame: CropFrame,
 ): CropView {
   const clamped = clampCropView(view, size, frame)
+  const isUsable =
+    delta.viewportWidthPx > 0 && Number.isFinite(delta.dxPx) && Number.isFinite(delta.dyPx)
+  if (!isUsable) return clamped
   const { w, h } = frameSizeAt(baseFrameSize(size, frame, clamped.rotate), clamped.zoom)
   const viewportHeightPx = delta.viewportWidthPx / frame.aspect
   return clampCropView(
@@ -149,6 +152,11 @@ export function zoomCropViewAt(
   frame: CropFrame,
 ): CropView {
   const current = clampCropView(view, size, frame)
+  const isUsable =
+    input.factor > 0 &&
+    Number.isFinite(input.factor) &&
+    [input.focusX, input.focusY].every(Number.isFinite)
+  if (!isUsable) return current
   const base = baseFrameSize(size, frame, current.rotate)
   const before = frameSizeAt(base, current.zoom)
   const zoom = clamp(current.zoom * input.factor, 1, maxCropZoom(size, frame, current.rotate))
@@ -188,31 +196,37 @@ export function cropRectOrNull(view: CropView, size: ImageSize, frame: CropFrame
   return isDefaultCropView(clamped) ? null : cropRectFromView(clamped, size, frame)
 }
 
-/** Checks a crop rectangle's bounds and its frame ratio against the real image size. */
+/** Checks a crop rectangle's bounds, its zoom cap and its frame ratio against the real image size. */
 export function isCropRectValid(rect: CropRect, size: ImageSize, frame: CropFrame): boolean {
   const { x, y, w, h } = rect
   if (![x, y, w, h].every(Number.isFinite)) return false
   if (!CROP_ROTATIONS.includes(rect.rotate)) return false
   if (x < 0 || y < 0 || w <= 0 || h <= 0) return false
   if (x + w > 1 + BOUNDS_EPSILON || y + h > 1 + BOUNDS_EPSILON) return false
+  const smallest = frameSizeAt(
+    baseFrameSize(size, frame, rect.rotate),
+    maxCropZoom(size, frame, rect.rotate),
+  )
+  const minScale = 1 - CROP_RATIO_TOLERANCE
+  if (w < smallest.w * minScale || h < smallest.h * minScale) return false
   const rotated = rotatedSize(size, rect.rotate)
   const ratio = (w * rotated.width) / (h * rotated.height)
   return Math.abs(ratio / frame.aspect - 1) <= CROP_RATIO_TOLERANCE
 }
 
-/** Converts a crop rectangle to integer pixels of the rotated image; `size` is the unrotated size. */
+/** Converts a crop rectangle to integer pixels of the rotated image (at least 1×1); `size` is the unrotated size. */
 export function cropRectToPixels(
   rect: CropRect,
   size: ImageSize,
 ): { left: number; top: number; width: number; height: number } {
   const rotated = rotatedSize(size, rect.rotate)
-  const left = Math.floor(rect.x * rotated.width)
-  const top = Math.floor(rect.y * rotated.height)
+  const left = clamp(Math.floor(rect.x * rotated.width), 0, rotated.width - 1)
+  const top = clamp(Math.floor(rect.y * rotated.height), 0, rotated.height - 1)
   return {
     left,
     top,
-    width: clamp(Math.round(rect.w * rotated.width), 1, rotated.width - left),
-    height: clamp(Math.round(rect.h * rotated.height), 1, rotated.height - top),
+    width: Math.max(1, clamp(Math.round(rect.w * rotated.width), 1, rotated.width - left)),
+    height: Math.max(1, clamp(Math.round(rect.h * rotated.height), 1, rotated.height - top)),
   }
 }
 

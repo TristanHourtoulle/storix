@@ -100,6 +100,29 @@ it('allows edits only on stage-only drafts still in flight or staged', () => {
   expect(canDiscardUpload({ status: 'pending', stageOnly: false })).toBe(true)
   expect(canDiscardUpload({ status: 'ready', stageOnly: true })).toBe(false)
 })
+it('discards stage-only drafts in flight but not legacy completed uploads', () => {
+  for (const status of ['uploaded', 'processing', 'staged'] as const) {
+    expect(canDiscardUpload({ status, stageOnly: true })).toBe(true)
+  }
+  for (const status of ['uploaded', 'processing'] as const) {
+    expect(canDiscardUpload({ status, stageOnly: false })).toBe(false)
+  }
+  for (const status of ['publishing', 'rejected', 'failed', 'discarded'] as const) {
+    expect(canDiscardUpload({ status, stageOnly: true })).toBe(false)
+  }
+})
+it('reports a legacy ready upload as not publishable rather than already published', () => {
+  const plan = planPublish({
+    requestedIds: ['a'],
+    candidates: [{ ...good, status: 'ready', stageOnly: false }],
+    frame: CARD_CROP_FRAME,
+  })
+  expect(plan).toEqual({
+    publish: [],
+    alreadyPublished: [],
+    problems: [{ uploadId: 'a', reason: 'NOT_PUBLISHABLE' }],
+  })
+})
 describe('classifyDraftForSweep', () => {
   const base = {
     status: 'staged',

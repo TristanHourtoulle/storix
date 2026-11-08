@@ -148,3 +148,66 @@ it('serializes a crop rect with 6 decimals', () => {
     '0.231534,0.000000,0.536932,1.000000,90',
   )
 })
+
+it('refuses a degenerate rect at the right edge and keeps its pixels non-empty', () => {
+  const edge = { x: 1, y: 0, w: 1e-6, h: 1.86e-6, rotate: 0 } as const
+  expect(isCropRectValid(edge, LAND, F)).toBe(false)
+  const px = cropRectToPixels(edge, LAND)
+  expect(px.left).toBe(2047)
+  expect(px.width).toBe(1)
+  expect(px.height).toBe(1)
+})
+it('refuses a rect zoomed beyond the resolution cap', () => {
+  const atCap = cropRectFromView({ ...DEFAULT_CROP_VIEW, zoom: 10 }, LAND, F)
+  expect(isCropRectValid(atCap, LAND, F)).toBe(true)
+  const beyond = { x: 0.4, y: 0.4, w: atCap.w / 1.5, h: atCap.h / 1.5, rotate: 0 } as const
+  expect(isCropRectValid(beyond, LAND, F)).toBe(false)
+  expect(isCropRectValid({ x: 0.5, y: 0.5, w: 0.0005, h: 0.000932, rotate: 0 }, LAND, F)).toBe(
+    false,
+  )
+})
+it('handles 180 and 270 rotations', () => {
+  expect(maxCropZoom(LAND, F, 180)).toBeCloseTo(1536 / 700, 6)
+  expect(maxCropZoom(LAND, F, 270)).toBeCloseTo(2048 / 700, 6)
+  const portraitRect = { x: 0.0227272727, y: 0, w: 0.9545454545, h: 1 }
+  const landRect = { x: 0.2315340909, y: 0, w: 0.5369318182, h: 1 }
+  expect(isCropRectValid({ ...portraitRect, rotate: 270 }, LAND, F)).toBe(true)
+  expect(isCropRectValid({ ...landRect, rotate: 270 }, LAND, F)).toBe(false)
+  expect(isCropRectValid({ ...landRect, rotate: 180 }, LAND, F)).toBe(true)
+  expect(isCropRectValid({ ...portraitRect, rotate: 180 }, LAND, F)).toBe(false)
+  expect(cropRectToPixels({ ...portraitRect, rotate: 270 }, LAND)).toEqual({
+    left: 34,
+    top: 0,
+    width: 1466,
+    height: 2048,
+  })
+})
+it('pans vertically on the frame height', () => {
+  const v = panCropView(
+    { ...DEFAULT_CROP_VIEW, zoom: 2 },
+    { dxPx: 0, dyPx: 100, viewportWidthPx: 300 },
+    LAND,
+    F,
+  )
+  expect(v.centerX).toBeCloseTo(0.5, 6)
+  expect(v.centerY).toBeCloseTo(0.5 - (100 / (300 / F.aspect)) * 0.5, 6)
+})
+it('accepts the ratio within 2 % and refuses beyond', () => {
+  const at = (scale: number) => ({ x: 0, y: 0, w: 0.5369318182 * scale, h: 1, rotate: 0 }) as const
+  expect(isCropRectValid(at(1.019), LAND, F)).toBe(true)
+  expect(isCropRectValid(at(1.021), LAND, F)).toBe(false)
+})
+it('ignores unusable pan and zoom input instead of recentering', () => {
+  const view = { zoom: 2, centerX: 0.4, centerY: 0.3, rotate: 0 } as const
+  expect(panCropView(view, { dxPx: 10, dyPx: 0, viewportWidthPx: 0 }, LAND, F)).toEqual(view)
+  expect(panCropView(view, { dxPx: Number.NaN, dyPx: 0, viewportWidthPx: 300 }, LAND, F)).toEqual(
+    view,
+  )
+  expect(zoomCropViewAt(view, { factor: Number.NaN, focusX: 0.5, focusY: 0.5 }, LAND, F)).toEqual(
+    view,
+  )
+  expect(zoomCropViewAt(view, { factor: 0, focusX: 0.5, focusY: 0.5 }, LAND, F)).toEqual(view)
+  expect(zoomCropViewAt(view, { factor: 2, focusX: Number.NaN, focusY: 0.5 }, LAND, F)).toEqual(
+    view,
+  )
+})
