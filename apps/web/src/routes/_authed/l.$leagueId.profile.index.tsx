@@ -16,6 +16,8 @@ import { usePasskeys } from '@/features/auth/use-passkeys'
 import { useMyLeagues } from '@/features/leagues/use-my-leagues'
 import { LeaveLeagueRow, OwnerLeaveHint } from '@/features/members/components/leave-league-row'
 import { LeagueScopeCard } from '@/features/profile/components/league-scope-card'
+import { pushStatusSummary } from '@/features/push/push-status'
+import { usePushNotifications } from '@/features/push/use-push-notifications'
 import { useSoundSettings, type SoundSettings } from '@/features/sound/sound-settings'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/profile/')({
@@ -35,6 +37,7 @@ function Profile() {
   const { passkeys, isReady: arePasskeysReady } = usePasskeys()
   const { logout, isPending, errorMessage } = useLogout()
   const soundSettings = useSoundSettings()
+  const push = usePushNotifications()
 
   if (!me) return null
   const currentLeague = leagues.find((league) => league.id === leagueId)
@@ -104,6 +107,21 @@ function Profile() {
               label="Sons"
               hint="Booster · Interface · Volume"
               value={soundSummary(soundSettings)}
+              hasChevron
+            />
+          </Link>
+        </li>
+        <li>
+          <Link
+            to="/l/$leagueId/profile/notifications"
+            params={params}
+            className={settingsRowClassName()}
+          >
+            <SettingsRowContent
+              icon="bell"
+              label="Notifications"
+              hint="Boosters pleins, par ligue"
+              value={push.isReady ? pushStatusSummary(push.status) : undefined}
               hasChevron
             />
           </Link>

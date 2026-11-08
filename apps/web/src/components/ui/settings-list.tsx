@@ -122,19 +122,28 @@ interface SettingsSwitchRowProps {
   label: string
   hint?: string
   isOn: boolean
+  isDisabled?: boolean
   onChange: (isOn: boolean) => void
 }
 
 /** Settings row toggling an on/off preference, exposed as an accessible switch. */
-export function SettingsSwitchRow({ icon, label, hint, isOn, onChange }: SettingsSwitchRowProps) {
+export function SettingsSwitchRow({
+  icon,
+  label,
+  hint,
+  isOn,
+  isDisabled = false,
+  onChange,
+}: SettingsSwitchRowProps) {
   return (
     <li>
       <button
         type="button"
         role="switch"
         aria-checked={isOn}
+        disabled={isDisabled}
         onClick={() => onChange(!isOn)}
-        className={settingsRowClassName()}
+        className={`${settingsRowClassName(!isDisabled)} disabled:cursor-not-allowed disabled:opacity-60`}
       >
         <SettingsRowContent icon={icon} label={label} hint={hint} />
         <span

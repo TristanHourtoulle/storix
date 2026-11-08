@@ -4,6 +4,7 @@ import type { AccountDeletionPreview, DeleteAccountBody } from '@storix/shared'
 import { signInWithPasskey } from '@/features/auth/use-login'
 import { userMessage } from '@/features/errors/user-message'
 import { purgeAllCaches } from '@/features/privacy/purge-cache'
+import { dropLocalSubscription } from '@/features/push/push-browser'
 import { ApiError } from '@/lib/http'
 import { logger } from '@/lib/logger'
 import { setLoggingOut } from '@/lib/session-state'
@@ -49,6 +50,9 @@ export function useAccountDeletion(
     meta: { sound: 'error-only' },
     mutationFn: async (body: DeleteAccountBody): Promise<void> => {
       await deleteAccount(body)
+      await dropLocalSubscription().catch((error: unknown) => {
+        logger.warn('Push local unsubscribe after account deletion failed', { error })
+      })
       setLoggingOut(true)
       try {
         await navigate({ to: '/login', search: { deleted: 1 }, replace: true })
