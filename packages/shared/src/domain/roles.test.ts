@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { canChangeRole, canManageInvitations, canRemoveMember, hasRoleAtLeast } from './roles'
+import {
+  canChangeRole,
+  canManageInvitations,
+  canManageLeaguePhoto,
+  canRemoveMember,
+  hasRoleAtLeast,
+} from './roles'
 
 describe('roles', () => {
   it('ranks roles', () => {
@@ -35,5 +41,10 @@ describe('roles', () => {
       false,
     )
     expect(canRemoveMember({ actorRole: 'owner', targetRole: 'owner', isSelf: true })).toBe(false)
+  })
+  it('canManageLeaguePhoto matches the rename permission', () => {
+    expect(canManageLeaguePhoto('owner')).toBe(true)
+    expect(canManageLeaguePhoto('admin')).toBe(true)
+    expect(canManageLeaguePhoto('member')).toBe(false)
   })
 })
