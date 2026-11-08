@@ -11,6 +11,19 @@ import { purgeMediaPrefixes } from '@/features/privacy/purge-cache'
 import { logger } from '@/lib/logger'
 import type { PortraitTarget } from './portrait-target'
 
+/** Refetches every view that shows the target's portrait. */
+export async function refreshPortraitViews(
+  queryClient: QueryClient,
+  target: PortraitTarget,
+): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: meQueryOptions.queryKey }),
+    queryClient.invalidateQueries({
+      queryKey: target.kind === 'avatar' ? ['leagues'] : ['leagues', target.leagueId],
+    }),
+  ])
+}
+
 /** Drops the cached images of the replaced portrait and refetches every view that shows it. */
 export async function onPortraitChanged(
   queryClient: QueryClient,
@@ -20,10 +33,7 @@ export async function onPortraitChanged(
   const previousPrefix = previous ? portraitPrefixOfMediaUrl(previous.url) : null
   await Promise.all([
     previousPrefix ? purgeMediaPrefixes([previousPrefix]) : Promise.resolve(0),
-    queryClient.invalidateQueries({ queryKey: meQueryOptions.queryKey }),
-    queryClient.invalidateQueries({
-      queryKey: target.kind === 'avatar' ? ['leagues'] : ['leagues', target.leagueId],
-    }),
+    refreshPortraitViews(queryClient, target),
   ])
 }
 

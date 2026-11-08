@@ -7,7 +7,7 @@ import { INVALID_IMAGE_MESSAGE } from '@/features/uploads/upload-pipeline'
 import { UPLOAD_FAILED_MESSAGE, postToBucket } from '@/features/uploads/uploads.api'
 import { ApiError } from '@/lib/http'
 import { logger } from '@/lib/logger'
-import { onPortraitChanged } from './portrait-cache'
+import { onPortraitChanged, refreshPortraitViews } from './portrait-cache'
 import type { PortraitTarget } from './portrait-target'
 import {
   completePortraitUpload,
@@ -151,23 +151,25 @@ export function usePortraitUpload(
       controllerRef.current?.abort()
       const controller = new AbortController()
       controllerRef.current = controller
+      const uploadTarget = targetRef.current
+      let isProcessing = false
       setPhase('sending')
       setMessage(null)
-      sendPortrait(
-        queryClient,
-        targetRef.current,
-        currentRef.current,
-        blob,
-        controller.signal,
-        () => setPhase('processing'),
-      ).then(
+      sendPortrait(queryClient, uploadTarget, currentRef.current, blob, controller.signal, () => {
+        isProcessing = true
+        setPhase('processing')
+      }).then(
         (outcome) => {
           if (controller.signal.aborted) return
           if (outcome === 'superseded') logger.info('Portrait upload replaced elsewhere')
           setPhase(outcome === 'ready' ? 'done' : 'idle')
         },
         (error: unknown) => {
-          if (controller.signal.aborted || isAbort(error)) return
+          const isStopped = controller.signal.aborted || isAbort(error)
+          if (isProcessing && (isStopped || error instanceof PortraitUploadError)) {
+            void refreshPortraitViews(queryClient, uploadTarget)
+          }
+          if (isStopped) return
           logger.warn('Portrait upload failed', { error })
           setPhase('error')
           setMessage(failureMessage(error))
