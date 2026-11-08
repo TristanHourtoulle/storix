@@ -23,6 +23,7 @@ export const memberWallets = pgTable(
     boosterStockAt: timestamp('booster_stock_at', { withTimezone: true }).notNull(),
     pitySinceEpic: integer('pity_since_epic').notNull().default(0),
     pitySinceLegendary: integer('pity_since_legendary').notNull().default(0),
+    boosterFullNotifiedAt: timestamp('booster_full_notified_at', { withTimezone: true }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
