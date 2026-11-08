@@ -1,10 +1,11 @@
-import { and, eq, inArray, isNull, lt, not, notExists, or, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, lt, ne, not, notExists, or, sql } from 'drizzle-orm'
 import {
   auditLog,
   cards,
   cardTags,
   leagueMembers,
   media,
+  portraits,
   uploads,
   type AuditAction,
   type DbExecutor,
@@ -87,6 +88,7 @@ export interface StaleUpload {
 }
 
 const PROCESSABLE: UploadStatus[] = ['uploaded', 'processing']
+const SETTLED_PORTRAIT_STATUSES: UploadStatus[] = ['rejected', 'failed']
 const LEAGUE_MEDIA_LOCK_NAMESPACE = 7201
 
 export const uploadColumns = {
@@ -372,4 +374,25 @@ export async function deleteUploads(db: DbExecutor, ids: readonly string[]): Pro
     )
     .returning({ id: uploads.id })
   return rows.length
+}
+
+/** Deletes rejected or failed portrait uploads processed before `before` that no portrait references; returns their object keys. */
+export async function deleteSettledPortraitUploads(db: DbExecutor, before: Date): Promise<string[]> {
+  const rows = await db
+    .delete(uploads)
+    .where(
+      and(
+        ne(uploads.kind, 'card'),
+        inArray(uploads.status, SETTLED_PORTRAIT_STATUSES),
+        lt(uploads.processedAt, before),
+        notExists(
+          db
+            .select({ one: sql`1` })
+            .from(portraits)
+            .where(eq(portraits.uploadId, uploads.id)),
+        ),
+      ),
+    )
+    .returning({ objectKey: uploads.objectKey })
+  return rows.map((row) => row.objectKey)
 }
