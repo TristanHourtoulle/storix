@@ -1,3 +1,5 @@
+import { PORTRAIT_OBJECT_KEY_PATTERN } from './portraits'
+
 export const MEDIA_WINDOW_SECONDS = 86_400
 export const MEDIA_VARIANT_SIZES = [256, 768, 1600] as const
 export const MEDIA_FORMATS = ['avif', 'webp'] as const
@@ -7,6 +9,11 @@ export type MediaFormat = (typeof MEDIA_FORMATS)[number]
 
 export const MEDIA_OBJECT_KEY_PATTERN =
   /^img\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[0-9a-f]{64}\/(?:c[0-9a-f]{16}\/)?(256|768|1600)\.(avif|webp)$/
+
+/** Tells whether a key is a servable media object: a card image variant or a portrait variant. */
+export function isMediaObjectKey(key: string): boolean {
+  return MEDIA_OBJECT_KEY_PATTERN.test(key) || PORTRAIT_OBJECT_KEY_PATTERN.test(key)
+}
 
 const SIGNATURE_PATTERN = /^[0-9a-f]{64}$/
 const WINDOW_PATTERN = /^[1-9][0-9]*$/
@@ -82,7 +89,7 @@ export function parseMediaPath(
   const windowStart = Number(windowPart)
   if (!Number.isSafeInteger(windowStart) || windowStart % MEDIA_WINDOW_SECONDS !== 0) return null
   if (!SIGNATURE_PATTERN.test(signature)) return null
-  if (!MEDIA_OBJECT_KEY_PATTERN.test(objectKey)) return null
+  if (!isMediaObjectKey(objectKey)) return null
   return { windowStart, signature, objectKey }
 }
 

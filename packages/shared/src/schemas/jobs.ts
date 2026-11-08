@@ -44,7 +44,7 @@ export const RARITY_RECOMPUTE_SEND_OPTIONS = {
 export const STORAGE_DELETE_JOB = 'storage.delete'
 export const STORAGE_GC_JOB = 'storage.gc'
 
-const STORAGE_KEY_PREFIX_PATTERN = /^(img|incoming)\//
+const STORAGE_KEY_PREFIX_PATTERN = /^(img|incoming|pic)\//
 
 function isSafeStorageKey(key: string): boolean {
   if (!STORAGE_KEY_PREFIX_PATTERN.test(key)) return false

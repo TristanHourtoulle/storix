@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildMediaPath,
+  isMediaObjectKey,
   isMediaWindowAccepted,
   leagueMediaPrefix,
   mediaCachePathPrefix,
@@ -111,4 +112,24 @@ describe('cropped variant keys', () => {
     expect(mediaCacheKey(`/media/1794009600/${sig}/${cropKey}`)).toBe(`/media/${cropKey}`))
   it('maps a cropped key to the prefix of its media', () =>
     expect(mediaPrefixOfKey(cropKey)).toBe(mediaPrefix({ leagueId, sourceSha256: sha })))
+})
+
+describe('portrait media paths', () => {
+  const UPLOAD = '3f2b8c1e-4a5d-4e6f-8a9b-0c1d2e3f4a5b'
+  const L = '0b7c2f4e-1a2b-4c3d-8e9f-0123456789ab'
+  const SHA = 'a'.repeat(64)
+
+  it('parses a signed portrait path and gives its window-free cache key', () => {
+    const portraitKey = `pic/avatar/u1abc/${UPLOAD}/128.webp`
+    const path = buildMediaPath(86_400, 'a'.repeat(64), portraitKey)
+    expect(parseMediaPath(path)?.objectKey).toBe(portraitKey)
+    expect(mediaCacheKey(path)).toBe(`/media/${portraitKey}`)
+  })
+  it('isMediaObjectKey accepts img, cropped img and pic keys only', () => {
+    expect(isMediaObjectKey(`img/${L}/${SHA}/256.webp`)).toBe(true)
+    expect(isMediaObjectKey(`img/${L}/${SHA}/c${'0'.repeat(16)}/768.avif`)).toBe(true)
+    expect(isMediaObjectKey(`pic/league/${L}/${UPLOAD}/512.webp`)).toBe(true)
+    expect(isMediaObjectKey('incoming/u1/x')).toBe(false)
+    expect(isMediaObjectKey(`pic/league/${L}/${UPLOAD}/256.webp`)).toBe(false)
+  })
 })
