@@ -26,6 +26,10 @@ import {
 } from './features/moderation/moderation.service'
 import { createMembersService, type MembersService } from './features/members/members.service'
 import {
+  createPortraitsService,
+  type PortraitsService,
+} from './features/portraits/portraits.service'
+import {
   createReactionsService,
   type ReactionsService,
 } from './features/reactions/reactions.service'
@@ -72,6 +76,7 @@ export interface Services {
   media: MediaService
   members: MembersService
   moderation: ModerationService
+  portraits: PortraitsService
   reactions: ReactionsService
   removals: RemovalsService
   resetCodes: ResetCodesService
@@ -142,6 +147,13 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       clock: deps.clock,
       jobs: deps.jobs,
       cardRemoval,
+      logger,
+    }),
+    portraits: createPortraitsService({
+      db: deps.db,
+      storage: deps.storage,
+      jobs: deps.jobs,
+      clock: deps.clock,
       logger,
     }),
     reactions: createReactionsService({ db: deps.db }),
