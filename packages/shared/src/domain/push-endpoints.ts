@@ -9,14 +9,19 @@ const EXACT_PUSH_HOSTS: ReadonlySet<string> = new Set([
   'push.services.mozilla.com',
 ])
 
+const MAX_HOSTNAME_LENGTH = 253
+
+const DNS_LABEL = '[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?'
+
 const PUSH_HOST_SUFFIX_PATTERNS: readonly RegExp[] = [
-  /^(?:[a-z0-9-]+\.)+notify\.windows\.com$/,
-  /^(?:[a-z0-9-]+\.)+push\.apple\.com$/,
+  new RegExp(`^(?:${DNS_LABEL}\\.)+notify\\.windows\\.com$`),
+  new RegExp(`^(?:${DNS_LABEL}\\.)+push\\.apple\\.com$`),
 ]
 
 const CANONICAL_AUTHORITY_PATTERN = /^https:\/\/[a-z0-9.-]+\//
 
 function isAllowedPushHost(hostname: string): boolean {
+  if (hostname.length > MAX_HOSTNAME_LENGTH) return false
   return (
     EXACT_PUSH_HOSTS.has(hostname) ||
     PUSH_HOST_SUFFIX_PATTERNS.some((pattern) => pattern.test(hostname))
