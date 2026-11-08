@@ -43,7 +43,8 @@ export interface ImagePipeline {
   renderVariants(buffer: Buffer): Promise<RenderedImage>
 }
 
-function open(buffer: Buffer): Sharp {
+/** Opens an untrusted image with the worker's input limits. */
+export function openImage(buffer: Buffer): Sharp {
   return sharp(buffer, { limitInputPixels: MAX_INPUT_PIXELS, failOn: 'error' })
 }
 
@@ -67,11 +68,11 @@ export function configureImagePipeline(): void {
 export async function probeJpeg(buffer: Buffer): Promise<ProbeResult> {
   if (!hasJpegMagic(buffer)) return { ok: false, reason: 'NOT_JPEG_MAGIC' }
   try {
-    const metadata = await open(buffer).metadata()
+    const metadata = await openImage(buffer).metadata()
     if (metadata.format !== 'jpeg') {
       return { ok: false, reason: 'NOT_JPEG_FORMAT', detail: metadata.format }
     }
-    await open(buffer).resize(8, 8, { fit: 'fill' }).raw().toBuffer()
+    await openImage(buffer).resize(8, 8, { fit: 'fill' }).raw().toBuffer()
     return { ok: true, width: metadata.autoOrient.width, height: metadata.autoOrient.height }
   } catch (error) {
     return {
@@ -99,7 +100,7 @@ export async function readExifCaptureDate(buffer: Buffer): Promise<Date | null> 
 
 /** Renders the oriented image as the 32x32 grayscale bytes expected by the perceptual hash. */
 export async function grayscaleForHash(buffer: Buffer): Promise<Uint8Array> {
-  const data = await open(buffer)
+  const data = await openImage(buffer)
     .rotate()
     .grayscale()
     .resize(PHASH_SIZE, PHASH_SIZE, { fit: 'fill' })
@@ -111,7 +112,7 @@ export async function grayscaleForHash(buffer: Buffer): Promise<Uint8Array> {
 async function renderPlaceholder(
   buffer: Buffer,
 ): Promise<{ thumbhash: string; dominantColor: string }> {
-  const { data, info } = await open(buffer)
+  const { data, info } = await openImage(buffer)
     .rotate()
     .resize(THUMBHASH_MAX_EDGE, THUMBHASH_MAX_EDGE, { fit: 'inside' })
     .ensureAlpha()
@@ -127,14 +128,18 @@ async function renderPlaceholder(
   }
 }
 
-async function renderFile(
-  buffer: Buffer,
+/** Resizes an image to fit a variant size and encodes it with the shared AVIF/WebP settings. */
+export async function encodeFile(
+  image: Sharp,
   size: MediaVariantSize,
   format: MediaFormat,
 ): Promise<RenderedFile> {
-  const resized = open(buffer)
-    .rotate()
-    .resize({ width: size, height: size, fit: 'inside', withoutEnlargement: true })
+  const resized = image.resize({
+    width: size,
+    height: size,
+    fit: 'inside',
+    withoutEnlargement: true,
+  })
   const encoded =
     format === 'avif' ? resized.avif({ quality: 50, effort: 4 }) : resized.webp({ quality: 78 })
   const { data, info } = await encoded.toBuffer({ resolveWithObject: true })
@@ -148,9 +153,17 @@ async function renderFile(
   }
 }
 
+function renderFile(
+  buffer: Buffer,
+  size: MediaVariantSize,
+  format: MediaFormat,
+): Promise<RenderedFile> {
+  return encodeFile(openImage(buffer).rotate(), size, format)
+}
+
 /** Renders every AVIF/WebP variant, the thumbhash and the dominant color, without metadata. */
 export async function renderVariants(buffer: Buffer): Promise<RenderedImage> {
-  const metadata = await open(buffer).metadata()
+  const metadata = await openImage(buffer).metadata()
   const placeholder = await renderPlaceholder(buffer)
   const files: RenderedFile[] = []
   for (const size of MEDIA_VARIANT_SIZES) {

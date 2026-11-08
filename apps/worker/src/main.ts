@@ -1,6 +1,8 @@
 import { countAppliedMigrations, createDb, MIGRATION_JOURNAL_ENTRY_COUNT } from '@storix/db'
 import {
   MEDIA_PROCESS_JOB,
+  MEDIA_PUBLISH_JOB,
+  MEDIA_PUBLISH_QUEUE_OPTIONS,
   MEDIA_SWEEP_JOB,
   RARITY_NIGHTLY_JOB,
   RARITY_RECOMPUTE_JOB,
@@ -13,12 +15,14 @@ import { PgBoss } from 'pg-boss'
 import { pino } from 'pino'
 import { loadWorkerEnv } from './config/env'
 import { configureImagePipeline, imagePipeline } from './features/media/image-pipeline'
+import { createCardPublishService } from './features/media/card-publish.service'
 import { createMediaProcessingService } from './features/media/media-processing.service'
 import { createMediaSweepService } from './features/media/media-sweep.service'
 import { createStorageDeleteService } from './features/storage/storage-delete.service'
 import { createStorageGcService } from './features/storage/storage-gc.service'
 import { createRarityRecomputeService } from './features/rarity/rarity-recompute.service'
 import { registerMediaProcessJob } from './jobs/media-process.job'
+import { registerMediaPublishJob } from './jobs/media-publish.job'
 import { createMediaQueue } from './jobs/media-queue'
 import { registerMediaSweepJob } from './jobs/media-sweep.job'
 import { registerRarityNightlyJob } from './jobs/rarity-nightly.job'
@@ -68,6 +72,14 @@ async function start(): Promise<void> {
   })
   await boss.start()
   await boss.createQueue(MEDIA_PROCESS_JOB)
+  await boss.createQueue(MEDIA_PUBLISH_JOB, MEDIA_PUBLISH_QUEUE_OPTIONS)
+  const publishQueue = await boss.getQueue(MEDIA_PUBLISH_JOB)
+  if (publishQueue?.policy !== MEDIA_PUBLISH_QUEUE_OPTIONS.policy) {
+    logger.error(
+      { policy: publishQueue?.policy, expected: MEDIA_PUBLISH_QUEUE_OPTIONS.policy },
+      'media.publish queue has the wrong policy; duplicate publish jobs are not coalesced',
+    )
+  }
   await boss.createQueue(MEDIA_SWEEP_JOB)
   await boss.createQueue(RARITY_RECOMPUTE_JOB, RARITY_RECOMPUTE_QUEUE_OPTIONS)
   await boss.createQueue(RARITY_NIGHTLY_JOB)
@@ -92,6 +104,14 @@ async function start(): Promise<void> {
   })
   await registerMediaProcessJob(boss, processing, logger, { concurrency: env.MEDIA_CONCURRENCY })
   await registerMediaSweepJob(boss, sweep)
+  const publish = createCardPublishService({
+    db: database.db,
+    storage,
+    clock,
+    logger,
+    rarity: rarityQueue,
+  })
+  await registerMediaPublishJob(boss, publish, logger)
   const rarity = createRarityRecomputeService({
     db: database.db,
     queue: rarityQueue,
