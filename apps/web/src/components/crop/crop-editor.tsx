@@ -249,7 +249,8 @@ export function CropEditor({
           </Button>
         </div>
         <p className="m-0 text-center text-[12px] text-faint">
-          Pince pour zoomer, glisse pour cadrer. Sans retouche, la photo est centrée automatiquement.
+          Pince pour zoomer, glisse pour cadrer. Sans retouche, la photo est centrée
+          automatiquement.
         </p>
       </div>
     </div>,

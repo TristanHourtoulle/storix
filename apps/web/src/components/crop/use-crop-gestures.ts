@@ -145,9 +145,7 @@ export function useCropGestures({
 
   const release = useCallback((event: ReactPointerEvent): void => {
     if (!pointersRef.current.has(event.pointerId)) return
-    pointersRef.current = new Map(
-      [...pointersRef.current].filter(([id]) => id !== event.pointerId),
-    )
+    pointersRef.current = new Map([...pointersRef.current].filter(([id]) => id !== event.pointerId))
   }, [])
 
   useEffect(() => {

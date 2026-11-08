@@ -96,7 +96,15 @@ function Picture({
 }
 
 /** The image positioned through a crop rectangle, relative to its nearest positioned ancestor. */
-export function CropLayer({ src, imageSize, crop, alt = '', image, sizes, className }: CropLayerProps) {
+export function CropLayer({
+  src,
+  imageSize,
+  crop,
+  alt = '',
+  image,
+  sizes,
+  className,
+}: CropLayerProps) {
   return (
     <span aria-hidden={alt === '' || undefined} className={className} style={cropBoxStyle(crop)}>
       <Picture
