@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import type { UploadQuota } from '@storix/shared'
 import { userMessage } from '@/features/errors/user-message'
 import { playSound } from '@/features/sound/sound'
 import { preparePhoto, type PreparedPhoto } from './prepare-photo'
@@ -23,7 +24,15 @@ export interface PhaseExtra {
   cardId?: string | null
 }
 
+export type CapacityKind = 'dailyQuota' | 'batch'
+
+export interface DraftCapacity {
+  kind: CapacityKind
+  slots: number
+}
+
 export interface DraftOverflow {
+  kind: CapacityKind
   skipped: number
   accepted: number
 }
@@ -44,6 +53,8 @@ type DraftsAction =
   | { type: 'phaseChanged'; id: string; phase: DraftPhase; extra: PhaseExtra }
 
 const QUOTA_SOUND_DELAY = 0.15
+
+export const UNLIMITED_BATCH_SIZE = 30
 
 const INITIAL_STATE: DraftsState = { drafts: [], selectedId: null, overflow: null }
 
@@ -146,8 +157,15 @@ export function countQueuedDrafts(drafts: readonly PhotoDraft[]): number {
   return drafts.filter((draft) => draft.phase !== 'error' && draft.phase !== 'duplicate').length
 }
 
-/** Local drafts of photos to turn into cards, capped at `capacity` remaining uploads. */
-export function usePhotoDrafts(capacity: number) {
+/** Derives the draft capacity: the remaining daily quota, or one batch for unlimited roles. */
+export function draftCapacityOf(quota: UploadQuota): DraftCapacity {
+  return quota.unlimited
+    ? { kind: 'batch', slots: UNLIMITED_BATCH_SIZE }
+    : { kind: 'dailyQuota', slots: quota.remaining }
+}
+
+/** Local drafts of photos to turn into cards, capped at the capacity's slots. */
+export function usePhotoDrafts(capacity: DraftCapacity) {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE)
   const [urls] = useState(createUrlRegistry)
   const isMountedRef = useRef(false)
@@ -162,17 +180,19 @@ export function usePhotoDrafts(capacity: number) {
 
   const add = useCallback(
     async (files: readonly File[]): Promise<void> => {
-      const slots = Math.max(0, capacity - countQueuedDrafts(state.drafts))
+      const slots = Math.max(0, capacity.slots - countQueuedDrafts(state.drafts))
       const accepted = files.slice(0, slots)
       const skipped = files.length - accepted.length
       const drafts = accepted.map(createDraft)
       dispatch({
         type: 'added',
         drafts,
-        overflow: skipped > 0 ? { skipped, accepted: accepted.length } : null,
+        overflow: skipped > 0 ? { kind: capacity.kind, skipped, accepted: accepted.length } : null,
       })
       if (accepted.length > 0) playSound({ name: 'photoAdded' })
-      if (skipped > 0) playSound({ name: 'quota' }, accepted.length > 0 ? QUOTA_SOUND_DELAY : 0)
+      if (skipped > 0 && capacity.kind === 'dailyQuota') {
+        playSound({ name: 'quota' }, accepted.length > 0 ? QUOTA_SOUND_DELAY : 0)
+      }
       for (const [index, draft] of drafts.entries()) {
         const file = accepted[index]
         if (!file) continue
@@ -195,7 +215,7 @@ export function usePhotoDrafts(capacity: number) {
         }
       }
     },
-    [capacity, state.drafts, urls],
+    [capacity.kind, capacity.slots, state.drafts, urls],
   )
 
   const remove = useCallback(

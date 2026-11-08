@@ -1,3 +1,5 @@
+import { hasRoleAtLeast, type LeagueRole } from './roles'
+
 export const UPLOAD_MIN_BYTES = 1
 export const UPLOAD_MAX_BYTES = 15 * 1024 * 1024
 export const UPLOAD_CONTENT_TYPE = 'image/jpeg'
@@ -25,6 +27,27 @@ export function checkUploadQuota(input: {
   return input.requested > 0 && input.requested <= remaining
     ? { allowed: true }
     : { allowed: false, remaining }
+}
+
+export type UploadQuotaStatus =
+  | { unlimited: true; limit: null; used: number; remaining: null }
+  | { unlimited: false; limit: number; used: number; remaining: number }
+
+/** Tells whether the role uploads without any quota in its league: admins and the owner. */
+export function isUploadQuotaExempt(role: LeagueRole): boolean {
+  return hasRoleAtLeast(role, 'admin')
+}
+
+/** Resolves the member's upload quota, unlimited for exempt roles. */
+export function resolveUploadQuota(input: {
+  role: LeagueRole
+  limit: number
+  used: number
+}): UploadQuotaStatus {
+  const { role, limit, used } = input
+  return isUploadQuotaExempt(role)
+    ? { unlimited: true, limit: null, used, remaining: null }
+    : { unlimited: false, limit, used, remaining: remainingUploadQuota({ limit, used }) }
 }
 
 /** Returns the start of the rolling 24 h quota window. */

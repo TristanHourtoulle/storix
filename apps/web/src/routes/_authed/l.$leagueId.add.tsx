@@ -12,6 +12,8 @@ import { PhotoPicker } from '@/features/uploads/components/photo-picker'
 import { isSendable, useCreateCards } from '@/features/uploads/use-create-cards'
 import {
   countQueuedDrafts,
+  draftCapacityOf,
+  UNLIMITED_BATCH_SIZE,
   usePhotoDrafts,
   type DraftOverflow,
   type PhotoDraft,
@@ -31,8 +33,9 @@ function plural(count: number, singular: string, pluralForm: string): string {
   return `${count} ${count > 1 ? pluralForm : singular}`
 }
 
-function overflowMessage({ skipped, accepted }: DraftOverflow): string {
+function overflowMessage({ kind, skipped, accepted }: DraftOverflow): string {
   const ignored = `${plural(skipped, "photo n'a", "photos n'ont")} pas été ajoutée${skipped > 1 ? 's' : ''}`
+  if (kind === 'batch') return `${UNLIMITED_BATCH_SIZE} photos max par envoi : ${ignored}.`
   return accepted === 0
     ? `Limite du jour atteinte : ${ignored}.`
     : `Il ne te restait ${accepted === 1 ? "qu'une photo" : `que ${accepted} photos`} aujourd'hui, ${ignored}.`
@@ -51,7 +54,8 @@ function AddPhotos() {
   const { leagueId } = Route.useParams()
   const quota = useUploadQuota(leagueId)
   const members = useMembers(leagueId)
-  const photoDrafts = usePhotoDrafts(quota.remaining)
+  const capacity = draftCapacityOf(quota)
+  const photoDrafts = usePhotoDrafts(capacity)
   const { drafts, selectedId, overflow } = photoDrafts
   const creation = useCreateCards(leagueId, drafts, photoDrafts.setPhase)
 
@@ -62,7 +66,7 @@ function AddPhotos() {
     readyCount > 0 &&
     !drafts.some((draft) => draft.phase === 'preparing') &&
     drafts.every((draft) => draft.phase !== 'ready' || isSendable(draft))
-  const canAddMore = !creation.hasStarted && countQueuedDrafts(drafts) < quota.remaining
+  const canAddMore = !creation.hasStarted && countQueuedDrafts(drafts) < capacity.slots
   const waitingMessage = drafts.find(
     (draft) => draft.phase === 'ready' && draft.errorMessage,
   )?.errorMessage
@@ -83,7 +87,9 @@ function AddPhotos() {
         ) : (
           <>
             <p className="m-0 text-[13px] text-muted">
-              Il te reste {plural(quota.remaining, 'photo', 'photos')} aujourd'hui
+              {quota.unlimited
+                ? 'Admin · uploads illimités'
+                : `Il te reste ${plural(quota.remaining, 'photo', 'photos')} aujourd'hui`}
             </p>
             <PhotoPicker variant="button" onPick={handlePick} />
           </>

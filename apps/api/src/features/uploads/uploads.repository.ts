@@ -1,20 +1,21 @@
 import { leagueMembers, uploads, type DbExecutor } from '@storix/db'
+import type { LeagueRole } from '@storix/shared'
 import { and, count, eq, gte, inArray, or } from 'drizzle-orm'
 
 export type UploadRow = typeof uploads.$inferSelect
 
-/** Locks the member row so concurrent quota checks for the same member serialize; false when the member is gone. */
-export async function lockMemberRow(
+/** Locks the member row so concurrent quota checks for the same member serialize; returns the current role, or null when the member is gone. */
+export async function lockMemberRole(
   db: DbExecutor,
   leagueId: string,
   userId: string,
-): Promise<boolean> {
+): Promise<LeagueRole | null> {
   const rows = await db
-    .select({ userId: leagueMembers.userId })
+    .select({ role: leagueMembers.role })
     .from(leagueMembers)
     .where(and(eq(leagueMembers.leagueId, leagueId), eq(leagueMembers.userId, userId)))
     .for('update')
-  return rows.length > 0
+  return rows[0]?.role ?? null
 }
 
 /** Counts the member's quota-consuming uploads: completed since `since`, pending since `pendingSince`. */
