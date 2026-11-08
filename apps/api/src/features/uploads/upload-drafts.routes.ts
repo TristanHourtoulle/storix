@@ -24,6 +24,7 @@ export function uploadDraftsRoutes(service: UploadDraftsService): FastifyPluginA
       '/leagues/:leagueId/uploads/drafts',
       {
         preHandler: memberOnly,
+        config: { rateLimit: rateLimits.uploadEdit },
         schema: { params: leagueParamsSchema, response: { 200: uploadDraftsResponseSchema } },
       },
       async (request) => ({ drafts: await service.listDrafts(request.membership) }),

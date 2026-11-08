@@ -8,6 +8,8 @@ import {
 import { and, asc, eq, inArray, or } from 'drizzle-orm'
 import type { UploadRow } from './uploads.repository'
 
+export type LockedPublishCandidate = PublishCandidate & { publishRequestedAt: Date | null }
+
 export interface DraftRow {
   id: string
   status: UploadRow['status']
@@ -50,7 +52,12 @@ export async function findOwnedUploadRow(
 /** Updates the given draft fields while the upload is an editable stage-only draft; false otherwise. */
 export async function updateDraftFields(
   db: DbExecutor,
-  input: { id: string; title?: string | null; taggedUserIds?: string[]; crop?: CropRect | null },
+  input: OwnerScope & {
+    id: string
+    title?: string | null
+    taggedUserIds?: string[]
+    crop?: CropRect | null
+  },
 ): Promise<boolean> {
   const rows = await db
     .update(uploads)
@@ -58,6 +65,7 @@ export async function updateDraftFields(
     .where(
       and(
         eq(uploads.id, input.id),
+        ownedBy(input),
         eq(uploads.stageOnly, true),
         inArray(uploads.status, [...EDITABLE_DRAFT_STATUSES]),
       ),
@@ -118,7 +126,7 @@ export function listOwnedStates(
     .where(and(ownedBy(input), inArray(uploads.id, [...input.ids])))
 }
 
-/** Marks the user's discardable uploads among the given ids as discarded; returns how many changed. */
+/** Marks the user's discardable uploads among the given ids as discarded; returns how many changed. Callers lock the member row first. */
 export async function markDiscarded(
   db: DbExecutor,
   input: OwnerScope & { ids: readonly string[]; now: Date },
@@ -144,7 +152,7 @@ export async function markDiscarded(
 export async function lockPublishCandidates(
   tx: DbExecutor,
   input: OwnerScope & { ids: readonly string[] },
-): Promise<PublishCandidate[]> {
+): Promise<LockedPublishCandidate[]> {
   const rows = await tx
     .select({
       uploadId: uploads.id,
@@ -152,6 +160,7 @@ export async function lockPublishCandidates(
       stageOnly: uploads.stageOnly,
       title: uploads.title,
       crop: uploads.crop,
+      publishRequestedAt: uploads.publishRequestedAt,
       width: media.width,
       height: media.height,
     })
@@ -165,15 +174,15 @@ export async function lockPublishCandidates(
   }))
 }
 
-/** Moves the given staged uploads to publishing; returns how many changed. */
+/** Moves the user's given staged uploads to publishing; returns how many changed. */
 export async function markPublishing(
   tx: DbExecutor,
-  input: { ids: readonly string[]; now: Date },
+  input: OwnerScope & { ids: readonly string[]; now: Date },
 ): Promise<number> {
   const rows = await tx
     .update(uploads)
     .set({ status: 'publishing', publishRequestedAt: input.now })
-    .where(and(inArray(uploads.id, [...input.ids]), eq(uploads.status, 'staged')))
+    .where(and(ownedBy(input), inArray(uploads.id, [...input.ids]), eq(uploads.status, 'staged')))
     .returning({ id: uploads.id })
   return rows.length
 }

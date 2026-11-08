@@ -6,7 +6,6 @@ import {
   planPublish,
   type EditUploadBody,
   type MediaVariantSize,
-  type PublishCandidate,
   type PublishPlan,
   type UploadDraft,
   type UploadState,
@@ -28,11 +27,13 @@ import {
   markPublishing,
   updateDraftFields,
   type DraftRow,
+  type LockedPublishCandidate,
 } from './upload-drafts.repository'
 import { toUploadState } from './upload-state'
 import { lockMemberRole, type UploadRow } from './uploads.repository'
 
 const DRAFT_IMAGE_SIZES: readonly MediaVariantSize[] = [768, 1600]
+const PUBLISH_REKICK_MIN_AGE_MS = 60_000
 
 export interface UploadDraftsService {
   editUpload(m: Membership, uploadId: string, body: EditUploadBody): Promise<UploadState>
@@ -61,13 +62,21 @@ function inRequestOrder(rows: readonly UploadRow[], ids: readonly string[]): Upl
   })
 }
 
+function isDueForRekick(candidate: LockedPublishCandidate, now: Date): boolean {
+  const requestedAt = candidate.publishRequestedAt
+  return requestedAt === null || now.getTime() - requestedAt.getTime() >= PUBLISH_REKICK_MIN_AGE_MS
+}
+
 function publishJobIds(
   requestedIds: readonly string[],
   plan: PublishPlan,
-  candidates: readonly PublishCandidate[],
+  candidates: readonly LockedPublishCandidate[],
+  now: Date,
 ): string[] {
   const inFlight = new Set(
-    candidates.filter((c) => c.status === 'publishing').map((c) => c.uploadId),
+    candidates
+      .filter((c) => c.status === 'publishing' && isDueForRekick(c, now))
+      .map((c) => c.uploadId),
   )
   const queued = new Set([
     ...plan.publish,
@@ -125,11 +134,12 @@ export function createUploadDraftsService(deps: {
           problems: plan.problems,
         })
       }
+      const now = clock()
       if (plan.publish.length > 0) {
-        const marked = await markPublishing(tx, { ids: plan.publish, now: clock() })
+        const marked = await markPublishing(tx, { ...scope, ids: plan.publish, now })
         if (marked !== plan.publish.length) throw new Error('Publish candidates changed under lock')
       }
-      return publishJobIds(ids, plan, candidates)
+      return publishJobIds(ids, plan, candidates, now)
     })
   }
 
@@ -161,6 +171,8 @@ export function createUploadDraftsService(deps: {
         await assertTaggedMembers(db, m.leagueId, body.taggedUserIds)
       }
       const updated = await updateDraftFields(db, {
+        leagueId: m.leagueId,
+        userId: m.userId,
         id: row.id,
         title: draftTitleOf(body.title),
         taggedUserIds: body.taggedUserIds,
@@ -182,7 +194,10 @@ export function createUploadDraftsService(deps: {
     listStates: statesOf,
 
     async discard(m, ids) {
-      await markDiscarded(db, { leagueId: m.leagueId, userId: m.userId, ids, now: clock() })
+      await runInTransaction(db, async (tx) => {
+        if ((await lockMemberRole(tx, m.leagueId, m.userId)) === null) return
+        await markDiscarded(tx, { leagueId: m.leagueId, userId: m.userId, ids, now: clock() })
+      })
     },
 
     async publish(m, ids) {

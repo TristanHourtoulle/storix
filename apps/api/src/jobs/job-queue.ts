@@ -1,6 +1,7 @@
 import {
   MEDIA_PROCESS_JOB,
   MEDIA_PUBLISH_JOB,
+  MEDIA_PUBLISH_QUEUE_OPTIONS,
   MEDIA_PUBLISH_SEND_OPTIONS,
   RARITY_RECOMPUTE_JOB,
   RARITY_RECOMPUTE_QUEUE_OPTIONS,
@@ -50,7 +51,7 @@ export async function startJobQueue(input: {
   await boss.start()
   try {
     await boss.createQueue(MEDIA_PROCESS_JOB)
-    await boss.createQueue(MEDIA_PUBLISH_JOB)
+    await boss.createQueue(MEDIA_PUBLISH_JOB, MEDIA_PUBLISH_QUEUE_OPTIONS)
     await boss.createQueue(RARITY_RECOMPUTE_JOB, RARITY_RECOMPUTE_QUEUE_OPTIONS)
     await boss.createQueue(STORAGE_DELETE_JOB, STORAGE_DELETE_SEND_OPTIONS)
   } catch (error) {
@@ -64,7 +65,10 @@ export async function startJobQueue(input: {
     },
     async enqueueMediaPublish(payload) {
       const data = mediaPublishPayloadSchema.parse(payload)
-      await boss.send(MEDIA_PUBLISH_JOB, data, MEDIA_PUBLISH_SEND_OPTIONS)
+      await boss.send(MEDIA_PUBLISH_JOB, data, {
+        ...MEDIA_PUBLISH_SEND_OPTIONS,
+        singletonKey: data.uploadId,
+      })
     },
     async enqueueRarityRecompute(payload) {
       const data = rarityRecomputePayloadSchema.parse(payload)

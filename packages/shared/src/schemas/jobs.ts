@@ -13,6 +13,8 @@ export const mediaPublishPayloadSchema = z.object({ uploadId: z.uuid() })
 
 export type MediaPublishPayload = z.infer<typeof mediaPublishPayloadSchema>
 
+export const MEDIA_PUBLISH_QUEUE_OPTIONS = { policy: 'exclusive' } as const
+
 export const MEDIA_PUBLISH_SEND_OPTIONS = {
   retryLimit: 3,
   retryDelay: 15,
