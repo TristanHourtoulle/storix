@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type RefCallback,
-} from 'react'
+import { useCallback, useEffect, useState, type KeyboardEvent, type RefCallback } from 'react'
 import { createPortal } from 'react-dom'
 import {
   DEFAULT_CROP_VIEW,
@@ -15,6 +8,7 @@ import {
   cropViewFromRect,
   isDefaultCropView,
   maxCropZoom,
+  panCropView,
   rotateCropView,
   zoomCropViewAt,
   type CropFrame,
@@ -22,10 +16,10 @@ import {
   type CropView,
   type ImageSize,
 } from '@storix/shared/domain'
-import { Button } from '@/components/ui/button'
-import { Icon } from '@/components/ui/icon'
+import { CropControls } from './crop-controls'
 import { CropLayer } from './cropped-image'
 import { useCropGestures } from './use-crop-gestures'
+import { useModalLayer } from './use-modal-layer'
 
 export interface CropEditorProps {
   imageUrl: string
@@ -43,7 +37,13 @@ export interface CropEditorProps {
 
 const FRAME_MAX_WIDTH_PX = 360
 const STAGE_GUTTER_PX = 32
-const FOCUSABLE = 'button:not(:disabled), input:not(:disabled), [tabindex]:not([tabindex="-1"])'
+const KEY_PAN_PX = 16
+const KEY_PAN: Readonly<Record<string, readonly [number, number]>> = {
+  ArrowLeft: [-KEY_PAN_PX, 0],
+  ArrowRight: [KEY_PAN_PX, 0],
+  ArrowUp: [0, -KEY_PAN_PX],
+  ArrowDown: [0, KEY_PAN_PX],
+}
 const GRID_LINES =
   'linear-gradient(90deg, transparent 33.1%, rgb(255 255 255 / 0.3) 33.1% 33.6%, transparent 33.6% 66.4%, rgb(255 255 255 / 0.3) 66.4% 66.9%, transparent 66.9%), linear-gradient(0deg, transparent 33.1%, rgb(255 255 255 / 0.3) 33.1% 33.6%, transparent 33.6% 66.4%, rgb(255 255 255 / 0.3) 66.4% 66.9%, transparent 66.9%)'
 
@@ -56,24 +56,6 @@ function frameWidthFor(stage: StageSize, aspect: number): number {
   const byWidth = stage.width - STAGE_GUTTER_PX
   const byHeight = (stage.height - STAGE_GUTTER_PX) * aspect
   return Math.max(0, Math.floor(Math.min(byWidth, byHeight, FRAME_MAX_WIDTH_PX)))
-}
-
-function trapTab(event: KeyboardEvent<HTMLElement>): void {
-  const focusables = [...event.currentTarget.querySelectorAll<HTMLElement>(FOCUSABLE)]
-  const first = focusables[0]
-  const last = focusables[focusables.length - 1]
-  if (!first || !last) {
-    event.preventDefault()
-    return
-  }
-  const active = document.activeElement
-  if (event.shiftKey && (active === first || active === event.currentTarget)) {
-    event.preventDefault()
-    last.focus()
-  } else if (!event.shiftKey && active === last) {
-    event.preventDefault()
-    first.focus()
-  }
 }
 
 /** Full-screen editor that frames a photo at the given ratio with pan, pinch, wheel, zoom and rotation. */
@@ -97,7 +79,7 @@ export function CropEditor({
   )
   const [stage, setStage] = useState<StageSize>({ width: 0, height: 0 })
   const [stageElement, setStageElement] = useState<HTMLElement | null>(null)
-  const layerRef = useRef<HTMLDivElement>(null)
+  const { container, layerRef, refocus } = useModalLayer(onCancel)
   const frameWidth = frameWidthFor(stage, frame.aspect)
   const { attachStage, attachFrame, ...pointerHandlers } = useCropGestures({
     view,
@@ -107,9 +89,7 @@ export function CropEditor({
     onChange: setView,
   })
   const rect = cropRectFromView(view, imageSize, frame)
-  const maxZoom = maxCropZoom(imageSize, frame, view.rotate)
-  const isCircle = shape === 'circle'
-  const radius = isCircle ? 'rounded-full' : 'rounded-[14px]'
+  const radius = shape === 'circle' ? 'rounded-full' : 'rounded-[14px]'
 
   useEffect(() => {
     if (!stageElement) return
@@ -120,12 +100,6 @@ export function CropEditor({
     return () => observer.disconnect()
   }, [stageElement])
 
-  useEffect(() => {
-    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    layerRef.current?.focus()
-    return () => previous?.focus()
-  }, [])
-
   const stageRef = useCallback<RefCallback<HTMLElement>>(
     (node) => {
       attachStage(node)
@@ -134,13 +108,18 @@ export function CropEditor({
     [attachStage],
   )
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
-    if (event.key === 'Escape') {
-      event.preventDefault()
-      onCancel()
-    } else if (event.key === 'Tab') {
-      trapTab(event)
-    }
+  const handleStageKey = (event: KeyboardEvent<HTMLDivElement>): void => {
+    const step = KEY_PAN[event.key]
+    if (!step) return
+    event.preventDefault()
+    setView((current) =>
+      panCropView(
+        current,
+        { dxPx: step[0], dyPx: step[1], viewportWidthPx: frameWidth },
+        imageSize,
+        frame,
+      ),
+    )
   }
 
   const handleZoom = (zoom: number): void => {
@@ -154,6 +133,11 @@ export function CropEditor({
     )
   }
 
+  const handleReset = (): void => {
+    setView(clampCropView(DEFAULT_CROP_VIEW, imageSize, frame))
+    refocus()
+  }
+
   return createPortal(
     <div
       ref={layerRef}
@@ -161,10 +145,10 @@ export function CropEditor({
       aria-modal="true"
       aria-label="Recadrer la photo"
       tabIndex={-1}
-      onKeyDown={handleKeyDown}
+      onKeyDown={(event) => event.stopPropagation()}
       className="fixed inset-0 z-50 flex flex-col overscroll-contain bg-board pt-[env(safe-area-inset-top)] text-ink outline-none"
     >
-      <div className="grid flex-none grid-cols-[1fr_auto_1fr] items-center px-4 py-2">
+      <div className="grid flex-none touch-none grid-cols-[1fr_auto_1fr] items-center px-4 py-2">
         <button
           type="button"
           onClick={onCancel}
@@ -189,8 +173,11 @@ export function CropEditor({
       <div
         ref={stageRef}
         data-crop-stage=""
+        tabIndex={0}
+        aria-label="Zone de cadrage"
+        onKeyDown={handleStageKey}
         {...pointerHandlers}
-        className="relative grid min-h-0 flex-1 cursor-grab touch-none select-none place-items-center overflow-hidden active:cursor-grabbing"
+        className="relative grid min-h-0 flex-1 cursor-grab touch-none select-none place-items-center overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-inset active:cursor-grabbing"
       >
         <div
           ref={attachFrame}
@@ -201,7 +188,7 @@ export function CropEditor({
           <span className={`absolute inset-0 block overflow-hidden ${radius}`}>
             <CropLayer src={imageUrl} imageSize={imageSize} crop={rect} />
           </span>
-          {isCircle ? (
+          {shape === 'circle' ? (
             <span className="pointer-events-none absolute inset-0 block overflow-hidden">
               <span className="absolute inset-0 rounded-full shadow-[0_0_0_9999px_rgb(5_5_8/0.55)]" />
             </span>
@@ -213,47 +200,16 @@ export function CropEditor({
           />
         </div>
       </div>
-      <div className="flex flex-none flex-col gap-2.5 bg-bg px-4 pt-3 pb-[max(20px,env(safe-area-inset-bottom))] shadow-[inset_0_1px_0_var(--color-line)]">
-        <label className="flex items-center gap-3 text-[12px] text-muted">
-          Zoom
-          <input
-            type="range"
-            aria-label="Zoom"
-            min={1}
-            max={maxZoom}
-            step={0.01}
-            value={view.zoom}
-            disabled={maxZoom <= 1}
-            onChange={(event) => handleZoom(Number(event.currentTarget.value))}
-            className="min-w-0 flex-1 accent-accent"
-          />
-        </label>
-        <div className="flex gap-2.5">
-          {allowRotate ? (
-            <Button
-              variant="ghost"
-              className="!h-10 flex-1 !text-sm"
-              onClick={() => setView((current) => rotateCropView(current))}
-            >
-              <Icon name="rotate" className="size-4" />
-              Pivoter
-            </Button>
-          ) : null}
-          <Button
-            variant="ghost"
-            className="!h-10 flex-1 !text-sm"
-            disabled={isDefaultCropView(view)}
-            onClick={() => setView(clampCropView(DEFAULT_CROP_VIEW, imageSize, frame))}
-          >
-            Réinitialiser
-          </Button>
-        </div>
-        <p className="m-0 text-center text-[12px] text-faint">
-          Pince pour zoomer, glisse pour cadrer. Sans retouche, la photo est centrée
-          automatiquement.
-        </p>
-      </div>
+      <CropControls
+        zoom={view.zoom}
+        maxZoom={maxCropZoom(imageSize, frame, view.rotate)}
+        allowRotate={allowRotate}
+        isDefault={isDefaultCropView(view)}
+        onZoom={handleZoom}
+        onRotate={() => setView((current) => rotateCropView(current))}
+        onReset={handleReset}
+      />
     </div>,
-    document.body,
+    container,
   )
 }

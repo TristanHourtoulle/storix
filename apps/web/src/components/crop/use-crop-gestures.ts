@@ -17,6 +17,7 @@ import {
 import { logger } from '@/lib/logger'
 
 const WHEEL_ZOOM_SPEED = 0.002
+const GESTURE_EVENTS = ['gesturestart', 'gesturechange', 'gestureend'] as const
 
 interface Point {
   x: number
@@ -36,8 +37,26 @@ export interface CropGestures {
   onPointerMove: PointerEventHandler
   onPointerUp: PointerEventHandler
   onPointerCancel: PointerEventHandler
+  onLostPointerCapture: PointerEventHandler
   attachStage: RefCallback<HTMLElement>
   attachFrame: RefCallback<HTMLElement>
+}
+
+function numberField(event: Event, field: string): number | null {
+  const value: unknown = Reflect.get(event, field)
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+function gestureScaleOf(event: Event): number | null {
+  return numberField(event, 'scale')
+}
+
+function clientXOf(event: Event): number {
+  return numberField(event, 'clientX') ?? Number.NaN
+}
+
+function clientYOf(event: Event): number {
+  return numberField(event, 'clientY') ?? Number.NaN
 }
 
 function midpoint(a: Point, b: Point): Point {
@@ -75,7 +94,9 @@ export function useCropGestures({
 
   const focusOf = useCallback((point: Point): Point => {
     const rect = frameElementRef.current?.getBoundingClientRect()
-    if (!rect || rect.width === 0 || rect.height === 0) return { x: 0.5, y: 0.5 }
+    const isUsable =
+      rect && rect.width > 0 && rect.height > 0 && [point.x, point.y].every(Number.isFinite)
+    if (!rect || !isUsable) return { x: 0.5, y: 0.5 }
     return { x: (point.x - rect.left) / rect.width, y: (point.y - rect.top) / rect.height }
   }, [])
 
@@ -86,7 +107,8 @@ export function useCropGestures({
     } catch (error) {
       logger.debug('Pointer capture unavailable', { pointerId: event.pointerId, error })
     }
-    pointersRef.current = new Map(pointersRef.current).set(event.pointerId, {
+    const tracked = event.isPrimary ? new Map<number, Point>() : pointersRef.current
+    pointersRef.current = new Map(tracked).set(event.pointerId, {
       x: event.clientX,
       y: event.clientY,
     })
@@ -162,8 +184,34 @@ export function useCropGestures({
         ),
       )
     }
+    let gestureScale = 1
+    const handleGesture = (event: Event): void => {
+      event.preventDefault()
+      const scale = gestureScaleOf(event)
+      if (event.type === 'gesturestart' || scale === null) {
+        gestureScale = scale ?? 1
+        return
+      }
+      if (pointersRef.current.size > 0 || gestureScale <= 0) return
+      const focus = focusOf({ x: clientXOf(event), y: clientYOf(event) })
+      commit(
+        zoomCropViewAt(
+          viewRef.current,
+          { factor: scale / gestureScale, focusX: focus.x, focusY: focus.y },
+          imageSize,
+          frame,
+        ),
+      )
+      gestureScale = scale
+    }
     stage.addEventListener('wheel', handleWheel, { passive: false })
-    return () => stage.removeEventListener('wheel', handleWheel)
+    GESTURE_EVENTS.forEach((type) =>
+      stage.addEventListener(type, handleGesture, { passive: false }),
+    )
+    return () => {
+      stage.removeEventListener('wheel', handleWheel)
+      GESTURE_EVENTS.forEach((type) => stage.removeEventListener(type, handleGesture))
+    }
   }, [stage, commit, focusOf, frame, imageSize])
 
   const attachStage = useCallback<RefCallback<HTMLElement>>((node) => setStage(node), [])
@@ -176,6 +224,7 @@ export function useCropGestures({
     onPointerMove,
     onPointerUp: release,
     onPointerCancel: release,
+    onLostPointerCapture: release,
     attachStage,
     attachFrame,
   }
