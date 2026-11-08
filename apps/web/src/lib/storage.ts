@@ -11,6 +11,7 @@ export const STORAGE_KEYS = {
   iosHintDismissed: 'storix.iosHintDismissed',
   motionPermission: 'storix.motionPermission',
   soundSettings: 'storix.soundSettings',
+  pushPromptDismissed: 'storix.pushPromptDismissed',
   passkeyPromptDismissed: (userId: string): string => `storix.passkeyPromptDismissed.${userId}`,
 } as const
 
