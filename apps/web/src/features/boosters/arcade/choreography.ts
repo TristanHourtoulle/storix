@@ -1,3 +1,4 @@
+import { playSound } from '@/features/sound/sound'
 import { toTransform as T, type CardLayer, type Director } from './director'
 import { CENTER_Y as CY, DIM_OPACITY, SLOT_SCALE, deckPose } from './geometry'
 import type { TierFx } from './tiers'
@@ -26,8 +27,21 @@ export function layoutDeck(d: Director, from: number, isDimmed: boolean, duratio
   })
 }
 
+const REDUCED_CHARGE_MS = 700
+
+/** Length in ms of the tier build-up; the sound aura uses half of it, capped, under reduced motion. */
+export function chargeDuration(level: number, isReduced: boolean): number {
+  return isReduced ? REDUCED_CHARGE_MS : 440 + level * 300
+}
+
+function auraSeconds(level: number, isReduced: boolean): number {
+  const full = chargeDuration(level, false)
+  return (isReduced ? Math.min(full / 2, REDUCED_CHARGE_MS) : full) / 1000
+}
+
 function showStamp(d: Director, tier: TierFx, name: string): void {
   const { stamp } = d.layers
+  playSound({ name: 'stamp', level: tier.level })
   stamp.dataset.t = tier.key
   stamp.classList.toggle('is-small', tier.level < 3)
   stamp.textContent = tier.level >= 3 ? `${name} !` : name
@@ -101,12 +115,13 @@ async function charge(d: Director, index: number, tier: TierFx): Promise<void> {
   const { root, aura, rings } = cardAt(d, index)
   const L = tier.level
   root.classList.add('is-lit')
+  playSound({ name: 'aura', level: L, duration: auraSeconds(L, d.isReduced) })
   if (d.isReduced) {
     await d.tween(aura, { opacity: 0.35 + L * 0.08, transform: 'scale(1)' }, { duration: 320 })
-    await d.wait(380)
+    await d.wait(REDUCED_CHARGE_MS - 320)
     return
   }
-  const duration = 440 + L * 300
+  const duration = chargeDuration(L, false)
   const ringCount = L + 1
   d.fire(
     d.tween(
@@ -153,6 +168,7 @@ async function flip(d: Director, index: number, tier: TierFx, name: string): Pro
   const card = cardAt(d, index)
   const { root, aura, flipper } = card
   const L = tier.level
+  playSound({ name: 'flip' })
   if (d.isReduced) {
     await crossfadeToFace(d, card, 280)
     showStamp(d, tier, name)
@@ -202,6 +218,7 @@ export async function revealLong(
 
 async function flipQuick(d: Director, index: number): Promise<void> {
   const { root, flipper } = cardAt(d, index)
+  playSound({ name: 'flip' })
   d.fire(
     d.tween(
       root,
@@ -227,6 +244,7 @@ export async function revealQuick(d: Director, index: number): Promise<void> {
     root.style.transform = T({ y: CY })
     card.front.style.opacity = '1'
     card.back.style.opacity = '0'
+    playSound({ name: 'flip' })
     await d.tween(root, [{ opacity: 0 }, { opacity: 1 }], { duration: 200 })
     return
   }

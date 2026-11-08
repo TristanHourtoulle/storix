@@ -11,6 +11,7 @@ import { authorLabel } from '@/features/cards/author-label'
 import { MetaCell, formatDate } from '@/features/cards/components/meta-cell'
 import { TIER_LABELS } from '@/features/cards/tier-labels'
 import { userMessage } from '@/features/errors/user-message'
+import { playSound } from '@/features/sound/sound'
 import type { CardModeration } from '../use-card-moderation'
 import { DeleteCardConfirm } from './delete-card-dialog'
 import { TierBoundsPicker } from './tier-bounds-picker'
@@ -133,7 +134,15 @@ export function AdminCardSheet({ card, mythicCount, moderation, onClose }: Admin
             pinnedTier={card.pinnedTier}
             mythicCount={mythicCount}
             isBusy={isBusy}
-            onChange={(tier) => moderation.pinTier.mutate({ cardId, tier })}
+            onChange={(tier) =>
+              moderation.pinTier.mutate(
+                { cardId, tier },
+                {
+                  onSuccess: (updated) =>
+                    playSound({ name: updated.pinnedTier === 'mythic' ? 'pinMythic' : 'confirm' }),
+                },
+              )
+            }
           />
           <TierBoundsPicker
             min={card.minTier}

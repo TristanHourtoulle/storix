@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState, type RefObject } from 'react'
 import type { BoosterPull } from '@storix/shared'
 import { TIER_LABELS } from '@/features/cards/tier-labels'
+import { playSound, preloadSound, stopSounds } from '@/features/sound/sound'
 import { logger } from '@/lib/logger'
 import { revealLong, revealQuick, stash } from './arcade/choreography'
 import { Director, collectLayers, isStale } from './arcade/director'
@@ -114,6 +115,18 @@ interface ArcadeOpening {
   revealAll: () => void
 }
 
+const SUMMARY_PITY_DELAY = 0.95
+const REVEAL_ALL_COIN_DELAY = 0.6
+
+function hasDustGain(pull: BoosterPull): boolean {
+  return !pull.isFirstCopy && pull.dust > 0
+}
+
+function playSummary(withPity: boolean): void {
+  playSound({ name: 'summary' })
+  if (withPity) playSound({ name: 'pity' }, SUMMARY_PITY_DELAY)
+}
+
 function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
@@ -127,6 +140,7 @@ export function useArcadeOpening(
   stageRef: RefObject<HTMLDivElement | null>,
   canvasRef: RefObject<HTMLCanvasElement | null>,
   isReady: boolean,
+  isEpicGuaranteedNext = false,
 ): ArcadeOpening {
   const count = pulls.length
   const [isReduced] = useState(prefersReducedMotion)
@@ -141,6 +155,11 @@ export function useArcadeOpening(
     stateRef.current = state
     isReadyRef.current = isReady
   })
+
+  useEffect(() => {
+    void preloadSound()
+    return stopSounds
+  }, [])
 
   useEffect(() => {
     const stage = stageRef.current
@@ -189,6 +208,7 @@ export function useArcadeOpening(
         await revealLong(director, index, tierFx(pull.card.tier), TIER_LABELS[pull.card.tier])
       } else {
         await revealQuick(director, index)
+        if (hasDustGain(pull)) playSound({ name: 'coin' })
       }
       dispatch({ type: 'revealed', index, announcement: describe(pull, index + 1, count) })
     },
@@ -219,13 +239,14 @@ export function useArcadeOpening(
           if (shown) await stash(director, current, tierFx(shown.card.tier))
           dispatch({ type: 'stashed', index: current })
           if (current >= count - 1) {
+            playSummary(isEpicGuaranteedNext)
             dispatch({ type: 'summary', announcement: summarize(pulls) })
             return
           }
         }
         await playReveal(director, current + 1)
       }),
-    [run, pulls, count, playReveal],
+    [run, pulls, count, playReveal, isEpicGuaranteedNext],
   )
 
   const { phase, current } = state
@@ -251,12 +272,18 @@ export function useArcadeOpening(
   }, [isReduced, isReady, open, advance])
 
   const revealAll = useCallback(() => {
-    if (stateRef.current.phase === 'summary') return
+    const { phase, revealed } = stateRef.current
+    if (phase === 'summary') return
+    const hasHiddenDust = pulls.some((pull, index) => !revealed[index] && hasDustGain(pull))
+    stopSounds()
+    playSound({ name: 'revealAll' })
+    if (hasHiddenDust) playSound({ name: 'coin' }, REVEAL_ALL_COIN_DELAY)
+    if (isEpicGuaranteedNext) playSound({ name: 'pity' }, REVEAL_ALL_COIN_DELAY + 0.4)
     directorRef.current?.destroy()
     directorRef.current = null
     busyRef.current = true
     dispatch({ type: 'summary', announcement: summarize(pulls) })
-  }, [pulls])
+  }, [pulls, isEpicGuaranteedNext])
 
   return { state, hint: hintFor(state, count, isReady, isReduced), isReduced, onTap, revealAll }
 }

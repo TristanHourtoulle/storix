@@ -92,6 +92,7 @@ export function useCardModeration(
     onError: (error) => logFailure('visibility', error),
   })
   const pinTier = useMutation({
+    meta: { sound: 'none' },
     mutationFn: ({ cardId, tier }: { cardId: string; tier: CardTier | null }) =>
       putTierPin(leagueId, cardId, tier),
     onSuccess: replaceCard,

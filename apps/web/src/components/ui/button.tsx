@@ -1,4 +1,5 @@
-import type { ButtonHTMLAttributes } from 'react'
+import type { ButtonHTMLAttributes, MouseEvent } from 'react'
+import { playSound } from '@/features/sound/sound'
 
 type ButtonVariant = 'primary' | 'ghost' | 'danger'
 
@@ -32,11 +33,19 @@ export function Button({
   type = 'button',
   className = '',
   children,
+  onClick,
   ...rest
 }: ButtonProps) {
+  function handleClick(event: MouseEvent<HTMLButtonElement>) {
+    if (variant === 'primary') playSound({ name: 'tap' })
+    if (variant === 'danger') playSound({ name: 'destructive' })
+    onClick?.(event)
+  }
+
   return (
     <button
       {...rest}
+      onClick={handleClick}
       type={type}
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}

@@ -27,6 +27,8 @@ const STAMP_STYLE = { top: STAMP_TOP }
 export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
   const navigate = useNavigate()
   const { pulls } = opening
+  const { pity } = opening.wallet
+  const isEpicGuaranteedNext = pity.epicAvailable && pity.epicGuaranteeIn === 1
   const pullCount = pulls.length
   const stageRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -38,6 +40,7 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
     stageRef,
     canvasRef,
     isReady,
+    isEpicGuaranteedNext,
   )
   const revealedCount = state.revealed.filter(Boolean).length
   const isComplete = revealedCount === pullCount

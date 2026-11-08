@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { cardTitleSchema } from '@storix/shared'
+import { playSound } from '@/features/sound/sound'
 import {
   processDrafts,
   waitForNetwork,
@@ -58,7 +59,10 @@ export function useCreateCards(
       saveProgress: (draftId, progress) => {
         progressRef.current = { ...progressRef.current, [draftId]: progress }
       },
-      setPhase,
+      setPhase: (draftId, phase, extra) => {
+        if (phase === 'created') playSound({ name: 'cardCreated' })
+        setPhase(draftId, phase, extra)
+      },
     }
 
     const run = async (): Promise<void> => {

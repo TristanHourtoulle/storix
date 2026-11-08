@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { userMessage } from '@/features/errors/user-message'
+import { playSound } from '@/features/sound/sound'
 import { preparePhoto, type PreparedPhoto } from './prepare-photo'
 
 export type DraftPhase =
@@ -41,6 +42,8 @@ type DraftsAction =
   | { type: 'titleChanged'; id: string; title: string }
   | { type: 'tagToggled'; id: string; userId: string }
   | { type: 'phaseChanged'; id: string; phase: DraftPhase; extra: PhaseExtra }
+
+const QUOTA_SOUND_DELAY = 0.15
 
 const INITIAL_STATE: DraftsState = { drafts: [], selectedId: null, overflow: null }
 
@@ -168,6 +171,8 @@ export function usePhotoDrafts(capacity: number) {
         drafts,
         overflow: skipped > 0 ? { skipped, accepted: accepted.length } : null,
       })
+      if (accepted.length > 0) playSound({ name: 'photoAdded' })
+      if (skipped > 0) playSound({ name: 'quota' }, accepted.length > 0 ? QUOTA_SOUND_DELAY : 0)
       for (const [index, draft] of drafts.entries()) {
         const file = accepted[index]
         if (!file) continue

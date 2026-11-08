@@ -1,6 +1,7 @@
 import { canOpenBooster, type WalletState } from '@storix/shared'
 import { Button } from '@/components/ui/button'
 import { formatCountdown } from '../format-countdown'
+import { useBoosterReadySound } from '../use-booster-ready-sound'
 import { useCountdown } from '../use-countdown'
 import { BoosterPack } from './booster-pack'
 import { StockPips } from './stock-pips'
@@ -58,6 +59,7 @@ export function BoosterWidget({ wallet, onOpen, onElapsed }: BoosterWidgetProps)
   const isPoolTooSmall = !canOpenBooster(pool.drawableCount)
   const remainingMs = useCountdown(nextAt, onElapsed)
   const nextCardMs = useCountdown(isPoolTooSmall ? pool.nextEligibleAt : null, onElapsed)
+  useBoosterReadySound(stock, remainingMs)
 
   return (
     <section className="hero" aria-label="Boosters">
