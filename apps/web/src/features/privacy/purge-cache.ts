@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { leagueMediaPrefix, mediaCachePathPrefix, portraitOwnerPrefix } from '@storix/shared/domain'
 import { logger } from '@/lib/logger'
-import { API_CACHE_NAME, API_CACHE_PREFIX, MEDIA_CACHE_NAME } from '@/features/pwa/cache-names'
+import { API_CACHE_PREFIX, MEDIA_CACHE_NAME } from '@/features/pwa/cache-names'
 
 async function deleteMatching(
   cacheName: string,
@@ -23,6 +23,20 @@ async function deleteMatching(
   }
 }
 
+async function deleteFromApiCaches(pathPrefixes: readonly string[]): Promise<number | null> {
+  if (!('caches' in window)) return 0
+  try {
+    const names = (await caches.keys()).filter((name) => name.startsWith(API_CACHE_PREFIX))
+    const results = await Promise.all(names.map((name) => deleteMatching(name, pathPrefixes)))
+    return results.includes(null)
+      ? null
+      : results.reduce<number>((sum, count) => sum + (count ?? 0), 0)
+  } catch (error) {
+    logger.warn('API cache purge failed', { error })
+    return null
+  }
+}
+
 /** Deletes media cache entries stored under the given storage prefixes; returns the deleted count. */
 export async function purgeMediaPrefixes(prefixes: readonly string[]): Promise<number> {
   return (await deleteMatching(MEDIA_CACHE_NAME, prefixes.map(mediaCachePathPrefix))) ?? 0
@@ -35,14 +49,14 @@ export async function purgeRemovedCards(
 ): Promise<boolean> {
   const results = await Promise.all([
     deleteMatching(MEDIA_CACHE_NAME, prefixes.map(mediaCachePathPrefix)),
-    deleteMatching(API_CACHE_NAME, [`/api/leagues/${encodeURIComponent(leagueId)}`]),
+    deleteFromApiCaches([`/api/leagues/${encodeURIComponent(leagueId)}`]),
   ])
   return results.every((result) => result !== null)
 }
 
 /** Deletes the offline API cache entries of one league. */
 export async function purgeLeagueApiEntries(leagueId: string): Promise<void> {
-  await deleteMatching(API_CACHE_NAME, [`/api/leagues/${encodeURIComponent(leagueId)}`])
+  await deleteFromApiCaches([`/api/leagues/${encodeURIComponent(leagueId)}`])
 }
 
 /** Drops every cached trace of a league the user can no longer access. */
