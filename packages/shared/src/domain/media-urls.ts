@@ -106,3 +106,30 @@ export function leagueMediaPrefix(leagueId: string): string {
 export function mediaCachePathPrefix(prefix: string): string {
   return `${MEDIA_PREFIX}${prefix}`
 }
+
+/** Returns every storage key a media row may own: its listed variants, all full-frame variants, the cropped variants of `cropIds`, and its source when still present. */
+export function storedMediaKeys(input: {
+  leagueId: string
+  sourceSha256: string
+  variants: readonly { key: string }[]
+  cropIds?: readonly string[]
+  sourceKey?: string | null
+}): string[] {
+  const { leagueId, sourceSha256 } = input
+  const sized = MEDIA_VARIANT_SIZES.flatMap((size) =>
+    MEDIA_FORMATS.map((format) => ({ size, format })),
+  )
+  const fullFrame = sized.map((variant) => mediaVariantKey({ leagueId, sourceSha256, ...variant }))
+  const cropped = (input.cropIds ?? []).flatMap((cropId) =>
+    sized.map((variant) => mediaCropVariantKey({ leagueId, sourceSha256, cropId, ...variant })),
+  )
+  const source = input.sourceKey ? [input.sourceKey] : []
+  return [
+    ...new Set([
+      ...input.variants.map((variant) => variant.key),
+      ...fullFrame,
+      ...cropped,
+      ...source,
+    ]),
+  ]
+}

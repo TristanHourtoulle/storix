@@ -21,6 +21,11 @@ export const MEDIA_PUBLISH_SEND_OPTIONS = {
   retryBackoff: true,
 } as const
 
+/** Send options of a media.publish job; the singleton key coalesces jobs per upload under the exclusive policy. */
+export function mediaPublishSendOptions(uploadId: string) {
+  return { ...MEDIA_PUBLISH_SEND_OPTIONS, singletonKey: uploadId }
+}
+
 export const RARITY_RECOMPUTE_JOB = 'rarity.recompute'
 export const RARITY_NIGHTLY_JOB = 'rarity.nightly'
 
