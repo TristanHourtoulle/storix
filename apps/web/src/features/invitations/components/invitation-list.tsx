@@ -74,6 +74,7 @@ export function InvitationList({ leagueId }: InvitationListProps) {
             <Button
               variant="primary"
               block
+              sound="destructive"
               className="!bg-danger"
               isLoading={isPending}
               onClick={() => revoke(revokeTarget.id, () => selectRevokeTarget(null))}

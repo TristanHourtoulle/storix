@@ -6,6 +6,7 @@ import { ApiError } from '@/lib/http'
 import { logger } from '@/lib/logger'
 import { STORAGE_KEYS, readStorage, writeStorage } from '@/lib/storage'
 import { clearLastLeagueId } from '@/features/leagues/last-league'
+import { playSound } from '@/features/sound/sound'
 import { fetchRemovedCards } from './removals.api'
 import { purgeLeagueCaches, purgeRemovedCards } from './purge-cache'
 
@@ -101,6 +102,7 @@ export function useRemovedCardsSync(
             ...added.map((card) => ({ cardId: card.cardId, compensation: card.compensation })),
           ]),
         )
+        if (added.length > 0) playSound({ name: 'cardRemoved' })
         const isPurged = await purgeRemovedCards(
           fresh.map((card) => card.mediaPrefix),
           leagueId,

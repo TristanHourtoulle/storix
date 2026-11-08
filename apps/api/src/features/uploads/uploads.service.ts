@@ -2,9 +2,10 @@ import { randomUUID } from 'node:crypto'
 import type { Database, DbExecutor } from '@storix/db'
 import {
   checkUploadQuota,
+  isUploadQuotaExempt,
   isUploadReservationExpired,
-  remainingUploadQuota,
   resolveLeagueSettings,
+  resolveUploadQuota,
   sanitizeCaptureDate,
   UPLOAD_CONTENT_TYPE,
   UPLOAD_MAX_BYTES,
@@ -29,7 +30,7 @@ import {
   countUploadsSince,
   findUpload,
   insertUpload,
-  lockMemberRow,
+  lockMemberRole,
   markUploaded,
   type UploadRow,
 } from './uploads.repository'
@@ -65,6 +66,18 @@ async function quotaLimitOf(db: DbExecutor, leagueId: string): Promise<number> {
   return resolveLeagueSettings(await findLeagueSettings(db, leagueId)).uploadQuotaPerDay
 }
 
+async function assertQuotaAvailable(db: DbExecutor, m: Membership, now: Date): Promise<void> {
+  const limit = await quotaLimitOf(db, m.leagueId)
+  const used = await countUsed(db, m, now)
+  const quota = checkUploadQuota({ limit, used, requested: 1 })
+  if (!quota.allowed) {
+    throw new AppError('UPLOAD_QUOTA_EXCEEDED', 429, 'Daily upload quota exceeded', {
+      limit,
+      remaining: quota.remaining,
+    })
+  }
+}
+
 /** Builds the uploads service handling presigned uploads, the daily quota and completion. */
 export function createUploadsService(deps: {
   db: Database
@@ -94,7 +107,7 @@ export function createUploadsService(deps: {
     async getQuota(m) {
       const limit = await quotaLimitOf(db, m.leagueId)
       const used = await countUsed(db, m, clock())
-      return { limit, used, remaining: remainingUploadQuota({ limit, used }) }
+      return resolveUploadQuota({ role: m.role, limit, used })
     },
 
     async createUpload(m) {
@@ -110,16 +123,9 @@ export function createUploadsService(deps: {
         expiresInSeconds: UPLOAD_PRESIGN_TTL_SECONDS,
       })
       await runInTransaction(db, async (tx) => {
-        if (!(await lockMemberRow(tx, m.leagueId, m.userId))) throw notFound()
-        const limit = await quotaLimitOf(tx, m.leagueId)
-        const used = await countUsed(tx, m, now)
-        const quota = checkUploadQuota({ limit, used, requested: 1 })
-        if (!quota.allowed) {
-          throw new AppError('UPLOAD_QUOTA_EXCEEDED', 429, 'Daily upload quota exceeded', {
-            limit,
-            remaining: quota.remaining,
-          })
-        }
+        const role = await lockMemberRole(tx, m.leagueId, m.userId)
+        if (role === null) throw notFound()
+        if (!isUploadQuotaExempt(role)) await assertQuotaAvailable(tx, m, now)
         await insertUpload(tx, { id: uploadId, leagueId: m.leagueId, userId: m.userId, objectKey })
       })
       return {

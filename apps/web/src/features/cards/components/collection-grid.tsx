@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import type { CollectionCard } from '@storix/shared'
+import { playSound } from '@/features/sound/sound'
 import { TIER_LABELS } from '../tier-labels'
 import { useGridMetrics } from '../use-grid-metrics'
 import { CollectionCardView } from './collection-card-view'
@@ -22,6 +23,10 @@ function cardLabel(card: CollectionCard): string {
   if (card.kind === 'owned') return `${card.title}, ${TIER_LABELS[card.displayTier]}`
   if (card.kind === 'hidden') return 'Carte masquée'
   return `Carte à découvrir, ${TIER_LABELS[card.tier]}`
+}
+
+function playLocked(): void {
+  playSound({ name: 'locked' })
 }
 
 export function CollectionGrid({
@@ -73,6 +78,7 @@ export function CollectionGrid({
               params={{ leagueId, cardId: card.id }}
               aria-label={cardLabel(card)}
               className="block"
+              onClick={card.kind === 'locked' ? playLocked : undefined}
             >
               <CollectionCardView
                 card={card}

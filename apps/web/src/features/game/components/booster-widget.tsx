@@ -1,12 +1,14 @@
 import { canOpenBooster, type WalletState } from '@storix/shared'
 import { Button } from '@/components/ui/button'
 import { formatCountdown } from '../format-countdown'
+import { useBoosterReadySound } from '../use-booster-ready-sound'
 import { useCountdown } from '../use-countdown'
 import { BoosterPack } from './booster-pack'
 import { StockPips } from './stock-pips'
 
 interface BoosterWidgetProps {
   wallet: WalletState
+  isFresh: boolean
   onOpen: () => void
   onElapsed: () => void
 }
@@ -52,12 +54,27 @@ function PoolTooSmallMeta({
   )
 }
 
-export function BoosterWidget({ wallet, onOpen, onElapsed }: BoosterWidgetProps) {
+function EpicGuarantee({ pity }: { pity: WalletState['pity'] }) {
+  if (!pity.epicAvailable) return null
+  const remaining =
+    pity.epicGuaranteeIn === 1 ? 'au prochain booster' : `dans ${pity.epicGuaranteeIn} boosters`
+  return (
+    <p className="hero-pity">
+      <span className="hero-pity-dot" aria-hidden="true" />
+      <span>
+        <strong>Épique</strong> garantie {remaining}
+      </span>
+    </p>
+  )
+}
+
+export function BoosterWidget({ wallet, isFresh, onOpen, onElapsed }: BoosterWidgetProps) {
   const { stock, maxStock, nextAt } = wallet.booster
   const { pool } = wallet
   const isPoolTooSmall = !canOpenBooster(pool.drawableCount)
   const remainingMs = useCountdown(nextAt, onElapsed)
   const nextCardMs = useCountdown(isPoolTooSmall ? pool.nextEligibleAt : null, onElapsed)
+  useBoosterReadySound(stock, remainingMs, isFresh)
 
   return (
     <section className="hero" aria-label="Boosters">
@@ -75,7 +92,13 @@ export function BoosterWidget({ wallet, onOpen, onElapsed }: BoosterWidgetProps)
         ) : (
           <StockMeta remainingMs={remainingMs} />
         )}
-        <Button variant="primary" onClick={onOpen} disabled={stock === 0 || isPoolTooSmall}>
+        <EpicGuarantee pity={wallet.pity} />
+        <Button
+          variant="primary"
+          sound="none"
+          onClick={onOpen}
+          disabled={stock === 0 || isPoolTooSmall}
+        >
           Ouvrir
         </Button>
       </div>

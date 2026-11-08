@@ -14,6 +14,7 @@ export function useTransferOwnership(leagueId: string): {
 } {
   const queryClient = useQueryClient()
   const mutation = useMutation({
+    meta: { sound: 'error-only' },
     mutationFn: (userId: string) => transferOwnership(leagueId, userId),
     onSettled: async () => {
       await Promise.all([

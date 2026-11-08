@@ -1,4 +1,5 @@
-import type { ButtonHTMLAttributes } from 'react'
+import type { ButtonHTMLAttributes, MouseEvent } from 'react'
+import { emitUiSound, type UiSound } from '@/lib/ui-sound'
 
 type ButtonVariant = 'primary' | 'ghost' | 'danger'
 
@@ -6,6 +7,14 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant: ButtonVariant
   block?: boolean
   isLoading?: boolean
+  /** Feedback sound on press; defaults to `tap` for primary and `destructive` for danger. */
+  sound?: UiSound | 'none'
+}
+
+const DEFAULT_SOUND: Record<ButtonVariant, UiSound | 'none'> = {
+  primary: 'tap',
+  ghost: 'none',
+  danger: 'destructive',
 }
 
 const VARIANTS = {
@@ -32,11 +41,19 @@ export function Button({
   type = 'button',
   className = '',
   children,
+  onClick,
+  sound = DEFAULT_SOUND[variant],
   ...rest
 }: ButtonProps) {
+  function handleClick(event: MouseEvent<HTMLButtonElement>) {
+    if (sound !== 'none') emitUiSound(sound)
+    onClick?.(event)
+  }
+
   return (
     <button
       {...rest}
+      onClick={handleClick}
       type={type}
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}

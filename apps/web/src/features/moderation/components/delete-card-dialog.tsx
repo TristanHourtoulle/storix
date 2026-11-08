@@ -28,6 +28,7 @@ export function DeleteCardConfirm({
         </Button>
         <Button
           variant="primary"
+          sound="destructive"
           className="flex-1 !bg-danger"
           onClick={onConfirm}
           isLoading={isPending}

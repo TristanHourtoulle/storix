@@ -22,6 +22,7 @@ export function useLeaveLeague(
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const mutation = useMutation({
+    meta: { sound: 'error-only' },
     mutationFn: async (photos: PhotosChoice): Promise<void> => {
       await leaveLeague(leagueId, photos)
       clearLastLeagueId(userId)

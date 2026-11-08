@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   checkUploadQuota,
+  isUploadQuotaExempt,
   isUploadReservationExpired,
   remainingUploadQuota,
+  resolveUploadQuota,
   sanitizeCaptureDate,
   UPLOAD_COMPLETION_GRACE_SECONDS,
   UPLOAD_PRESIGN_TTL_SECONDS,
@@ -34,6 +36,39 @@ describe('uploads', () => {
     expect(checkUploadQuota({ limit: 10, used: 0, requested: -1 })).toEqual({
       allowed: false,
       remaining: 10,
+    })
+  })
+  it('exempts admins and the owner from the upload quota', () => {
+    expect(isUploadQuotaExempt('owner')).toBe(true)
+    expect(isUploadQuotaExempt('admin')).toBe(true)
+    expect(isUploadQuotaExempt('member')).toBe(false)
+  })
+  it('resolves an unlimited quota for exempt roles, whatever the usage', () => {
+    expect(resolveUploadQuota({ role: 'admin', limit: 10, used: 0 })).toEqual({
+      unlimited: true,
+      limit: null,
+      used: 0,
+      remaining: null,
+    })
+    expect(resolveUploadQuota({ role: 'owner', limit: 10, used: 250 })).toEqual({
+      unlimited: true,
+      limit: null,
+      used: 250,
+      remaining: null,
+    })
+  })
+  it('resolves the league quota for members', () => {
+    expect(resolveUploadQuota({ role: 'member', limit: 10, used: 7 })).toEqual({
+      unlimited: false,
+      limit: 10,
+      used: 7,
+      remaining: 3,
+    })
+    expect(resolveUploadQuota({ role: 'member', limit: 3, used: 5 })).toEqual({
+      unlimited: false,
+      limit: 3,
+      used: 5,
+      remaining: 0,
     })
   })
   it('uses a rolling 24h window', () =>

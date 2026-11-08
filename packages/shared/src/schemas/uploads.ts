@@ -52,11 +52,20 @@ export const uploadStateSchema = z.object({
   rejectionReason: z.enum(UPLOAD_REJECTION_REASONS).nullable(),
 })
 
-export const uploadQuotaSchema = z.object({
-  limit: z.int().min(0),
-  used: z.int().min(0),
-  remaining: z.int().min(0),
-})
+export const uploadQuotaSchema = z.discriminatedUnion('unlimited', [
+  z.object({
+    unlimited: z.literal(false),
+    limit: z.int().min(0),
+    used: z.int().min(0),
+    remaining: z.int().min(0),
+  }),
+  z.object({
+    unlimited: z.literal(true),
+    limit: z.null(),
+    used: z.int().min(0),
+    remaining: z.null(),
+  }),
+])
 
 export const uploadParamsSchema = z.object({ leagueId: z.uuid(), uploadId: z.uuid() })
 

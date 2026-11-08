@@ -92,6 +92,7 @@ export function useCardModeration(
     onError: (error) => logFailure('visibility', error),
   })
   const pinTier = useMutation({
+    meta: { sound: 'none' },
     mutationFn: ({ cardId, tier }: { cardId: string; tier: CardTier | null }) =>
       putTierPin(leagueId, cardId, tier),
     onSuccess: replaceCard,
@@ -110,6 +111,7 @@ export function useCardModeration(
     onError: (error) => logFailure('capture-date', error),
   })
   const deleteCard = useMutation({
+    meta: { sound: 'error-only' },
     mutationFn: ({ cardId }: { cardId: string }) => removeCard(leagueId, cardId),
     onSuccess: (_, { cardId }) => dropCard(cardId),
     onError: (error) => logFailure('delete', error),

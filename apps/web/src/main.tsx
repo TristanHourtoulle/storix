@@ -9,6 +9,7 @@ import { startSessionRefresh } from './features/auth/session-refresh'
 import { lockPortraitOrientation } from './features/pwa/lock-orientation'
 import { requestPersistentStorage } from './features/pwa/persist-storage'
 import { registerServiceWorker } from './features/pwa/register-sw'
+import { installSound } from './features/sound/sound'
 import { queryClient, router } from './router'
 
 const container = document.getElementById('root')
@@ -23,6 +24,7 @@ createRoot(container).render(
 )
 
 startSessionRefresh()
+installSound()
 void lockPortraitOrientation()
 void registerServiceWorker().then(() =>
   import.meta.env.PROD ? requestPersistentStorage() : undefined,

@@ -1,5 +1,12 @@
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
 import { ApiError } from './http'
+import { emitUiSound } from './ui-sound'
+
+declare module '@tanstack/react-query' {
+  interface Register {
+    mutationMeta: { sound?: 'none' | 'error-only' }
+  }
+}
 
 function isClientError(error: unknown): boolean {
   return error instanceof ApiError && error.status >= 400 && error.status < 500
@@ -12,7 +19,16 @@ export function createQueryClient(onUnauthenticated: () => void): QueryClient {
   }
   return new QueryClient({
     queryCache: new QueryCache({ onError: handleError }),
-    mutationCache: new MutationCache({ onError: handleError }),
+    mutationCache: new MutationCache({
+      onError: (error, _variables, _context, mutation) => {
+        handleError(error)
+        const isUnauthenticated = error instanceof ApiError && error.status === 401
+        if (!isUnauthenticated && mutation.meta?.sound !== 'none') emitUiSound('error')
+      },
+      onSuccess: (_data, _variables, _context, mutation) => {
+        if (mutation.meta?.sound === undefined) emitUiSound('confirm')
+      },
+    }),
     defaultOptions: {
       queries: {
         networkMode: 'offlineFirst',

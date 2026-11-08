@@ -19,6 +19,7 @@ export function useRemoveMember(leagueId: string): {
 } {
   const queryClient = useQueryClient()
   const mutation = useMutation({
+    meta: { sound: 'error-only' },
     mutationFn: ({ userId, photos }: RemoveMemberVariables) =>
       removeMember(leagueId, userId, photos),
     onSettled: async () => {

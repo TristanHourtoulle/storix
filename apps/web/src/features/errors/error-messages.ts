@@ -12,7 +12,7 @@ const MESSAGES: Record<ErrorCode, string> = {
   ALREADY_MEMBER: 'Tu fais déjà partie de cette ligue.',
   RESET_NOT_ALLOWED: 'Tu ne peux pas réinitialiser le mot de passe de ce membre.',
   INVALID_RESET_CODE: 'Code invalide ou expiré.',
-  UPLOAD_QUOTA_EXCEEDED: "Tu as atteint ta limite de 10 photos aujourd'hui.",
+  UPLOAD_QUOTA_EXCEEDED: "Tu as atteint ta limite de photos pour aujourd'hui.",
   UPLOAD_NOT_READY: "La photo n'est pas encore arrivée, réessaie.",
   UPLOAD_EXPIRED: "Ce lien d'envoi a expiré, recommence l'ajout de cette photo.",
   BOOSTER_STOCK_EMPTY: 'Plus de booster en stock, reviens un peu plus tard.',
@@ -36,7 +36,14 @@ const MESSAGES: Record<ErrorCode, string> = {
   INTERNAL_ERROR: 'Une erreur est survenue.',
 }
 
-/** Maps an API error code to its French user-facing message. */
-export function errorMessage(code: ErrorCode): string {
-  return MESSAGES[code]
+function quotaExceededMessage(details: Readonly<Record<string, unknown>> | undefined): string {
+  const limit = details?.limit
+  return typeof limit === 'number' && Number.isInteger(limit) && limit > 0
+    ? `Tu as atteint ta limite de ${limit} photo${limit > 1 ? 's' : ''} aujourd'hui.`
+    : MESSAGES.UPLOAD_QUOTA_EXCEEDED
+}
+
+/** Maps an API error code, and its details when they refine the wording, to its French user-facing message. */
+export function errorMessage(code: ErrorCode, details?: Readonly<Record<string, unknown>>): string {
+  return code === 'UPLOAD_QUOTA_EXCEEDED' ? quotaExceededMessage(details) : MESSAGES[code]
 }

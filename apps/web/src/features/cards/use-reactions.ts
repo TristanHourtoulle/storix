@@ -37,6 +37,7 @@ export function useReactions(leagueId: string, cardId: string) {
 
   const mutation = useMutation<ReactionCounts, Error, ToggleVariables, ToggleContext>({
     mutationKey,
+    meta: { sound: 'none' },
     scope: { id: `reactions-${cardId}` },
     mutationFn: ({ type, isOn }) => setReaction(leagueId, cardId, type, isOn),
     onMutate: async (variables) => {

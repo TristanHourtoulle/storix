@@ -1,8 +1,15 @@
 import { toTransform as T, type Director } from './director'
 import { CENTER_Y as CY, SHARDS, deckPose, shardDirection } from './geometry'
+import { playSound } from '@/features/sound/sound'
 import { BRAND_PARTICLES, CONFETTI_PARTICLES } from './tiers'
 
 export const PACK_TAPS = 3
+
+const DEAL_DELAY_MS = 120
+const DEAL_STAGGER_MS = 60
+const DEAL_DURATION_MS = 820
+const DEAL_LANDING_MS = 450
+const FADE_DEAL_MS = 160
 
 function between(min: number, max: number): number {
   return min + Math.random() * (max - min)
@@ -11,6 +18,7 @@ function between(min: number, max: number): number {
 /** Plays one hit on the sealed pack. Returns true when the pack is ready to burst. */
 export function hitPack(d: Director, count: number): boolean {
   const { pack } = d.layers
+  playSound({ name: 'packTap', step: count - 1 })
   pack.pipDots.forEach((pip, index) => pip.classList.toggle('is-on', index < count))
   pack.crackGroups[count - 1]?.querySelectorAll('path').forEach((path) => {
     d.animate(path, [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], {
@@ -57,8 +65,9 @@ async function fadePack(d: Director): Promise<void> {
   const { pack, cards } = d.layers
   const sealed = [pack.halo, pack.wrap, pack.pips]
   sealed.forEach((el) => d.fire(d.tween(el, { opacity: 0 }, { duration: 240 })))
-  await d.wait(160)
+  await d.wait(FADE_DEAL_MS)
   cards.forEach(({ root }, index) => {
+    playSound({ name: 'slam', index }, (index * DEAL_STAGGER_MS) / 1000)
     const pose = deckPose(index, cards.length)
     root.style.transform = T(pose)
     root.style.zIndex = String(pose.z)
@@ -98,10 +107,12 @@ function dealCards(d: Director): void {
     root.style.transform = T({ y: CY, s: 0.2 })
     root.style.opacity = '1'
     root.style.zIndex = String(pose.z)
+    const delay = DEAL_DELAY_MS + index * DEAL_STAGGER_MS
+    playSound({ name: 'slam', index }, (delay + DEAL_LANDING_MS) / 1000)
     d.fire(
       d.tween(root, [{ transform: mid, offset: 0.45 }, { transform: T(pose) }], {
-        duration: 820,
-        delay: 120 + index * 60,
+        duration: DEAL_DURATION_MS,
+        delay,
         easing: 'cubic-bezier(.2,.8,.3,1)',
       }),
     )
@@ -112,11 +123,13 @@ function dealCards(d: Director): void {
 export async function burstPack(d: Director): Promise<void> {
   const { pack } = d.layers
   if (d.isReduced) {
+    playSound({ name: 'burst' })
     await fadePack(d)
     hidePack(d)
     return
   }
   await d.wait(160)
+  playSound({ name: 'burst' })
   d.flash(0.9, 560)
   d.shake(11, 560)
   pack.wrap.style.visibility = 'hidden'

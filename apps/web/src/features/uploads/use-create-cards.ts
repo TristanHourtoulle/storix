@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { cardTitleSchema } from '@storix/shared'
+import { playSound } from '@/features/sound/sound'
 import {
   processDrafts,
   waitForNetwork,
@@ -48,6 +49,7 @@ export function useCreateCards(
     const queue = drafts.filter(isSendable)
     if (!controller || isRunningRef.current || queue.length === 0) return
     isRunningRef.current = true
+    let createdCount = 0
     setIsRunning(true)
     setHasStarted(true)
 
@@ -58,7 +60,10 @@ export function useCreateCards(
       saveProgress: (draftId, progress) => {
         progressRef.current = { ...progressRef.current, [draftId]: progress }
       },
-      setPhase,
+      setPhase: (draftId, phase, extra) => {
+        if (phase === 'created') createdCount += 1
+        setPhase(draftId, phase, extra)
+      },
     }
 
     const run = async (): Promise<void> => {
@@ -72,6 +77,7 @@ export function useCreateCards(
     }
 
     void run().finally(() => {
+      if (createdCount > 0 && !controller.signal.aborted) playSound({ name: 'cardCreated' })
       isRunningRef.current = false
       setIsRunning(false)
       void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'cards'] })
