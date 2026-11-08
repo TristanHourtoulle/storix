@@ -23,7 +23,7 @@ export function createWalletsService({ db, clock }: WalletsServiceDeps): Wallets
       const settings = resolveLeagueSettings(await findLeagueSettings(db, membership.leagueId))
       const { booster } = settings
       const key = { leagueId: membership.leagueId, userId: membership.userId }
-      await ensureWallet(db, { ...key, joinGift: booster.joinGift, now })
+      await ensureWallet(db, { ...key, cadence: booster, now })
       const row = await findWallet(db, key.leagueId, key.userId)
       if (row === null) throw new Error('Member wallet missing after creation')
       const pool = await loadPoolAvailability(db, {

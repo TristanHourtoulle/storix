@@ -5,6 +5,9 @@ import tseslint from 'typescript-eslint'
 
 const banned = (name, message) => ({ name, message })
 
+const PUSH_SENDER = 'apps/worker/src/lib/push-sender.ts'
+const webPushBan = banned('web-push', `Only ${PUSH_SENDER} may import web-push.`)
+
 export default tseslint.config(
   { ignores: ['**/dist', '**/drizzle', '**/node_modules', '**/routeTree.gen.ts'] },
   js.configs.recommended,
@@ -15,6 +18,11 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'error',
       'no-console': 'error',
     },
+  },
+  {
+    files: ['**/*.{ts,tsx,js,mjs}'],
+    ignores: [PUSH_SENDER],
+    rules: { 'no-restricted-imports': ['error', { paths: [webPushBan] }] },
   },
   {
     files: ['apps/web/**/*.{ts,tsx}'],
@@ -33,6 +41,7 @@ export default tseslint.config(
         'error',
         {
           paths: [
+            webPushBan,
             banned('@storix/db', 'Layer rule: shared must not depend on the db package.'),
             banned('fastify', 'Layer rule: shared must not depend on the HTTP framework.'),
             banned('react', 'Layer rule: shared must not depend on React.'),
@@ -54,6 +63,7 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         {
+          paths: [webPushBan],
           patterns: [
             {
               regex: '^(?!\\./)',
@@ -71,6 +81,7 @@ export default tseslint.config(
         'error',
         {
           paths: [
+            webPushBan,
             banned('@storix/db', 'Layer rule: storage must not depend on the db package.'),
             banned('fastify', 'Layer rule: storage must not depend on the HTTP framework.'),
             banned('react', 'Layer rule: storage must not depend on React.'),
@@ -92,6 +103,7 @@ export default tseslint.config(
         'error',
         {
           paths: [
+            webPushBan,
             banned('pg', 'Layer rule: routes are HTTP only and must not touch the database.'),
             banned(
               '@storix/db',
@@ -116,6 +128,7 @@ export default tseslint.config(
         'error',
         {
           paths: [
+            webPushBan,
             banned('pg', 'Layer rule: routes are HTTP only and must not touch the database.'),
             banned(
               '@storix/db',
@@ -143,6 +156,7 @@ export default tseslint.config(
         'error',
         {
           paths: [
+            webPushBan,
             banned('fastify', 'Layer rule: services are use cases and must not use HTTP objects.'),
             {
               name: '@storix/db',
@@ -159,6 +173,7 @@ export default tseslint.config(
                 '@aws-sdk/*',
                 'sharp',
                 'pg-boss',
+                'web-push',
               ],
               message:
                 'Layer rule: services have no SQL, no auth library, no S3 SDK, no image or queue library and no dependency on routes.',
@@ -174,7 +189,10 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         {
-          paths: [banned('fastify', 'Layer rule: repositories are Drizzle only, no HTTP.')],
+          paths: [
+            webPushBan,
+            banned('fastify', 'Layer rule: repositories are Drizzle only, no HTTP.'),
+          ],
           patterns: [
             {
               group: ['better-auth*', '**/*.service*', '**/*.routes*'],
@@ -193,8 +211,10 @@ export default tseslint.config(
         'error',
         {
           paths: [
+            webPushBan,
             banned('@storix/db', 'Layer rule: jobs parse a payload and call one service.'),
             banned('sharp', 'Layer rule: jobs parse a payload and call one service.'),
+            banned('web-push', 'Layer rule: jobs parse a payload and call one service.'),
           ],
           patterns: [
             {
@@ -212,6 +232,7 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         {
+          paths: [webPushBan],
           patterns: [
             {
               group: ['**/*.api', '**/lib/http', '**/lib/auth-client'],

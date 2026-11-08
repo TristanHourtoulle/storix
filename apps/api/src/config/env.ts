@@ -10,6 +10,10 @@ const baseEnvSchema = z.object({
   PASSKEY_RP_ID: z.string().min(1),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   WEB_DIST_DIR: z.string().optional(),
+  VAPID_PUBLIC_KEY: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]{80,100}$/)
+    .optional(),
 })
 
 const envSchema = baseEnvSchema

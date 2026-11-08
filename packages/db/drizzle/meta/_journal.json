@@ -71,6 +71,13 @@
       "when": 1794163341185,
       "tag": "0009_portrait_status_check",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794167762714,
+      "tag": "0010_push_booster_full",
+      "breakpoints": true
     }
   ]
 }

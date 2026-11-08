@@ -3,6 +3,7 @@ import {
   MYTHIC_CAP,
   previewRarity,
   resolveLeagueSettings,
+  shouldRearmBoosterFullNotifications,
   type LeagueSettingsView,
   type RarityPreview,
   type RarityWeights,
@@ -15,8 +16,10 @@ import { insertAuditEntry } from '../audit/audit.repository'
 import { findLeagueSettings } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
 import {
+  clearBoosterFullNotifications,
   countMythicPins,
   listRarityInputs,
+  lockLeagueEconomyShared,
   lockLeagueRarity,
   updateLeagueSettings,
 } from './league-settings.repository'
@@ -49,9 +52,13 @@ export function createLeagueSettingsService(deps: {
 
     async updateSettings(m, body) {
       await runInTransaction(db, async (tx) => {
+        await lockLeagueEconomyShared(tx, m.leagueId)
         await lockLeagueRarity(tx, m.leagueId)
         const from = resolveLeagueSettings(await findLeagueSettings(tx, m.leagueId))
         await updateLeagueSettings(tx, m.leagueId, body)
+        if (shouldRearmBoosterFullNotifications(from.booster, body.booster)) {
+          await clearBoosterFullNotifications(tx, m.leagueId)
+        }
         await insertAuditEntry(tx, {
           leagueId: m.leagueId,
           actorId: m.userId,

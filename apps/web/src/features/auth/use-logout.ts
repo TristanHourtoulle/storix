@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { authClient } from '@/lib/auth-client'
 import { purgeAllCaches } from '@/features/privacy/purge-cache'
+import { unsubscribeThisDevice } from '@/features/push/push-browser'
+import { logger } from '@/lib/logger'
 import { setLoggingOut } from '@/lib/session-state'
 import { authErrorMessage } from './auth-errors'
 
@@ -17,6 +19,9 @@ export function useLogout(): {
     mutationFn: async (): Promise<void> => {
       setLoggingOut(true)
       try {
+        await unsubscribeThisDevice().catch((error: unknown) => {
+          logger.warn('Push unsubscribe on logout failed', { error })
+        })
         const { error } = await authClient.signOut()
         if (error) throw new Error(authErrorMessage(error, 'Impossible de te déconnecter.'))
         await navigate({ to: '/login', replace: true })

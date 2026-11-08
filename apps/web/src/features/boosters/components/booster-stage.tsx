@@ -4,6 +4,7 @@ import type { BoosterOpening } from '@storix/shared'
 import { Button, buttonClassName } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
 import { TopBar } from '@/components/ui/top-bar'
+import { PushPrompt } from '@/features/push/components/push-prompt'
 import { newBoosterRequestId } from '@/features/game/booster-request'
 import '@/styles/booster-stage.css'
 import '@/styles/booster-card.css'
@@ -103,6 +104,7 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
       )}
       {isComplete ? (
         <div className="flex flex-col gap-3">
+          {state.phase === 'summary' ? <PushPrompt /> : null}
           {hasStock ? (
             <Button
               variant="primary"

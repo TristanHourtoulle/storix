@@ -20,6 +20,12 @@ import { createPortraitProcessingService } from './features/portraits/portrait-p
 import { createStorageDeleteService } from './features/storage/storage-delete.service'
 import { createStorageGcService } from './features/storage/storage-gc.service'
 import { createRarityRecomputeService } from './features/rarity/rarity-recompute.service'
+import { createBoosterFullService } from './features/push/booster-full.service'
+import {
+  ensureBoosterFullScanQueue,
+  registerBoosterFullScanJob,
+  unscheduleBoosterFullScan,
+} from './jobs/booster-full-scan.job'
 import { registerMediaProcessJob } from './jobs/media-process.job'
 import { registerMediaPublishJob } from './jobs/media-publish.job'
 import { createMediaQueue } from './jobs/media-queue'
@@ -30,6 +36,7 @@ import { registerRarityRecomputeJob } from './jobs/rarity-recompute.job'
 import { registerStorageDeleteJob } from './jobs/storage-delete.job'
 import { createStorageGcQueue, registerStorageGcJob } from './jobs/storage-gc.job'
 import { createLogger } from './lib/logger'
+import { createPushSender } from './lib/push-sender'
 import { ensureMediaPublishQueue } from './jobs/media-publish-queue'
 import { waitForMigrations } from './lib/migration-gate'
 
@@ -79,6 +86,20 @@ async function start(): Promise<void> {
   await boss.createQueue(STORAGE_DELETE_JOB, STORAGE_DELETE_SEND_OPTIONS)
   await boss.updateQueue(STORAGE_DELETE_JOB, STORAGE_DELETE_SEND_OPTIONS)
   await createStorageGcQueue(boss)
+  const vapid =
+    env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY && env.VAPID_SUBJECT
+      ? {
+          publicKey: env.VAPID_PUBLIC_KEY,
+          privateKey: env.VAPID_PRIVATE_KEY,
+          subject: env.VAPID_SUBJECT,
+        }
+      : null
+  const isPushEnabled = vapid !== null
+  if (vapid) await ensureBoosterFullScanQueue(boss, logger)
+  else {
+    await unscheduleBoosterFullScan(boss)
+    logger.warn('Push notifications disabled: VAPID keys missing')
+  }
 
   const storageDelete = createStorageDeleteService({ db: database.db, storage, logger })
   const portraits = createPortraitProcessingService({
@@ -128,7 +149,12 @@ async function start(): Promise<void> {
   const storageGc = createStorageGcService({ db: database.db, storage, clock, logger })
   await registerStorageDeleteJob(boss, storageDelete, logger)
   await registerStorageGcJob(boss, storageGc)
-  logger.info({ concurrency: env.MEDIA_CONCURRENCY }, 'Worker started')
+  if (vapid) {
+    const sender = createPushSender(vapid, logger)
+    const boosterFull = createBoosterFullService({ db: database.db, sender, clock, logger })
+    await registerBoosterFullScanJob(boss, boosterFull)
+  }
+  logger.info({ concurrency: env.MEDIA_CONCURRENCY, push: isPushEnabled }, 'Worker started')
 }
 
 try {

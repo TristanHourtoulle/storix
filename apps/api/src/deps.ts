@@ -29,6 +29,7 @@ import {
   createPortraitsService,
   type PortraitsService,
 } from './features/portraits/portraits.service'
+import { createPushService, type PushService } from './features/push/push.service'
 import {
   createReactionsService,
   type ReactionsService,
@@ -77,6 +78,7 @@ export interface Services {
   members: MembersService
   moderation: ModerationService
   portraits: PortraitsService
+  push: PushService
   reactions: ReactionsService
   removals: RemovalsService
   resetCodes: ResetCodesService
@@ -162,6 +164,11 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       jobs: deps.jobs,
       clock: deps.clock,
       logger,
+    }),
+    push: createPushService({
+      db: deps.db,
+      clock: deps.clock,
+      publicKey: deps.env.VAPID_PUBLIC_KEY ?? null,
     }),
     reactions: createReactionsService({ db: deps.db }),
     removals: createRemovalsService({ db: deps.db, clock: deps.clock }),
