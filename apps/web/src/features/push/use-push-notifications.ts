@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { meQueryOptions } from '@/features/auth/session.queries'
 import { logger } from '@/lib/logger'
 import { isIos, isStandalone } from '@/lib/platform'
 import {
@@ -26,11 +27,23 @@ function platformStatus(): PlatformStatus {
   return isPushSupported() ? null : 'unsupported'
 }
 
-function refreshSubscription(): void {
+function refreshSubscription(
+  publicKey: string,
+  userId: string | undefined,
+  onUnsubscribed: () => void,
+): void {
   hasRefreshedThisLoad = true
-  refreshThisDevice().catch((error: unknown) => {
-    logger.warn('Push subscription refresh failed', { error })
-  })
+  refreshThisDevice(publicKey, userId)
+    .then((isSubscribed) => {
+      if (!isSubscribed) onUnsubscribed()
+    })
+    .catch((error: unknown) => {
+      logger.warn('Push subscription refresh failed', { error })
+    })
+}
+
+function isPermissionDenied(): boolean {
+  return Notification.permission === 'denied'
 }
 
 /** Push notification status of this device, with enable and disable actions. */
@@ -68,12 +81,18 @@ export function usePushNotifications(): {
     }
   }, [isCapable])
 
-  const status = resolveStatus(platform, config.isError, config.data?.publicKey, subscription)
-  const isReady = !isCapable || (!config.isPending && subscription !== undefined)
+  const isConfigOffline = config.isPending && config.fetchStatus === 'paused'
+  const isConfigUnavailable = config.isError || isConfigOffline
+  const publicKey = config.data?.publicKey
+  const status = resolveStatus(platform, isConfigUnavailable, publicKey, subscription)
+  const isReady =
+    !isCapable || ((!config.isPending || isConfigOffline) && subscription !== undefined)
 
   useEffect(() => {
-    if (isReady && status === 'enabled' && !hasRefreshedThisLoad) refreshSubscription()
-  }, [isReady, status])
+    if (!isReady || status !== 'enabled' || !publicKey || hasRefreshedThisLoad) return
+    const userId = queryClient.getQueryData(meQueryOptions.queryKey)?.user.id
+    refreshSubscription(publicKey, userId, () => setSubscription(null))
+  }, [isReady, status, publicKey, queryClient])
 
   const enable = useCallback(async (): Promise<void> => {
     const publicKey = queryClient.getQueryData(pushConfigQueryOptions.queryKey)?.publicKey
@@ -87,7 +106,7 @@ export function usePushNotifications(): {
     try {
       const body = await subscribing
       try {
-        await saveThisDevice(body)
+        await saveThisDevice(body, queryClient.getQueryData(meQueryOptions.queryKey)?.user.id)
       } catch (error) {
         await unsubscribeThisDevice().catch(() => undefined)
         throw error
@@ -95,9 +114,9 @@ export function usePushNotifications(): {
       hasRefreshedThisLoad = true
       setSubscription(await getCurrentSubscription())
     } catch (error) {
-      const isDenied = error instanceof Error && error.message === 'denied'
-      if (!isDenied) logger.warn('Push enable failed', { error })
-      setErrorMessage(isDenied ? DENIED_MESSAGE : ENABLE_FAILED_MESSAGE)
+      const isRefused = error instanceof Error && error.message === 'denied'
+      if (!isRefused) logger.warn('Push enable failed', { error })
+      setErrorMessage(isRefused && isPermissionDenied() ? DENIED_MESSAGE : ENABLE_FAILED_MESSAGE)
       setSubscription(await getCurrentSubscription().catch(() => null))
     } finally {
       setIsPending(false)
@@ -124,12 +143,12 @@ export function usePushNotifications(): {
 
 function resolveStatus(
   platform: PlatformStatus,
-  isConfigError: boolean,
+  isConfigUnavailable: boolean,
   publicKey: string | null | undefined,
   subscription: PushSubscription | null | undefined,
 ): PushStatus {
   if (platform) return platform
-  if (isConfigError || publicKey === null) return 'unavailable'
-  if (Notification.permission === 'denied') return 'denied'
+  if (isConfigUnavailable || publicKey === null) return 'unavailable'
+  if (isPermissionDenied()) return 'denied'
   return subscription ? 'enabled' : 'disabled'
 }
