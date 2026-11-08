@@ -34,8 +34,7 @@ import {
 const UPLOAD_CACHE_CONTROL = 'no-store'
 
 export type PortraitTarget =
-  | { kind: 'avatar'; userId: string }
-  | { kind: 'league'; leagueId: string; userId: string }
+  { kind: 'avatar'; userId: string } | { kind: 'league'; leagueId: string; userId: string }
 
 export interface PortraitsService {
   createUpload(target: PortraitTarget, body: CreateUploadBody): Promise<CreateUploadResponse>

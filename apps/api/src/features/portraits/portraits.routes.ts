@@ -19,7 +19,11 @@ function avatarOf(request: FastifyRequest): PortraitTarget {
 }
 
 function leaguePhotoOf(request: FastifyRequest): PortraitTarget {
-  return { kind: 'league', leagueId: request.membership.leagueId, userId: request.membership.userId }
+  return {
+    kind: 'league',
+    leagueId: request.membership.leagueId,
+    userId: request.membership.userId,
+  }
 }
 
 /** Registers the avatar and league photo upload, status and removal routes. */

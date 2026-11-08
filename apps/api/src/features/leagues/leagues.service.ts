@@ -7,9 +7,12 @@ import {
   type LeagueSummary,
 } from '@storix/shared'
 import { notFound } from '../../lib/errors'
+import type { MediaSigner } from '../../lib/media-signer'
 import { runInTransaction } from '../../lib/transaction'
 import { insertAuditEntry } from '../audit/audit.repository'
 import { findMembership, insertMember } from '../members/members.repository'
+import { toPortraitView } from '../portraits/portrait-view'
+import { findPortraitForOwner } from '../portraits/portraits.repository'
 import { setHomeLeagueIfUnset } from '../users/users.repository'
 import {
   countMembers,
@@ -38,14 +41,17 @@ export interface LeaguesService {
 }
 
 /** Builds the leagues service. */
-export function createLeaguesService(db: Database): LeaguesService {
+export function createLeaguesService(deps: { db: Database; signer: MediaSigner }): LeaguesService {
+  const { db, signer } = deps
+
   const getLeagueDetail = async (
     leagueId: string,
     membership: Membership,
   ): Promise<LeagueDetail> => {
-    const [league, memberCount] = await Promise.all([
+    const [league, memberCount, photo] = await Promise.all([
       findLeagueById(db, leagueId),
       countMembers(db, leagueId),
+      findPortraitForOwner(db, { kind: 'league', ownerId: leagueId }),
     ])
     if (league === null) throw notFound()
     return {
@@ -57,6 +63,7 @@ export function createLeaguesService(db: Database): LeaguesService {
         canManageInvitations: canManageInvitations(membership.role),
         canManageMembers: hasRoleAtLeast(membership.role, 'admin'),
       },
+      photo: photo === null ? null : toPortraitView(photo, signer),
     }
   }
 
@@ -76,7 +83,7 @@ export function createLeaguesService(db: Database): LeaguesService {
             ...(options.source === undefined ? {} : { source: options.source }),
           },
         })
-        return { id: league.id, name: league.name, role: 'owner', memberCount: 1 }
+        return { id: league.id, name: league.name, role: 'owner', memberCount: 1, photo: null }
       })
     },
     getLeagueDetail,

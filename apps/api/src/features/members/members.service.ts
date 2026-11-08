@@ -11,6 +11,7 @@ import {
 } from '@storix/shared'
 import type { JobQueue } from '../../jobs/job-queue'
 import type { ErrorLogger } from '../../lib/error-logger'
+import type { MediaSigner } from '../../lib/media-signer'
 import { AppError, forbidden, notFound } from '../../lib/errors'
 import { runInTransaction } from '../../lib/transaction'
 import { insertAuditEntry } from '../audit/audit.repository'
@@ -26,6 +27,7 @@ import {
 } from '../card-removal/card-removal.service'
 import { findOwnerIds } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
+import { toPortraitView } from '../portraits/portrait-view'
 import { deleteUnusedCodesFromHomeLeague } from '../reset-codes/reset-codes.repository'
 import { lockLeagueEconomyExclusive } from '../wallets/wallets.repository'
 import {
@@ -75,15 +77,30 @@ export interface MembersService {
 
 export interface MembersServiceDeps {
   db: Database
+  signer: MediaSigner
   cardRemoval: CardRemoval
   jobs: JobQueue
   logger: ErrorLogger
+}
+
+function avatarOf(row: MemberRow, signer: MediaSigner): MemberSummary['avatar'] {
+  if (row.avatarUploadId === null || row.avatarColor === null) return null
+  return toPortraitView(
+    {
+      kind: 'avatar',
+      ownerId: row.userId,
+      uploadId: row.avatarUploadId,
+      dominantColor: row.avatarColor,
+    },
+    signer,
+  )
 }
 
 function toSummary(
   m: Membership,
   row: MemberRow,
   ownerIds: ReadonlyMap<string, string>,
+  signer: MediaSigner,
 ): MemberSummary {
   const isSelf = row.userId === m.userId
   const homeLeagueOwnerId =
@@ -113,6 +130,7 @@ function toSummary(
       homeLeagueOwnerId,
       targetIsHomeLeagueMember: row.homeLeagueId === m.leagueId,
     }).allowed,
+    avatar: avatarOf(row, signer),
   }
 }
 
@@ -183,7 +201,7 @@ export async function afterDetach(
 
 /** Builds the members service. */
 export function createMembersService(deps: MembersServiceDeps): MembersService {
-  const { db, cardRemoval } = deps
+  const { db, cardRemoval, signer } = deps
 
   async function findTargetRole(leagueId: string, userId: string): Promise<LeagueRole> {
     const target = await findMembership(db, leagueId, userId)
@@ -211,7 +229,7 @@ export function createMembersService(deps: MembersServiceDeps): MembersService {
         ...new Set(rows.flatMap((row) => (row.homeLeagueId === null ? [] : [row.homeLeagueId]))),
       ]
       const ownerIds = await findOwnerIds(db, homeLeagueIds)
-      return rows.map((row) => toSummary(m, row, ownerIds))
+      return rows.map((row) => toSummary(m, row, ownerIds, signer))
     },
 
     async changeRole(m, targetUserId, nextRole) {
