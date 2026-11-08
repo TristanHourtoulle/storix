@@ -148,20 +148,34 @@ function notificationTarget(notification: Notification): string {
   return url === FALLBACK_URL || LEAGUE_URL_PATTERN.test(url) ? url : FALLBACK_URL
 }
 
-async function navigateClient(client: WindowClient, href: string): Promise<boolean> {
+async function focusClient(client: WindowClient): Promise<boolean> {
   try {
-    const focused = await client.focus()
-    const navigated = await focused.navigate(href)
-    return navigated !== null
+    await client.focus()
+    return true
   } catch {
     return false
   }
 }
 
+async function navigateClient(client: WindowClient, href: string): Promise<boolean> {
+  if (client.url === href) return focusClient(client)
+  try {
+    const navigated = await client.navigate(href)
+    if (navigated === null) return false
+    await focusClient(navigated)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Opens the target in a tab this worker controls (navigate, then focus) or in a new window. */
 async function openNotificationTarget(url: string): Promise<void> {
   const href = new URL(url, self.location.origin).href
-  const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
-  const client = windows.find((candidate) => new URL(candidate.url).origin === self.location.origin)
+  const controlled = await self.clients.matchAll({ type: 'window' })
+  const client = controlled.find(
+    (candidate) => new URL(candidate.url).origin === self.location.origin,
+  )
   if (client && (await navigateClient(client, href))) return
   await self.clients.openWindow(href)
 }
