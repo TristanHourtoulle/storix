@@ -54,6 +54,20 @@ function PoolTooSmallMeta({
   )
 }
 
+function EpicGuarantee({ pity }: { pity: WalletState['pity'] }) {
+  if (!pity.epicAvailable) return null
+  const remaining =
+    pity.epicGuaranteeIn === 1 ? 'au prochain booster' : `dans ${pity.epicGuaranteeIn} boosters`
+  return (
+    <p className="hero-pity">
+      <span className="hero-pity-dot" aria-hidden="true" />
+      <span>
+        <strong>Épique</strong> garantie {remaining}
+      </span>
+    </p>
+  )
+}
+
 export function BoosterWidget({ wallet, isFresh, onOpen, onElapsed }: BoosterWidgetProps) {
   const { stock, maxStock, nextAt } = wallet.booster
   const { pool } = wallet
@@ -78,6 +92,7 @@ export function BoosterWidget({ wallet, isFresh, onOpen, onElapsed }: BoosterWid
         ) : (
           <StockMeta remainingMs={remainingMs} />
         )}
+        <EpicGuarantee pity={wallet.pity} />
         <Button
           variant="primary"
           sound="none"

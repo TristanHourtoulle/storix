@@ -131,24 +131,25 @@
   .hero .hero-body > button {
     margin-top: 6px;
   }
-  .pity {
+  .hero-pity {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 0 4px;
-  }
-  .pity-row {
-    display: flex;
-    justify-content: space-between;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 0;
     font-size: 13px;
     color: var(--color-muted);
   }
-  .pity-row strong {
+  .hero-pity strong {
     color: var(--color-tier-epic);
     font-weight: 600;
   }
-  .pity-row strong.pity-gold {
-    color: var(--color-tier-legendary-soft);
+  .hero-pity-dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    margin-top: 0.4em;
+    border-radius: 50%;
+    background: var(--color-tier-epic);
   }
   .bar {
     height: 6px;

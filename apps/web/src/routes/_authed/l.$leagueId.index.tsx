@@ -4,7 +4,6 @@ import { Button, buttonClassName } from '@/components/ui/button'
 import { newBoosterRequestId } from '@/features/game/booster-request'
 import { BoosterWidget } from '@/features/game/components/booster-widget'
 import { DustBalance } from '@/features/game/components/dust-balance'
-import { PityBar } from '@/features/game/components/pity-bar'
 import { RecentReveals } from '@/features/game/components/recent-reveals'
 import { recentRevealsQueryOptions, walletQueryOptions } from '@/features/game/game.queries'
 import { useWallet } from '@/features/game/use-wallet'
@@ -54,15 +53,12 @@ function LeagueHome() {
         <RemovalNotice count={notice.count} dust={notice.dust} onClose={acknowledge} />
       ) : null}
       {wallet ? (
-        <>
-          <BoosterWidget
-            wallet={wallet}
-            isFresh={isFetchedAfterMount}
-            onOpen={openBooster}
-            onElapsed={invalidateWallet}
-          />
-          <PityBar pity={wallet.pity} />
-        </>
+        <BoosterWidget
+          wallet={wallet}
+          isFresh={isFetchedAfterMount}
+          onOpen={openBooster}
+          onElapsed={invalidateWallet}
+        />
       ) : isError ? (
         <section role="alert" className="hero flex-col justify-center text-center">
           <p className="m-0 text-sm text-muted">Impossible de charger tes boosters.</p>
