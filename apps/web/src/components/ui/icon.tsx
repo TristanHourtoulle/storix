@@ -25,6 +25,11 @@ export type IconName =
   | 'gear'
   | 'photo'
   | 'sound'
+  | 'arrow-left'
+  | 'arrow-right'
+  | 'grid'
+  | 'crop'
+  | 'retry'
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -44,6 +49,11 @@ const PATHS: Record<IconName, string> = {
   photo:
     'M6 5h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3zM12 8.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM7.5 18a5 5 0 0 1 9 0',
   sound: 'M4 9.5h3.5L12 6v12l-4.5-3.5H4zM15.5 9.5a3.5 3.5 0 0 1 0 5M18 7a7 7 0 0 1 0 10',
+  'arrow-left': 'M19 12H5M11 6l-6 6 6 6',
+  'arrow-right': 'M5 12h14M13 6l6 6-6 6',
+  grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+  crop: 'M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14',
+  retry: 'M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4',
   dust: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z',
   calendar: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
   shield: 'M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z',

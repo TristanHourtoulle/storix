@@ -115,7 +115,7 @@ export function createCardRemoval({ jobs, logger }: CardRemovalDeps): CardRemova
 
       return {
         removedCardIds: cardIds,
-        objectKeys: removable.flatMap((card) => card.variantKeys),
+        objectKeys: removable.flatMap((card) => card.storedKeys),
         compensatedOwners: compensations.length,
         dust: compensations.reduce((sum, owner) => sum + owner.dust, 0),
       }

@@ -50,6 +50,13 @@
       "when": 1794064435457,
       "tag": "0006_rainy_amazoness",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794134934920,
+      "tag": "0007_dusty_stryfe",
+      "breakpoints": true
     }
   ]
 }

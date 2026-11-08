@@ -6,7 +6,7 @@ export type MediaVariantSize = (typeof MEDIA_VARIANT_SIZES)[number]
 export type MediaFormat = (typeof MEDIA_FORMATS)[number]
 
 export const MEDIA_OBJECT_KEY_PATTERN =
-  /^img\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[0-9a-f]{64}\/(256|768|1600)\.(avif|webp)$/
+  /^img\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[0-9a-f]{64}\/(?:c[0-9a-f]{16}\/)?(256|768|1600)\.(avif|webp)$/
 
 const SIGNATURE_PATTERN = /^[0-9a-f]{64}$/
 const WINDOW_PATTERN = /^[1-9][0-9]*$/
@@ -47,6 +47,17 @@ export function mediaVariantKey(input: {
   format: MediaFormat
 }): string {
   return `img/${input.leagueId}/${input.sourceSha256}/${input.size}.${input.format}`
+}
+
+/** Builds the storage key of an image variant rendered through a crop. */
+export function mediaCropVariantKey(input: {
+  leagueId: string
+  sourceSha256: string
+  cropId: string
+  size: MediaVariantSize
+  format: MediaFormat
+}): string {
+  return `img/${input.leagueId}/${input.sourceSha256}/c${input.cropId}/${input.size}.${input.format}`
 }
 
 /** Builds the public path of a signed media URL. */
@@ -94,4 +105,31 @@ export function leagueMediaPrefix(leagueId: string): string {
 /** Returns the media path prefix that service worker cache keys start with. */
 export function mediaCachePathPrefix(prefix: string): string {
   return `${MEDIA_PREFIX}${prefix}`
+}
+
+/** Returns every storage key a media row may own: its listed variants, all full-frame variants, the cropped variants of `cropIds`, and its source when still present. */
+export function storedMediaKeys(input: {
+  leagueId: string
+  sourceSha256: string
+  variants: readonly { key: string }[]
+  cropIds?: readonly string[]
+  sourceKey?: string | null
+}): string[] {
+  const { leagueId, sourceSha256 } = input
+  const sized = MEDIA_VARIANT_SIZES.flatMap((size) =>
+    MEDIA_FORMATS.map((format) => ({ size, format })),
+  )
+  const fullFrame = sized.map((variant) => mediaVariantKey({ leagueId, sourceSha256, ...variant }))
+  const cropped = (input.cropIds ?? []).flatMap((cropId) =>
+    sized.map((variant) => mediaCropVariantKey({ leagueId, sourceSha256, cropId, ...variant })),
+  )
+  const source = input.sourceKey ? [input.sourceKey] : []
+  return [
+    ...new Set([
+      ...input.variants.map((variant) => variant.key),
+      ...fullFrame,
+      ...cropped,
+      ...source,
+    ]),
+  ]
 }

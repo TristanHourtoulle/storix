@@ -13,12 +13,14 @@ import { PgBoss } from 'pg-boss'
 import { pino } from 'pino'
 import { loadWorkerEnv } from './config/env'
 import { configureImagePipeline, imagePipeline } from './features/media/image-pipeline'
+import { createCardPublishService } from './features/media/card-publish.service'
 import { createMediaProcessingService } from './features/media/media-processing.service'
 import { createMediaSweepService } from './features/media/media-sweep.service'
 import { createStorageDeleteService } from './features/storage/storage-delete.service'
 import { createStorageGcService } from './features/storage/storage-gc.service'
 import { createRarityRecomputeService } from './features/rarity/rarity-recompute.service'
 import { registerMediaProcessJob } from './jobs/media-process.job'
+import { registerMediaPublishJob } from './jobs/media-publish.job'
 import { createMediaQueue } from './jobs/media-queue'
 import { registerMediaSweepJob } from './jobs/media-sweep.job'
 import { registerRarityNightlyJob } from './jobs/rarity-nightly.job'
@@ -27,6 +29,7 @@ import { registerRarityRecomputeJob } from './jobs/rarity-recompute.job'
 import { registerStorageDeleteJob } from './jobs/storage-delete.job'
 import { createStorageGcQueue, registerStorageGcJob } from './jobs/storage-gc.job'
 import { createLogger } from './lib/logger'
+import { ensureMediaPublishQueue } from './jobs/media-publish-queue'
 import { waitForMigrations } from './lib/migration-gate'
 
 const STOP_TIMEOUT_MS = 30_000
@@ -68,6 +71,7 @@ async function start(): Promise<void> {
   })
   await boss.start()
   await boss.createQueue(MEDIA_PROCESS_JOB)
+  await ensureMediaPublishQueue(boss, logger)
   await boss.createQueue(MEDIA_SWEEP_JOB)
   await boss.createQueue(RARITY_RECOMPUTE_JOB, RARITY_RECOMPUTE_QUEUE_OPTIONS)
   await boss.createQueue(RARITY_NIGHTLY_JOB)
@@ -83,15 +87,25 @@ async function start(): Promise<void> {
     logger,
     rarity: rarityQueue,
   })
+  const storageDelete = createStorageDeleteService({ db: database.db, storage, logger })
   const sweep = createMediaSweepService({
     db: database.db,
     storage,
     clock,
     logger,
+    storageDelete,
     queue,
   })
   await registerMediaProcessJob(boss, processing, logger, { concurrency: env.MEDIA_CONCURRENCY })
   await registerMediaSweepJob(boss, sweep)
+  const publish = createCardPublishService({
+    db: database.db,
+    storage,
+    clock,
+    logger,
+    rarity: rarityQueue,
+  })
+  await registerMediaPublishJob(boss, publish, logger)
   const rarity = createRarityRecomputeService({
     db: database.db,
     queue: rarityQueue,
@@ -101,7 +115,6 @@ async function start(): Promise<void> {
   await registerRarityRecomputeJob(boss, rarity, logger)
   await registerRarityNightlyJob(boss, rarity)
   await boss.send(RARITY_NIGHTLY_JOB, null)
-  const storageDelete = createStorageDeleteService({ db: database.db, storage, logger })
   const storageGc = createStorageGcService({ db: database.db, storage, clock, logger })
   await registerStorageDeleteJob(boss, storageDelete, logger)
   await registerStorageGcJob(boss, storageGc)

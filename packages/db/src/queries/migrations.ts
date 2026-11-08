@@ -7,11 +7,12 @@ export const MIGRATION_JOURNAL_ENTRY_COUNT: number = journal.entries.length
 
 /** Counts the migrations recorded in `drizzle.__drizzle_migrations`; 0 when the table does not exist yet. */
 export async function countAppliedMigrations(db: DbExecutor): Promise<number> {
-  const result = await db.execute<{ applied: number }>(sql`
-    select case
-      when to_regclass('drizzle.__drizzle_migrations') is null then 0
-      else (select count(*)::int from drizzle.__drizzle_migrations)
-    end as applied
-  `)
+  const probe = await db.execute<{ exists: boolean }>(
+    sql`select to_regclass('drizzle.__drizzle_migrations') is not null as exists`,
+  )
+  if (probe.rows[0]?.exists !== true) return 0
+  const result = await db.execute<{ applied: number }>(
+    sql`select count(*)::int as applied from drizzle.__drizzle_migrations`,
+  )
   return Number(result.rows[0]?.applied ?? 0)
 }

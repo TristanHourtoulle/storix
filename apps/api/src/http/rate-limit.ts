@@ -8,6 +8,8 @@ export const rateLimits = {
   resetRedeem: { max: 5, timeWindow: '15 minutes' },
   resetIssue: { max: 10, timeWindow: '1 hour' },
   uploadCreate: { max: 60, timeWindow: '1 minute' },
+  uploadEdit: { max: 240, timeWindow: '1 minute' },
+  uploadPublish: { max: 20, timeWindow: '1 minute' },
   boosterOpen: { max: 30, timeWindow: '1 minute' },
   cardAction: { max: 60, timeWindow: '1 minute' },
   adminAction: { max: 60, timeWindow: '1 minute' },

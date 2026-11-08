@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
   type AnyPgColumn,
+  boolean,
   index,
   jsonb,
   pgEnum,
@@ -9,7 +10,7 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { UPLOAD_REJECTION_REASONS, UPLOAD_STATUSES } from '@storix/shared'
+import { type CropRect, UPLOAD_REJECTION_REASONS, UPLOAD_STATUSES } from '@storix/shared'
 import { user } from './auth'
 import { cards } from './cards'
 import { leagues } from './leagues'
@@ -38,6 +39,9 @@ export const uploads = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     processedAt: timestamp('processed_at', { withTimezone: true }),
+    stageOnly: boolean('stage_only').notNull().default(false),
+    crop: jsonb('crop').$type<CropRect>(),
+    publishRequestedAt: timestamp('publish_requested_at', { withTimezone: true }),
   },
   (t) => [
     index('uploads_league_user_created_idx').on(t.leagueId, t.userId, t.createdAt.desc()),

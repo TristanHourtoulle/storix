@@ -11,6 +11,8 @@ interface CardFaceProps {
   holoRef?: Ref<HTMLDivElement>
   isFoil?: boolean
   hasFoilPip?: boolean
+  band?: ReactNode
+  className?: string
 }
 
 export function CardFace({
@@ -22,19 +24,23 @@ export function CardFace({
   holoRef,
   isFoil = false,
   hasFoilPip = false,
+  band,
+  className = '',
 }: CardFaceProps) {
   const tierLine = isProvisional ? `${TIER_LABELS[tier]} · provisoire` : TIER_LABELS[tier]
 
   return (
-    <div className={`card ${size} ${TIER_CLASS[tier]}${isFoil ? ' foil' : ''}`}>
+    <div className={`card ${size} ${TIER_CLASS[tier]}${isFoil ? ' foil' : ''} ${className}`}>
       <div className="card-art">{children}</div>
       <div className="card-holo" ref={holoRef} />
       <span className="card-gem" />
       {hasFoilPip ? <span className="card-foil-pip" aria-hidden="true" /> : null}
-      <div className="card-band">
-        <span className="card-name">{title}</span>
-        <span className="card-tier">{tierLine}</span>
-      </div>
+      {band ?? (
+        <div className="card-band">
+          <span className="card-name">{title}</span>
+          <span className="card-tier">{tierLine}</span>
+        </div>
+      )}
     </div>
   )
 }

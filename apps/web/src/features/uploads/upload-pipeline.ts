@@ -1,18 +1,18 @@
 import { UPLOAD_CONTENT_TYPE, type UploadState } from '@storix/shared'
 import { errorMessage } from '@/features/errors/error-messages'
-import { userMessage } from '@/features/errors/user-message'
+import { UserFacingError, userMessage } from '@/features/errors/user-message'
+import { playSound } from '@/features/sound/sound'
 import { ApiError } from '@/lib/http'
 import { logger } from '@/lib/logger'
-import type { PreparedPhoto } from './prepare-photo'
 import {
   UPLOAD_FAILED_MESSAGE,
   completeUpload,
   createUpload,
+  discardUploads,
   fetchUploadState,
   postToBucket,
   type BucketTarget,
 } from './uploads.api'
-import type { DraftPhase, PhotoDraft, PhaseExtra } from './use-photo-drafts'
 
 const POLL_INTERVAL_MS = 1500
 const POLL_TIMEOUT_MS = 120_000
@@ -20,30 +20,49 @@ const PRESIGN_SAFETY_MS = 60_000
 const MAX_TRANSIENT_RETRIES = 2
 const RETRY_BASE_MS = 1000
 
-export const OFFLINE_MESSAGE = 'Hors ligne, nouvel essai dès le retour du réseau.'
-const INVALID_IMAGE_MESSAGE = "Cette photo n'a pas pu être lue."
-const SLOW_MESSAGE = 'Toujours en cours de traitement, relance la création pour vérifier.'
+const QUOTA_SOUND_GAP_MS = 2000
 
-export interface UploadProgress {
+export const INVALID_IMAGE_MESSAGE = "Cette photo n'a pas pu être lue."
+const SLOW_MESSAGE = 'Toujours en cours de traitement.'
+
+let lastQuotaSoundAt = 0
+
+export type StagePhase = 'sending' | 'processing'
+
+export interface StageContext {
+  leagueId: string
+  signal: AbortSignal
+  onPhase(
+    localId: string,
+    phase: StagePhase,
+    extra?: { progress?: number; uploadId?: string },
+  ): void
+}
+
+export interface StageCardInput {
+  localId: string
+  blob: Blob
+  capturedAt: string | null
+  uploadId?: string | null
+}
+
+export type StageOutcome =
+  | { kind: 'staged'; uploadId: string }
+  | { kind: 'duplicate'; uploadId: string }
+  | { kind: 'error'; uploadId: string | null; message: string; isRetryable: boolean }
+  | { kind: 'offline' }
+  | { kind: 'cancelled' }
+
+interface Reservation {
   uploadId: string
   target: BucketTarget
   expiresAt: number
   isCompleted: boolean
 }
 
-export interface PipelineContext {
-  leagueId: string
-  signal: AbortSignal
-  readProgress: (draftId: string) => UploadProgress | undefined
-  saveProgress: (draftId: string, progress: UploadProgress) => void
-  setPhase: (id: string, phase: DraftPhase, extra?: PhaseExtra) => void
-}
-
-type DraftOutcome = 'offline' | 'settled'
-
 class CancelledError extends Error {
   constructor() {
-    super('Upload pipeline cancelled')
+    super('Stage upload cancelled')
     this.name = 'CancelledError'
   }
 }
@@ -67,8 +86,19 @@ function isStaleReservation(error: unknown): boolean {
   )
 }
 
-function isTerminal(state: UploadState): boolean {
-  return state.status === 'ready' || state.status === 'rejected' || state.status === 'failed'
+function isQuotaExceeded(error: unknown): boolean {
+  return error instanceof ApiError && error.code === 'UPLOAD_QUOTA_EXCEEDED'
+}
+
+function isAbort(error: unknown): boolean {
+  return (
+    error instanceof CancelledError ||
+    (error instanceof DOMException && error.name === 'AbortError')
+  )
+}
+
+function isSettled(state: UploadState): boolean {
+  return !['pending', 'uploaded', 'processing'].includes(state.status)
 }
 
 function delay(ms: number, signal: AbortSignal): Promise<void> {
@@ -100,71 +130,29 @@ export function waitForNetwork(signal: AbortSignal): Promise<void> {
   })
 }
 
-async function reserve(ctx: PipelineContext, draftId: string, blob: Blob): Promise<UploadProgress> {
+async function reserve(ctx: StageContext, card: StageCardInput): Promise<Reservation> {
   const response = await createUpload(
     ctx.leagueId,
-    { contentType: UPLOAD_CONTENT_TYPE, size: blob.size },
+    { contentType: UPLOAD_CONTENT_TYPE, size: card.blob.size },
     ctx.signal,
   )
-  const progress: UploadProgress = {
+  ctx.onPhase(card.localId, 'sending', { progress: 0, uploadId: response.uploadId })
+  return {
     uploadId: response.uploadId,
     target: { url: response.url, fields: response.fields },
     expiresAt: Date.parse(response.expiresAt),
     isCompleted: false,
   }
-  ctx.saveProgress(draftId, progress)
-  return progress
 }
 
-async function resumeState(
-  ctx: PipelineContext,
-  draftId: string,
-  saved: UploadProgress,
-): Promise<UploadState | null> {
-  const state = await fetchUploadState(ctx.leagueId, saved.uploadId, ctx.signal)
-  if (state.status === 'pending') return null
-  ctx.saveProgress(draftId, { ...saved, isCompleted: true })
-  return state
-}
-
-async function send(
-  ctx: PipelineContext,
-  draft: PhotoDraft,
-  photo: PreparedPhoto,
-): Promise<{ uploadId: string; state: UploadState }> {
-  const saved = ctx.readProgress(draft.id)
-  if (saved) {
-    const resumed = await resumeState(ctx, draft.id, saved)
-    if (resumed) return { uploadId: saved.uploadId, state: resumed }
-  }
-  ctx.setPhase(draft.id, 'sending')
-  const isReusable = saved !== undefined && saved.expiresAt - PRESIGN_SAFETY_MS > Date.now()
-  const progress = isReusable ? saved : await reserve(ctx, draft.id, photo.blob)
-  ensureActive(ctx.signal)
-  await postToBucket(progress.target, photo.blob, ctx.signal)
-  ensureActive(ctx.signal)
-  const state = await completeUpload(
-    ctx.leagueId,
-    progress.uploadId,
-    {
-      title: draft.title.trim(),
-      taggedUserIds: [...draft.taggedUserIds],
-      capturedAt: photo.capturedAt,
-    },
-    ctx.signal,
-  )
-  ctx.saveProgress(draft.id, { ...progress, isCompleted: true })
-  return { uploadId: progress.uploadId, state }
-}
-
-async function waitForCard(
-  ctx: PipelineContext,
+async function waitForStaged(
+  ctx: StageContext,
   uploadId: string,
   first: UploadState,
 ): Promise<UploadState | null> {
   const deadline = Date.now() + POLL_TIMEOUT_MS
   let state = first
-  while (!isTerminal(state)) {
+  while (!isSettled(state)) {
     if (Date.now() > deadline) return null
     await delay(POLL_INTERVAL_MS, ctx.signal)
     ensureActive(ctx.signal)
@@ -178,78 +166,129 @@ async function waitForCard(
   return state
 }
 
-function applyFinalState(ctx: PipelineContext, draftId: string, state: UploadState | null): void {
+function outcomeOf(uploadId: string, state: UploadState | null): StageOutcome {
   if (state === null) {
-    ctx.setPhase(draftId, 'ready', { errorMessage: SLOW_MESSAGE })
-  } else if (state.status === 'ready') {
-    ctx.setPhase(draftId, 'created', { cardId: state.cardId })
-  } else if (state.rejectionReason === 'DUPLICATE_PHOTO') {
-    ctx.setPhase(draftId, 'duplicate')
-  } else if (state.rejectionReason === 'INVALID_IMAGE') {
-    ctx.setPhase(draftId, 'error', { errorMessage: INVALID_IMAGE_MESSAGE })
-  } else {
-    ctx.setPhase(draftId, 'error', { errorMessage: errorMessage('INTERNAL_ERROR') })
+    return { kind: 'error', uploadId, message: SLOW_MESSAGE, isRetryable: true }
   }
+  if (state.status === 'discarded') return { kind: 'cancelled' }
+  if (state.status === 'rejected' && state.rejectionReason === 'DUPLICATE_PHOTO') {
+    return { kind: 'duplicate', uploadId }
+  }
+  if (state.status === 'rejected') {
+    return { kind: 'error', uploadId, message: INVALID_IMAGE_MESSAGE, isRetryable: false }
+  }
+  if (state.status === 'failed') {
+    return {
+      kind: 'error',
+      uploadId,
+      message: errorMessage('INTERNAL_ERROR'),
+      isRetryable: true,
+    }
+  }
+  return { kind: 'staged', uploadId }
+}
+
+type KnownUpload =
+  { kind: 'poll'; uploadId: string; state: UploadState } | { kind: 'reuse' } | { kind: 'fresh' }
+
+function isReusable(reservation: Reservation): boolean {
+  return !reservation.isCompleted && reservation.expiresAt - PRESIGN_SAFETY_MS > Date.now()
+}
+
+function discardQuietly(leagueId: string, uploadId: string): void {
+  discardUploads(leagueId, [uploadId]).catch((error: unknown) => {
+    logger.warn('Stale reservation discard failed', { uploadId, error })
+  })
+}
+
+async function checkKnownUpload(
+  ctx: StageContext,
+  card: StageCardInput,
+  saved: Reservation | null,
+): Promise<KnownUpload> {
+  const uploadId = saved?.uploadId ?? card.uploadId
+  if (!uploadId) return { kind: 'fresh' }
+  const state = await fetchUploadState(ctx.leagueId, uploadId, ctx.signal)
+  if (state.status === 'pending') {
+    if (saved?.uploadId === uploadId && isReusable(saved)) return { kind: 'reuse' }
+    discardQuietly(ctx.leagueId, uploadId)
+    return { kind: 'fresh' }
+  }
+  const isUnusable =
+    state.status === 'failed' ||
+    (state.status === 'rejected' && state.rejectionReason !== 'DUPLICATE_PHOTO')
+  return isUnusable ? { kind: 'fresh' } : { kind: 'poll', uploadId, state }
 }
 
 async function attempt(
-  ctx: PipelineContext,
-  draft: PhotoDraft,
-  photo: PreparedPhoto,
-): Promise<void> {
-  const { uploadId, state } = await send(ctx, draft, photo)
+  ctx: StageContext,
+  card: StageCardInput,
+  saved: Reservation | null,
+  remember: (reservation: Reservation) => void,
+): Promise<StageOutcome> {
+  ctx.onPhase(card.localId, 'sending', { progress: 0 })
+  const reservation = saved !== null && isReusable(saved) ? saved : await reserve(ctx, card)
+  remember(reservation)
   ensureActive(ctx.signal)
-  if (!isTerminal(state)) ctx.setPhase(draft.id, 'processing')
-  const final = await waitForCard(ctx, uploadId, state)
+  await postToBucket(reservation.target, card.blob, ctx.signal, (progress) =>
+    ctx.onPhase(card.localId, 'sending', { progress }),
+  )
   ensureActive(ctx.signal)
-  applyFinalState(ctx, draft.id, final)
+  const state = await completeUpload(
+    ctx.leagueId,
+    reservation.uploadId,
+    { capturedAt: card.capturedAt },
+    ctx.signal,
+  )
+  remember({ ...reservation, isCompleted: true })
+  ctx.onPhase(card.localId, 'processing', { uploadId: reservation.uploadId })
+  return outcomeOf(reservation.uploadId, await waitForStaged(ctx, reservation.uploadId, state))
 }
 
-async function processDraft(ctx: PipelineContext, draft: PhotoDraft): Promise<DraftOutcome> {
-  const photo = draft.photo
-  if (!photo) return 'settled'
+function failure(error: unknown, uploadId: string | null): StageOutcome {
+  if (isQuotaExceeded(error)) {
+    if (Date.now() - lastQuotaSoundAt > QUOTA_SOUND_GAP_MS) playSound({ name: 'quota' })
+    lastQuotaSoundAt = Date.now()
+    return { kind: 'error', uploadId: null, message: userMessage(error), isRetryable: false }
+  }
+  const message = error instanceof TypeError ? UPLOAD_FAILED_MESSAGE : userMessage(error)
+  const isRetryable =
+    isStaleReservation(error) ||
+    isTransient(error) ||
+    (error instanceof UserFacingError && error.message === UPLOAD_FAILED_MESSAGE)
+  return { kind: 'error', uploadId, message, isRetryable }
+}
+
+/** Reserves, sends, completes without a title and waits until one photo is a staged draft. */
+export async function runStageUpload(
+  ctx: StageContext,
+  card: StageCardInput,
+): Promise<StageOutcome> {
+  const memory: { reservation: Reservation | null } = { reservation: null }
+  const remember = (reservation: Reservation): void => {
+    memory.reservation = reservation
+  }
   for (let retry = 0; ; retry += 1) {
     try {
-      await attempt(ctx, draft, photo)
-      return 'settled'
-    } catch (error) {
-      if (error instanceof CancelledError || ctx.signal.aborted) return 'settled'
-      if (isOffline()) {
-        ctx.setPhase(draft.id, 'ready', { errorMessage: OFFLINE_MESSAGE })
-        return 'offline'
+      ensureActive(ctx.signal)
+      if (retry > 0 || card.uploadId) {
+        const known = await checkKnownUpload(ctx, card, memory.reservation)
+        if (known.kind === 'poll') {
+          ctx.onPhase(card.localId, 'processing', { uploadId: known.uploadId })
+          return outcomeOf(known.uploadId, await waitForStaged(ctx, known.uploadId, known.state))
+        }
+        if (known.kind === 'fresh') memory.reservation = null
       }
+      return await attempt(ctx, card, memory.reservation, remember)
+    } catch (error) {
+      if (isAbort(error) || ctx.signal.aborted) return { kind: 'cancelled' }
+      if (isOffline()) return { kind: 'offline' }
       if (isTransient(error) && retry < MAX_TRANSIENT_RETRIES) {
         await delay(RETRY_BASE_MS * 2 ** retry, ctx.signal)
         continue
       }
-      logger.warn('Card creation failed', { draftId: draft.id, error })
-      const message = error instanceof TypeError ? UPLOAD_FAILED_MESSAGE : userMessage(error)
-      ctx.setPhase(draft.id, 'error', {
-        errorMessage: message,
-        isRetryable: isStaleReservation(error),
-      })
-      return 'settled'
+      logger.warn('Stage upload failed', { localId: card.localId, error })
+      return failure(error, memory.reservation?.uploadId ?? card.uploadId ?? null)
     }
   }
-}
-
-/** Processes drafts with bounded parallelism and returns the ones stopped by a lost connection. */
-export async function processDrafts(
-  ctx: PipelineContext,
-  drafts: readonly PhotoDraft[],
-  parallelism: number,
-): Promise<readonly PhotoDraft[]> {
-  let cursor = 0
-  const worker = async (): Promise<readonly PhotoDraft[]> => {
-    let offline: readonly PhotoDraft[] = []
-    while (cursor < drafts.length && !ctx.signal.aborted) {
-      const draft = drafts[cursor]
-      cursor += 1
-      if (draft && (await processDraft(ctx, draft)) === 'offline') offline = [...offline, draft]
-    }
-    return offline
-  }
-  const workers = Array.from({ length: Math.min(parallelism, drafts.length) }, worker)
-  const results = await Promise.all(workers)
-  return results.flat()
 }

@@ -5,12 +5,14 @@ import {
   leagueMediaPrefix,
   mediaCachePathPrefix,
   mediaCacheKey,
+  mediaCropVariantKey,
   mediaMaxAgeSeconds,
   mediaPrefix,
   mediaVariantKey,
   mediaWindowStart,
   parseMediaPath,
 } from './media-urls'
+import { mediaPrefixOfKey } from './storage-gc'
 
 const now = new Date('2026-11-07T10:00:00Z')
 const key = 'img/0b7c2f4e-1a2b-4c3d-8e9f-0123456789ab/' + 'a'.repeat(64) + '/768.avif'
@@ -79,4 +81,34 @@ describe('media prefixes', () => {
     expect(leagueMediaPrefix(leagueId)).toBe(`img/${leagueId}/`)
     expect(mediaCachePathPrefix(leagueMediaPrefix(leagueId))).toBe(`/media/img/${leagueId}/`)
   })
+})
+
+describe('cropped variant keys', () => {
+  const leagueId = '0b7c2f4e-1a2b-4c3d-8e9f-0123456789ab'
+  const sha = 'a'.repeat(64)
+  const cropId = '0123456789abcdef'
+  const cropKey = `img/${leagueId}/${sha}/c${cropId}/768.webp`
+
+  it('builds the cropped variant path', () =>
+    expect(
+      mediaCropVariantKey({ leagueId, sourceSha256: sha, cropId, size: 768, format: 'webp' }),
+    ).toBe(cropKey))
+  it('parses a cropped media path', () =>
+    expect(parseMediaPath(`/media/1794009600/${sig}/${cropKey}`)).toEqual({
+      windowStart: 1794009600,
+      signature: sig,
+      objectKey: cropKey,
+    }))
+  it('rejects malformed crop segments', () => {
+    const base = `/media/1794009600/${sig}/img/${leagueId}/${sha}`
+    expect(parseMediaPath(`${base}/c012/768.webp`)).toBeNull()
+    expect(parseMediaPath(`${base}/C0123456789abcdef/768.webp`)).toBeNull()
+    expect(parseMediaPath(`${base}/c0123456789ABCDEF/768.webp`)).toBeNull()
+    expect(parseMediaPath(`${base}/cx/768.webp`)).toBeNull()
+    expect(parseMediaPath(`${base}/c${cropId}/c${cropId}/768.webp`)).toBeNull()
+  })
+  it('keeps the crop segment in the cache key', () =>
+    expect(mediaCacheKey(`/media/1794009600/${sig}/${cropKey}`)).toBe(`/media/${cropKey}`))
+  it('maps a cropped key to the prefix of its media', () =>
+    expect(mediaPrefixOfKey(cropKey)).toBe(mediaPrefix({ leagueId, sourceSha256: sha })))
 })

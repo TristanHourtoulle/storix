@@ -15,6 +15,7 @@ import { cardsInfiniteQueryOptions, type CollectionFilters } from '@/features/ca
 import { DustBalance } from '@/features/game/components/dust-balance'
 import { useWallet } from '@/features/game/use-wallet'
 import { membersQueryOptions } from '@/features/members/members.queries'
+import { DraftBanner } from '@/features/uploads/components/draft-banner'
 
 type FilterMode = 'member' | 'rarity'
 
@@ -69,6 +70,7 @@ function Collection() {
         <DustBalance dust={wallet?.dust} />
       </div>
       {notice ? <Notice tone="error">Cette carte a déjà été retirée.</Notice> : null}
+      <DraftBanner leagueId={leagueId} />
       <Segmented options={FILTER_MODES} value={mode} onChange={selectMode} />
       {mode === 'rarity' ? (
         <RarityFilter selected={filters.tier} onSelect={selectTier} />

@@ -8,7 +8,12 @@ import {
   uploads,
   type DbExecutor,
 } from '@storix/db'
-import type { RemovalReason, RemovedCopy, UploadStatus } from '@storix/shared'
+import {
+  storedMediaKeys,
+  type RemovalReason,
+  type RemovedCopy,
+  type UploadStatus,
+} from '@storix/shared'
 import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 
 export interface RemovableCardRow {
@@ -20,7 +25,7 @@ export interface RemovableCardRow {
   uploadId: string
   leagueIdOfMedia: string
   sourceSha256: string
-  variantKeys: string[]
+  storedKeys: string[]
 }
 
 export interface TombstoneRow {
@@ -69,9 +74,11 @@ export async function lockCards(
       leagueIdOfMedia: media.leagueId,
       sourceSha256: media.sourceSha256,
       variants: media.variants,
+      sourceKey: uploads.objectKey,
     })
     .from(cards)
     .innerJoin(media, eq(media.id, cards.mediaId))
+    .leftJoin(uploads, eq(uploads.id, media.uploadId))
     .where(
       and(
         inArray(cards.id, [...input.cardIds]),
@@ -80,10 +87,15 @@ export async function lockCards(
       ),
     )
     .orderBy(asc(cards.id))
-    .for('update')
-  return rows.map(({ variants, ...row }) => ({
+    .for('update', { of: [cards, media] })
+  return rows.map(({ variants, sourceKey, ...row }) => ({
     ...row,
-    variantKeys: variants.map((variant) => variant.key),
+    storedKeys: storedMediaKeys({
+      leagueId: row.leagueIdOfMedia,
+      sourceSha256: row.sourceSha256,
+      variants,
+      sourceKey,
+    }),
   }))
 }
 

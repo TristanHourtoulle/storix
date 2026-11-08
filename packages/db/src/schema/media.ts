@@ -10,7 +10,7 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core'
-import type { MediaVariant } from '@storix/shared'
+import type { CropRect, MediaVariant } from '@storix/shared'
 import { leagues } from './leagues'
 import { uploads } from './uploads'
 
@@ -37,6 +37,7 @@ export const media = pgTable(
     captureDateSource: captureDateSource('capture_date_source'),
     isCaptureDateValidated: boolean('is_capture_date_validated').notNull().default(false),
     variants: jsonb('variants').$type<MediaVariant[]>().notNull(),
+    crop: jsonb('crop').$type<CropRect>(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

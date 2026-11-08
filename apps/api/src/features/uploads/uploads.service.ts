@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { Database, DbExecutor } from '@storix/db'
 import {
+  MAX_PUBLISH_BATCH,
   checkUploadQuota,
   isUploadQuotaExempt,
   isUploadReservationExpired,
@@ -25,8 +26,10 @@ import { AppError, notFound } from '../../lib/errors'
 import { runInTransaction } from '../../lib/transaction'
 import { findLeagueSettings } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
-import { listMembers } from '../members/members.repository'
+import { assertTaggedMembers } from './assert-tagged-members'
+import { toUploadState } from './upload-state'
 import {
+  countOpenDrafts,
   countUploadsSince,
   findUpload,
   insertUpload,
@@ -42,15 +45,6 @@ export interface UploadsService {
   createUpload(m: Membership, body: CreateUploadBody): Promise<CreateUploadResponse>
   completeUpload(m: Membership, uploadId: string, body: CompleteUploadBody): Promise<UploadState>
   getUploadState(m: Membership, uploadId: string): Promise<UploadState>
-}
-
-function toState(row: UploadRow): UploadState {
-  return {
-    uploadId: row.id,
-    status: row.status,
-    cardId: row.cardId,
-    rejectionReason: row.rejectionReason,
-  }
 }
 
 function countUsed(db: DbExecutor, m: Membership, now: Date): Promise<number> {
@@ -78,6 +72,21 @@ async function assertQuotaAvailable(db: DbExecutor, m: Membership, now: Date): P
   }
 }
 
+async function assertBatchAvailable(db: DbExecutor, m: Membership, now: Date): Promise<void> {
+  const open = await countOpenDrafts(db, {
+    leagueId: m.leagueId,
+    userId: m.userId,
+    pendingSince: uploadReservationCutoff(now),
+  })
+  if (open >= MAX_PUBLISH_BATCH) {
+    throw new AppError('UPLOAD_QUOTA_EXCEEDED', 429, 'Open draft batch is full', {
+      limit: MAX_PUBLISH_BATCH,
+      remaining: 0,
+      batch: true,
+    })
+  }
+}
+
 /** Builds the uploads service handling presigned uploads, the daily quota and completion. */
 export function createUploadsService(deps: {
   db: Database
@@ -91,16 +100,6 @@ export function createUploadsService(deps: {
     const row = await findUpload(db, m.leagueId, uploadId)
     if (row === null || row.userId !== m.userId) throw notFound('Upload not found')
     return row
-  }
-
-  async function assertTaggedMembers(m: Membership, taggedUserIds: string[]): Promise<void> {
-    if (taggedUserIds.length === 0) return
-    const memberIds = new Set((await listMembers(db, m.leagueId)).map((row) => row.userId))
-    if (taggedUserIds.some((id) => !memberIds.has(id))) {
-      throw new AppError('VALIDATION_FAILED', 400, 'Tagged users must be league members', {
-        field: 'taggedUserIds',
-      })
-    }
   }
 
   return {
@@ -125,7 +124,8 @@ export function createUploadsService(deps: {
       await runInTransaction(db, async (tx) => {
         const role = await lockMemberRole(tx, m.leagueId, m.userId)
         if (role === null) throw notFound()
-        if (!isUploadQuotaExempt(role)) await assertQuotaAvailable(tx, m, now)
+        if (isUploadQuotaExempt(role)) await assertBatchAvailable(tx, m, now)
+        else await assertQuotaAvailable(tx, m, now)
         await insertUpload(tx, { id: uploadId, leagueId: m.leagueId, userId: m.userId, objectKey })
       })
       return {
@@ -138,30 +138,32 @@ export function createUploadsService(deps: {
 
     async completeUpload(m, uploadId, body) {
       const row = await findOwnedUpload(m, uploadId)
-      if (row.status !== 'pending') return toState(row)
+      if (row.status !== 'pending') return toUploadState(row)
       const now = clock()
       if (isUploadReservationExpired(row.createdAt, now)) {
         throw new AppError('UPLOAD_EXPIRED', 410, 'The upload reservation has expired')
       }
-      await assertTaggedMembers(m, body.taggedUserIds)
+      const taggedUserIds = body.taggedUserIds ?? []
+      await assertTaggedMembers(db, m.leagueId, taggedUserIds)
       if ((await storage.head(row.objectKey)) === null) {
         throw new AppError('UPLOAD_NOT_READY', 409, 'The file has not been uploaded yet')
       }
       const capturedAt = body.capturedAt === null ? null : new Date(body.capturedAt)
       const marked = await markUploaded(db, {
         id: row.id,
-        title: body.title,
-        taggedUserIds: body.taggedUserIds,
+        title: body.title ?? null,
+        taggedUserIds,
         clientCapturedAt: sanitizeCaptureDate(capturedAt, now),
+        stageOnly: body.title === undefined,
         now,
       })
-      if (!marked) return toState(await findOwnedUpload(m, uploadId))
+      if (!marked) return toUploadState(await findOwnedUpload(m, uploadId))
       await jobs.enqueueMediaProcess({ uploadId: row.id })
       return { uploadId: row.id, status: 'uploaded', cardId: null, rejectionReason: null }
     },
 
     async getUploadState(m, uploadId) {
-      return toState(await findOwnedUpload(m, uploadId))
+      return toUploadState(await findOwnedUpload(m, uploadId))
     },
   }
 }
