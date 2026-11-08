@@ -146,7 +146,7 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
   }
 
   async function deleteOrphanVariants(
-    upload: repository.UploadForProcessing,
+    upload: repository.CardUpload,
     sha: string,
     keys: readonly string[],
   ): Promise<void> {
@@ -155,7 +155,7 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
   }
 
   async function uploadVariants(
-    upload: repository.UploadForProcessing,
+    upload: repository.CardUpload,
     sha: string,
     files: readonly RenderedFile[],
     trace: RenderTrace,
@@ -310,7 +310,7 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
       storage.delete([upload.objectKey]),
     )
     const sha = trace.sha
-    if (sha === null || trace.variantKeys.length === 0) return
+    if (sha === null || trace.variantKeys.length === 0 || !repository.isCardUpload(upload)) return
     await bestEffort(context, 'Failed to delete variants of a failed upload', () =>
       deleteOrphanVariants(upload, sha, trace.variantKeys),
     )
@@ -327,6 +327,11 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
       }
       if (!(await repository.markUploadProcessing(db, uploadId))) return
       const trace: RenderTrace = { sha: null, variantKeys: [] }
+      if (!repository.isCardUpload(upload)) {
+        logger.error({ uploadId, kind: upload.kind }, 'No processing path for this upload kind')
+        await failUpload(upload, trace)
+        return
+      }
       try {
         await process({ ...upload, userId }, trace)
       } catch (error) {

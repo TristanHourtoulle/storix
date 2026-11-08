@@ -15,13 +15,15 @@ import {
   type CardTier,
   type CropRect,
   type MediaVariant,
+  type UploadKind,
   type UploadRejectionReason,
   type UploadStatus,
 } from '@storix/shared'
 
 export interface UploadForProcessing {
   id: string
-  leagueId: string
+  kind: UploadKind
+  leagueId: string | null
   userId: string | null
   objectKey: string
   status: UploadStatus
@@ -33,7 +35,26 @@ export interface UploadForProcessing {
   hasInvalidCrop: boolean
 }
 
-export type OwnedUpload = UploadForProcessing & { userId: string }
+export type CardUpload = UploadForProcessing & { kind: 'card'; leagueId: string }
+
+export type OwnedUpload = CardUpload & { userId: string }
+
+/** Tells whether an upload is a card upload, which always has a league. */
+export function isCardUpload(upload: UploadForProcessing): upload is CardUpload {
+  return upload.kind === 'card' && upload.leagueId !== null
+}
+
+/** Returns the league of a row that can only be a card upload; throws for the impossible null. */
+export function requireLeagueId(row: { id: string; leagueId: string | null }): string {
+  if (row.leagueId === null) throw new Error(`Upload ${row.id} has no league`)
+  return row.leagueId
+}
+
+/** Returns an upload that can only be a card upload; throws when it is a portrait upload. */
+export function requireCardUpload(upload: UploadForProcessing): CardUpload {
+  if (!isCardUpload(upload)) throw new Error(`Upload ${upload.id} is not a card upload`)
+  return upload
+}
 
 export interface NewMediaRow {
   leagueId: string
@@ -70,6 +91,7 @@ const LEAGUE_MEDIA_LOCK_NAMESPACE = 7201
 
 export const uploadColumns = {
   id: uploads.id,
+  kind: uploads.kind,
   leagueId: uploads.leagueId,
   userId: uploads.userId,
   objectKey: uploads.objectKey,
@@ -94,6 +116,7 @@ export function toUploadForProcessing(row: RawUploadRow): UploadForProcessing {
   const crop = cropRectSchema.nullable().safeParse(row.crop ?? null)
   return {
     id: row.id,
+    kind: row.kind,
     leagueId: row.leagueId,
     userId: row.userId,
     objectKey: row.objectKey,

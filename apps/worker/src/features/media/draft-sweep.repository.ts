@@ -14,6 +14,7 @@ import {
 import { cards, leagueMembers, media, uploads, type DbExecutor } from '@storix/db'
 import { DISCARDED_SWEEP_DELAY_MS, PUBLISH_STUCK_MS, storedMediaKeys } from '@storix/shared/domain'
 import type { UploadStatus } from '@storix/shared'
+import { requireLeagueId } from './media.repository'
 
 export interface DraftSweepRow {
   id: string
@@ -96,7 +97,11 @@ export async function findDraftSweepCandidates(
     variantKeys:
       sourceSha256 === null
         ? []
-        : storedMediaKeys({ leagueId: row.leagueId, sourceSha256, variants: variants ?? [] }),
+        : storedMediaKeys({
+            leagueId: requireLeagueId(row),
+            sourceSha256,
+            variants: variants ?? [],
+          }),
   }))
 }
 
