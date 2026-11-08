@@ -5,7 +5,7 @@ import {
   type PortraitKind,
   type PortraitOwner,
 } from '@storix/shared/domain'
-import type { UploadRejectionReason } from '@storix/shared'
+import type { UploadRejectionReason, UploadStatus } from '@storix/shared'
 import type { Database, DbExecutor, StoredPortrait } from '@storix/db'
 import type { ObjectStorage } from '@storix/storage'
 import { createBestEffort } from '../../lib/best-effort'
@@ -43,7 +43,7 @@ interface Deps {
 
 type CommitOutcome =
   | { kind: 'ready'; previous: StoredPortrait | null }
-  | { kind: 'settled' }
+  | { kind: 'settled'; status: UploadStatus }
   | { kind: 'vanished' }
   | { kind: 'not_allowed' }
 
@@ -145,24 +145,36 @@ export function createPortraitProcessingService(deps: Deps): PortraitProcessingS
       const allowed = await isAllowed(tx, upload)
       const status = await repository.lockUploadStatus(tx, upload.id)
       if (status === null) return { kind: 'vanished' }
-      if (status !== 'processing') return { kind: 'settled' }
+      if (status !== 'processing') return { kind: 'settled', status }
       if (!allowed) {
         await repository.markUploadRejected(tx, upload.id, 'NOT_ALLOWED', clock())
         return { kind: 'not_allowed' }
       }
-      if (!(await lockOwnerRow(tx, upload))) return { kind: 'vanished' }
+      if (!(await lockOwnerRow(tx, upload))) {
+        await repository.markUploadFailed(tx, upload.id, clock())
+        return { kind: 'vanished' }
+      }
       return { kind: 'ready', previous: await replacePortrait(tx, upload, dominantColor) }
     })
+  }
+
+  function deleteRendered(upload: PortraitUpload): Promise<void> {
+    return storageDelete.deleteObjects(renderedKeysOf(upload), { requestedAt: clock() })
   }
 
   async function settle(upload: PortraitUpload, outcome: CommitOutcome): Promise<void> {
     const context = { uploadId: upload.id, kind: upload.kind }
     if (outcome.kind === 'settled') {
-      logger.info(context, 'Portrait upload already settled by another job')
+      if (outcome.status !== 'ready') await deleteRendered(upload)
+      logger.info(
+        { ...context, status: outcome.status },
+        'Portrait upload already settled by another job',
+      )
       return
     }
     if (outcome.kind !== 'ready') {
-      await storage.delete([...renderedKeysOf(upload), upload.objectKey])
+      await deleteRendered(upload)
+      await storage.delete([upload.objectKey])
       logger.info(
         context,
         outcome.kind === 'not_allowed'
@@ -171,13 +183,13 @@ export function createPortraitProcessingService(deps: Deps): PortraitProcessingS
       )
       return
     }
-    await storage.delete([upload.objectKey])
     const { previous } = outcome
     if (previous !== null) {
       await bestEffort(context, 'Failed to delete the previous portrait objects', () =>
         storageDelete.deleteObjects(repository.portraitKeysOf(previous), { requestedAt: clock() }),
       )
     }
+    await storage.delete([upload.objectKey])
     logger.info({ ...context, replaced: previous !== null }, 'Portrait updated')
   }
 
@@ -212,7 +224,7 @@ export function createPortraitProcessingService(deps: Deps): PortraitProcessingS
       'Failed to delete rendered objects of a failed portrait',
       async () => {
         if (await repository.hasPortraitForUpload(db, upload.id)) return
-        await storage.delete(renderedKeysOf(upload))
+        await deleteRendered(upload)
       },
     )
   }
