@@ -16,10 +16,17 @@ import { usePasskeys } from '@/features/auth/use-passkeys'
 import { useMyLeagues } from '@/features/leagues/use-my-leagues'
 import { LeaveLeagueRow, OwnerLeaveHint } from '@/features/members/components/leave-league-row'
 import { LeagueScopeCard } from '@/features/profile/components/league-scope-card'
+import { useSoundSettings, type SoundSettings } from '@/features/sound/sound-settings'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/profile/')({
   component: Profile,
 })
+
+function soundSummary({ isBoosterEnabled, isInterfaceEnabled }: SoundSettings): string {
+  if (isBoosterEnabled && isInterfaceEnabled) return 'Tous'
+  if (isBoosterEnabled) return 'Booster'
+  return isInterfaceEnabled ? 'Interface' : 'Coupés'
+}
 
 function Profile() {
   const { leagueId } = Route.useParams()
@@ -27,6 +34,7 @@ function Profile() {
   const leagues = useMyLeagues()
   const { passkeys, isReady: arePasskeysReady } = usePasskeys()
   const { logout, isPending, errorMessage } = useLogout()
+  const soundSettings = useSoundSettings()
 
   if (!me) return null
   const currentLeague = leagues.find((league) => league.id === leagueId)
@@ -73,6 +81,19 @@ function Profile() {
               label="Connexion"
               hint="Passkeys · Mot de passe"
               value={arePasskeysReady ? String(passkeys.length) : undefined}
+              hasChevron
+            />
+          </Link>
+        </li>
+      </SettingsGroup>
+      <SettingsGroup title="Cet appareil">
+        <li>
+          <Link to="/l/$leagueId/profile/sons" params={params} className={settingsRowClassName()}>
+            <SettingsRowContent
+              icon="sound"
+              label="Sons"
+              hint="Booster · Interface · Volume"
+              value={soundSummary(soundSettings)}
               hasChevron
             />
           </Link>

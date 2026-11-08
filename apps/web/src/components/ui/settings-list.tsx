@@ -116,3 +116,36 @@ export function SettingsDisabledRow(content: Omit<SettingsRowContentProps, 'tone
     </li>
   )
 }
+
+interface SettingsSwitchRowProps {
+  icon: IconName
+  label: string
+  hint?: string
+  isOn: boolean
+  onChange: (isOn: boolean) => void
+}
+
+/** Settings row toggling an on/off preference, exposed as an accessible switch. */
+export function SettingsSwitchRow({ icon, label, hint, isOn, onChange }: SettingsSwitchRowProps) {
+  return (
+    <li>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={isOn}
+        onClick={() => onChange(!isOn)}
+        className={settingsRowClassName()}
+      >
+        <SettingsRowContent icon={icon} label={label} hint={hint} />
+        <span
+          aria-hidden="true"
+          className={`relative h-[26px] w-[44px] flex-none rounded-full transition-colors ${isOn ? 'bg-accent' : 'bg-surface-2 shadow-hairline-strong'}`}
+        >
+          <span
+            className={`absolute top-[3px] left-[3px] size-5 rounded-full bg-ink transition-transform ${isOn ? 'translate-x-[18px]' : ''}`}
+          />
+        </span>
+      </button>
+    </li>
+  )
+}
