@@ -5,7 +5,7 @@ import { buildApp } from './app'
 import { loadEnv } from './config/env'
 import { createAppDeps } from './deps'
 import { startJobQueue, type JobQueue } from './jobs/job-queue'
-import { buildLoggerOptions } from './lib/logger'
+import { buildLoggerOptions, serializeLoggedError } from './lib/logger'
 
 async function start(): Promise<void> {
   const env = loadEnv(process.env)
@@ -51,6 +51,9 @@ async function start(): Promise<void> {
 try {
   await start()
 } catch (error) {
-  pino().fatal({ err: error }, 'Failed to start server')
+  pino({ serializers: { err: serializeLoggedError } }).fatal(
+    { err: error },
+    'Failed to start server',
+  )
   process.exit(1)
 }
