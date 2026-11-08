@@ -1,24 +1,40 @@
+import type { Portrait } from '@storix/shared'
 import { initials } from '@/lib/initials'
+import { PortraitImage, useVisiblePortrait } from './portrait-image'
 
 interface AvatarProps {
   label: string
-  size?: 'sm' | 'md' | 'lg'
+  portrait?: Portrait | null
+  size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
 const DIMENSIONS = {
   sm: 'size-9 text-xs',
   md: 'size-11 text-[15px]',
   lg: 'size-14 text-lg',
+  xl: 'size-24 text-3xl',
 } as const
 
-export function Avatar({ label, size = 'sm' }: AvatarProps) {
-  const dimension = DIMENSIONS[size]
+const IMAGE_SIZES = { sm: '36px', md: '44px', lg: '56px', xl: '96px' } as const
+
+/** Round member avatar: the portrait when set and loadable, the initials otherwise. */
+export function Avatar({ label, portrait = null, size = 'sm' }: AvatarProps) {
+  const { visible, markFailed } = useVisiblePortrait(portrait)
   return (
     <span
       aria-hidden="true"
-      className={`grid flex-none place-items-center rounded-full bg-surface-2 font-display font-semibold text-ink-3 shadow-hairline-strong ${dimension}`}
+      className={`grid flex-none place-items-center overflow-hidden rounded-full bg-surface-2 font-display font-semibold text-ink-3 shadow-hairline-strong ${DIMENSIONS[size]}`}
     >
-      {initials(label)}
+      {visible ? (
+        <PortraitImage
+          portrait={visible}
+          sizes={IMAGE_SIZES[size]}
+          onError={markFailed}
+          className="size-full rounded-full object-cover"
+        />
+      ) : (
+        initials(label)
+      )}
     </span>
   )
 }

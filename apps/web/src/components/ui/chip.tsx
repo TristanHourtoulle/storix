@@ -1,13 +1,26 @@
+import type { Portrait } from '@storix/shared'
+import { PortraitImage, useVisiblePortrait } from './portrait-image'
+
 interface ChipProps {
   label: string
   initials?: string
+  portrait?: Portrait | null
   dotColor?: string
   isOn: boolean
   isDisabled?: boolean
   onToggle: () => void
 }
 
-export function Chip({ label, initials, dotColor, isOn, isDisabled = false, onToggle }: ChipProps) {
+export function Chip({
+  label,
+  initials,
+  portrait = null,
+  dotColor,
+  isOn,
+  isDisabled = false,
+  onToggle,
+}: ChipProps) {
+  const { visible, markFailed } = useVisiblePortrait(portrait)
   return (
     <button
       type="button"
@@ -19,9 +32,18 @@ export function Chip({ label, initials, dotColor, isOn, isDisabled = false, onTo
       {initials ? (
         <span
           aria-hidden="true"
-          className={`grid size-8 place-items-center rounded-full font-display text-[11px] font-semibold shadow-hairline-strong ${isOn ? 'bg-bg text-ink' : 'bg-surface-2 text-ink-3'}`}
+          className={`grid size-8 place-items-center overflow-hidden rounded-full font-display text-[11px] font-semibold shadow-hairline-strong ${isOn ? 'bg-bg text-ink' : 'bg-surface-2 text-ink-3'}`}
         >
-          {initials}
+          {visible ? (
+            <PortraitImage
+              portrait={visible}
+              sizes="32px"
+              onError={markFailed}
+              className="size-full rounded-full object-cover"
+            />
+          ) : (
+            initials
+          )}
         </span>
       ) : null}
       {dotColor ? (
