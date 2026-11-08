@@ -2,12 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { logger } from '@/lib/logger'
 import { isIos, isStandalone } from '@/lib/platform'
-import { savePushSubscription } from './push.api'
 import {
   getCurrentSubscription,
   isPushSupported,
+  refreshThisDevice,
+  saveThisDevice,
   subscribeThisDevice,
-  toPushSubscriptionBody,
   unsubscribeThisDevice,
 } from './push-browser'
 import { pushConfigQueryOptions } from './push.queries'
@@ -26,9 +26,9 @@ function platformStatus(): PlatformStatus {
   return isPushSupported() ? null : 'unsupported'
 }
 
-function refreshSubscription(subscription: PushSubscription): void {
+function refreshSubscription(): void {
   hasRefreshedThisLoad = true
-  savePushSubscription(toPushSubscriptionBody(subscription)).catch((error: unknown) => {
+  refreshThisDevice().catch((error: unknown) => {
     logger.warn('Push subscription refresh failed', { error })
   })
 }
@@ -72,10 +72,8 @@ export function usePushNotifications(): {
   const isReady = !isCapable || (!config.isPending && subscription !== undefined)
 
   useEffect(() => {
-    if (isReady && status === 'enabled' && subscription && !hasRefreshedThisLoad) {
-      refreshSubscription(subscription)
-    }
-  }, [isReady, status, subscription])
+    if (isReady && status === 'enabled' && !hasRefreshedThisLoad) refreshSubscription()
+  }, [isReady, status])
 
   const enable = useCallback(async (): Promise<void> => {
     const publicKey = queryClient.getQueryData(pushConfigQueryOptions.queryKey)?.publicKey
@@ -89,7 +87,7 @@ export function usePushNotifications(): {
     try {
       const body = await subscribing
       try {
-        await savePushSubscription(body)
+        await saveThisDevice(body)
       } catch (error) {
         await unsubscribeThisDevice().catch(() => undefined)
         throw error

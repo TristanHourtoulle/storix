@@ -7,8 +7,11 @@ export function fetchPushConfig(): Promise<PushConfig> {
 }
 
 /** Stores or refreshes this device's push subscription. */
-export function savePushSubscription(body: PushSubscriptionBody): Promise<void> {
-  return apiRequestVoid('/api/push/subscriptions', { method: 'PUT', body })
+export function savePushSubscription(
+  body: PushSubscriptionBody,
+  signal?: AbortSignal,
+): Promise<void> {
+  return apiRequestVoid('/api/push/subscriptions', { method: 'PUT', body, signal })
 }
 
 /** Removes this device's push subscription from the server. */

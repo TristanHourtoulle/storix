@@ -1,8 +1,17 @@
 import type { PushSubscriptionBody } from '@storix/shared'
 import { logger } from '@/lib/logger'
-import { removePushSubscription } from './push.api'
+import { removePushSubscription, savePushSubscription } from './push.api'
 
 const SERVER_REMOVE_TIMEOUT_MS = 4000
+const SERVER_REFRESH_TIMEOUT_MS = 8000
+
+let deviceQueue: Promise<unknown> = Promise.resolve()
+
+function runInDeviceQueue<T>(task: () => Promise<T>): Promise<T> {
+  const run = deviceQueue.then(task, task)
+  deviceQueue = run.catch(() => undefined)
+  return run
+}
 
 /** True when this browser exposes service workers, the Push API and notifications. */
 export function isPushSupported(): boolean {
@@ -47,19 +56,38 @@ export async function subscribeThisDevice(publicKey: string): Promise<PushSubscr
   return toPushSubscriptionBody(subscription)
 }
 
-/** Removes the subscription on the server (best effort), then always on this device. */
-export async function unsubscribeThisDevice(): Promise<void> {
-  const subscription = await getCurrentSubscription()
-  if (!subscription) return
-  try {
-    await removePushSubscription(
-      subscription.endpoint,
-      AbortSignal.timeout(SERVER_REMOVE_TIMEOUT_MS),
+/** Stores a fresh subscription on the server, ordered with the other device writes. */
+export function saveThisDevice(body: PushSubscriptionBody): Promise<void> {
+  return runInDeviceQueue(() => savePushSubscription(body))
+}
+
+/** Re-sends the current subscription when this device still has one (endpoint rotation). */
+export function refreshThisDevice(): Promise<void> {
+  return runInDeviceQueue(async () => {
+    const subscription = await getCurrentSubscription()
+    if (!subscription) return
+    await savePushSubscription(
+      toPushSubscriptionBody(subscription),
+      AbortSignal.timeout(SERVER_REFRESH_TIMEOUT_MS),
     )
-  } catch (error) {
-    logger.warn('Push subscription server removal failed', { error })
-  }
-  await subscription.unsubscribe()
+  })
+}
+
+/** Removes the subscription on the server (best effort), then always on this device. */
+export function unsubscribeThisDevice(): Promise<void> {
+  return runInDeviceQueue(async () => {
+    const subscription = await getCurrentSubscription()
+    if (!subscription) return
+    try {
+      await removePushSubscription(
+        subscription.endpoint,
+        AbortSignal.timeout(SERVER_REMOVE_TIMEOUT_MS),
+      )
+    } catch (error) {
+      logger.warn('Push subscription server removal failed', { error })
+    }
+    await subscription.unsubscribe()
+  })
 }
 
 /** Removes the subscription on this device only, for when the session is already gone. */
