@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   CARD_TITLE_MAX_LENGTH,
+  type DraftUploadStatus,
   UPLOAD_CONTENT_TYPE,
   UPLOAD_MAX_BYTES,
   UPLOAD_MIN_BYTES,
@@ -14,11 +15,19 @@ export const UPLOAD_STATUSES = [
   'ready',
   'rejected',
   'failed',
-] as const
+  'staged',
+  'publishing',
+  'discarded',
+] as const satisfies readonly DraftUploadStatus[]
 export const UPLOAD_REJECTION_REASONS = ['DUPLICATE_PHOTO', 'INVALID_IMAGE'] as const
 
 export type UploadStatus = (typeof UPLOAD_STATUSES)[number]
 export type UploadRejectionReason = (typeof UPLOAD_REJECTION_REASONS)[number]
+
+type IsSameUnion<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false
+type AssertTrue<T extends true> = T
+/** Compile-time proof that the domain status union lists exactly `UPLOAD_STATUSES`. */
+export type UploadStatusesMatchDomain = AssertTrue<IsSameUnion<UploadStatus, DraftUploadStatus>>
 
 export const createUploadBodySchema = z.object({
   contentType: z.literal(UPLOAD_CONTENT_TYPE),
