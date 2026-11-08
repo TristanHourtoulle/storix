@@ -1,22 +1,21 @@
 import { useState, type ReactNode } from 'react'
-import type { LeagueSummary } from '@storix/shared'
+import type { LeagueSummary, Portrait } from '@storix/shared'
 import { Icon } from '@/components/ui/icon'
-import { initials } from '@/lib/initials'
+import { LeagueAvatar } from './league-avatar'
 import { LeagueSwitcherDialog } from './league-switcher-dialog'
 
 interface LeagueHeaderProps {
   name: string
+  photo: Portrait | null
   memberCount: number
   leagues: LeagueSummary[]
   currentLeagueId: string
   trailing?: ReactNode
 }
 
-const AVATAR_CLASS =
-  'grid size-11 flex-none place-items-center rounded-control bg-surface-2 font-display text-[15px] font-bold text-accent-hover shadow-hairline-strong'
-
 export function LeagueHeader({
   name,
+  photo,
   memberCount,
   leagues,
   currentLeagueId,
@@ -27,9 +26,7 @@ export function LeagueHeader({
 
   return (
     <header className="flex items-center gap-3">
-      <span aria-hidden="true" className={AVATAR_CLASS}>
-        {initials(name)}
-      </span>
+      <LeagueAvatar name={name} photo={photo} />
       <div className="min-w-0">
         <h1 className="truncate text-lg">
           {canSwitch ? (

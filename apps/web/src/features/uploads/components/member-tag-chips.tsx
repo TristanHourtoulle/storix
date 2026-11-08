@@ -22,6 +22,7 @@ export function MemberTagChips({
           key={member.userId}
           label={member.displayUsername}
           initials={initials(member.displayUsername)}
+          portrait={member.avatar}
           isOn={selectedIds.includes(member.userId)}
           isDisabled={isDisabled}
           onToggle={() => onToggle(member.userId)}

@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { leagueMediaPrefix, mediaCachePathPrefix } from '@storix/shared/domain'
+import { leagueMediaPrefix, mediaCachePathPrefix, portraitOwnerPrefix } from '@storix/shared/domain'
 import { logger } from '@/lib/logger'
 import { API_CACHE_NAME, API_CACHE_PREFIX, MEDIA_CACHE_NAME } from '@/features/pwa/cache-names'
 
@@ -49,7 +49,10 @@ export async function purgeLeagueApiEntries(leagueId: string): Promise<void> {
 export async function purgeLeagueCaches(queryClient: QueryClient, leagueId: string): Promise<void> {
   queryClient.removeQueries({ queryKey: ['leagues', leagueId] })
   await Promise.all([
-    purgeMediaPrefixes([leagueMediaPrefix(leagueId)]),
+    purgeMediaPrefixes([
+      leagueMediaPrefix(leagueId),
+      portraitOwnerPrefix({ kind: 'league', ownerId: leagueId }),
+    ]),
     purgeLeagueApiEntries(leagueId),
   ])
 }

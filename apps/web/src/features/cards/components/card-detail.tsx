@@ -1,4 +1,5 @@
 import type { OwnedCardDetail } from '@storix/shared'
+import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
 import { useCardMutations } from '../use-card-mutations'
@@ -10,6 +11,7 @@ import { CardFace } from './card-face'
 import { CardImage } from './card-image'
 import { authorLabel } from '../author-label'
 import { MotionPrompt } from './motion-prompt'
+import { useMemberAvatars } from '@/features/portraits/use-member-avatars'
 import { MetaCell, discovererLabel, formatDate } from './meta-cell'
 import { ReactionBar } from './reaction-bar'
 
@@ -22,6 +24,7 @@ interface CardDetailProps {
 export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
   const { ref, needsMotionPermission, isMotionDenied, requestMotionPermission } = useHoloTilt()
   const reactions = useReactions(leagueId, card.id)
+  const avatars = useMemberAvatars(leagueId)
   const { recycle, upgradeToFoil } = useCardMutations(leagueId, card.id)
   const isGold = card.displayTier === 'legendary' || card.displayTier === 'mythic'
   const hasFoil = card.copies.foil !== null
@@ -67,7 +70,16 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
       </div>
       <h2 className="detail-name">{card.title}</h2>
       <div className="meta">
-        <MetaCell label="Photo de" value={authorLabel(card.author)} />
+        <MetaCell
+          label="Photo de"
+          value={authorLabel(card.author)}
+          leading={
+            <Avatar
+              label={authorLabel(card.author)}
+              portrait={card.author.userId ? (avatars.get(card.author.userId) ?? null) : null}
+            />
+          }
+        />
         <MetaCell label="Prise le" value={formatDate(card.capturedAt, 'Inconnue')} />
         <MetaCell label="Découverte par" value={discovererLabel(card.discoveredBy)} />
         <MetaCell

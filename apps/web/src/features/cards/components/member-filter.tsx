@@ -21,6 +21,7 @@ export function MemberFilter({ members, selectedId, onSelect }: MemberFilterProp
           key={member.userId}
           label={member.displayUsername}
           initials={initials(member.displayUsername)}
+          portrait={member.avatar}
           isOn={selectedId === member.userId}
           onToggle={() => onSelect(selectedId === member.userId ? null : member.userId)}
         />

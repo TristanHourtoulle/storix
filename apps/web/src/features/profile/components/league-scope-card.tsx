@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { hasRoleAtLeast, type LeagueSummary } from '@storix/shared'
 import { Icon, type IconName } from '@/components/ui/icon'
+import { LeagueAvatar } from '@/features/leagues/components/league-avatar'
 import { LeagueSwitcherDialog } from '@/features/leagues/components/league-switcher-dialog'
 import { ROLE_LABELS } from '@/features/leagues/role-labels'
-import { initials } from '@/lib/initials'
 
 interface LeagueScopeCardProps {
   league: LeagueSummary
@@ -35,12 +35,7 @@ export function LeagueScopeCard({ league, leagues }: LeagueScopeCardProps) {
       className="flex flex-col gap-3.5 rounded-[20px] bg-[linear-gradient(150deg,rgba(167,139,250,0.2),rgba(167,139,250,0.02)_55%),var(--color-surface)] p-4 shadow-hairline-strong"
     >
       <div className="flex items-center gap-3">
-        <span
-          aria-hidden="true"
-          className="grid size-11 flex-none place-items-center rounded-input bg-surface-2 font-display text-[15px] font-bold text-accent"
-        >
-          {initials(league.name)}
-        </span>
+        <LeagueAvatar name={league.name} photo={league.photo} />
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
             Dans cette ligue

@@ -93,7 +93,7 @@ Layering rules, enforced by `no-restricted-imports` overrides in `eslint.config.
 | Removals | `card_removals` (tombstones with the media prefix, kept 35 days), `card_compensations`                                                                                                                                                                                                                            |
 | Audit    | `audit_log`                                                                                                                                                                                                                                                                                                       |
 
-Migrations live in `packages/db/drizzle` (`0000` to `0007`). The server never migrates on boot.
+Migrations live in `packages/db/drizzle` (`0000` to `0009`). The server never migrates on boot.
 
 ### Background jobs (worker)
 
