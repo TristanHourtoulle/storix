@@ -160,8 +160,10 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
     }),
     uploadDrafts: createUploadDraftsService({
       db: deps.db,
+      jobs: deps.jobs,
       signer: deps.mediaSigner,
       clock: deps.clock,
+      logger,
     }),
     wallets: createWalletsService({ db: deps.db, clock: deps.clock }),
     withdrawals: createWithdrawalsService({

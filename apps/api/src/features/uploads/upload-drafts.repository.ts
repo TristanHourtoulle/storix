@@ -1,5 +1,10 @@
 import { media, uploads, type DbExecutor } from '@storix/db'
-import { EDITABLE_DRAFT_STATUSES, type CropRect, type MediaVariant } from '@storix/shared'
+import {
+  EDITABLE_DRAFT_STATUSES,
+  type CropRect,
+  type MediaVariant,
+  type PublishCandidate,
+} from '@storix/shared'
 import { and, asc, eq, inArray, or } from 'drizzle-orm'
 import type { UploadRow } from './uploads.repository'
 
@@ -131,6 +136,44 @@ export async function markDiscarded(
         ),
       ),
     )
+    .returning({ id: uploads.id })
+  return rows.length
+}
+
+/** Locks the user's requested uploads for update and reads what the publish plan needs. */
+export async function lockPublishCandidates(
+  tx: DbExecutor,
+  input: OwnerScope & { ids: readonly string[] },
+): Promise<PublishCandidate[]> {
+  const rows = await tx
+    .select({
+      uploadId: uploads.id,
+      status: uploads.status,
+      stageOnly: uploads.stageOnly,
+      title: uploads.title,
+      crop: uploads.crop,
+      width: media.width,
+      height: media.height,
+    })
+    .from(uploads)
+    .leftJoin(media, eq(media.uploadId, uploads.id))
+    .where(and(ownedBy(input), inArray(uploads.id, [...input.ids])))
+    .for('update', { of: uploads })
+  return rows.map(({ width, height, ...row }) => ({
+    ...row,
+    mediaSize: width === null || height === null ? null : { width, height },
+  }))
+}
+
+/** Moves the given staged uploads to publishing; returns how many changed. */
+export async function markPublishing(
+  tx: DbExecutor,
+  input: { ids: readonly string[]; now: Date },
+): Promise<number> {
+  const rows = await tx
+    .update(uploads)
+    .set({ status: 'publishing', publishRequestedAt: input.now })
+    .where(and(inArray(uploads.id, [...input.ids]), eq(uploads.status, 'staged')))
     .returning({ id: uploads.id })
   return rows.length
 }

@@ -3,6 +3,7 @@ import {
   editUploadBodySchema,
   leagueParamsSchema,
   uploadDraftsResponseSchema,
+  uploadIdsBodySchema,
   uploadParamsSchema,
   uploadStateSchema,
   uploadStatesQuerySchema,
@@ -16,7 +17,7 @@ import type { UploadDraftsService } from './upload-drafts.service'
 
 const memberOnly = [authenticate, requireLeagueRole('member')]
 
-/** Registers the draft routes: list, states, discard and per-upload edit, all scoped to the member's own uploads. */
+/** Registers the draft routes: list, states, discard, publish and per-upload edit, all scoped to the member's own uploads. */
 export function uploadDraftsRoutes(service: UploadDraftsService): FastifyPluginAsyncZod {
   return async (app) => {
     app.get(
@@ -52,6 +53,22 @@ export function uploadDraftsRoutes(service: UploadDraftsService): FastifyPluginA
       async (request, reply) => {
         await service.discard(request.membership, request.body.uploadIds)
         return reply.code(204).send()
+      },
+    )
+    app.post(
+      '/leagues/:leagueId/uploads/publish',
+      {
+        preHandler: memberOnly,
+        config: { rateLimit: rateLimits.uploadPublish },
+        schema: {
+          params: leagueParamsSchema,
+          body: uploadIdsBodySchema,
+          response: { 202: uploadStatesResponseSchema },
+        },
+      },
+      async (request, reply) => {
+        const states = await service.publish(request.membership, request.body.uploadIds)
+        return reply.code(202).send({ states })
       },
     )
     app.patch(

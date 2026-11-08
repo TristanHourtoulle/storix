@@ -1,14 +1,21 @@
 import type { Database } from '@storix/db'
 import {
   canEditDraft,
+  CARD_CROP_FRAME,
   DRAFT_TTL_MS,
+  planPublish,
   type EditUploadBody,
   type MediaVariantSize,
+  type PublishCandidate,
+  type PublishPlan,
   type UploadDraft,
   type UploadState,
 } from '@storix/shared'
+import type { JobQueue } from '../../jobs/job-queue'
+import type { ErrorLogger } from '../../lib/error-logger'
 import { AppError, notFound } from '../../lib/errors'
 import type { MediaSigner } from '../../lib/media-signer'
+import { runInTransaction } from '../../lib/transaction'
 import { toImageSet } from '../cards/image-set'
 import type { Membership } from '../leagues/leagues.service'
 import { assertTaggedMembers } from './assert-tagged-members'
@@ -16,12 +23,14 @@ import {
   findOwnedUploadRow,
   listDrafts,
   listOwnedStates,
+  lockPublishCandidates,
   markDiscarded,
+  markPublishing,
   updateDraftFields,
   type DraftRow,
 } from './upload-drafts.repository'
 import { toUploadState } from './upload-state'
-import type { UploadRow } from './uploads.repository'
+import { lockMemberRole, type UploadRow } from './uploads.repository'
 
 const DRAFT_IMAGE_SIZES: readonly MediaVariantSize[] = [768, 1600]
 
@@ -30,6 +39,7 @@ export interface UploadDraftsService {
   listDrafts(m: Membership): Promise<UploadDraft[]>
   listStates(m: Membership, ids: string[]): Promise<UploadState[]>
   discard(m: Membership, ids: string[]): Promise<void>
+  publish(m: Membership, ids: string[]): Promise<UploadState[]>
 }
 
 function notEditable(row: UploadRow): AppError {
@@ -49,6 +59,21 @@ function inRequestOrder(rows: readonly UploadRow[], ids: readonly string[]): Upl
     const row = byId.get(id)
     return row === undefined ? [] : [row]
   })
+}
+
+function publishJobIds(
+  requestedIds: readonly string[],
+  plan: PublishPlan,
+  candidates: readonly PublishCandidate[],
+): string[] {
+  const inFlight = new Set(
+    candidates.filter((c) => c.status === 'publishing').map((c) => c.uploadId),
+  )
+  const queued = new Set([
+    ...plan.publish,
+    ...plan.alreadyPublished.filter((id) => inFlight.has(id)),
+  ])
+  return requestedIds.filter((id) => queued.has(id))
 }
 
 function toDraft(row: DraftRow, signer: MediaSigner): UploadDraft {
@@ -74,13 +99,53 @@ function toDraft(row: DraftRow, signer: MediaSigner): UploadDraft {
   }
 }
 
-/** Builds the upload drafts service: editing, listing, polling and discarding the member's own drafts. */
+/** Builds the upload drafts service: editing, listing, polling, discarding and publishing the member's own drafts. */
 export function createUploadDraftsService(deps: {
   db: Database
+  jobs: JobQueue
   signer: MediaSigner
   clock: () => Date
+  logger: ErrorLogger
 }): UploadDraftsService {
-  const { db, signer, clock } = deps
+  const { db, jobs, signer, clock, logger } = deps
+
+  async function statesOf(m: Membership, ids: readonly string[]): Promise<UploadState[]> {
+    const rows = await listOwnedStates(db, { leagueId: m.leagueId, userId: m.userId, ids })
+    return inRequestOrder(rows, ids).map(toUploadState)
+  }
+
+  async function lockAndPlanPublish(m: Membership, ids: string[]): Promise<string[]> {
+    return runInTransaction(db, async (tx) => {
+      if ((await lockMemberRole(tx, m.leagueId, m.userId)) === null) throw notFound()
+      const scope = { leagueId: m.leagueId, userId: m.userId, ids }
+      const candidates = await lockPublishCandidates(tx, scope)
+      const plan = planPublish({ requestedIds: ids, candidates, frame: CARD_CROP_FRAME })
+      if (plan.problems.length > 0) {
+        throw new AppError('PUBLISH_REJECTED', 409, 'Some uploads cannot be published', {
+          problems: plan.problems,
+        })
+      }
+      if (plan.publish.length > 0) {
+        const marked = await markPublishing(tx, { ids: plan.publish, now: clock() })
+        if (marked !== plan.publish.length) throw new Error('Publish candidates changed under lock')
+      }
+      return publishJobIds(ids, plan, candidates)
+    })
+  }
+
+  async function enqueuePublishJobs(m: Membership, uploadIds: readonly string[]): Promise<void> {
+    for (const [index, uploadId] of uploadIds.entries()) {
+      try {
+        await jobs.enqueueMediaPublish({ uploadId })
+      } catch (error) {
+        logger.error(
+          { err: error, leagueId: m.leagueId, pendingUploadIds: uploadIds.slice(index) },
+          'Media publish enqueue failed; the sweep will recover it',
+        )
+        return
+      }
+    }
+  }
 
   async function findOwned(m: Membership, uploadId: string): Promise<UploadRow> {
     const row = await findOwnedUploadRow(db, { leagueId: m.leagueId, userId: m.userId, uploadId })
@@ -114,13 +179,15 @@ export function createUploadDraftsService(deps: {
         .map((row) => toDraft(row, signer))
     },
 
-    async listStates(m, ids) {
-      const rows = await listOwnedStates(db, { leagueId: m.leagueId, userId: m.userId, ids })
-      return inRequestOrder(rows, ids).map(toUploadState)
-    },
+    listStates: statesOf,
 
     async discard(m, ids) {
       await markDiscarded(db, { leagueId: m.leagueId, userId: m.userId, ids, now: clock() })
+    },
+
+    async publish(m, ids) {
+      await enqueuePublishJobs(m, await lockAndPlanPublish(m, ids))
+      return statesOf(m, ids)
     },
   }
 }
