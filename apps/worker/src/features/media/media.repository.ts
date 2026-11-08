@@ -10,8 +10,10 @@ import {
   type DbExecutor,
 } from '@storix/db'
 import {
+  cropRectSchema,
   taggedUserIdsSchema,
   type CardTier,
+  type CropRect,
   type MediaVariant,
   type UploadRejectionReason,
   type UploadStatus,
@@ -26,6 +28,9 @@ export interface UploadForProcessing {
   title: string | null
   taggedUserIds: string[]
   clientCapturedAt: Date | null
+  stageOnly: boolean
+  crop: CropRect | null
+  hasInvalidCrop: boolean
 }
 
 export type OwnedUpload = UploadForProcessing & { userId: string }
@@ -63,26 +68,45 @@ export interface StaleUpload {
 const PROCESSABLE: UploadStatus[] = ['uploaded', 'processing']
 const LEAGUE_MEDIA_LOCK_NAMESPACE = 7201
 
+export const uploadColumns = {
+  id: uploads.id,
+  leagueId: uploads.leagueId,
+  userId: uploads.userId,
+  objectKey: uploads.objectKey,
+  status: uploads.status,
+  title: uploads.title,
+  taggedUserIds: uploads.taggedUserIds,
+  clientCapturedAt: uploads.clientCapturedAt,
+  stageOnly: uploads.stageOnly,
+  crop: uploads.crop,
+}
+
+interface RawUploadRow extends Omit<
+  UploadForProcessing,
+  'crop' | 'hasInvalidCrop' | 'taggedUserIds'
+> {
+  crop: unknown
+  taggedUserIds: unknown
+}
+
+/** Parses the jsonb columns of an upload row; an unreadable crop becomes null and is flagged. */
+export function toUploadForProcessing(row: RawUploadRow): UploadForProcessing {
+  const crop = cropRectSchema.nullable().safeParse(row.crop ?? null)
+  return {
+    ...row,
+    taggedUserIds: taggedUserIdsSchema.parse(row.taggedUserIds),
+    crop: crop.success ? crop.data : null,
+    hasInvalidCrop: !crop.success,
+  }
+}
+
 /** Loads the upload fields the processing job needs. */
 export async function findUploadForProcessing(
   db: DbExecutor,
   uploadId: string,
 ): Promise<UploadForProcessing | null> {
-  const [row] = await db
-    .select({
-      id: uploads.id,
-      leagueId: uploads.leagueId,
-      userId: uploads.userId,
-      objectKey: uploads.objectKey,
-      status: uploads.status,
-      title: uploads.title,
-      taggedUserIds: uploads.taggedUserIds,
-      clientCapturedAt: uploads.clientCapturedAt,
-    })
-    .from(uploads)
-    .where(eq(uploads.id, uploadId))
-  if (row === undefined) return null
-  return { ...row, taggedUserIds: taggedUserIdsSchema.parse(row.taggedUserIds) }
+  const [row] = await db.select(uploadColumns).from(uploads).where(eq(uploads.id, uploadId))
+  return row === undefined ? null : toUploadForProcessing(row)
 }
 
 /** Moves an upload to processing; false when it is no longer processable. */
@@ -118,19 +142,34 @@ export async function markUploadFailed(db: DbExecutor, uploadId: string, now: Da
     .where(and(eq(uploads.id, uploadId), inArray(uploads.status, PROCESSABLE)))
 }
 
-/** Marks a processable upload as ready and links its card; returns the updated row count. */
+/** Marks an upload in one of the `from` statuses as ready and links its card; returns the updated row count. */
 export async function markUploadReady(
   db: DbExecutor,
   uploadId: string,
   cardId: string,
   now: Date,
+  from: readonly UploadStatus[],
 ): Promise<number> {
   const rows = await db
     .update(uploads)
     .set({ status: 'ready', cardId, processedAt: now })
-    .where(and(eq(uploads.id, uploadId), inArray(uploads.status, PROCESSABLE)))
+    .where(and(eq(uploads.id, uploadId), inArray(uploads.status, [...from])))
     .returning({ id: uploads.id })
   return rows.length
+}
+
+/** Moves a processing upload to staged; false when it left processing (for example, it was discarded). */
+export async function markUploadStaged(
+  db: DbExecutor,
+  uploadId: string,
+  now: Date,
+): Promise<boolean> {
+  const rows = await db
+    .update(uploads)
+    .set({ status: 'staged', processedAt: now })
+    .where(and(eq(uploads.id, uploadId), eq(uploads.status, 'processing')))
+    .returning({ id: uploads.id })
+  return rows.length > 0
 }
 
 /** Serializes media creation for a league until the current transaction ends. */

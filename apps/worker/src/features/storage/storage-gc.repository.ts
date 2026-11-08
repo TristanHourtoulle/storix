@@ -2,7 +2,7 @@ import { inArray, lt } from 'drizzle-orm'
 import { cardRemovals, media, uploads, type DbExecutor } from '@storix/db'
 import { mediaPrefix } from '@storix/shared'
 
-const LIVE_UPLOAD_STATUSES = ['pending', 'uploaded', 'processing'] as const
+const LIVE_UPLOAD_STATUSES = ['pending', 'uploaded', 'processing', 'staged', 'publishing'] as const
 
 /** Returns the storage prefix of every media row. */
 export async function listLiveMediaPrefixes(db: DbExecutor): Promise<Set<string>> {

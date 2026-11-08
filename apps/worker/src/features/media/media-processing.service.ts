@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto'
 import type { Database, DbExecutor } from '@storix/db'
 import {
-  PROVISIONAL_TIER,
   UPLOAD_MAX_BYTES,
   findDuplicate,
   hasEnoughDetailForDedup,
@@ -9,11 +8,17 @@ import {
   perceptualHash,
   sanitizeCaptureDate,
 } from '@storix/shared/domain'
-import { cardTitleSchema, type MediaVariant, type UploadRejectionReason } from '@storix/shared'
+import {
+  cardTitleSchema,
+  type MediaVariant,
+  type UploadRejectionReason,
+  type UploadStatus,
+} from '@storix/shared'
 import { ObjectTooLargeError, type ObjectStorage } from '@storix/storage'
 import type { RarityQueue } from '../../jobs/rarity-queue'
 import type { WorkerLogger } from '../../lib/logger'
 import { runInTransaction } from '../../lib/transaction'
+import { insertCardForMedia } from './card-creation'
 import type { ImagePipeline, RenderedFile } from './image-pipeline'
 import * as repository from './media.repository'
 
@@ -43,9 +48,15 @@ interface RenderTrace {
   variantKeys: readonly string[]
 }
 
+type DuplicateOutcome = { kind: 'duplicate'; match: DuplicateMatch; rejected: boolean }
+
 type CommitOutcome =
   | { kind: 'ready'; cardId: string; number: number }
-  | { kind: 'duplicate'; match: DuplicateMatch; rejected: boolean }
+  | { kind: 'staged'; mediaId: string }
+  | { kind: 'gone' }
+  | DuplicateOutcome
+
+const LEGACY_READY_FROM: readonly UploadStatus[] = ['uploaded', 'processing']
 
 function sha256Hex(buffer: Buffer): string {
   return createHash('sha256').update(buffer).digest('hex')
@@ -95,51 +106,56 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
     else logger.info({ uploadId: upload.id }, 'Upload already settled by another job')
   }
 
+  async function rejectDuplicateUnderLock(
+    tx: DbExecutor,
+    upload: repository.OwnedUpload,
+    row: repository.NewMediaRow,
+    dedupable: boolean,
+  ): Promise<DuplicateOutcome | null> {
+    await repository.lockLeagueMedia(tx, upload.leagueId)
+    const match = await findLeagueDuplicate(tx, {
+      leagueId: upload.leagueId,
+      sha: row.sourceSha256,
+      phash: dedupable ? row.phash : null,
+    })
+    if (match === null) return null
+    const rejected = await repository.markUploadRejected(tx, upload.id, 'DUPLICATE_PHOTO', clock())
+    return { kind: 'duplicate', match, rejected }
+  }
+
   async function commit(
     upload: repository.OwnedUpload,
-    title: string,
+    title: string | null,
     row: repository.NewMediaRow,
     dedupable: boolean,
   ): Promise<CommitOutcome> {
     return runInTransaction(db, async (tx) => {
-      await repository.lockLeagueMedia(tx, upload.leagueId)
-      const match = await findLeagueDuplicate(tx, {
-        leagueId: upload.leagueId,
-        sha: row.sourceSha256,
-        phash: dedupable ? row.phash : null,
-      })
+      const duplicate = await rejectDuplicateUnderLock(tx, upload, row, dedupable)
+      if (duplicate) return duplicate
       const now = clock()
-      if (match) {
-        const rejected = await repository.markUploadRejected(tx, upload.id, 'DUPLICATE_PHOTO', now)
-        return { kind: 'duplicate', match, rejected }
+      if (title === null) {
+        if (!(await repository.markUploadStaged(tx, upload.id, now))) return { kind: 'gone' }
+        return { kind: 'staged', mediaId: await repository.insertMedia(tx, row) }
       }
       const mediaId = await repository.insertMedia(tx, row)
-      const number = await repository.nextCardNumber(tx, upload.leagueId)
-      const cardId = await repository.insertCard(tx, {
-        leagueId: upload.leagueId,
+      const card = await insertCardForMedia(tx, {
+        upload,
         mediaId,
-        authorId: upload.userId,
-        number,
         title,
-        tier: PROVISIONAL_TIER,
-        isProvisional: true,
+        now,
+        from: LEGACY_READY_FROM,
       })
-      await repository.insertCardTags(tx, {
-        cardId,
-        leagueId: upload.leagueId,
-        userIds: upload.taggedUserIds,
-      })
-      await repository.insertAuditEntry(tx, {
-        leagueId: upload.leagueId,
-        actorId: upload.userId,
-        action: 'card.created',
-        metadata: { cardId, number, uploadId: upload.id },
-      })
-      if ((await repository.markUploadReady(tx, upload.id, cardId, now)) === 0) {
-        throw new Error(`Upload ${upload.id} left processing before its card was committed`)
-      }
-      return { kind: 'ready', cardId, number }
+      return { kind: 'ready', ...card }
     })
+  }
+
+  async function deleteOrphanVariants(
+    upload: repository.UploadForProcessing,
+    sha: string,
+    keys: readonly string[],
+  ): Promise<void> {
+    if (await repository.findMediaBySha(db, upload.leagueId, sha)) return
+    await storage.delete(keys)
   }
 
   async function uploadVariants(
@@ -176,9 +192,17 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
     return entries.map((entry) => entry.variant)
   }
 
-  async function process(upload: repository.OwnedUpload, trace: RenderTrace) {
+  function titleOf(
+    upload: repository.OwnedUpload,
+  ): { ok: true; title: string | null } | { ok: false } {
+    if (upload.stageOnly) return { ok: true, title: null }
     const title = cardTitleSchema.safeParse(upload.title)
-    if (!title.success) {
+    return title.success ? { ok: true, title: title.data } : { ok: false }
+  }
+
+  async function process(upload: repository.OwnedUpload, trace: RenderTrace) {
+    const title = titleOf(upload)
+    if (!title.ok) {
       logger.error({ uploadId: upload.id }, 'Upload has no valid title; failing without retries')
       await failUpload(upload, trace)
       return
@@ -224,7 +248,7 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
 
     const outcome = await commit(
       upload,
-      title.data,
+      title.title,
       {
         leagueId: upload.leagueId,
         uploadId: upload.id,
@@ -254,6 +278,23 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
       )
       return
     }
+    if (outcome.kind === 'gone') {
+      await deleteOrphanVariants(
+        upload,
+        sha,
+        variants.map((variant) => variant.key),
+      )
+      await storage.delete([upload.objectKey])
+      logger.info(
+        { uploadId: upload.id },
+        'Upload is gone (discarded) before staging; nothing kept',
+      )
+      return
+    }
+    if (outcome.kind === 'staged') {
+      logger.info({ uploadId: upload.id, mediaId: outcome.mediaId }, 'Upload staged')
+      return
+    }
     await storage.delete([upload.objectKey])
     await bestEffort({ leagueId: upload.leagueId }, 'Failed to enqueue rarity recompute', () =>
       rarity.enqueueRecompute({ leagueId: upload.leagueId }),
@@ -274,10 +315,9 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
     )
     const sha = trace.sha
     if (sha === null || trace.variantKeys.length === 0) return
-    await bestEffort(context, 'Failed to delete variants of a failed upload', async () => {
-      if (await repository.findMediaBySha(db, upload.leagueId, sha)) return
-      await storage.delete(trace.variantKeys)
-    })
+    await bestEffort(context, 'Failed to delete variants of a failed upload', () =>
+      deleteOrphanVariants(upload, sha, trace.variantKeys),
+    )
   }
 
   return {
