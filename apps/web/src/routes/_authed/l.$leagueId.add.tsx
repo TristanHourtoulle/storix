@@ -23,6 +23,7 @@ import { uploadQuotaQueryOptions, useUploadQuota } from '@/features/uploads/use-
 
 export const Route = createFileRoute('/_authed/l/$leagueId/add')({
   validateSearch: z.object({ resume: z.boolean().optional() }),
+  remountDeps: ({ params }) => params.leagueId,
   loader: ({ context, params }) =>
     Promise.all([
       context.queryClient.ensureQueryData(membersQueryOptions(params.leagueId)),
@@ -150,7 +151,12 @@ function AddPhotos() {
   if (state.screen === 'stack' && state.cards.length > 0) {
     return (
       <>
-        <CardStack session={session} members={members} onClose={close} />
+        <CardStack
+          session={session}
+          members={members}
+          onClose={close}
+          onOverlayChange={leave.setOverlayCloser}
+        />
         {leaveDialog}
       </>
     )

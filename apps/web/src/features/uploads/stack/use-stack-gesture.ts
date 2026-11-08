@@ -58,12 +58,14 @@ export interface StackGestureBind {
   onPointerMove(event: PointerEvent<HTMLElement>): void
   onPointerUp(event: PointerEvent<HTMLElement>): void
   onPointerCancel(event: PointerEvent<HTMLElement>): void
+  onLostPointerCapture(event: PointerEvent<HTMLElement>): void
 }
 
-function velocityOf(samples: readonly Sample[]): number {
+function velocityOf(samples: readonly Sample[], releasedAt: number): number {
   const first = samples[0]
   const last = samples[samples.length - 1]
   if (!first || !last || last.t === first.t) return 0
+  if (releasedAt - last.t > VELOCITY_WINDOW_MS) return 0
   return (last.x - first.x) / (last.t - first.t)
 }
 
@@ -151,7 +153,7 @@ export function useStackGesture(input: StackGestureInput): {
       }
       const verdict = resolveSwipe({
         dx: drag.dx,
-        vx: velocityOf(drag.samples),
+        vx: velocityOf(drag.samples, event.timeStamp),
         width: top.offsetWidth,
         canPrev,
       })
@@ -205,6 +207,7 @@ export function useStackGesture(input: StackGestureInput): {
     },
     onPointerUp: (event) => end(event, false),
     onPointerCancel: (event) => end(event, true),
+    onLostPointerCapture: (event) => end(event, true),
   }
 
   return { bind, isDragging }

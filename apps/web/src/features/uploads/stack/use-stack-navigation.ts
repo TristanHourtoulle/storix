@@ -30,6 +30,13 @@ export interface StackNavigation {
   isLocked(): boolean
 }
 
+function enterFromRight(prev: HTMLElement | null): HTMLElement | null {
+  if (!prev) return null
+  prev.style.transform = 'translateX(110%)'
+  prev.style.visibility = 'visible'
+  return prev
+}
+
 function isTypingTarget(target: EventTarget | null): boolean {
   return target instanceof Element && target.closest(TEXT_FIELDS) !== null
 }
@@ -89,14 +96,14 @@ export function useStackNavigation(input: StackNavigationInput): StackNavigation
   const removeCurrent = useCallback(
     (): Promise<void> =>
       runLocked(async () => {
-        const { session, reduced, topRef, underRef } = inputRef.current
+        const { session, reduced, topRef, underRef, prevRef } = inputRef.current
         const card = session.state.cards[session.state.index]
         if (!card) return
         const top = topRef.current
-        const under = underRef.current
+        const incoming = underRef.current ?? enterFromRight(prevRef.current)
         await Promise.all([
           top ? animateRemove(top, reduced) : null,
-          under ? animatePromote(under, reduced) : null,
+          incoming ? animatePromote(incoming, reduced) : null,
         ])
         flushSync(() => void session.remove(card.localId))
         settleMotion(inputRef.current.deckRef.current)

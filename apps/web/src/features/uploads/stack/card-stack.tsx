@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { MemberSummary } from '@storix/shared'
 import { CARD_CROP_FRAME } from '@storix/shared/domain'
 import { CropEditor } from '@/components/crop/crop-editor'
@@ -19,6 +19,7 @@ interface CardStackProps {
   session: UploadSession
   members: readonly MemberSummary[]
   onClose: () => void
+  onOverlayChange: (close: (() => void) | null) => void
 }
 
 interface DeckSlot {
@@ -68,7 +69,7 @@ function CropDialog({
 }
 
 /** The swipeable stack of picked photos (proposal D). */
-export function CardStack({ session, members, onClose }: CardStackProps) {
+export function CardStack({ session, members, onClose, onOverlayChange }: CardStackProps) {
   const { state } = session
   const reduced = useReducedMotion()
   const [cropFor, setCropFor] = useState<string | null>(null)
@@ -102,6 +103,12 @@ export function CardStack({ session, members, onClose }: CardStackProps) {
     onNext: () => void navigation.goNext(),
     onPrev: () => void navigation.goPrev(),
   })
+
+  const isCropOpen = cropCard !== null
+  useEffect(() => {
+    onOverlayChange(isCropOpen ? () => setCropFor(null) : null)
+    return () => onOverlayChange(null)
+  }, [isCropOpen, onOverlayChange])
 
   if (!current) return null
 
