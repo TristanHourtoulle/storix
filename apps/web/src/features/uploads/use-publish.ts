@@ -16,6 +16,8 @@ const POLL_INTERVAL_MS = 1500
 const POLL_TIMEOUT_MS = 180_000
 
 const CROP_RESET_NOTICE = 'Cadrage réinitialisé'
+const UNSAVED_NOTICE =
+  "Certaines modifications n'ont pas pu être enregistrées. Vérifie ta connexion, puis publie à nouveau."
 const PUBLISH_BACKGROUND_NOTICE = 'La publication continue en arrière-plan.'
 
 const problemsSchema = z.object({ problems: z.array(publishProblemSchema) })
@@ -123,7 +125,10 @@ export function usePublish(leagueId: string, session: UploadSession) {
     const current = sessionRef.current
     setIsPublishing(true)
     try {
-      await current.flush()
+      if (!(await current.flush())) {
+        current.dispatch({ type: 'notice', notice: UNSAVED_NOTICE })
+        return
+      }
       const cards = publishableUploads(sessionRef.current.state.cards)
       const ids = cards.flatMap((card) => (card.uploadId ? [card.uploadId] : []))
       if (ids.length === 0) return
