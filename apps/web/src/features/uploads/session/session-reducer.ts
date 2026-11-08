@@ -35,7 +35,7 @@ export interface SessionState {
 
 export type SessionAction =
   | { type: 'added'; cards: readonly StackCard[]; overflow: DraftOverflow | null }
-  | { type: 'resumed'; drafts: readonly UploadDraft[] }
+  | { type: 'resumed'; drafts: readonly UploadDraft[]; focus?: boolean }
   | { type: 'prepared'; localId: string; photo: PreparedPhoto }
   | {
       type: 'phase'
@@ -49,6 +49,8 @@ export type SessionAction =
       patch: Partial<Pick<StackCard, 'title' | 'taggedUserIds' | 'crop'>>
     }
   | { type: 'navigated'; index: number }
+  | { type: 'next' }
+  | { type: 'prev' }
   | { type: 'screen'; screen: SessionScreen }
   | { type: 'removed'; localId: string }
   | { type: 'reconciled'; goneUploadIds: readonly string[]; publishedElsewhere: number }
@@ -156,7 +158,7 @@ function mergeDraft(card: StackCard, draft: UploadDraft): StackCard {
   }
 }
 
-function resume(state: SessionState, drafts: readonly UploadDraft[]): SessionState {
+function resume(state: SessionState, drafts: readonly UploadDraft[], focus: boolean): SessionState {
   const byUploadId = new Map(drafts.map((draft) => [draft.uploadId, draft]))
   const known = new Set(state.cards.map((card) => card.uploadId))
   const merged = state.cards.map((card) => {
@@ -165,8 +167,10 @@ function resume(state: SessionState, drafts: readonly UploadDraft[]): SessionSta
   })
   const added = drafts.filter((draft) => !known.has(draft.uploadId)).map(cardFromDraft)
   const cards = [...merged, ...added]
-  if (added.length === 0) return { ...state, cards }
-  const firstBlank = cards.findIndex(isBlankTitle)
+  if (added.length === 0 || !focus) return { ...state, cards }
+  const firstBlank = cards.findIndex(
+    (card) => card.phase !== 'duplicate' && card.phase !== 'error' && isBlankTitle(card),
+  )
   return {
     ...state,
     cards,
@@ -204,7 +208,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       }
     }
     case 'resumed':
-      return resume(state, action.drafts)
+      return resume(state, action.drafts, action.focus ?? true)
     case 'prepared':
       return updateCard(state, action.localId, (card) => ({
         ...card,
@@ -221,6 +225,12 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       return updateCard(state, action.localId, (card) => ({ ...card, ...action.patch }))
     case 'navigated':
       return { ...state, index: clampIndex(action.index, state.cards.length) }
+    case 'next':
+      return state.index >= state.cards.length - 1
+        ? { ...state, screen: 'summary' }
+        : { ...state, index: state.index + 1 }
+    case 'prev':
+      return { ...state, index: clampIndex(state.index - 1, state.cards.length) }
     case 'screen':
       return { ...state, screen: action.screen }
     case 'removed':
@@ -237,7 +247,11 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
   }
 }
 
-/** Derives the counters the stack, the summary and the leave dialog show. */
+/**
+ * Derives the counters the stack, the summary and the leave dialog show. `publishable` holds every card
+ * that is neither a duplicate nor an error, busy ones included: publish only its `staged` cards, once
+ * `busy` is 0 and `missingTitles` is 0.
+ */
 export function sessionStats(state: SessionState): {
   total: number
   publishable: StackCard[]

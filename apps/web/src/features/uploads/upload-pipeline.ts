@@ -8,6 +8,7 @@ import {
   UPLOAD_FAILED_MESSAGE,
   completeUpload,
   createUpload,
+  discardUploads,
   fetchUploadState,
   postToBucket,
   type BucketTarget,
@@ -19,8 +20,12 @@ const PRESIGN_SAFETY_MS = 60_000
 const MAX_TRANSIENT_RETRIES = 2
 const RETRY_BASE_MS = 1000
 
-const INVALID_IMAGE_MESSAGE = "Cette photo n'a pas pu être lue."
+const QUOTA_SOUND_GAP_MS = 2000
+
+export const INVALID_IMAGE_MESSAGE = "Cette photo n'a pas pu être lue."
 const SLOW_MESSAGE = 'Toujours en cours de traitement.'
+
+let lastQuotaSoundAt = 0
 
 export type StagePhase = 'sending' | 'processing'
 
@@ -183,11 +188,36 @@ function outcomeOf(uploadId: string, state: UploadState | null): StageOutcome {
   return { kind: 'staged', uploadId }
 }
 
-async function resumeExisting(ctx: StageContext, uploadId: string): Promise<UploadState | null> {
+type KnownUpload =
+  { kind: 'poll'; uploadId: string; state: UploadState } | { kind: 'reuse' } | { kind: 'fresh' }
+
+function isReusable(reservation: Reservation): boolean {
+  return !reservation.isCompleted && reservation.expiresAt - PRESIGN_SAFETY_MS > Date.now()
+}
+
+function discardQuietly(leagueId: string, uploadId: string): void {
+  discardUploads(leagueId, [uploadId]).catch((error: unknown) => {
+    logger.warn('Stale reservation discard failed', { uploadId, error })
+  })
+}
+
+async function checkKnownUpload(
+  ctx: StageContext,
+  card: StageCardInput,
+  saved: Reservation | null,
+): Promise<KnownUpload> {
+  const uploadId = saved?.uploadId ?? card.uploadId
+  if (!uploadId) return { kind: 'fresh' }
   const state = await fetchUploadState(ctx.leagueId, uploadId, ctx.signal)
-  if (state.status === 'pending' || state.status === 'failed') return null
-  if (state.status === 'rejected' && state.rejectionReason !== 'DUPLICATE_PHOTO') return null
-  return state
+  if (state.status === 'pending') {
+    if (saved?.uploadId === uploadId && isReusable(saved)) return { kind: 'reuse' }
+    discardQuietly(ctx.leagueId, uploadId)
+    return { kind: 'fresh' }
+  }
+  const isUnusable =
+    state.status === 'failed' ||
+    (state.status === 'rejected' && state.rejectionReason !== 'DUPLICATE_PHOTO')
+  return isUnusable ? { kind: 'fresh' } : { kind: 'poll', uploadId, state }
 }
 
 async function attempt(
@@ -196,14 +226,8 @@ async function attempt(
   saved: Reservation | null,
   remember: (reservation: Reservation) => void,
 ): Promise<StageOutcome> {
-  if (saved?.isCompleted) {
-    ctx.onPhase(card.localId, 'processing', { uploadId: saved.uploadId })
-    const state = await fetchUploadState(ctx.leagueId, saved.uploadId, ctx.signal)
-    return outcomeOf(saved.uploadId, await waitForStaged(ctx, saved.uploadId, state))
-  }
   ctx.onPhase(card.localId, 'sending', { progress: 0 })
-  const isReusable = saved !== null && saved.expiresAt - PRESIGN_SAFETY_MS > Date.now()
-  const reservation = isReusable ? saved : await reserve(ctx, card)
+  const reservation = saved !== null && isReusable(saved) ? saved : await reserve(ctx, card)
   remember(reservation)
   ensureActive(ctx.signal)
   await postToBucket(reservation.target, card.blob, ctx.signal, (progress) =>
@@ -223,7 +247,8 @@ async function attempt(
 
 function failure(error: unknown, uploadId: string | null): StageOutcome {
   if (isQuotaExceeded(error)) {
-    playSound({ name: 'quota' })
+    if (Date.now() - lastQuotaSoundAt > QUOTA_SOUND_GAP_MS) playSound({ name: 'quota' })
+    lastQuotaSoundAt = Date.now()
     return { kind: 'error', uploadId: null, message: userMessage(error), isRetryable: false }
   }
   const message = error instanceof TypeError ? UPLOAD_FAILED_MESSAGE : userMessage(error)
@@ -246,12 +271,13 @@ export async function runStageUpload(
   for (let retry = 0; ; retry += 1) {
     try {
       ensureActive(ctx.signal)
-      if (card.uploadId && memory.reservation === null) {
-        const existing = await resumeExisting(ctx, card.uploadId)
-        if (existing) {
-          ctx.onPhase(card.localId, 'processing', { uploadId: card.uploadId })
-          return outcomeOf(card.uploadId, await waitForStaged(ctx, card.uploadId, existing))
+      if (retry > 0 || card.uploadId) {
+        const known = await checkKnownUpload(ctx, card, memory.reservation)
+        if (known.kind === 'poll') {
+          ctx.onPhase(card.localId, 'processing', { uploadId: known.uploadId })
+          return outcomeOf(known.uploadId, await waitForStaged(ctx, known.uploadId, known.state))
         }
+        if (known.kind === 'fresh') memory.reservation = null
       }
       return await attempt(ctx, card, memory.reservation, remember)
     } catch (error) {

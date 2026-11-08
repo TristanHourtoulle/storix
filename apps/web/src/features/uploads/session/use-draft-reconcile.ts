@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef, type Dispatch, type RefObject } from 'r
 import type { UploadState } from '@storix/shared'
 import { errorMessage } from '@/features/errors/error-messages'
 import { logger } from '@/lib/logger'
+import { INVALID_IMAGE_MESSAGE } from '../upload-pipeline'
 import { fetchUploadStates } from '../uploads.api'
 import type { SessionAction, SessionState, StackCard } from './session-reducer'
 
 const POLL_INTERVAL_MS = 1500
-const INVALID_IMAGE_MESSAGE = "Cette photo n'a pas pu être lue."
 const PUBLISHED_STATUSES: ReadonlySet<UploadState['status']> = new Set(['publishing', 'ready'])
 
 export interface DraftReconcileInput {

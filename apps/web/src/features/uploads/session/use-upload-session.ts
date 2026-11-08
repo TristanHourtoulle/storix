@@ -4,14 +4,13 @@ import type { UploadDraft } from '@storix/shared'
 import { userMessage } from '@/features/errors/user-message'
 import { purgeMediaPrefixes } from '@/features/privacy/purge-cache'
 import { playSound } from '@/features/sound/sound'
-import { ApiError } from '@/lib/http'
 import { logger } from '@/lib/logger'
 import { preparePhoto } from '../prepare-photo'
-import { discardUploads, editUpload, fetchDrafts } from '../uploads.api'
+import { discardUploads, fetchDrafts } from '../uploads.api'
 import { draftsQueryKey } from '../use-drafts'
 import type { DraftCapacity } from '../use-photo-drafts'
 import { uploadQuotaQueryKey } from '../use-upload-quota'
-import { createDraftAutosave, type DraftAutosave } from './draft-autosave'
+import { nextLocalId, remoteMediaPrefixes, slotsUsed, type EditPatch } from './session-fields'
 import {
   INITIAL_SESSION,
   createStackCard,
@@ -19,19 +18,11 @@ import {
   sessionStats,
   type StackCard,
 } from './session-reducer'
-import {
-  filledFields,
-  nextLocalId,
-  remoteMediaPrefixes,
-  slotsUsed,
-  toBody,
-  type EditPatch,
-} from './session-fields'
 import { useDraftReconcile } from './use-draft-reconcile'
+import { useDraftSync } from './use-draft-sync'
 import { useStageQueue } from './use-stage-queue'
 
 const QUOTA_SOUND_DELAY = 0.15
-const SAVED_PHASES: ReadonlySet<StackCard['phase']> = new Set(['processing', 'staged'])
 
 /** Holds the upload stack: picks, background staging, edits with autosave, navigation and discards. */
 export function useUploadSession(leagueId: string, capacity: DraftCapacity) {
@@ -41,6 +32,8 @@ export function useUploadSession(leagueId: string, capacity: DraftCapacity) {
   const isMountedRef = useRef(false)
   const urlsRef = useRef<ReadonlySet<string>>(new Set())
   const reconcileRef = useRef<() => Promise<void>>(() => Promise.resolve())
+  const releaseRef = useRef<(card: StackCard) => void>(() => undefined)
+  const removedRef = useRef<ReadonlySet<string>>(new Set())
 
   useEffect(() => {
     stateRef.current = state
@@ -55,51 +48,30 @@ export function useUploadSession(leagueId: string, capacity: DraftCapacity) {
     }
   }, [])
 
-  const autosaveRef = useRef<DraftAutosave | null>(null)
-
-  useEffect(() => {
-    const autosave = createDraftAutosave({
-      save: async (uploadId, body) => {
-        await editUpload(leagueId, uploadId, body)
-      },
-      onConflict: () => void reconcileRef.current(),
-    })
-    autosaveRef.current = autosave
-    return () => {
-      void autosave.flush()
-      if (autosaveRef.current === autosave) autosaveRef.current = null
-    }
-  }, [leagueId])
+  const sync = useDraftSync({
+    leagueId,
+    cards: state.cards,
+    onConflict: useCallback(() => void reconcileRef.current(), []),
+  })
+  const { flush, forget } = sync
+  const queue = useStageQueue({ leagueId, cards: state.cards, dispatch })
 
   const invalidateDraftQueries = useCallback((): void => {
     void queryClient.invalidateQueries({ queryKey: uploadQuotaQueryKey(leagueId) })
     void queryClient.invalidateQueries({ queryKey: draftsQueryKey(leagueId) })
   }, [leagueId, queryClient])
 
-  const handleCompleted = useCallback(
-    (localId: string, uploadId: string): void => {
-      const card = stateRef.current.cards.find((candidate) => candidate.localId === localId)
-      const body = card ? filledFields(card) : null
-      if (!body) return
-      editUpload(leagueId, uploadId, body).catch((error: unknown) => {
-        if (error instanceof ApiError && error.status === 409) void reconcileRef.current()
-        else logger.warn('Initial draft save failed', { uploadId, error })
-      })
-    },
-    [leagueId],
-  )
-
-  const queue = useStageQueue({
-    leagueId,
-    cards: state.cards,
-    dispatch,
-    onCompleted: handleCompleted,
-  })
-
   const refreshRemote = useCallback(async (): Promise<void> => {
     const drafts = await fetchDrafts(leagueId)
-    if (isMountedRef.current) dispatch({ type: 'resumed', drafts })
+    if (isMountedRef.current) dispatch({ type: 'resumed', drafts, focus: false })
   }, [leagueId])
+
+  const handleGone = useCallback((uploadIds: readonly string[]): void => {
+    const gone = new Set(uploadIds)
+    stateRef.current.cards
+      .filter((card) => card.uploadId !== null && gone.has(card.uploadId))
+      .forEach((card) => releaseRef.current(card))
+  }, [])
 
   const { reconcile } = useDraftReconcile({
     leagueId,
@@ -107,12 +79,21 @@ export function useUploadSession(leagueId: string, capacity: DraftCapacity) {
     stateRef,
     dispatch,
     onStaged: refreshRemote,
-    onGone: (uploadIds) => uploadIds.forEach((uploadId) => autosaveRef.current?.cancel(uploadId)),
+    onGone: handleGone,
   })
 
   useEffect(() => {
     reconcileRef.current = reconcile
   }, [reconcile])
+
+  const trackUrl = useCallback((localId: string, url: string): boolean => {
+    if (!isMountedRef.current || removedRef.current.has(localId)) {
+      URL.revokeObjectURL(url)
+      return false
+    }
+    urlsRef.current = new Set([...urlsRef.current, url])
+    return true
+  }, [])
 
   const add = useCallback(
     async (files: File[]): Promise<void> => {
@@ -134,12 +115,9 @@ export function useUploadSession(leagueId: string, capacity: DraftCapacity) {
         if (!file) continue
         try {
           const photo = await preparePhoto(file)
-          if (!isMountedRef.current) {
-            URL.revokeObjectURL(photo.previewUrl)
-            return
+          if (trackUrl(card.localId, photo.previewUrl)) {
+            dispatch({ type: 'prepared', localId: card.localId, photo })
           }
-          urlsRef.current = new Set([...urlsRef.current, photo.previewUrl])
-          dispatch({ type: 'prepared', localId: card.localId, photo })
         } catch (error) {
           if (!isMountedRef.current) return
           dispatch({
@@ -151,16 +129,11 @@ export function useUploadSession(leagueId: string, capacity: DraftCapacity) {
         }
       }
     },
-    [capacity],
+    [capacity, trackUrl],
   )
 
   const resume = useCallback(
     (drafts: UploadDraft[]): void => dispatch({ type: 'resumed', drafts }),
-    [],
-  )
-
-  const flush = useCallback(
-    (): Promise<void> => autosaveRef.current?.flush() ?? Promise.resolve(),
     [],
   )
 
@@ -174,33 +147,26 @@ export function useUploadSession(leagueId: string, capacity: DraftCapacity) {
   )
 
   const next = useCallback((): void => {
-    const { index, cards } = stateRef.current
-    if (index >= cards.length - 1) dispatch({ type: 'screen', screen: 'summary' })
-    else dispatch({ type: 'navigated', index: index + 1 })
+    dispatch({ type: 'next' })
     void flush()
   }, [flush])
 
   const prev = useCallback((): void => {
-    dispatch({ type: 'navigated', index: stateRef.current.index - 1 })
+    dispatch({ type: 'prev' })
     void flush()
   }, [flush])
 
-  const edit = useCallback((localId: string, patch: EditPatch): void => {
-    const card = stateRef.current.cards.find((candidate) => candidate.localId === localId)
-    dispatch({ type: 'edited', localId, patch })
-    if (card?.uploadId && SAVED_PHASES.has(card.phase)) {
-      autosaveRef.current?.schedule(card.uploadId, toBody(patch))
-    }
-  }, [])
-
-  const copyPreviousTags = useCallback(
-    (localId: string): void => {
-      const { cards } = stateRef.current
-      const previous = cards[cards.findIndex((card) => card.localId === localId) - 1]
-      if (previous) edit(localId, { taggedUserIds: previous.taggedUserIds })
-    },
-    [edit],
+  const edit = useCallback(
+    (localId: string, patch: EditPatch): void => dispatch({ type: 'edited', localId, patch }),
+    [],
   )
+
+  const copyPreviousTags = useCallback((localId: string): void => {
+    const { cards } = stateRef.current
+    const previous = cards[cards.findIndex((card) => card.localId === localId) - 1]
+    if (previous)
+      dispatch({ type: 'edited', localId, patch: { taggedUserIds: previous.taggedUserIds } })
+  }, [])
 
   const retry = useCallback((localId: string): void => {
     const card = stateRef.current.cards.find((candidate) => candidate.localId === localId)
@@ -226,16 +192,21 @@ export function useUploadSession(leagueId: string, capacity: DraftCapacity) {
 
   const releaseCard = useCallback(
     (card: StackCard): void => {
+      removedRef.current = new Set([...removedRef.current, card.localId])
       queue.abortCard(card.localId)
-      if (card.uploadId) autosaveRef.current?.cancel(card.uploadId)
+      if (card.uploadId) forget(card.uploadId)
       const url = card.photo?.previewUrl
       if (url && urlsRef.current.has(url)) {
         URL.revokeObjectURL(url)
         urlsRef.current = new Set([...urlsRef.current].filter((tracked) => tracked !== url))
       }
     },
-    [queue],
+    [forget, queue],
   )
+
+  useEffect(() => {
+    releaseRef.current = releaseCard
+  }, [releaseCard])
 
   const remove = useCallback(
     async (localId: string): Promise<void> => {
@@ -247,6 +218,14 @@ export function useUploadSession(leagueId: string, capacity: DraftCapacity) {
     },
     [discard, releaseCard],
   )
+
+  const abortUnsent = useCallback((): void => {
+    const pending = queue.abortUnsent()
+    if (pending.length === 0) return
+    discardUploads(leagueId, pending, { keepalive: true })
+      .catch((error: unknown) => logger.warn('Unsent reservations discard failed', { error }))
+      .finally(invalidateDraftQueries)
+  }, [invalidateDraftQueries, leagueId, queue])
 
   const discardAll = useCallback(async (): Promise<void> => {
     const { cards } = stateRef.current
@@ -272,7 +251,7 @@ export function useUploadSession(leagueId: string, capacity: DraftCapacity) {
     retry,
     remove,
     flush,
-    abortUnsent: queue.abortUnsent,
+    abortUnsent,
     discardAll,
   }
 }

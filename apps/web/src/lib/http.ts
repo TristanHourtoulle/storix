@@ -7,6 +7,7 @@ interface VoidRequestOptions {
   method?: HttpMethod
   body?: unknown
   signal?: AbortSignal
+  keepalive?: boolean
 }
 
 interface RequestOptions<T> extends VoidRequestOptions {
@@ -46,6 +47,7 @@ async function send(path: string, options: VoidRequestOptions): Promise<Response
     headers: hasBody ? { 'Content-Type': 'application/json' } : undefined,
     body: hasBody ? JSON.stringify(options.body) : undefined,
     signal: options.signal,
+    keepalive: options.keepalive,
   })
   if (!response.ok) throw await toApiError(response)
   return response

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { logger } from '@/lib/logger'
 import { runStageUpload, waitForNetwork, type StageOutcome } from '../upload-pipeline'
+import { discardUploads } from '../uploads.api'
 import { uploadQuotaQueryKey } from '../use-upload-quota'
 import type { SessionAction, StackCard } from './session-reducer'
 
@@ -10,44 +12,50 @@ export interface StageQueueInput {
   leagueId: string
   cards: readonly StackCard[]
   dispatch: Dispatch<SessionAction>
-  onCompleted: (localId: string, uploadId: string) => void
 }
 
 export interface StageQueue {
   abortCard(localId: string): void
-  abortUnsent(): void
+  /** Stops the queue, aborts uncompleted runs and returns every reservation not completed yet. */
+  abortUnsent(): string[]
   abortAll(): void
 }
 
+function without<V>(map: ReadonlyMap<string, V>, key: string): ReadonlyMap<string, V> {
+  return new Map([...map].filter(([id]) => id !== key))
+}
+
 /** Runs queued cards through the stage pipeline, two at a time, while the session is mounted. */
-export function useStageQueue({
-  leagueId,
-  cards,
-  dispatch,
-  onCompleted,
-}: StageQueueInput): StageQueue {
+export function useStageQueue({ leagueId, cards, dispatch }: StageQueueInput): StageQueue {
   const queryClient = useQueryClient()
   const [version, setVersion] = useState(0)
   const sessionRef = useRef<AbortController | null>(null)
   const runningRef = useRef<ReadonlyMap<string, AbortController>>(new Map())
-  const completedRef = useRef<ReadonlySet<string>>(new Set())
+  const pendingRef = useRef<ReadonlyMap<string, string>>(new Map())
   const isStoppedRef = useRef(false)
-  const onCompletedRef = useRef(onCompleted)
 
-  useEffect(() => {
-    onCompletedRef.current = onCompleted
-  }, [onCompleted])
+  const discardPending = useCallback((): void => {
+    const pending = [...pendingRef.current.values()]
+    pendingRef.current = new Map()
+    if (pending.length === 0) return
+    discardUploads(leagueId, pending, { keepalive: true }).catch((error: unknown) => {
+      logger.warn('Pending reservations discard failed on leave', { error })
+    })
+  }, [leagueId])
 
   useEffect(() => {
     const controller = new AbortController()
     sessionRef.current = controller
     isStoppedRef.current = false
+    window.addEventListener('pagehide', discardPending)
     return () => {
+      window.removeEventListener('pagehide', discardPending)
       controller.abort()
       runningRef.current.forEach((running) => running.abort())
       runningRef.current = new Map()
+      discardPending()
     }
-  }, [])
+  }, [discardPending])
 
   const invalidateQuota = useCallback((): void => {
     void queryClient.invalidateQueries({ queryKey: uploadQuotaQueryKey(leagueId) })
@@ -55,13 +63,11 @@ export function useStageQueue({
 
   const settle = useCallback(
     (localId: string, outcome: StageOutcome): void => {
-      if (outcome.kind === 'staged') {
-        dispatch({ type: 'phase', localId, phase: 'staged', patch: { uploadId: outcome.uploadId } })
-      } else if (outcome.kind === 'duplicate') {
+      if (outcome.kind === 'staged' || outcome.kind === 'duplicate') {
         dispatch({
           type: 'phase',
           localId,
-          phase: 'duplicate',
+          phase: outcome.kind,
           patch: { uploadId: outcome.uploadId },
         })
       } else if (outcome.kind === 'error') {
@@ -100,11 +106,11 @@ export function useStageQueue({
                 phase,
                 patch: { progress: extra?.progress, uploadId: extra?.uploadId },
               })
-              if (phase === 'sending' && extra?.uploadId) invalidateQuota()
-              if (phase === 'processing' && extra?.uploadId) {
-                completedRef.current = new Set([...completedRef.current, card.localId])
-                onCompletedRef.current(localId, extra.uploadId)
+              if (phase === 'sending' && extra?.uploadId) {
+                pendingRef.current = new Map(pendingRef.current).set(localId, extra.uploadId)
+                invalidateQuota()
               }
+              if (phase === 'processing') pendingRef.current = without(pendingRef.current, localId)
             },
           },
           {
@@ -116,7 +122,7 @@ export function useStageQueue({
         )
         if (outcome.kind === 'offline') {
           dispatch({ type: 'phase', localId: card.localId, phase: 'queued' })
-          await waitForNetwork(session.signal)
+          await waitForNetwork(controller.signal)
         } else {
           settle(card.localId, outcome)
           if (outcome.kind !== 'cancelled') invalidateQuota()
@@ -148,19 +154,29 @@ export function useStageQueue({
 
   const abortCard = useCallback((localId: string): void => {
     runningRef.current.get(localId)?.abort()
+    pendingRef.current = without(pendingRef.current, localId)
   }, [])
 
-  const abortUnsent = useCallback((): void => {
+  const abortUnsent = useCallback((): string[] => {
     isStoppedRef.current = true
     runningRef.current.forEach((controller, localId) => {
-      if (!completedRef.current.has(localId)) controller.abort()
+      if (pendingRef.current.has(localId) || !cardsCompleted(cards, localId)) controller.abort()
     })
-  }, [])
+    const pending = [...pendingRef.current.values()]
+    pendingRef.current = new Map()
+    return pending
+  }, [cards])
 
   const abortAll = useCallback((): void => {
     isStoppedRef.current = true
     runningRef.current.forEach((controller) => controller.abort())
+    pendingRef.current = new Map()
   }, [])
 
   return useMemo(() => ({ abortCard, abortUnsent, abortAll }), [abortCard, abortUnsent, abortAll])
+}
+
+function cardsCompleted(cards: readonly StackCard[], localId: string): boolean {
+  const phase = cards.find((card) => card.localId === localId)?.phase
+  return phase === 'processing' || phase === 'staged'
 }

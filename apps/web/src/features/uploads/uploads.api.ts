@@ -171,12 +171,17 @@ export async function fetchDrafts(leagueId: string): Promise<UploadDraft[]> {
   return response.drafts
 }
 
-/** Discards draft or pending uploads, which gives their quota back. */
-export async function discardUploads(leagueId: string, ids: readonly string[]): Promise<void> {
+/** Discards draft or pending uploads, which gives their quota back; `keepalive` lets it outlive the page. */
+export async function discardUploads(
+  leagueId: string,
+  ids: readonly string[],
+  options: { keepalive?: boolean } = {},
+): Promise<void> {
   for (const page of chunk(ids, DISCARD_BATCH)) {
     await apiRequestVoid(uploadsPath(leagueId, '/discard'), {
       method: 'POST',
       body: { uploadIds: page },
+      keepalive: options.keepalive,
     })
   }
 }
