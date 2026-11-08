@@ -98,7 +98,9 @@ export function useStackGesture(input: StackGestureInput): {
     const progress = Math.min(1, Math.abs(dx) / width)
     ;[top, under, prev].forEach(freeze)
     if (dx >= 0) {
-      top.style.transform = reduced ? `translateX(${dx}px)` : `translateX(${dx}px) rotate(${dx / 20}deg)`
+      top.style.transform = reduced
+        ? `translateX(${dx}px)`
+        : `translateX(${dx}px) rotate(${dx / 20}deg)`
       if (under) {
         under.style.transform = `translateY(${10 * (1 - progress)}px) scale(${0.94 + 0.06 * progress})`
       }

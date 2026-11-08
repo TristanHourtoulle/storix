@@ -65,7 +65,10 @@ export function StackFields({
 }: StackFieldsProps) {
   if (card.phase === 'duplicate') {
     return (
-      <div role="status" className="rounded-input bg-tier-legendary/12 px-3 py-2.5 text-[13px] text-amber-200">
+      <div
+        role="status"
+        className="rounded-input bg-tier-legendary/12 px-3 py-2.5 text-[13px] text-amber-200"
+      >
         <b className="font-semibold">Cette photo est déjà dans la ligue.</b> Elle ne deviendra pas
         une carte. Retire-la pour continuer.
       </div>

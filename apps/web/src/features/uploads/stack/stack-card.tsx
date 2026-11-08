@@ -97,8 +97,7 @@ export function StackCard({
 }: StackCardProps) {
   const isTop = role === 'top'
   const isDuplicate = card.phase === 'duplicate'
-  const canCrop =
-    cardImageOf(card) !== null && !(card.phase === 'error' && !card.isRetryable)
+  const canCrop = cardImageOf(card) !== null && !(card.phase === 'error' && !card.isRetryable)
   const band = isDuplicate ? (
     <DuplicateBand />
   ) : isTop ? (

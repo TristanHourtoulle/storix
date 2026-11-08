@@ -118,7 +118,10 @@ export function CardStack({ session, members, onClose }: CardStackProps) {
         <button type="button" aria-label="Fermer" className="icon-btn" onClick={onClose}>
           <Icon name="close" className="size-5" />
         </button>
-        <p aria-live="polite" className="m-0 font-display text-[15px] font-semibold tabular-nums text-ink-3">
+        <p
+          aria-live="polite"
+          className="m-0 font-display text-[15px] font-semibold tabular-nums text-ink-3"
+        >
           {state.index + 1} / {state.cards.length}
         </p>
         <button

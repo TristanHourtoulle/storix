@@ -182,7 +182,11 @@ export function animateCancel(el: HTMLElement, reduced: boolean): Promise<void> 
   return play(
     el,
     [
-      { transform: from.transform, opacity: from.opacity, visibility: el.style.visibility || 'visible' },
+      {
+        transform: from.transform,
+        opacity: from.opacity,
+        visibility: el.style.visibility || 'visible',
+      },
       { transform: rest.transform, opacity: rest.opacity },
     ],
     { duration: CANCEL_MS, easing: CANCEL_EASING, hold: false },
