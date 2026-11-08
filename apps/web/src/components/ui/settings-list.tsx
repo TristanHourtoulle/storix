@@ -141,9 +141,11 @@ export function SettingsSwitchRow({
         type="button"
         role="switch"
         aria-checked={isOn}
-        disabled={isDisabled}
-        onClick={() => onChange(!isOn)}
-        className={`${settingsRowClassName(!isDisabled)} disabled:cursor-not-allowed disabled:opacity-60`}
+        aria-disabled={isDisabled}
+        onClick={() => {
+          if (!isDisabled) onChange(!isOn)
+        }}
+        className={`${settingsRowClassName(!isDisabled)} aria-disabled:cursor-not-allowed aria-disabled:opacity-60`}
       >
         <SettingsRowContent icon={icon} label={label} hint={hint} />
         <span
