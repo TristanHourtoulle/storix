@@ -211,18 +211,18 @@ Unit tests cover the pure domain and the Zod schemas in `packages/shared` only (
 
 ## Deploy (Railway)
 
-- Project `storix`, environment `production`, region EU West (Amsterdam). Pushing `main` to `TristanHourtoulle/storix` builds `api` and `worker` (Railpack, Node 24, pnpm from `packageManager`). Each service rebuilds only when its watch patterns change (`api`: `apps/api`, `apps/web`, `packages`; `worker`: `apps/worker`, `packages`; both: `pnpm-lock.yaml`, `package.json`).
+- Project `storix`, environment `production`, region EU West (Amsterdam). Pushing `main` to `TristanHourtoulle/storix` builds `api` and `worker` from Dockerfiles (`apps/api/Dockerfile`, `apps/worker/Dockerfile`, repo root as build context): `node:24.22.1-bookworm-slim` pinned by digest from Docker Hub, pnpm from `packageManager` through corepack (npm registry). Nothing is downloaded from GitHub releases. Each service reads its config as code from `apps/<service>/railway.json` (service setting "Config file path"). Each service rebuilds only when its watch patterns change (`api`: `apps/api`, `apps/web`, `packages`; `worker`: `apps/worker`, `packages`; both: `pnpm-lock.yaml`, `package.json`).
 
-| Service        | Role                                 | Config                                                                                                              |
-| -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `Postgres`     | PostgreSQL 18, 5 GB volume           | private network only                                                                                                |
-| `storix-media` | S3-compatible bucket, virtual-hosted | CORS set with `pnpm --filter @storix/storage set-cors --origins ...`                                                |
-| `api`          | Fastify API + built web app          | build `pnpm build:api`, pre-deploy `pnpm migrate:prod`, start `pnpm start`, health check `/api/health`, CDN enabled |
-| `worker`       | pg-boss jobs                         | build `pnpm build:worker`, start `pnpm start:worker`; waits for the migrations at startup                           |
+| Service        | Role                                 | Config                                                                                                                         |
+| -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `Postgres`     | PostgreSQL 18, 5 GB volume           | private network only                                                                                                           |
+| `storix-media` | S3-compatible bucket, virtual-hosted | CORS set with `pnpm --filter @storix/storage set-cors --origins ...`                                                           |
+| `api`          | Fastify API + built web app          | image build runs `pnpm build:api`, pre-deploy `pnpm migrate:prod`, start `pnpm start`, health check `/api/health`, CDN enabled |
+| `worker`       | pg-boss jobs                         | image build runs `pnpm build:worker`, start `pnpm start:worker`; waits for the migrations at startup                           |
 
 Variables (names only, values live in Railway):
 
-- Both services: `NODE_ENV`, `LOG_LEVEL`, `RAILPACK_NODE_VERSION`, `DATABASE_URL` (reference to `Postgres`), `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` (references to `storix-media`), `S3_REGION`, `S3_FORCE_PATH_STYLE`. The worker also accepts `MEDIA_CONCURRENCY`.
+- Both services: `NODE_ENV`, `LOG_LEVEL`, `DATABASE_URL` (reference to `Postgres`), `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` (references to `storix-media`), `S3_REGION`, `S3_FORCE_PATH_STYLE`. The worker also accepts `MEDIA_CONCURRENCY`.
 - api only: `BETTER_AUTH_SECRET`, `MEDIA_URL_SECRET` (set with `--stdin`), `APP_ORIGIN`, `PASSKEY_RP_ID`. `PORT` is injected by Railway.
 
 Migrations run once per api deploy in the pre-deploy step. The worker may start before them, so its startup gate waits (see Background jobs). Keep migrations expand-only so the old and new code both run on the new schema during the overlap.
