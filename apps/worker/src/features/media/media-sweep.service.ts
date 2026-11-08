@@ -1,11 +1,13 @@
 import type { Database } from '@storix/db'
 import {
   DRAFT_TTL_MS,
+  PUBLISH_STUCK_MS,
   UPLOAD_PRESIGN_TTL_SECONDS,
   classifyDraftForSweep,
 } from '@storix/shared/domain'
 import type { ObjectStorage } from '@storix/storage'
 import type { MediaQueue } from '../../jobs/media-queue'
+import { createBestEffort } from '../../lib/best-effort'
 import type { WorkerLogger } from '../../lib/logger'
 import { runInTransaction } from '../../lib/transaction'
 import type { StorageDeleteService } from '../storage/storage-delete.service'
@@ -52,13 +54,7 @@ interface DraftSweepCounts {
 export function createMediaSweepService(deps: Deps): MediaSweepService {
   const { db, storage, clock, logger, queue, storageDelete } = deps
 
-  async function bestEffort(context: object, message: string, task: () => Promise<unknown>) {
-    try {
-      await task()
-    } catch (error) {
-      logger.error({ ...context, err: error }, message)
-    }
-  }
+  const bestEffort = createBestEffort(logger)
 
   async function deleteDraft(row: draftRepository.DraftSweepRow): Promise<boolean> {
     const deleted = await runInTransaction(db, (tx) =>
@@ -84,7 +80,8 @@ export function createMediaSweepService(deps: Deps): MediaSweepService {
       await queue.enqueueMediaPublish({ uploadId: row.id })
       return 'requeued'
     }
-    await publishRepository.revertPublishing(db, row.id)
+    const stuckBefore = new Date(clock().getTime() - PUBLISH_STUCK_MS)
+    if (!(await publishRepository.revertPublishing(db, row.id, stuckBefore))) return 'waiting'
     logger.warn({ uploadId: row.id, jobs: history.total }, 'Stuck publish sent back to staged')
     return 'reverted'
   }

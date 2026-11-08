@@ -1,5 +1,5 @@
-import { and, eq } from 'drizzle-orm'
-import { media, uploads, type DbExecutor } from '@storix/db'
+import { and, eq, isNull, lt, or } from 'drizzle-orm'
+import { leagueMembers, media, uploads, type DbExecutor } from '@storix/db'
 import { cropRectSchema, type CropRect, type MediaVariant } from '@storix/shared'
 import { toUploadForProcessing, uploadColumns, type UploadForProcessing } from './media.repository'
 
@@ -50,7 +50,18 @@ function toPublishRow(row: RawPublishRow): PublishRow {
     mediaHeight !== null &&
     row.variants !== null
   return {
-    ...toUploadForProcessing(row),
+    ...toUploadForProcessing({
+      id: row.id,
+      leagueId: row.leagueId,
+      userId: row.userId,
+      objectKey: row.objectKey,
+      status: row.status,
+      title: row.title,
+      taggedUserIds: row.taggedUserIds,
+      clientCapturedAt: row.clientCapturedAt,
+      stageOnly: row.stageOnly,
+      crop: row.crop,
+    }),
     publishRequestedAt,
     cardId,
     media: hasMedia
@@ -95,11 +106,48 @@ export async function updateMediaDisplay(
     .where(eq(media.id, input.mediaId))
 }
 
-/** Sends a publishing upload back to staged; false when it is no longer publishing. */
-export async function revertPublishing(db: DbExecutor, uploadId: string): Promise<boolean> {
+/** Sends a publishing upload back to staged while it is still stuck; false when it moved on or was re-kicked since `stuckBefore`. */
+export async function revertPublishing(
+  db: DbExecutor,
+  uploadId: string,
+  stuckBefore: Date,
+): Promise<boolean> {
   const rows = await db
     .update(uploads)
     .set({ status: 'staged', publishRequestedAt: null })
+    .where(
+      and(
+        eq(uploads.id, uploadId),
+        eq(uploads.status, 'publishing'),
+        or(isNull(uploads.publishRequestedAt), lt(uploads.publishRequestedAt, stuckBefore)),
+      ),
+    )
+    .returning({ id: uploads.id })
+  return rows.length > 0
+}
+
+/** Locks the author's membership row in key share mode; false when the author is no longer a member. */
+export async function lockAuthorMembership(
+  tx: DbExecutor,
+  input: { leagueId: string; userId: string },
+): Promise<boolean> {
+  const rows = await tx
+    .select({ userId: leagueMembers.userId })
+    .from(leagueMembers)
+    .where(and(eq(leagueMembers.leagueId, input.leagueId), eq(leagueMembers.userId, input.userId)))
+    .for('key share')
+  return rows.length > 0
+}
+
+/** Withdraws a publishing upload whose author left; false when it is no longer publishing. */
+export async function discardPublishing(
+  db: DbExecutor,
+  uploadId: string,
+  now: Date,
+): Promise<boolean> {
+  const rows = await db
+    .update(uploads)
+    .set({ status: 'discarded', processedAt: now })
     .where(and(eq(uploads.id, uploadId), eq(uploads.status, 'publishing')))
     .returning({ id: uploads.id })
   return rows.length > 0

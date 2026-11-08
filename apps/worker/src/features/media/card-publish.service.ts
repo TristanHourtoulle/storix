@@ -1,4 +1,4 @@
-import type { Database } from '@storix/db'
+import type { Database, DbExecutor } from '@storix/db'
 import {
   CARD_CROP_FRAME,
   UPLOAD_MAX_BYTES,
@@ -11,6 +11,7 @@ import {
 import { cardTitleSchema, type MediaVariant } from '@storix/shared'
 import type { ObjectStorage } from '@storix/storage'
 import type { RarityQueue } from '../../jobs/rarity-queue'
+import { createBestEffort } from '../../lib/best-effort'
 import type { WorkerLogger } from '../../lib/logger'
 import { runInTransaction } from '../../lib/transaction'
 import { insertCardForMedia } from './card-creation'
@@ -52,13 +53,7 @@ export function createCardPublishService(deps: Deps): CardPublishService {
   const { db, storage, clock, logger, rarity } = deps
   const renderCrop = deps.renderCrop ?? renderCroppedVariants
 
-  async function bestEffort(context: object, message: string, task: () => Promise<unknown>) {
-    try {
-      await task()
-    } catch (error) {
-      logger.error({ ...context, err: error }, message)
-    }
-  }
+  const bestEffort = createBestEffort(logger)
 
   function effectiveCrop(upload: PublishRow, media: PublishMedia): CropRect | null {
     if (upload.hasInvalidCrop) {
@@ -136,32 +131,65 @@ export function createCardPublishService(deps: Deps): CardPublishService {
     }
   }
 
-  async function commit(uploadId: string, leagueId: string, display: Display | null) {
+  type CommitOutcome =
+    | { kind: 'published'; cardId: string; number: number }
+    | { kind: 'skipped' }
+    | { kind: 'withdrawn' }
+
+  async function withdraw(tx: DbExecutor, uploadId: string): Promise<CommitOutcome> {
+    await publishRepository.discardPublishing(tx, uploadId, clock())
+    return { kind: 'withdrawn' }
+  }
+
+  async function commit(upload: PublishRow, display: Display | null): Promise<CommitOutcome> {
     return runInTransaction(db, async (tx) => {
-      await repository.lockLeagueMedia(tx, leagueId)
-      const locked = await publishRepository.lockUploadForPublish(tx, uploadId)
-      if (locked === null || locked.status !== 'publishing') return null
-      const { userId, media } = locked
-      if (userId === null || media === null) return null
-      const title = cardTitleSchema.safeParse(locked.title)
-      if (!title.success) throw new Error(`Publishing upload ${uploadId} has no valid title`)
-      if (display !== null) {
-        await publishRepository.updateMediaDisplay(tx, { mediaId: media.id, ...display })
+      await repository.lockLeagueMedia(tx, upload.leagueId)
+      const { userId } = upload
+      if (userId === null) return withdraw(tx, upload.id)
+      const isMember = await publishRepository.lockAuthorMembership(tx, {
+        leagueId: upload.leagueId,
+        userId,
+      })
+      if (!isMember) return withdraw(tx, upload.id)
+      const locked = await publishRepository.lockUploadForPublish(tx, upload.id)
+      if (locked === null || locked.status !== 'publishing') return { kind: 'skipped' }
+      if (locked.userId !== userId || locked.media === null) return { kind: 'skipped' }
+      if (!sameCrop(locked.crop, upload.crop)) {
+        throw new Error(`Crop of upload ${upload.id} changed during its publish render`)
       }
-      return insertCardForMedia(tx, {
+      const title = cardTitleSchema.safeParse(locked.title)
+      if (!title.success) throw new Error(`Publishing upload ${upload.id} has no valid title`)
+      const mediaId = locked.media.id
+      if (display !== null) {
+        await publishRepository.updateMediaDisplay(tx, { mediaId, ...display })
+      }
+      const card = await insertCardForMedia(tx, {
         upload: { ...locked, userId },
-        mediaId: media.id,
+        mediaId,
         title: title.data,
         now: clock(),
         from: ['publishing'],
       })
+      return { kind: 'published', ...card }
     })
+  }
+
+  async function dropRenderedCrop(
+    upload: PublishRow,
+    media: PublishMedia,
+    display: Display | null,
+  ) {
+    const crop = display?.crop ?? null
+    if (crop === null || sameCrop(crop, media.crop)) return
+    await bestEffort({ uploadId: upload.id }, 'Failed to delete an unused crop render', () =>
+      storage.delete(display?.variants.map((variant) => variant.key) ?? []),
+    )
   }
 
   return {
     async publishUpload(uploadId, input) {
       const upload = await publishRepository.findUploadForPublish(db, uploadId)
-      if (upload === null || upload.userId === null || upload.status === 'ready') return
+      if (upload === null || upload.status === 'ready') return
       const { media } = upload
       if (upload.status !== 'publishing' || media === null) {
         logger.warn(
@@ -170,10 +198,17 @@ export function createCardPublishService(deps: Deps): CardPublishService {
         )
         return
       }
-      const display = await displayFor(upload, media, input.isFinalAttempt)
-      const card = await commit(uploadId, upload.leagueId, display)
-      if (card === null) {
-        logger.info({ uploadId }, 'Upload already published or withdrawn; nothing to do')
+      const display =
+        upload.userId === null ? null : await displayFor(upload, media, input.isFinalAttempt)
+      const card = await commit(upload, display)
+      if (card.kind !== 'published') {
+        if (card.kind === 'withdrawn') await dropRenderedCrop(upload, media, display)
+        logger.info(
+          { uploadId, outcome: card.kind },
+          card.kind === 'withdrawn'
+            ? 'Author is no longer a member; publishing upload discarded'
+            : 'Upload already published or withdrawn; nothing to do',
+        )
         return
       }
       const context = { uploadId, leagueId: upload.leagueId }

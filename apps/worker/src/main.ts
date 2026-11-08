@@ -1,8 +1,6 @@
 import { countAppliedMigrations, createDb, MIGRATION_JOURNAL_ENTRY_COUNT } from '@storix/db'
 import {
   MEDIA_PROCESS_JOB,
-  MEDIA_PUBLISH_JOB,
-  MEDIA_PUBLISH_QUEUE_OPTIONS,
   MEDIA_SWEEP_JOB,
   RARITY_NIGHTLY_JOB,
   RARITY_RECOMPUTE_JOB,
@@ -31,6 +29,7 @@ import { registerRarityRecomputeJob } from './jobs/rarity-recompute.job'
 import { registerStorageDeleteJob } from './jobs/storage-delete.job'
 import { createStorageGcQueue, registerStorageGcJob } from './jobs/storage-gc.job'
 import { createLogger } from './lib/logger'
+import { ensureMediaPublishQueue } from './jobs/media-publish-queue'
 import { waitForMigrations } from './lib/migration-gate'
 
 const STOP_TIMEOUT_MS = 30_000
@@ -72,14 +71,7 @@ async function start(): Promise<void> {
   })
   await boss.start()
   await boss.createQueue(MEDIA_PROCESS_JOB)
-  await boss.createQueue(MEDIA_PUBLISH_JOB, MEDIA_PUBLISH_QUEUE_OPTIONS)
-  const publishQueue = await boss.getQueue(MEDIA_PUBLISH_JOB)
-  if (publishQueue?.policy !== MEDIA_PUBLISH_QUEUE_OPTIONS.policy) {
-    logger.error(
-      { policy: publishQueue?.policy, expected: MEDIA_PUBLISH_QUEUE_OPTIONS.policy },
-      'media.publish queue has the wrong policy; duplicate publish jobs are not coalesced',
-    )
-  }
+  await ensureMediaPublishQueue(boss, logger)
   await boss.createQueue(MEDIA_SWEEP_JOB)
   await boss.createQueue(RARITY_RECOMPUTE_JOB, RARITY_RECOMPUTE_QUEUE_OPTIONS)
   await boss.createQueue(RARITY_NIGHTLY_JOB)

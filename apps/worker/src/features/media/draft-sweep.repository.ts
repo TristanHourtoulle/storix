@@ -12,7 +12,7 @@ import {
   type AnyColumn,
 } from 'drizzle-orm'
 import { cards, leagueMembers, media, uploads, type DbExecutor } from '@storix/db'
-import { DISCARDED_SWEEP_DELAY_MS, PUBLISH_STUCK_MS } from '@storix/shared/domain'
+import { DISCARDED_SWEEP_DELAY_MS, PUBLISH_STUCK_MS, storedMediaKeys } from '@storix/shared/domain'
 import type { UploadStatus } from '@storix/shared'
 
 export interface DraftSweepRow {
@@ -63,7 +63,9 @@ export async function findDraftSweepCandidates(
       userId: uploads.userId,
       isOwnerMember: isOwnerMemberOf(db).mapWith(Boolean),
       objectKey: uploads.objectKey,
+      leagueId: uploads.leagueId,
       mediaId: media.id,
+      sourceSha256: media.sourceSha256,
       variants: media.variants,
     })
     .from(uploads)
@@ -89,9 +91,12 @@ export async function findDraftSweepCandidates(
         ),
       ),
     )
-  return rows.map(({ variants, ...row }) => ({
+  return rows.map(({ variants, sourceSha256, ...row }) => ({
     ...row,
-    variantKeys: (variants ?? []).map((variant) => variant.key),
+    variantKeys:
+      sourceSha256 === null
+        ? []
+        : storedMediaKeys({ leagueId: row.leagueId, sourceSha256, variants: variants ?? [] }),
   }))
 }
 

@@ -11,6 +11,7 @@ import {
 import { encodeFile, openImage, type RenderedFile } from './image-pipeline'
 
 const CROP_ID_LENGTH = 16
+const MAX_WORKING_EDGE = 3200
 
 /** Returns the 16 hex characters identifying a crop in storage keys. */
 export function cropIdOf(crop: CropRect): string {
@@ -25,6 +26,12 @@ export async function renderCroppedVariants(
   const rotated = await openImage(buffer)
     .autoOrient()
     .rotate(crop.rotate)
+    .resize({
+      width: MAX_WORKING_EDGE,
+      height: MAX_WORKING_EDGE,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
     .raw()
     .toBuffer({ resolveWithObject: true })
   const raw = {

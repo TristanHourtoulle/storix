@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, lt, notExists, or, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, lt, not, notExists, or, sql } from 'drizzle-orm'
 import {
   auditLog,
   cards,
@@ -93,7 +93,14 @@ interface RawUploadRow extends Omit<
 export function toUploadForProcessing(row: RawUploadRow): UploadForProcessing {
   const crop = cropRectSchema.nullable().safeParse(row.crop ?? null)
   return {
-    ...row,
+    id: row.id,
+    leagueId: row.leagueId,
+    userId: row.userId,
+    objectKey: row.objectKey,
+    status: row.status,
+    title: row.title,
+    clientCapturedAt: row.clientCapturedAt,
+    stageOnly: row.stageOnly,
     taggedUserIds: taggedUserIdsSchema.parse(row.taggedUserIds),
     crop: crop.success ? crop.data : null,
     hasInvalidCrop: !crop.success,
@@ -192,7 +199,26 @@ export async function findMediaBySha(
   return row ?? null
 }
 
-/** Lists the perceptual hashes of every media in a league. */
+function isNotDiscarded() {
+  return notExists(
+    sql`(select 1 from ${uploads} where ${uploads.id} = ${media.uploadId} and ${uploads.status} = 'discarded')`,
+  )
+}
+
+/** Finds a league media with the same source bytes, ignoring media of discarded drafts. */
+export async function findDuplicateBySha(
+  db: DbExecutor,
+  leagueId: string,
+  sha: string,
+): Promise<{ mediaId: string; sourceSha256: string } | null> {
+  const [row] = await db
+    .select({ mediaId: media.id, sourceSha256: media.sourceSha256 })
+    .from(media)
+    .where(and(eq(media.leagueId, leagueId), eq(media.sourceSha256, sha), isNotDiscarded()))
+  return row ?? null
+}
+
+/** Lists the perceptual hashes of the league media, ignoring media of discarded drafts. */
 export function listLeaguePhashes(
   db: DbExecutor,
   leagueId: string,
@@ -200,7 +226,28 @@ export function listLeaguePhashes(
   return db
     .select({ mediaId: media.id, phash: media.phash, sourceSha256: media.sourceSha256 })
     .from(media)
-    .where(eq(media.leagueId, leagueId))
+    .where(and(eq(media.leagueId, leagueId), isNotDiscarded()))
+}
+
+/** Deletes the card-less media of a discarded draft holding these source bytes, so a re-picked photo can take its place. */
+export async function deleteDiscardedMediaBySha(
+  db: DbExecutor,
+  leagueId: string,
+  sha: string,
+): Promise<void> {
+  await db.delete(media).where(
+    and(
+      eq(media.leagueId, leagueId),
+      eq(media.sourceSha256, sha),
+      not(isNotDiscarded()),
+      notExists(
+        db
+          .select({ one: sql`1` })
+          .from(cards)
+          .where(eq(cards.mediaId, media.id)),
+      ),
+    ),
+  )
 }
 
 /** Returns the next card number of a league. */

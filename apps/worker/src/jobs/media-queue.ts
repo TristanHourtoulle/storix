@@ -2,7 +2,7 @@ import type { PgBoss } from 'pg-boss'
 import {
   MEDIA_PROCESS_JOB,
   MEDIA_PUBLISH_JOB,
-  MEDIA_PUBLISH_SEND_OPTIONS,
+  mediaPublishSendOptions,
   type MediaProcessPayload,
   type MediaPublishPayload,
 } from '@storix/shared'
@@ -43,10 +43,7 @@ export function createMediaQueue(boss: PgBoss): MediaQueue {
     processJobHistory: (uploadId) => historyOf(MEDIA_PROCESS_JOB, uploadId),
 
     async enqueueMediaPublish(payload) {
-      await boss.send(MEDIA_PUBLISH_JOB, payload, {
-        ...MEDIA_PUBLISH_SEND_OPTIONS,
-        singletonKey: payload.uploadId,
-      })
+      await boss.send(MEDIA_PUBLISH_JOB, payload, mediaPublishSendOptions(payload.uploadId))
     },
 
     publishJobHistory: (uploadId) => historyOf(MEDIA_PUBLISH_JOB, uploadId),

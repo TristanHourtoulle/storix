@@ -16,6 +16,7 @@ import {
 } from '@storix/shared'
 import { ObjectTooLargeError, type ObjectStorage } from '@storix/storage'
 import type { RarityQueue } from '../../jobs/rarity-queue'
+import { createBestEffort } from '../../lib/best-effort'
 import type { WorkerLogger } from '../../lib/logger'
 import { runInTransaction } from '../../lib/transaction'
 import { insertCardForMedia } from './card-creation'
@@ -66,7 +67,7 @@ async function findLeagueDuplicate(
   db: DbExecutor,
   input: { leagueId: string; sha: string; phash: string | null },
 ): Promise<DuplicateMatch | null> {
-  const exact = await repository.findMediaBySha(db, input.leagueId, input.sha)
+  const exact = await repository.findDuplicateBySha(db, input.leagueId, input.sha)
   if (exact) return exact
   if (input.phash === null) return null
   return findDuplicate(input.phash, await repository.listLeaguePhashes(db, input.leagueId))
@@ -88,13 +89,7 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
     }
   }
 
-  async function bestEffort(context: object, message: string, task: () => Promise<unknown>) {
-    try {
-      await task()
-    } catch (error) {
-      logger.error({ ...context, err: error }, message)
-    }
-  }
+  const bestEffort = createBestEffort(logger)
 
   async function reject(
     upload: repository.UploadForProcessing,
@@ -133,6 +128,7 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
       const duplicate = await rejectDuplicateUnderLock(tx, upload, row, dedupable)
       if (duplicate) return duplicate
       const now = clock()
+      await repository.deleteDiscardedMediaBySha(tx, upload.leagueId, row.sourceSha256)
       if (title === null) {
         if (!(await repository.markUploadStaged(tx, upload.id, now))) return { kind: 'gone' }
         return { kind: 'staged', mediaId: await repository.insertMedia(tx, row) }
@@ -225,7 +221,7 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
     }
     const sha = sha256Hex(buffer)
     trace.sha = sha
-    if (await repository.findMediaBySha(db, upload.leagueId, sha)) {
+    if (await repository.findDuplicateBySha(db, upload.leagueId, sha)) {
       await reject(upload, 'DUPLICATE_PHOTO')
       return
     }
