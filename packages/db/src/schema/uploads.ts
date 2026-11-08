@@ -57,5 +57,9 @@ export const uploads = pgTable(
       'uploads_portrait_flow_check',
       sql`${t.kind} = 'card' or (not ${t.stageOnly} and ${t.crop} is null and ${t.publishRequestedAt} is null)`,
     ),
+    check(
+      'uploads_portrait_status_check',
+      sql`${t.kind} = 'card' or ${t.status}::text not in ('staged', 'publishing', 'discarded')`,
+    ),
   ],
 )

@@ -1,10 +1,18 @@
 import { z } from 'zod'
+import { PORTRAIT_OBJECT_KEY_PATTERN, parseMediaPath } from '../domain'
 
-const MEDIA_URL_PREFIX = '/media/'
+function isSignedPortraitPath(url: string): boolean {
+  const objectKey = parseMediaPath(url)?.objectKey
+  return objectKey !== undefined && PORTRAIT_OBJECT_KEY_PATTERN.test(objectKey)
+}
+
+const portraitUrlSchema = z
+  .string()
+  .refine(isSignedPortraitPath, { message: 'Expected a signed portrait media path' })
 
 export const portraitSchema = z.object({
-  url: z.string().startsWith(MEDIA_URL_PREFIX),
-  thumbUrl: z.string().startsWith(MEDIA_URL_PREFIX),
+  url: portraitUrlSchema,
+  thumbUrl: portraitUrlSchema,
   dominantColor: z.string().regex(/^#[0-9a-f]{6}$/),
 })
 

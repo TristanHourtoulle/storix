@@ -64,6 +64,13 @@
       "when": 1794162161951,
       "tag": "0008_portraits",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794163341185,
+      "tag": "0009_portrait_status_check",
+      "breakpoints": true
     }
   ]
 }

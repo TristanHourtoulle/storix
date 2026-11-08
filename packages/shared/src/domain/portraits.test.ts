@@ -89,6 +89,19 @@ describe('portraitCropPixels', () => {
     expect(tiny.top + tiny.size).toBeLessThanOrEqual(3)
   })
 
+  it('falls back to the automatic crop when the rect has a non-finite field', () => {
+    const size = { width: 2000, height: 1000 }
+    const automatic = portraitCropPixels(null, size)
+    for (const bad of [
+      { x: Number.NaN, y: 0, w: 0.5, h: 0.5, rotate: 0 },
+      { x: 0, y: Number.POSITIVE_INFINITY, w: 0.5, h: 0.5, rotate: 0 },
+      { x: 0, y: 0, w: Number.NaN, h: 0.5, rotate: 0 },
+      { x: 0, y: 0, w: 0.5, h: Number.NEGATIVE_INFINITY, rotate: 0 },
+    ] as const) {
+      expect(portraitCropPixels(bad, size)).toEqual(automatic)
+    }
+  })
+
   it('treats a rotated rect as unrotated and keeps a square inside the image', () => {
     const result = portraitCropPixels(
       { x: 0.9, y: 0.9, w: 0.5, h: 0.5, rotate: 90 },

@@ -52,15 +52,19 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
 }
 
+function isFiniteRect(rect: CropRect): boolean {
+  return [rect.x, rect.y, rect.w, rect.h].every(Number.isFinite)
+}
+
 /**
  * Converts the editor's crop (null = automatic center crop) to an integer square inside the image.
- * Rotation is ignored: portraits are edited without it.
+ * Rotation is ignored: portraits are edited without it. A rect with a non-finite field falls back to the automatic crop.
  */
 export function portraitCropPixels(
   rect: CropRect | null,
   size: ImageSize,
 ): { left: number; top: number; size: number } {
-  const unrotated = rect === null ? null : { ...rect, rotate: 0 as const }
+  const unrotated = rect === null || !isFiniteRect(rect) ? null : { ...rect, rotate: 0 as const }
   const source = unrotated ?? cropRectFromView(DEFAULT_CROP_VIEW, size, AVATAR_CROP_FRAME)
   const pixels = cropRectToPixels(source, size)
   const edge = Math.max(1, Math.min(pixels.width, pixels.height, size.width, size.height))

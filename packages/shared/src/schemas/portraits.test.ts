@@ -13,9 +13,10 @@ import { UPLOAD_KINDS, uploadStateSchema } from './uploads'
 const U = '3f2b8c1e-4a5d-4e6f-8a9b-0c1d2e3f4a5b'
 const L = '0b6f7c1e-3a59-4c1e-9d7e-2f1a6c3b4d5e'
 const SIG = 'a'.repeat(64)
+const KEY_PREFIX = `pic/avatar/u1/${U}`
 const portrait = {
-  url: `/media/1/${SIG}/pic/x`,
-  thumbUrl: `/media/1/${SIG}/pic/y`,
+  url: `/media/86400/${SIG}/${KEY_PREFIX}/512.webp`,
+  thumbUrl: `/media/86400/${SIG}/${KEY_PREFIX}/128.webp`,
   dominantColor: '#a1b2c3',
 }
 
@@ -35,6 +36,15 @@ describe('portrait contracts', () => {
       false,
     )
     expect(portraitSchema.safeParse({ ...portrait, thumbUrl: '/api/x' }).success).toBe(false)
+    for (const url of [
+      `/media/86400/${SIG}/../api/x`,
+      `/media/86400/${SIG}/pic/avatar/../${U}/512.webp`,
+      `/media/86400/${SIG}/img/${U}/${'b'.repeat(64)}/256.webp`,
+      `/media/1/${SIG}/${KEY_PREFIX}/512.webp`,
+      `/media/86400/nope/${KEY_PREFIX}/512.webp`,
+    ]) {
+      expect(portraitSchema.safeParse({ ...portrait, url }).success).toBe(false)
+    }
     expect(portraitSchema.safeParse({ ...portrait, dominantColor: 'red' }).success).toBe(false)
     expect(portraitSchema.safeParse({ ...portrait, dominantColor: '#A1B2C3' }).success).toBe(false)
   })
