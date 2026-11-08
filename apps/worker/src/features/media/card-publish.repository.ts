@@ -40,7 +40,7 @@ function selectPublishRow(db: DbExecutor, uploadId: string) {
     .select(publishColumns)
     .from(uploads)
     .leftJoin(media, eq(media.uploadId, uploads.id))
-    .where(eq(uploads.id, uploadId))
+    .where(and(eq(uploads.id, uploadId), eq(uploads.kind, 'card')))
 }
 
 type RawPublishRow = Awaited<ReturnType<typeof selectPublishRow>>[number]
