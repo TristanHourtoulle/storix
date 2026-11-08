@@ -33,7 +33,7 @@ type AssertTrue<T extends true> = T
 /** Compile-time proof that the domain status union lists exactly `UPLOAD_STATUSES`. */
 export type UploadStatusesMatchDomain = AssertTrue<IsSame<UploadStatus, DraftUploadStatus>>
 
-const MAX_TAGGED_USERS = 30
+export const MAX_TAGGED_USERS = 30
 const MAX_DISCARD_BATCH = 60
 const MAX_STATES_BATCH = 30
 const CROP_BOUNDS_EPSILON = 1e-6

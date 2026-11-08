@@ -255,3 +255,5 @@ export function useUploadSession(leagueId: string, capacity: DraftCapacity) {
     discardAll,
   }
 }
+
+export type UploadSession = ReturnType<typeof useUploadSession>
