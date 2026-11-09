@@ -55,6 +55,11 @@ describe('collection visit', () => {
     expect(newCardIds([{ id: 'a', discoveredAt: 5 }], reopened)).toEqual([])
   })
 
+  it('close never anchors below a baseline raised by markAllSeen', () => {
+    const marked = markAllSeen(openCollectionVisit(visited(30)), [{ id: 'c80', discoveredAt: 80 }])
+    expect(closeCollectionVisit(marked, 60).seenThroughAt).toBe(80)
+  })
+
   it('close is a no-op when not open', () => {
     const state = visited(50)
     expect(closeCollectionVisit(state, 90)).toBe(state)
