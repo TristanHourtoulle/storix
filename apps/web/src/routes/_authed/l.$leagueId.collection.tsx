@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 import {
@@ -49,6 +49,12 @@ export const Route = createFileRoute('/_authed/l/$leagueId/collection')({
 })
 
 const NO_MEMBERS: MemberSummary[] = []
+const NO_NEW_IDS: ReadonlySet<string> = new Set()
+
+function sortOfKey(key: readonly [string, string, string, CollectionFilters]): CollectionSort {
+  return key[3].sort
+}
+
 const LOADING = <p className="m-0 text-sm text-muted">Chargement…</p>
 
 function Collection() {
@@ -120,12 +126,21 @@ function CollectionBody({ leagueId, filters, label, onPickSort }: CollectionBody
     fetchNextPage,
   } = useInfiniteQuery({
     ...cardsInfiniteQueryOptions(leagueId, filters),
-    placeholderData: keepPreviousData,
+    placeholderData: (previous, previousQuery) =>
+      previousQuery && sortOfKey(previousQuery.queryKey) === filters.sort ? previous : undefined,
   })
   const { authorId, tier, sort } = filters
   useEffect(() => {
     window.scrollTo({ top: 0 })
   }, [authorId, tier, sort])
+  const cards = useMemo(
+    () => [
+      ...new Map(
+        (data?.pages ?? []).flatMap((page) => page.cards).map((card) => [card.id, card]),
+      ).values(),
+    ],
+    [data],
+  )
 
   if (!data) {
     return isError ? (
@@ -140,9 +155,6 @@ function CollectionBody({ leagueId, filters, label, onPickSort }: CollectionBody
     )
   }
   const firstPage = data.pages[0]
-  const cards = [
-    ...new Map(data.pages.flatMap((page) => page.cards).map((card) => [card.id, card])).values(),
-  ]
   const total = firstPage?.total ?? 0
   const owned = firstPage?.ownedCount ?? 0
   const isFiltered = filters.authorId !== null || filters.tier !== null
@@ -193,6 +205,9 @@ function CollectionBody({ leagueId, filters, label, onPickSort }: CollectionBody
       <CollectionGrid
         leagueId={leagueId}
         cards={cards}
+        isGrouped={sort === 'discovery'}
+        newIds={NO_NEW_IDS}
+        onOpenCard={() => undefined}
         hasNextPage={hasNextPage}
         isFetchingNextPage={isFetchingNextPage}
         isFetchNextPageError={isFetchNextPageError}

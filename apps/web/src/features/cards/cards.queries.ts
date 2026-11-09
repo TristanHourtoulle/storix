@@ -12,7 +12,7 @@ export const NEWS_HEAD_LIMIT = 100
 
 export function cardsInfiniteQueryOptions(leagueId: string, filters: CollectionFilters) {
   return infiniteQueryOptions({
-    queryKey: ['leagues', leagueId, 'cards', filters],
+    queryKey: ['leagues', leagueId, 'cards', filters] as const,
     queryFn: ({ pageParam }) => fetchCardPage(leagueId, { ...filters, cursor: pageParam }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (page) => page.nextCursor ?? undefined,

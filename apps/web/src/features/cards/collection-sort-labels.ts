@@ -1,4 +1,4 @@
-import type { CollectionSort } from '@storix/shared'
+import type { CollectionSort, DiscoveryGroup } from '@storix/shared'
 
 interface SortOption {
   id: CollectionSort
@@ -15,4 +15,12 @@ export const SORT_OPTIONS: readonly SortOption[] = [
 /** Returns the short French name of a collection sort. */
 export function sortLabel(sort: CollectionSort): string {
   return SORT_OPTIONS.find((option) => option.id === sort)?.label ?? sort
+}
+
+export const DISCOVERY_GROUP_LABELS: Record<DiscoveryGroup, string> = {
+  today: "Aujourd'hui",
+  week: 'Cette semaine',
+  month: 'Ce mois-ci',
+  earlier: 'Plus tôt',
+  undiscovered: 'À découvrir',
 }
