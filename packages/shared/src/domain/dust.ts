@@ -19,12 +19,23 @@ export const FOIL_UPGRADE_COST_MULTIPLIER = 2
 
 export type PulledCopyOutcome = 'new' | 'upgraded' | 'duplicate'
 
+export interface StackedCopy {
+  tierAtMint: CardTier
+  variant: CopyVariant
+}
+
+export interface OwnedPullTarget {
+  tierAtMint: CardTier
+  valueTier: CardTier
+}
+
 export interface CopySettlement {
   cardId: string
   variant: CopyVariant
   tierAtMint: CardTier
   outcome: PulledCopyOutcome
-  dust: number
+  stacked: StackedCopy | null
+  stackCountAfter: number | null
   isFirstCopyOfCard: boolean
 }
 
@@ -54,51 +65,76 @@ export function copyKey(cardId: string, variant: CopyVariant): string {
   return `${cardId}:${variant}`
 }
 
-/** Decides what happens to a pulled copy given the tier of the owned copy of the same variant. */
+/**
+ * Decides what happens to a pulled copy against the owned copy of the same variant: it replaces that
+ * copy only above its value tier, the displaced copy then stacking at its value tier.
+ */
 export function resolvePulledCopy(
-  owned: CardTier | null,
-  pulled: { tierAtMint: CardTier; variant: CopyVariant },
-): { outcome: PulledCopyOutcome; dust: number } {
-  if (owned === null) return { outcome: 'new', dust: 0 }
-  if (tierRank(pulled.tierAtMint) > tierRank(owned)) {
-    return { outcome: 'upgraded', dust: dustValue(owned, pulled.variant) }
+  owned: OwnedPullTarget | null,
+  pulled: StackedCopy,
+): { outcome: PulledCopyOutcome; stacked: StackedCopy | null } {
+  if (owned === null) return { outcome: 'new', stacked: null }
+  if (tierRank(pulled.tierAtMint) > tierRank(owned.valueTier)) {
+    return {
+      outcome: 'upgraded',
+      stacked: { tierAtMint: owned.valueTier, variant: pulled.variant },
+    }
   }
-  return { outcome: 'duplicate', dust: dustValue(pulled.tierAtMint, pulled.variant) }
+  return {
+    outcome: 'duplicate',
+    stacked: { tierAtMint: pulled.tierAtMint, variant: pulled.variant },
+  }
 }
 
-/** Settles the pulls of one booster in order against the owned copies, keyed by `copyKey`. */
+/**
+ * Settles the pulls of one booster in order against the owned copies, keyed by `copyKey`, stacking
+ * duplicates and displaced copies; `stackCounts` holds each card's stack size, keyed by card id.
+ */
 export function settleBoosterCopies(
   pulls: readonly { cardId: string; tier: CardTier; variant: CopyVariant }[],
-  owned: ReadonlyMap<string, CardTier>,
-): { settlements: CopySettlement[]; dustGained: number; owned: ReadonlyMap<string, CardTier> } {
+  owned: ReadonlyMap<string, OwnedPullTarget>,
+  stackCounts: ReadonlyMap<string, number>,
+): {
+  settlements: CopySettlement[]
+  owned: ReadonlyMap<string, OwnedPullTarget>
+  stackCounts: ReadonlyMap<string, number>
+} {
   const initial: {
     settlements: CopySettlement[]
-    dustGained: number
-    owned: ReadonlyMap<string, CardTier>
-  } = { settlements: [], dustGained: 0, owned }
+    owned: ReadonlyMap<string, OwnedPullTarget>
+    stackCounts: ReadonlyMap<string, number>
+  } = { settlements: [], owned, stackCounts }
   return pulls.reduce((acc, pull) => {
     const key = copyKey(pull.cardId, pull.variant)
     const current = acc.owned.get(key) ?? null
     const isFirstCopyOfCard =
       !acc.owned.has(copyKey(pull.cardId, 'normal')) && !acc.owned.has(copyKey(pull.cardId, 'foil'))
-    const { outcome, dust } = resolvePulledCopy(current, {
+    const { outcome, stacked } = resolvePulledCopy(current, {
       tierAtMint: pull.tier,
       variant: pull.variant,
     })
     const nextOwned =
-      outcome === 'duplicate' ? acc.owned : new Map([...acc.owned, [key, pull.tier] as const])
+      outcome === 'duplicate'
+        ? acc.owned
+        : new Map([...acc.owned, [key, { tierAtMint: pull.tier, valueTier: pull.tier }] as const])
+    const stackCountAfter = stacked === null ? null : (acc.stackCounts.get(pull.cardId) ?? 0) + 1
+    const nextStackCounts =
+      stackCountAfter === null
+        ? acc.stackCounts
+        : new Map([...acc.stackCounts, [pull.cardId, stackCountAfter] as const])
     const settlement: CopySettlement = {
       cardId: pull.cardId,
       variant: pull.variant,
       tierAtMint: pull.tier,
       outcome,
-      dust,
+      stacked,
+      stackCountAfter,
       isFirstCopyOfCard,
     }
     return {
       settlements: [...acc.settlements, settlement],
-      dustGained: acc.dustGained + dust,
       owned: nextOwned,
+      stackCounts: nextStackCounts,
     }
   }, initial)
 }
@@ -119,16 +155,16 @@ export function craftDecision(input: {
   return { cost, allowed: true, reason: null }
 }
 
-/** Decides whether a member may upgrade their normal copy to foil, priced on that copy's tier at mint. */
+/** Decides whether a member may upgrade their normal copy to foil, priced on that copy's value tier. */
 export function foilUpgradeDecision(input: {
   currentTier: CardTier
-  normalTierAtMint: CardTier | null
+  normalValueTier: CardTier | null
   ownsFoil: boolean
   dust: number
 }): { cost: number; allowed: boolean; reason: FoilUpgradeBlock | null } {
-  const cost = foilUpgradeCost(input.normalTierAtMint ?? input.currentTier)
+  const cost = foilUpgradeCost(input.normalValueTier ?? input.currentTier)
   const block = (reason: FoilUpgradeBlock) => ({ cost, allowed: false, reason })
-  if (input.normalTierAtMint === null) return block('no_normal')
+  if (input.normalValueTier === null) return block('no_normal')
   if (input.ownsFoil) return block('foil_owned')
   if (input.dust < cost) return block('insufficient_dust')
   return { cost, allowed: true, reason: null }

@@ -55,6 +55,24 @@ export const listCardsQuerySchema = z.object({
 
 export const copyVariantSchema = z.enum(COPY_VARIANTS)
 
+export const stackEntrySchema = z.object({
+  variant: copyVariantSchema,
+  tierAtMint: cardTierSchema,
+  count: z.int().positive(),
+})
+
+export const promotionActionSchema = z.object({
+  from: cardTierSchema,
+  to: cardTierSchema.nullable(),
+  cost: z.int().min(0).nullable(),
+  copiesRequired: z.int().positive(),
+  copiesAvailable: z.int().min(0),
+  allowed: z.boolean(),
+  reason: z.enum(['not_owned', 'max_tier', 'not_enough_copies', 'insufficient_dust']).nullable(),
+})
+
+export const promotedHolderSchema = z.object({ holder: cardPersonSchema, tier: cardTierSchema })
+
 export const ownedCopiesSchema = z.object({
   normal: cardTierSchema.nullable(),
   foil: cardTierSchema.nullable(),
@@ -64,6 +82,8 @@ export const ownedCardSummarySchema = cardSummarySchema.extend({
   kind: z.literal('owned'),
   displayTier: cardTierSchema,
   copies: ownedCopiesSchema,
+  isPromoted: z.boolean(),
+  stackCount: z.int().min(0),
 })
 
 export const lockedCardSummarySchema = z.strictObject({
@@ -122,8 +142,17 @@ export const ownedCardDetailSchema = ownedCardSummarySchema.extend({
   reactions: reactionCountsSchema,
   canReact: z.boolean(),
   canWithdraw: z.boolean(),
+  promotedHolders: z.array(promotedHolderSchema).max(50),
   actions: z.object({
-    recycle: z.array(z.object({ variant: copyVariantSchema, dust: z.int().positive() })),
+    recycle: z.array(
+      z.object({
+        variant: copyVariantSchema,
+        dust: z.int().positive(),
+        promotedTier: cardTierSchema.nullable(),
+      }),
+    ),
+    stack: z.array(stackEntrySchema),
+    promotion: promotionActionSchema,
     foilUpgrade: z.object({
       cost: z.int().min(0),
       allowed: z.boolean(),
@@ -181,3 +210,6 @@ export type ViewerCardDetail = z.infer<typeof viewerCardDetailSchema>
 export type ReactionCounts = z.infer<typeof reactionCountsSchema>
 export type HiddenCardDetail = z.infer<typeof hiddenCardDetailSchema>
 export type TaggedCard = z.infer<typeof taggedCardSchema>
+export type StackEntryView = z.infer<typeof stackEntrySchema>
+export type PromotionAction = z.infer<typeof promotionActionSchema>
+export type PromotedHolder = z.infer<typeof promotedHolderSchema>

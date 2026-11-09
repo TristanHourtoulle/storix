@@ -12,6 +12,8 @@ export const rateLimits = {
   uploadPublish: { max: 20, timeWindow: '1 minute' },
   boosterOpen: { max: 30, timeWindow: '1 minute' },
   cardAction: { max: 60, timeWindow: '1 minute' },
+  stackAction: { max: 30, timeWindow: '1 minute' },
+  stackActionUser: { max: 20, timeWindow: '1 minute' },
   adminAction: { max: 60, timeWindow: '1 minute' },
   accountDelete: { max: 5, timeWindow: '15 minutes' },
   displayNameChange: { max: 10, timeWindow: '1 hour' },

@@ -22,7 +22,11 @@ const GAP = 12
 const CARD_SIZES = '(max-width: 480px) 31vw, 140px'
 
 function cardLabel(card: CollectionCard): string {
-  if (card.kind === 'owned') return `${card.title}, ${TIER_LABELS[card.displayTier]}`
+  if (card.kind === 'owned') {
+    const star = card.isPromoted ? ' ★' : ''
+    const stack = card.stackCount > 0 ? `, ×${card.stackCount} en pile` : ''
+    return `${card.title}, ${TIER_LABELS[card.displayTier]}${star}${stack}`
+  }
   if (card.kind === 'hidden') return 'Carte masquée'
   return `Carte à découvrir, ${TIER_LABELS[card.tier]}`
 }

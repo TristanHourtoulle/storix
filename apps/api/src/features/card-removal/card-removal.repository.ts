@@ -111,6 +111,7 @@ export async function listCopiesOfCards(
       cardId: cardCopies.cardId,
       tierAtMint: cardCopies.tierAtMint,
       variant: cardCopies.variant,
+      promotedTier: cardCopies.promotedTier,
     })
     .from(cardCopies)
     .where(inArray(cardCopies.cardId, [...cardIds]))

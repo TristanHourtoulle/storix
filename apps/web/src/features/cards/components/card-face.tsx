@@ -13,6 +13,8 @@ interface CardFaceProps {
   hasFoilPip?: boolean
   band?: ReactNode
   className?: string
+  isPromoted?: boolean
+  stackCount?: number
 }
 
 export function CardFace({
@@ -26,14 +28,23 @@ export function CardFace({
   hasFoilPip = false,
   band,
   className = '',
+  isPromoted = false,
+  stackCount = 0,
 }: CardFaceProps) {
-  const tierLine = isProvisional ? `${TIER_LABELS[tier]} · provisoire` : TIER_LABELS[tier]
+  const tierLabel = isPromoted ? `${TIER_LABELS[tier]} ★` : TIER_LABELS[tier]
+  const tierLine = isProvisional ? `${tierLabel} · provisoire` : tierLabel
 
   return (
     <div className={`card ${size} ${TIER_CLASS[tier]}${isFoil ? ' foil' : ''} ${className}`}>
       <div className="card-art">{children}</div>
       <div className="card-holo" ref={holoRef} />
       <span className="card-gem" />
+      {stackCount > 0 ? (
+        <span className="card-stack-badge">
+          <span aria-hidden="true">×{stackCount}</span>
+          <span className="sr-only">{`${stackCount} doublons en pile`}</span>
+        </span>
+      ) : null}
       {hasFoilPip ? <span className="card-foil-pip" aria-hidden="true" /> : null}
       {band ?? (
         <div className="card-band">

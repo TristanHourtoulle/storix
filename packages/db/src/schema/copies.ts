@@ -1,8 +1,12 @@
+import { sql } from 'drizzle-orm'
 import {
+  check,
   foreignKey,
   index,
+  integer,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -29,6 +33,8 @@ export const cardCopies = pgTable(
     tierAtMint: cardTier('tier_at_mint').notNull(),
     source: copySource('source').notNull(),
     openingId: uuid('opening_id').references(() => boosterOpenings.id, { onDelete: 'set null' }),
+    promotedTier: cardTier('promoted_tier'),
+    promotedAt: timestamp('promoted_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -41,5 +47,33 @@ export const cardCopies = pgTable(
       columns: [t.leagueId, t.ownerId],
       foreignColumns: [leagueMembers.leagueId, leagueMembers.userId],
     }).onDelete('cascade'),
+  ],
+)
+
+export const cardCopyStacks = pgTable(
+  'card_copy_stacks',
+  {
+    leagueId: uuid('league_id')
+      .notNull()
+      .references(() => leagues.id, { onDelete: 'cascade' }),
+    cardId: uuid('card_id')
+      .notNull()
+      .references(() => cards.id, { onDelete: 'cascade' }),
+    ownerId: text('owner_id').notNull(),
+    variant: copyVariant('variant').notNull(),
+    tierAtMint: cardTier('tier_at_mint').notNull(),
+    count: integer('count').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.cardId, t.ownerId, t.variant, t.tierAtMint] }),
+    index('card_copy_stacks_league_owner_idx').on(t.leagueId, t.ownerId),
+    foreignKey({
+      name: 'card_copy_stacks_member_fk',
+      columns: [t.leagueId, t.ownerId],
+      foreignColumns: [leagueMembers.leagueId, leagueMembers.userId],
+    }).onDelete('cascade'),
+    check('card_copy_stacks_count_positive', sql`${t.count} > 0`),
   ],
 )

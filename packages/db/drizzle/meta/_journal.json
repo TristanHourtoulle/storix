@@ -78,6 +78,13 @@
       "when": 1794167762714,
       "tag": "0010_push_booster_full",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794214378493,
+      "tag": "0011_duplicate_stacks",
+      "breakpoints": true
     }
   ]
 }

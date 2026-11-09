@@ -17,6 +17,8 @@ export const AUDIT_ACTIONS = [
   'copy.recycled',
   'copy.crafted',
   'copy.foil_upgraded',
+  'copy.promoted',
+  'stack.converted',
   'league.settings_updated',
   'league.ownership_transferred',
   'league.deleted',

@@ -1,5 +1,7 @@
+import { sql } from 'drizzle-orm'
 import {
   boolean,
+  check,
   foreignKey,
   index,
   integer,
@@ -61,9 +63,14 @@ export const boosterPulls = pgTable(
     dust: integer('dust').notNull().default(0),
     isFirstCopy: boolean('is_first_copy').notNull(),
     isDiscovery: boolean('is_discovery').notNull(),
+    stackCount: integer('stack_count'),
   },
   (t) => [
     primaryKey({ columns: [t.openingId, t.slot] }),
     index('booster_pulls_card_id_idx').on(t.cardId),
+    check(
+      'booster_pulls_stack_count_positive',
+      sql`${t.stackCount} IS NULL OR ${t.stackCount} > 0`,
+    ),
   ],
 )

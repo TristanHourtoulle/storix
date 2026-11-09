@@ -60,6 +60,7 @@ export interface InsertPullRow {
   variant: CopyVariant
   outcome: PulledCopyOutcome
   dust: number
+  stackCount: number | null
   isFirstCopy: boolean
   isDiscovery: boolean
 }
@@ -85,6 +86,7 @@ export interface PullViewRow extends CardMediaColumns {
   variant: CopyVariant
   outcome: PulledCopyOutcome
   dust: number
+  stackCount: number | null
   isFirstCopy: boolean
   isDiscovery: boolean
   capturedAt: Date | null
@@ -245,6 +247,7 @@ export async function listOpeningPulls(db: DbExecutor, openingId: string): Promi
       variant: boosterPulls.variant,
       outcome: boosterPulls.outcome,
       dust: boosterPulls.dust,
+      stackCount: boosterPulls.stackCount,
       isFirstCopy: boosterPulls.isFirstCopy,
       isDiscovery: boosterPulls.isDiscovery,
       capturedAt: media.capturedAt,
