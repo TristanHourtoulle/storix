@@ -147,11 +147,17 @@ export async function insertCopy(db: DbExecutor, row: InsertCopyRow): Promise<vo
 /** Raises the frozen tier of an owned copy and links it to the opening that upgraded it. */
 export async function updateCopyTier(
   db: DbExecutor,
-  input: CopyKeyInput & { tierAtMint: CardTier; openingId: string | null },
+  input: CopyKeyInput & { tierAtMint: CardTier; openingId: string | null; now: Date },
 ): Promise<void> {
   await db
     .update(cardCopies)
-    .set({ tierAtMint: input.tierAtMint, openingId: input.openingId, updatedAt: new Date() })
+    .set({
+      tierAtMint: input.tierAtMint,
+      openingId: input.openingId,
+      promotedTier: null,
+      promotedAt: null,
+      updatedAt: input.now,
+    })
     .where(copyCondition(input))
 }
 

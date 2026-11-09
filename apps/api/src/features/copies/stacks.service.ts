@@ -35,7 +35,7 @@ async function consume(
   key: StackKey,
   taken: readonly StackEntry[],
 ): Promise<void> {
-  for (const entry of taken) await removeFromStack(ctx.tx, { ...key, ...entry })
+  for (const entry of taken) await removeFromStack(ctx.tx, { ...key, ...entry }, ctx.now)
 }
 
 /** Builds the service promoting a copy's personal tier and converting stacked copies to dust, serialized by the member wallet lock. */
@@ -97,6 +97,9 @@ export function createStacksService({ db, clock }: StacksServiceDeps): StacksSer
     convert: (m, cardId, body) =>
       withLockedCard({ db, clock }, m, cardId, async (ctx) => {
         const key = { leagueId: m.leagueId, cardId, ownerId: m.userId }
+        if ((await lockCardTier(ctx.tx, { leagueId: m.leagueId, cardId })) === null) {
+          throw notFound('Card not found')
+        }
         const stack = await lockStackEntries(ctx.tx, key)
         const count = stackSize(stack, body.variant)
         if (count !== body.expectedCount) throw stackChanged(count)

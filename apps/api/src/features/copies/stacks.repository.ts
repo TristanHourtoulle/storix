@@ -93,11 +93,15 @@ function mergeRows(rows: readonly StackRowInput[]): StackRowInput[] {
 }
 
 /** Adds copies to stacks, creating the rows or raising their counts. */
-export async function addToStack(db: DbExecutor, rows: readonly StackRowInput[]): Promise<void> {
+export async function addToStack(
+  db: DbExecutor,
+  rows: readonly StackRowInput[],
+  now: Date,
+): Promise<void> {
   if (rows.length === 0) return
   await db
     .insert(cardCopyStacks)
-    .values(mergeRows(rows))
+    .values(mergeRows(rows).map((row) => ({ ...row, createdAt: now, updatedAt: now })))
     .onConflictDoUpdate({
       target: [
         cardCopyStacks.cardId,
@@ -107,13 +111,17 @@ export async function addToStack(db: DbExecutor, rows: readonly StackRowInput[])
       ],
       set: {
         count: sql`${cardCopyStacks.count} + excluded.count`,
-        updatedAt: sql`now()`,
+        updatedAt: sql`excluded.updated_at`,
       },
     })
 }
 
 /** Removes copies from one stack entry, deleting the row when it empties; throws when the entry changed. */
-export async function removeFromStack(db: DbExecutor, key: StackKey & StackEntry): Promise<void> {
+export async function removeFromStack(
+  db: DbExecutor,
+  key: StackKey & StackEntry,
+  now: Date,
+): Promise<void> {
   const deleted = await db
     .delete(cardCopyStacks)
     .where(and(entryCondition(key), eq(cardCopyStacks.count, key.count)))
@@ -121,7 +129,7 @@ export async function removeFromStack(db: DbExecutor, key: StackKey & StackEntry
   if (deleted.length > 0) return
   const updated = await db
     .update(cardCopyStacks)
-    .set({ count: sql`${cardCopyStacks.count} - ${key.count}`, updatedAt: new Date() })
+    .set({ count: sql`${cardCopyStacks.count} - ${key.count}`, updatedAt: now })
     .where(and(entryCondition(key), gt(cardCopyStacks.count, key.count)))
     .returning({ count: cardCopyStacks.count })
   if (updated.length === 0) throw new Error('Stack entry changed')

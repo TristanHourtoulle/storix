@@ -85,6 +85,16 @@ export function promotionVariant(copies: readonly OwnedCopyState[]): CopyVariant
   return null
 }
 
+/** Sums stacked copies per card id. */
+export function stackCountsByCard(
+  entries: readonly (StackEntry & { cardId: string })[],
+): ReadonlyMap<string, number> {
+  return entries.reduce<ReadonlyMap<string, number>>(
+    (acc, entry) => new Map([...acc, [entry.cardId, (acc.get(entry.cardId) ?? 0) + entry.count]]),
+    new Map(),
+  )
+}
+
 /** Returns the number of stacked copies, optionally of one variant only. */
 export function stackSize(entries: readonly StackEntry[], variant?: CopyVariant): number {
   return entries

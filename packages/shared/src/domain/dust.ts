@@ -67,7 +67,7 @@ export function copyKey(cardId: string, variant: CopyVariant): string {
 
 /**
  * Decides what happens to a pulled copy against the owned copy of the same variant: it replaces that
- * copy only above its value tier, the displaced copy then stacking at its own tier at mint.
+ * copy only above its value tier, the displaced copy then stacking at its value tier.
  */
 export function resolvePulledCopy(
   owned: OwnedPullTarget | null,
@@ -77,7 +77,7 @@ export function resolvePulledCopy(
   if (tierRank(pulled.tierAtMint) > tierRank(owned.valueTier)) {
     return {
       outcome: 'upgraded',
-      stacked: { tierAtMint: owned.tierAtMint, variant: pulled.variant },
+      stacked: { tierAtMint: owned.valueTier, variant: pulled.variant },
     }
   }
   return {

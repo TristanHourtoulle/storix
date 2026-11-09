@@ -9,6 +9,7 @@ import {
   isPromoted,
   personalDisplayTier,
   promotionDecision,
+  stackCountsByCard,
   tierRank,
   type CardAuthor,
   type CardPerson,
@@ -98,9 +99,7 @@ export function withViewerCopies(
     foilTier: foil?.tierAtMint ?? null,
     normalPromotedTier: normal?.promotedTier ?? null,
     foilPromotedTier: foil?.promotedTier ?? null,
-    stackCount: stacks
-      .filter((entry) => entry.cardId === card.id)
-      .reduce((sum, entry) => sum + entry.count, 0),
+    stackCount: stackCountsByCard(stacks).get(card.id) ?? 0,
   }
 }
 

@@ -14,6 +14,7 @@ import {
   nextPityState,
   resolveLeagueSettings,
   settleBoosterCopies,
+  stackCountsByCard,
   type BoosterCadence,
   type BoosterDraw,
   type BoosterOpening,
@@ -126,7 +127,12 @@ async function mintCopies(
         openingId,
       })
     } else if (settlement.outcome === 'upgraded') {
-      await updateCopyTier(ctx.tx, { ...key, tierAtMint: settlement.tierAtMint, openingId })
+      await updateCopyTier(ctx.tx, {
+        ...key,
+        tierAtMint: settlement.tierAtMint,
+        openingId,
+        now: ctx.now,
+      })
     }
   }
 }
@@ -210,10 +216,7 @@ async function openNewBooster(
     ownerId: ctx.m.userId,
     cardIds,
   })
-  const stackCounts = stackEntries.reduce<ReadonlyMap<string, number>>(
-    (acc, entry) => new Map([...acc, [entry.cardId, (acc.get(entry.cardId) ?? 0) + entry.count]]),
-    new Map(),
-  )
+  const stackCounts = stackCountsByCard(stackEntries)
   const { settlements } = settleBoosterCopies(
     draws.map((draw) => ({ cardId: draw.cardId, tier: draw.tier, variant: draw.variant })),
     owned,
@@ -248,6 +251,7 @@ async function openNewBooster(
             },
           ],
     ),
+    ctx.now,
   )
   const pullRows = draws.map((draw, index): InsertPullRow => {
     const settlement = settlements[index]

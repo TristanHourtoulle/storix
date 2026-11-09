@@ -126,16 +126,19 @@ describe('dust', () => {
     ])
     expect(owned.get(copyKey('a', 'normal'))).toEqual(target('common', 'mythic'))
   })
-  it('replaces a promoted copy pulled above its value tier, stacking the old copy at its tier at mint', () => {
+  it('replaces a promoted copy pulled above its value tier, stacking the old copy at its value tier', () => {
     const { settlements, owned } = settleBoosterCopies(
       [{ cardId: 'a', tier: 'legendary', variant: 'foil' }],
       new Map([[copyKey('a', 'foil'), target('rare', 'epic')]]),
       new Map(),
     )
     expect(settlements.map((s) => [s.outcome, s.tierAtMint, s.stacked])).toEqual([
-      ['upgraded', 'legendary', { tierAtMint: 'rare', variant: 'foil' }],
+      ['upgraded', 'legendary', { tierAtMint: 'epic', variant: 'foil' }],
     ])
     expect(owned.get(copyKey('a', 'foil'))).toEqual(target('legendary'))
+    const before = dustValue('epic', 'foil') + dustValue('legendary', 'foil')
+    const after = dustValue('legendary', 'foil') + dustValue('epic', 'foil')
+    expect([before, after]).toEqual([1000, 1000])
   })
   it('keeps comparing an unpromoted copy on its tier at mint', () => {
     expect(resolvePulledCopy(target('rare'), { tierAtMint: 'epic', variant: 'normal' })).toEqual({
