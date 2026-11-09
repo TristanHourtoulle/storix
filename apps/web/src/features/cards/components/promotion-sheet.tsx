@@ -49,18 +49,8 @@ export function PromotionSheet({
             {TIER_LABELS[from]} → {TIER_LABELS[to]} ★
           </p>
           <div className="sheet-rows">
-            <p className="sheet-row">
-              <span>Doublons</span>
-              <span>
-                {copiesAvailable} / {copiesRequired}
-              </span>
-            </p>
-            <p className="sheet-row">
-              <span>Paillettes</span>
-              <span>
-                {dust} / {cost}
-              </span>
-            </p>
+            <p className="sheet-row">{`Doublons : ${copiesAvailable} / ${copiesRequired}`}</p>
+            <p className="sheet-row">{`Paillettes : ${dust} / ${cost}`}</p>
           </div>
           {missing.map((line) => (
             <p key={line} className="m-0 text-sm font-semibold text-danger">
