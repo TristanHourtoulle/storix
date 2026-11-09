@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COMPUTED_TIERS } from './cards'
+import { COMPUTED_TIERS, type CardTier } from './cards'
 import {
   copyKey,
   craftCost,
@@ -10,6 +10,11 @@ import {
   resolvePulledCopy,
   settleBoosterCopies,
 } from './dust'
+
+const target = (tierAtMint: CardTier, valueTier: CardTier = tierAtMint) => ({
+  tierAtMint,
+  valueTier,
+})
 
 describe('dust', () => {
   it('values copies from tier at mint, doubled for foil', () => {
@@ -27,21 +32,21 @@ describe('dust', () => {
       outcome: 'new',
       stacked: null,
     })
-    expect(resolvePulledCopy('rare', { tierAtMint: 'common', variant: 'normal' })).toEqual({
+    expect(resolvePulledCopy(target('rare'), { tierAtMint: 'common', variant: 'normal' })).toEqual({
       outcome: 'duplicate',
       stacked: { tierAtMint: 'common', variant: 'normal' },
     })
-    expect(resolvePulledCopy('rare', { tierAtMint: 'rare', variant: 'foil' })).toEqual({
+    expect(resolvePulledCopy(target('rare'), { tierAtMint: 'rare', variant: 'foil' })).toEqual({
       outcome: 'duplicate',
       stacked: { tierAtMint: 'rare', variant: 'foil' },
     })
-    expect(resolvePulledCopy('common', { tierAtMint: 'rare', variant: 'foil' })).toEqual({
+    expect(resolvePulledCopy(target('common'), { tierAtMint: 'rare', variant: 'foil' })).toEqual({
       outcome: 'upgraded',
       stacked: { tierAtMint: 'common', variant: 'foil' },
     })
   })
   it('settles a booster in order without mutating the owned map', () => {
-    const owned = new Map([[copyKey('b', 'normal'), 'epic' as const]])
+    const owned = new Map([[copyKey('b', 'normal'), target('epic')]])
     const stackCounts = new Map<string, number>()
     const result = settleBoosterCopies(
       [
@@ -63,7 +68,7 @@ describe('dust', () => {
     ])
     expect(owned.size).toBe(1)
     expect(stackCounts.size).toBe(0)
-    expect(result.owned.get(copyKey('a', 'foil'))).toBe('common')
+    expect(result.owned.get(copyKey('a', 'foil'))).toEqual(target('common'))
     expect(result.stackCounts.get('a')).toBe(1)
   })
   it('counts the stack after each pull, per card, across variants', () => {
@@ -73,8 +78,8 @@ describe('dust', () => {
         { cardId: 'a', tier: 'rare', variant: 'foil' },
       ],
       new Map([
-        [copyKey('a', 'normal'), 'rare'],
-        [copyKey('a', 'foil'), 'rare'],
+        [copyKey('a', 'normal'), target('rare')],
+        [copyKey('a', 'foil'), target('rare')],
       ]),
       new Map([['a', 3]]),
     )
@@ -93,7 +98,7 @@ describe('dust', () => {
   it('stacks the displaced copy of an upgrade at its old tier', () => {
     const { settlements } = settleBoosterCopies(
       [{ cardId: 'a', tier: 'epic', variant: 'normal' }],
-      new Map([[copyKey('a', 'normal'), 'common']]),
+      new Map([[copyKey('a', 'normal'), target('common')]]),
       new Map(),
     )
     expect(settlements.map((s) => [s.outcome, s.stacked, s.stackCountAfter])).toEqual([
@@ -109,6 +114,38 @@ describe('dust', () => {
         dust: 200,
       }).cost,
     ).toBe(200)
+  })
+  it('stacks a pull at or below the value tier of a promoted copy', () => {
+    const { settlements, owned } = settleBoosterCopies(
+      [{ cardId: 'a', tier: 'legendary', variant: 'normal' }],
+      new Map([[copyKey('a', 'normal'), target('common', 'mythic')]]),
+      new Map(),
+    )
+    expect(settlements.map((s) => [s.outcome, s.stacked, s.stackCountAfter])).toEqual([
+      ['duplicate', { tierAtMint: 'legendary', variant: 'normal' }, 1],
+    ])
+    expect(owned.get(copyKey('a', 'normal'))).toEqual(target('common', 'mythic'))
+  })
+  it('replaces a promoted copy pulled above its value tier, stacking the old copy at its tier at mint', () => {
+    const { settlements, owned } = settleBoosterCopies(
+      [{ cardId: 'a', tier: 'legendary', variant: 'foil' }],
+      new Map([[copyKey('a', 'foil'), target('rare', 'epic')]]),
+      new Map(),
+    )
+    expect(settlements.map((s) => [s.outcome, s.tierAtMint, s.stacked])).toEqual([
+      ['upgraded', 'legendary', { tierAtMint: 'rare', variant: 'foil' }],
+    ])
+    expect(owned.get(copyKey('a', 'foil'))).toEqual(target('legendary'))
+  })
+  it('keeps comparing an unpromoted copy on its tier at mint', () => {
+    expect(resolvePulledCopy(target('rare'), { tierAtMint: 'epic', variant: 'normal' })).toEqual({
+      outcome: 'upgraded',
+      stacked: { tierAtMint: 'rare', variant: 'normal' },
+    })
+    expect(resolvePulledCopy(target('rare'), { tierAtMint: 'rare', variant: 'normal' })).toEqual({
+      outcome: 'duplicate',
+      stacked: { tierAtMint: 'rare', variant: 'normal' },
+    })
   })
   it('decides craft and foil upgrade', () => {
     const base = {

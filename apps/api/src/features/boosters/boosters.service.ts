@@ -6,6 +6,7 @@ import {
   computeBoosterStock,
   consumeBooster,
   copyKey,
+  copyValueTier,
   createSeededRandom,
   drawBooster,
   DROP_TABLE_VERSION,
@@ -16,7 +17,7 @@ import {
   type BoosterCadence,
   type BoosterDraw,
   type BoosterOpening,
-  type CardTier,
+  type OwnedPullTarget,
   type CopySettlement,
   type RecentReveal,
   type WalletState,
@@ -198,8 +199,11 @@ async function openNewBooster(
     ownerId: ctx.m.userId,
     cardIds,
   })
-  const owned = new Map<string, CardTier>(
-    ownedRows.map((copy) => [copyKey(copy.cardId, copy.variant), copy.tierAtMint]),
+  const owned = new Map<string, OwnedPullTarget>(
+    ownedRows.map((copy) => [
+      copyKey(copy.cardId, copy.variant),
+      { tierAtMint: copy.tierAtMint, valueTier: copyValueTier(copy) },
+    ]),
   )
   const stackEntries = await listStackEntries(ctx.tx, {
     leagueId: ctx.m.leagueId,

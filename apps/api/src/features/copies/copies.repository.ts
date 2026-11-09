@@ -105,7 +105,7 @@ export async function lockOwnedCopies(
     .for('update')
 }
 
-/** Reads the league tier of a card, holding a share lock on the card row; null when it is not in the league. */
+/** Reads the league tier of an active card, holding a share lock on the card row; null when it is not active in the league. */
 export async function lockCardTier(
   db: DbExecutor,
   input: { leagueId: string; cardId: string },
@@ -113,7 +113,13 @@ export async function lockCardTier(
   const rows = await db
     .select({ tier: cards.tier })
     .from(cards)
-    .where(and(eq(cards.id, input.cardId), eq(cards.leagueId, input.leagueId)))
+    .where(
+      and(
+        eq(cards.id, input.cardId),
+        eq(cards.leagueId, input.leagueId),
+        eq(cards.status, 'active'),
+      ),
+    )
     .limit(1)
     .for('share')
   return rows[0]?.tier ?? null
@@ -122,9 +128,9 @@ export async function lockCardTier(
 /** Sets the personal tier of an owned copy; false when no such copy exists. */
 export async function setPromotedTier(
   db: DbExecutor,
-  input: CopyKeyInput & { promotedTier: CardTier },
+  input: CopyKeyInput & { promotedTier: CardTier; now: Date },
 ): Promise<boolean> {
-  const now = new Date()
+  const { now } = input
   const rows = await db
     .update(cardCopies)
     .set({ promotedTier: input.promotedTier, promotedAt: now, updatedAt: now })

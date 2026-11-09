@@ -7,11 +7,16 @@ export const dustBalanceSchema = z.object({ dust: z.int().min(0) })
 
 export const promoteBodySchema = z.object({ from: cardTierSchema })
 
-export const convertStackBodySchema = z.object({
-  variant: copyVariantSchema,
-  quantity: z.int().min(1).max(999),
-  expectedCount: z.int().min(1).max(100_000),
-})
+export const convertStackBodySchema = z
+  .object({
+    variant: copyVariantSchema,
+    quantity: z.int().min(1).max(999),
+    expectedCount: z.int().min(1).max(100_000),
+  })
+  .refine((body) => body.quantity <= body.expectedCount, {
+    path: ['quantity'],
+    message: 'Quantity exceeds the stack',
+  })
 
 export const stackActionResultSchema = z.object({
   dust: z.int().min(0),

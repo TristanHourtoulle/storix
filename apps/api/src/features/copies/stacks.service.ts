@@ -80,6 +80,7 @@ export function createStacksService({ db, clock }: StacksServiceDeps): StacksSer
           ownerId: m.userId,
           variant,
           promotedTier: to,
+          now: ctx.now,
         })
         if (!promoted) throw copyNotOwned()
         await insertAuditEntry(ctx.tx, {

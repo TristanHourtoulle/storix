@@ -114,7 +114,9 @@ export function settleBoosterCopies(
       variant: pull.variant,
     })
     const nextOwned =
-      outcome === 'duplicate' ? acc.owned : new Map([...acc.owned, [key, pull.tier] as const])
+      outcome === 'duplicate'
+        ? acc.owned
+        : new Map([...acc.owned, [key, { tierAtMint: pull.tier, valueTier: pull.tier }] as const])
     const stackCountAfter = stacked === null ? null : (acc.stackCounts.get(pull.cardId) ?? 0) + 1
     const nextStackCounts =
       stackCountAfter === null
