@@ -31,7 +31,11 @@ function forceReflow(element: HTMLElement): void {
 }
 
 /** FLIP shared-element flight between a recap mini-card and the loupe card, with a fade fallback. */
-export function useFlipFlight({ getOrigin, isReducedMotion, onLeft }: FlipFlightOptions): FlipFlight {
+export function useFlipFlight({
+  getOrigin,
+  isReducedMotion,
+  onLeft,
+}: FlipFlightOptions): FlipFlight {
   const element = useRef<HTMLDivElement | null>(null)
   const [phase, setPhase] = useState<FlightPhase>('entering')
   const [isFading, setIsFading] = useState(false)

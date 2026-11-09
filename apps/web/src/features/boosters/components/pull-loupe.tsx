@@ -51,7 +51,11 @@ export function PullLoupe({
   const [direction, setDirection] = useState<LoupeDirection | null>(null)
   const [isSharing, setIsSharing] = useState(false)
   const [isReducedMotion] = useState(() => window.matchMedia(REDUCED_MOTION_QUERY).matches)
-  const { flightRef, phase, isFading, leave } = useFlipFlight({ getOrigin, isReducedMotion, onLeft })
+  const { flightRef, phase, isFading, leave } = useFlipFlight({
+    getOrigin,
+    isReducedMotion,
+    onLeft,
+  })
   const start = useRef<PointerStart | null>(null)
   const countRef = useRef<HTMLParagraphElement>(null)
   const pull = pulls[index]
@@ -130,7 +134,9 @@ export function PullLoupe({
   const footer = (
     <div className="loupe-footer">
       <div className="loupe-meta">
-        <span className={`loupe-label ${pull.isFirstCopy ? 'is-new' : 'is-dust'}`}>{pullLabel(pull)}</span>
+        <span className={`loupe-label ${pull.isFirstCopy ? 'is-new' : 'is-dust'}`}>
+          {pullLabel(pull)}
+        </span>
         <span className="loupe-credit">{pullCredit(pull)}</span>
       </div>
       {count > 1 ? (
@@ -199,7 +205,9 @@ export function PullLoupe({
           <PulledFace pull={pull} size="showcase" imageSizes="min(84vw, 360px)" />
         </div>
       </CardFullscreen>
-      {isSharing && subject && !isLeaving ? <ShareSheet subject={subject} onClose={closeShare} /> : null}
+      {isSharing && subject && !isLeaving ? (
+        <ShareSheet subject={subject} onClose={closeShare} />
+      ) : null}
     </>
   )
 }

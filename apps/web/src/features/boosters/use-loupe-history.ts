@@ -17,7 +17,9 @@ interface LoupeHistory {
 export function useLoupeHistory(): LoupeHistory {
   const router = useRouter()
   const navigate = useNavigate()
-  const isInHistory = useRouterState({ select: (state) => state.location.state.storixLoupe === true })
+  const isInHistory = useRouterState({
+    select: (state) => state.location.state.storixLoupe === true,
+  })
 
   const push = useCallback((): void => {
     if (router.state.location.state.storixLoupe === true) return

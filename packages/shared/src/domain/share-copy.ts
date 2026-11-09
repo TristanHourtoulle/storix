@@ -82,7 +82,8 @@ export function packSubline(total: number, bestTierLabel: string): string {
 
 /** Writes the message sent along with a share image. */
 export function shareText(card: ShareCardFacts, origin: ShareOrigin): string {
-  if (origin.kind === 'booster') return `J'ai tiré « ${card.title} » en ${card.tierLabel} sur Storix !`
+  if (origin.kind === 'booster')
+    return `J'ai tiré « ${card.title} » en ${card.tierLabel} sur Storix !`
   return `Regarde ma carte « ${card.title} » en ${card.tierLabel} sur Storix !`
 }
 
