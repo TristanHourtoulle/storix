@@ -4,6 +4,7 @@ export type ShareOutcome = 'shared' | 'cancelled' | 'failed'
 
 function outcomeOf(error: unknown): ShareOutcome {
   if (error instanceof DOMException && error.name === 'AbortError') return 'cancelled'
+  if (error instanceof DOMException && error.name === 'InvalidStateError') return 'cancelled'
   logger.warn('Share failed', { error })
   return 'failed'
 }

@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { shareText } from '@storix/shared'
 import { useModalLayer } from '@/components/crop/use-modal-layer'
@@ -48,6 +48,17 @@ export function ShareSheet({ subject, onClose }: ShareSheetProps) {
   const { label: copyLabel, copy } = useCopyText(text)
   const switchLabelId = useId()
   const selected = images[style] ?? PENDING
+  const isShareInFlight = useRef(false)
+
+  function runShare(file: File, message: string | null, onShared: () => void): void {
+    if (isShareInFlight.current) return
+    isShareInFlight.current = true
+    void shareFile(file, message).then((outcome) => {
+      isShareInFlight.current = false
+      if (outcome === 'shared') onShared()
+      else if (outcome === 'failed') setIsFallback(true)
+    })
+  }
 
   function choose(next: ShareStyle): void {
     setChosen(next)
@@ -60,10 +71,7 @@ export function ShareSheet({ subject, onClose }: ShareSheetProps) {
       setIsFallback(true)
       return
     }
-    void shareFile(selected.file, hasMessage ? text : null).then((outcome) => {
-      if (outcome === 'shared') onClose()
-      else if (outcome === 'failed') setIsFallback(true)
-    })
+    runShare(selected.file, hasMessage ? text : null, onClose)
   }
 
   function save(): void {
@@ -76,9 +84,7 @@ export function ShareSheet({ subject, onClose }: ShareSheetProps) {
       setIsFallback(true)
       return
     }
-    void shareFile(selected.file, null).then((outcome) => {
-      if (outcome === 'failed') setIsFallback(true)
-    })
+    runShare(selected.file, null, () => undefined)
   }
 
   return createPortal(
