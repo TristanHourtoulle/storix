@@ -4,8 +4,8 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 import {
   CARD_TIERS,
-  COLLECTION_SORTS,
   canPutNewFirst,
+  collectionSortSchema,
   orderNewFirst,
   type CardTier,
   type CollectionCard,
@@ -43,7 +43,7 @@ export const Route = createFileRoute('/_authed/l/$leagueId/collection')({
     author: z.string().optional(),
     tier: z.enum(CARD_TIERS).optional(),
     by: z.enum(['member', 'rarity']).optional(),
-    sort: z.enum(COLLECTION_SORTS).optional(),
+    sort: collectionSortSchema.optional(),
     notice: z.literal('withdrawn').optional(),
   }),
   loader: ({ context, params }) =>

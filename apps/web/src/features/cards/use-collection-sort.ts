@@ -1,12 +1,11 @@
 import { useCallback, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { COLLECTION_SORTS, DEFAULT_COLLECTION_SORT, type CollectionSort } from '@storix/shared'
-import { z } from 'zod'
+import { collectionSortSchema, DEFAULT_COLLECTION_SORT, type CollectionSort } from '@storix/shared'
 import { showToast } from '@/components/ui/toast'
 import { readStorage, STORAGE_KEYS, writeStorage } from '@/lib/storage'
 import { sortLabel } from './collection-sort-labels'
 
-const storedSortSchema = z.enum(COLLECTION_SORTS)
+const storedSortSchema = collectionSortSchema
 
 interface StoredSort {
   key: string
