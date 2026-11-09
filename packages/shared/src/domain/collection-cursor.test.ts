@@ -75,6 +75,8 @@ describe('collection cursor', () => {
     'd.1.shiny.4',
     'd.1.epic.0',
     'd.9000000000000000.epic.4',
+    'd.253402300800000.epic.4',
+    'd.8640000000000000.common.1',
     'dl',
     'dl.0',
     'dl.epic',
@@ -101,9 +103,9 @@ describe('collection cursor', () => {
       number: 2_147_483_647,
     })
     expect(parseCollectionCursor('n.1')).toEqual({ kind: 'number', number: 1 })
-    expect(parseCollectionCursor('d.8640000000000000.common.1')).toEqual({
+    expect(parseCollectionCursor('d.253402300799999.common.1')).toEqual({
       kind: 'discovered',
-      discoveredAt: 8_640_000_000_000_000,
+      discoveredAt: 253_402_300_799_999,
       tier: 'common',
       number: 1,
     })

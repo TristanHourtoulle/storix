@@ -25,7 +25,7 @@ const NUMBER_PREFIX = 'n'
 
 const MAX_CARD_NUMBER = 2_147_483_647
 
-const MAX_EPOCH_MS = 8_640_000_000_000_000
+const MAX_EPOCH_MS = 253_402_300_799_999
 
 /**
  * Stands for a numeric cursor sent by a client built before the rarest-first order. It ends the
@@ -46,7 +46,7 @@ function parseCardNumber(digits: string): number | null {
 }
 
 function parseEpochMs(digits: string): number | null {
-  if (!/^(0|[1-9]\d{0,15})$/.test(digits)) return null
+  if (!/^(0|[1-9]\d{0,14})$/.test(digits)) return null
   const ms = Number(digits)
   return ms <= MAX_EPOCH_MS ? ms : null
 }
