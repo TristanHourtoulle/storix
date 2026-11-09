@@ -118,8 +118,8 @@ interface ArcadeOpening {
 const SUMMARY_PITY_DELAY = 0.95
 const REVEAL_ALL_COIN_DELAY = 0.6
 
-function hasDustGain(pull: BoosterPull): boolean {
-  return !pull.isFirstCopy && pull.dust > 0
+function hasPileOrDustGain(pull: BoosterPull): boolean {
+  return !pull.isFirstCopy && (pull.dust > 0 || pull.stackCount !== null)
 }
 
 function playSummary(withPity: boolean): void {
@@ -208,7 +208,7 @@ export function useArcadeOpening(
         await revealLong(director, index, tierFx(pull.card.tier), TIER_LABELS[pull.card.tier])
       } else {
         await revealQuick(director, index)
-        if (hasDustGain(pull)) playSound({ name: 'coin' })
+        if (hasPileOrDustGain(pull)) playSound({ name: 'coin' })
       }
       dispatch({ type: 'revealed', index, announcement: describe(pull, index + 1, count) })
     },
@@ -274,7 +274,7 @@ export function useArcadeOpening(
   const revealAll = useCallback(() => {
     const { phase, revealed } = stateRef.current
     if (phase === 'summary') return
-    const hasHiddenDust = pulls.some((pull, index) => !revealed[index] && hasDustGain(pull))
+    const hasHiddenDust = pulls.some((pull, index) => !revealed[index] && hasPileOrDustGain(pull))
     stopSounds()
     playSound({ name: 'revealAll' })
     if (hasHiddenDust) playSound({ name: 'coin' }, REVEAL_ALL_COIN_DELAY)
