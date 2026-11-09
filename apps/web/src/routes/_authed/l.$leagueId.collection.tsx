@@ -190,16 +190,41 @@ function CollectionBody({
     window.scrollTo({ top: 0 })
   }
 
+  const sortControls = (
+    <>
+      <CollectionToolbar
+        sort={sort}
+        onOpenSort={() => setIsSortOpen(true)}
+        newCount={visibleNew.length}
+        isNewFirst={isNewFirst && canReorderNew}
+        canReorderNew={canReorderNew}
+        onToggleNewFirst={toggleNewFirst}
+        onMarkAllSeen={onMarkAllSeen}
+      />
+      <SortSheet
+        open={isSortOpen}
+        value={sort}
+        onPick={onPickSort}
+        onClose={() => setIsSortOpen(false)}
+      />
+    </>
+  )
+
   if (!data) {
-    return isError ? (
-      <section role="alert" className="flex flex-col items-center gap-3 text-center">
-        <p className="m-0 text-sm text-muted">Impossible de charger ta collection.</p>
-        <Button variant="ghost" onClick={() => void refetch()}>
-          Réessayer
-        </Button>
-      </section>
-    ) : (
-      LOADING
+    return (
+      <>
+        {sortControls}
+        {isError ? (
+          <section role="alert" className="flex flex-col items-center gap-3 text-center">
+            <p className="m-0 text-sm text-muted">Impossible de charger ta collection.</p>
+            <Button variant="ghost" onClick={() => void refetch()}>
+              Réessayer
+            </Button>
+          </section>
+        ) : (
+          LOADING
+        )}
+      </>
     )
   }
   const firstPage = data.pages[0]
@@ -231,21 +256,7 @@ function CollectionBody({
   return (
     <>
       <CollectionProgress owned={owned} total={total} label={label} />
-      <CollectionToolbar
-        sort={sort}
-        onOpenSort={() => setIsSortOpen(true)}
-        newCount={visibleNew.length}
-        isNewFirst={isNewFirst && canReorderNew}
-        canReorderNew={canReorderNew}
-        onToggleNewFirst={toggleNewFirst}
-        onMarkAllSeen={onMarkAllSeen}
-      />
-      <SortSheet
-        open={isSortOpen}
-        value={sort}
-        onPick={onPickSort}
-        onClose={() => setIsSortOpen(false)}
-      />
+      {sortControls}
       {owned === 0 && (
         <p className="m-0 text-sm text-muted">
           Ouvre un booster pour découvrir tes premières cartes.
