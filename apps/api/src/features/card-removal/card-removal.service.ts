@@ -4,6 +4,7 @@ import { compensateRemovedCopies, mediaPrefix, type RemovalReason } from '@stori
 import type { JobQueue } from '../../jobs/job-queue'
 import type { ErrorLogger } from '../../lib/error-logger'
 import { insertAuditEntry } from '../audit/audit.repository'
+import { listStacksOfCards } from '../copies/stacks.repository'
 import {
   creditDust,
   deleteCards,
@@ -59,7 +60,10 @@ export function createCardRemoval({ jobs, logger }: CardRemovalDeps): CardRemova
       if (removable.length === 0) return emptyRemovalOutcome()
       const cardIds = removable.map((card) => card.id)
 
-      const compensations = compensateRemovedCopies(await listCopiesOfCards(tx, cardIds))
+      const compensations = compensateRemovedCopies(
+        await listCopiesOfCards(tx, cardIds),
+        await listStacksOfCards(tx, cardIds),
+      )
       for (const owner of compensations) {
         await creditDust(tx, { leagueId: input.leagueId, userId: owner.ownerId, dust: owner.dust })
       }

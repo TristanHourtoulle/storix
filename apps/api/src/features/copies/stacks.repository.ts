@@ -1,5 +1,11 @@
 import { cardCopies, cardCopyStacks, user, type DbExecutor } from '@storix/db'
-import type { CardTier, CopyVariant, OwnedCopyState, StackEntry } from '@storix/shared'
+import type {
+  CardTier,
+  CopyVariant,
+  OwnedCopyState,
+  RemovedStack,
+  StackEntry,
+} from '@storix/shared'
 import { and, asc, eq, gt, inArray, isNotNull, ne, sql } from 'drizzle-orm'
 
 export interface StackKey {
@@ -58,7 +64,11 @@ export async function listStackEntries(
         inArray(cardCopyStacks.cardId, [...input.cardIds]),
       ),
     )
-    .orderBy(asc(cardCopyStacks.cardId), asc(cardCopyStacks.variant), asc(cardCopyStacks.tierAtMint))
+    .orderBy(
+      asc(cardCopyStacks.cardId),
+      asc(cardCopyStacks.variant),
+      asc(cardCopyStacks.tierAtMint),
+    )
 }
 
 /** Lists a member's stacked copies of one card, holding an update lock on those rows. */
@@ -103,10 +113,7 @@ export async function addToStack(db: DbExecutor, rows: readonly StackRowInput[])
 }
 
 /** Removes copies from one stack entry, deleting the row when it empties; throws when the entry changed. */
-export async function removeFromStack(
-  db: DbExecutor,
-  key: StackKey & StackEntry,
-): Promise<void> {
+export async function removeFromStack(db: DbExecutor, key: StackKey & StackEntry): Promise<void> {
   const deleted = await db
     .delete(cardCopyStacks)
     .where(and(entryCondition(key), eq(cardCopyStacks.count, key.count)))
@@ -124,7 +131,7 @@ export async function removeFromStack(
 export async function listStacksOfCards(
   db: DbExecutor,
   cardIds: readonly string[],
-): Promise<(StackEntry & { ownerId: string; cardId: string })[]> {
+): Promise<RemovedStack[]> {
   if (cardIds.length === 0) return []
   return db
     .select({ ownerId: cardCopyStacks.ownerId, cardId: cardCopyStacks.cardId, ...stackColumns })
@@ -132,7 +139,9 @@ export async function listStacksOfCards(
     .where(inArray(cardCopyStacks.cardId, [...cardIds]))
 }
 
-const holderName = sql<string | null>`coalesce(${user.displayUsername}, ${user.username}, ${user.name})`
+const holderName = sql<
+  string | null
+>`coalesce(${user.displayUsername}, ${user.username}, ${user.name})`
 
 /** Lists every copy of a card held by other owners who have at least one promoted copy of it. */
 export async function listPromotedHolderCopies(

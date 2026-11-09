@@ -1,5 +1,6 @@
 import {
   cardCopies,
+  cardCopyStacks,
   cardTags,
   cards,
   leagueMembers,
@@ -158,11 +159,16 @@ export async function transferOwnership(
   if (promoted.length === 0) throw new Error('Target admin not found')
 }
 
-/** Deletes a member's own copies in a league, so a departing member is never compensated. */
+/** Deletes a member's own copies and stacked copies in a league, so a departing member is never compensated. */
 export async function deleteMemberCopies(
   db: DbExecutor,
   input: { leagueId: string; userId: string },
 ): Promise<void> {
+  await db
+    .delete(cardCopyStacks)
+    .where(
+      and(eq(cardCopyStacks.leagueId, input.leagueId), eq(cardCopyStacks.ownerId, input.userId)),
+    )
   await db
     .delete(cardCopies)
     .where(and(eq(cardCopies.leagueId, input.leagueId), eq(cardCopies.ownerId, input.userId)))
