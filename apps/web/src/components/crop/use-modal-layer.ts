@@ -22,7 +22,7 @@ let layerStack: readonly RefObject<HTMLDivElement | null>[] = []
 
 function trapTab(layer: HTMLElement, event: KeyboardEvent): void {
   const focusables = [...layer.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
-    (element) => element.closest('[inert]') === null,
+    (element) => element.tabIndex >= 0 && element.closest('[inert]') === null,
   )
   const first = focusables[0]
   const last = focusables[focusables.length - 1]
