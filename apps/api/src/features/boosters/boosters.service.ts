@@ -27,6 +27,7 @@ import type { MediaSigner } from '../../lib/media-signer'
 import { runInTransaction } from '../../lib/transaction'
 import { toCollectionCard, withViewerCopies, type CollectionCardBase } from '../cards/card-views'
 import { insertCopy, listOwnedCopies, updateCopyTier } from '../copies/copies.repository'
+import { addToStack, listStackEntries } from '../copies/stacks.repository'
 import { findLeagueSettings } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
 import { toWalletState } from '../wallets/wallet-state'
@@ -200,9 +201,19 @@ async function openNewBooster(
   const owned = new Map<string, CardTier>(
     ownedRows.map((copy) => [copyKey(copy.cardId, copy.variant), copy.tierAtMint]),
   )
-  const { settlements, dustGained } = settleBoosterCopies(
+  const stackEntries = await listStackEntries(ctx.tx, {
+    leagueId: ctx.m.leagueId,
+    ownerId: ctx.m.userId,
+    cardIds,
+  })
+  const stackCounts = stackEntries.reduce<ReadonlyMap<string, number>>(
+    (acc, entry) => new Map([...acc, [entry.cardId, (acc.get(entry.cardId) ?? 0) + entry.count]]),
+    new Map(),
+  )
+  const { settlements } = settleBoosterCopies(
     draws.map((draw) => ({ cardId: draw.cardId, tier: draw.tier, variant: draw.variant })),
     owned,
+    stackCounts,
   )
   const discoveries = await discoverySlots(ctx, draws)
 
@@ -214,9 +225,26 @@ async function openNewBooster(
     tableVersion: DROP_TABLE_VERSION,
     pityBefore,
     poolDigest: sha256Hex(boosterPoolDigestInput(pool)),
-    dustGained,
+    dustGained: 0,
   })
   await mintCopies(ctx, settlements, opening.id)
+  await addToStack(
+    ctx.tx,
+    settlements.flatMap((settlement) =>
+      settlement.stacked === null
+        ? []
+        : [
+            {
+              leagueId: ctx.m.leagueId,
+              cardId: settlement.cardId,
+              ownerId: ctx.m.userId,
+              variant: settlement.stacked.variant,
+              tierAtMint: settlement.stacked.tierAtMint,
+              count: 1,
+            },
+          ],
+    ),
+  )
   const pullRows = draws.map((draw, index): InsertPullRow => {
     const settlement = settlements[index]
     if (settlement === undefined) throw new Error('Booster draw has no copy settlement')
@@ -227,7 +255,8 @@ async function openNewBooster(
       tierAtMint: settlement.tierAtMint,
       variant: settlement.variant,
       outcome: settlement.outcome,
-      dust: settlement.dust,
+      dust: 0,
+      stackCount: settlement.stackCountAfter,
       isFirstCopy: settlement.isFirstCopyOfCard,
       isDiscovery: discoveries.has(draw.slot),
     }
@@ -239,7 +268,6 @@ async function openNewBooster(
     draws.map((draw) => draw.tier),
   )
   const patch = {
-    dust: wallet.dust + dustGained,
     boosterStock: consumed.stock,
     boosterStockAt: consumed.anchor,
     pitySinceEpic: pityAfter.sinceEpic,
@@ -248,7 +276,7 @@ async function openNewBooster(
   }
   await updateWallet(ctx.tx, { leagueId: ctx.m.leagueId, userId: ctx.m.userId }, patch)
   const walletState = await walletStateFor(ctx, { ...wallet, ...patch })
-  return present(ctx, { ...opening, dustGained }, walletState, signer)
+  return present(ctx, { ...opening, dustGained: 0 }, walletState, signer)
 }
 
 function toRevealCard(row: RevealRow): CollectionCardBase {

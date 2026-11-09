@@ -25,23 +25,24 @@ describe('dust', () => {
   it('resolves a pulled copy', () => {
     expect(resolvePulledCopy(null, { tierAtMint: 'rare', variant: 'normal' })).toEqual({
       outcome: 'new',
-      dust: 0,
+      stacked: null,
     })
     expect(resolvePulledCopy('rare', { tierAtMint: 'common', variant: 'normal' })).toEqual({
       outcome: 'duplicate',
-      dust: 5,
+      stacked: { tierAtMint: 'common', variant: 'normal' },
     })
     expect(resolvePulledCopy('rare', { tierAtMint: 'rare', variant: 'foil' })).toEqual({
       outcome: 'duplicate',
-      dust: 50,
+      stacked: { tierAtMint: 'rare', variant: 'foil' },
     })
     expect(resolvePulledCopy('common', { tierAtMint: 'rare', variant: 'foil' })).toEqual({
       outcome: 'upgraded',
-      dust: 10,
+      stacked: { tierAtMint: 'common', variant: 'foil' },
     })
   })
   it('settles a booster in order without mutating the owned map', () => {
     const owned = new Map([[copyKey('b', 'normal'), 'epic' as const]])
+    const stackCounts = new Map<string, number>()
     const result = settleBoosterCopies(
       [
         { cardId: 'a', tier: 'common', variant: 'normal' },
@@ -50,16 +51,54 @@ describe('dust', () => {
         { cardId: 'b', tier: 'rare', variant: 'normal' },
       ],
       owned,
+      stackCounts,
     )
-    expect(result.settlements.map((s) => [s.outcome, s.dust, s.isFirstCopyOfCard])).toEqual([
-      ['new', 0, true],
-      ['duplicate', 5, false],
-      ['new', 0, false],
-      ['duplicate', 25, false],
+    expect(
+      result.settlements.map((s) => [s.outcome, s.stacked, s.stackCountAfter, s.isFirstCopyOfCard]),
+    ).toEqual([
+      ['new', null, null, true],
+      ['duplicate', { tierAtMint: 'common', variant: 'normal' }, 1, false],
+      ['new', null, null, false],
+      ['duplicate', { tierAtMint: 'rare', variant: 'normal' }, 1, false],
     ])
-    expect(result.dustGained).toBe(30)
     expect(owned.size).toBe(1)
+    expect(stackCounts.size).toBe(0)
     expect(result.owned.get(copyKey('a', 'foil'))).toBe('common')
+    expect(result.stackCounts.get('a')).toBe(1)
+  })
+  it('counts the stack after each pull, per card, across variants', () => {
+    const { settlements } = settleBoosterCopies(
+      [
+        { cardId: 'a', tier: 'rare', variant: 'normal' },
+        { cardId: 'a', tier: 'rare', variant: 'foil' },
+      ],
+      new Map([
+        [copyKey('a', 'normal'), 'rare'],
+        [copyKey('a', 'foil'), 'rare'],
+      ]),
+      new Map([['a', 3]]),
+    )
+    expect(settlements.map((s) => s.stackCountAfter)).toEqual([4, 5])
+  })
+  it('leaves the stack count null for a new copy', () => {
+    const { settlements } = settleBoosterCopies(
+      [{ cardId: 'a', tier: 'rare', variant: 'normal' }],
+      new Map(),
+      new Map([['a', 2]]),
+    )
+    expect(settlements.map((s) => [s.outcome, s.stacked, s.stackCountAfter])).toEqual([
+      ['new', null, null],
+    ])
+  })
+  it('stacks the displaced copy of an upgrade at its old tier', () => {
+    const { settlements } = settleBoosterCopies(
+      [{ cardId: 'a', tier: 'epic', variant: 'normal' }],
+      new Map([[copyKey('a', 'normal'), 'common']]),
+      new Map(),
+    )
+    expect(settlements.map((s) => [s.outcome, s.stacked, s.stackCountAfter])).toEqual([
+      ['upgraded', { tierAtMint: 'common', variant: 'normal' }, 1],
+    ])
   })
   it('decides craft and foil upgrade', () => {
     const base = {

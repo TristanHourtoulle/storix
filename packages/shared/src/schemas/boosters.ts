@@ -31,6 +31,7 @@ export const boosterPullSchema = z.object({
   variant: copyVariantSchema,
   outcome: z.enum(['new', 'upgraded', 'duplicate']),
   dust: z.int().min(0),
+  stackCount: z.int().positive().nullable(),
   isFirstCopy: z.boolean(),
   isDiscovery: z.boolean(),
 })

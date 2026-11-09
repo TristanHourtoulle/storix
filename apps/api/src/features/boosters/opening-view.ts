@@ -26,6 +26,7 @@ export function toBoosterPull(row: PullViewRow, signer: MediaSigner): BoosterPul
     variant: row.variant,
     outcome: row.outcome,
     dust: row.dust,
+    stackCount: row.stackCount,
     isFirstCopy: row.isFirstCopy,
     isDiscovery: row.isDiscovery,
   }
