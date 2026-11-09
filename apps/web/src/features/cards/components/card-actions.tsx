@@ -1,26 +1,30 @@
-import { useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
+  cardProgression,
+  planStackTake,
   stackSize,
   type CardTier,
   type ConvertStackBody,
   type CopyVariant,
   type OwnedCardDetail,
 } from '@storix/shared'
-import { Button } from '@/components/ui/button'
-import { Dialog } from '@/components/ui/dialog'
-import { TIER_LABELS } from '../tier-labels'
+import { foilBlockReason } from '../progression-copy'
+import { CardProgressBar, isMainActionDisabled } from './card-progress-bar'
 import { ConvertStackSheet } from './convert-stack-sheet'
+import { FoilUpgradeSheet } from './foil-upgrade-sheet'
+import { MoreActionsSheet } from './more-actions-sheet'
 import { PromotionSheet } from './promotion-sheet'
+import { RecycleSheet } from './recycle-sheet'
 
 interface CardActionsProps {
-  actions: OwnedCardDetail['actions']
-  leagueTier: CardTier
+  card: OwnedCardDetail
   dust: number | null
   isBusy: boolean
   promoteError: string | null
   convertError: string | null
+  foilError: string | null
   onRecycle: (variant: CopyVariant) => void
-  onUpgrade: () => void
+  onUpgrade: (callbacks: SubmitCallbacks) => void
   onPromote: (from: CardTier, callbacks: SubmitCallbacks) => void
   onConvert: (body: ConvertStackBody, callbacks: SubmitCallbacks) => void
   onSheetOpen: () => void
@@ -31,36 +35,58 @@ export interface SubmitCallbacks {
   onSettled: () => void
 }
 
-type Sheet = 'recycle' | 'promote' | 'convert' | null
-
-const UPGRADE_REASONS = {
-  insufficient_dust: 'Il te manque des paillettes',
-  foil_owned: 'Tu as déjà la foil',
-  no_normal: "Tu n'as pas d'exemplaire normal",
-} as const
+type Sheet = 'promote' | 'convert' | 'more' | 'foil' | 'recycle' | null
+type Origin = 'main' | 'more'
+type RecycleOption = OwnedCardDetail['actions']['recycle'][number]
 
 export function CardActions({
-  actions,
-  leagueTier,
+  card,
   dust,
   isBusy,
   promoteError,
   convertError,
+  foilError,
   onRecycle,
   onUpgrade,
   onPromote,
   onConvert,
   onSheetOpen,
 }: CardActionsProps) {
-  const [pending, setPending] = useState<OwnedCardDetail['actions']['recycle'][number] | null>(null)
+  const { actions } = card
+  const [pending, setPending] = useState<RecycleOption | null>(null)
   const [sheet, setSheet] = useState<Sheet>(null)
+  const [origin, setOrigin] = useState<Origin>('main')
   const [session, setSession] = useState(0)
+  const [convertStartsAtMax, setConvertStartsAtMax] = useState(false)
   const isSubmitting = useRef(false)
-  const { foilUpgrade, promotion } = actions
-  const stackCount = stackSize(actions.stack)
-  const isMax = promotion.reason === 'max_tier'
-  const isRecycleBlocked = stackCount > 0 && actions.recycle.length === 1
+  const previousSheet = useRef<Sheet>(null)
+  const mainRef = useRef<HTMLButtonElement>(null)
+  const moreRef = useRef<HTMLButtonElement>(null)
+  const progression = useMemo(
+    () => cardProgression({ promotion: actions.promotion, stack: actions.stack, dust }),
+    [actions.promotion, actions.stack, dust],
+  )
+  const convertAllDust = useMemo(
+    () => planStackTake(actions.stack, stackSize(actions.stack), 'richest')?.dust ?? 0,
+    [actions.stack],
+  )
   const close = () => setSheet(null)
+  const closeSheet = (which: Exclude<Sheet, null>) => () =>
+    setSheet((current) => (current === which ? null : current))
+
+  const isMainDisabled = isMainActionDisabled(progression, isBusy)
+
+  useEffect(() => {
+    if (previousSheet.current !== null && sheet === null) {
+      const target = origin === 'more' || isMainDisabled ? moreRef : mainRef
+      target.current?.focus()
+    }
+    previousSheet.current = sheet
+  }, [sheet, origin, isMainDisabled])
+
+  useLayoutEffect(() => {
+    if (isMainDisabled && document.activeElement === mainRef.current) moreRef.current?.focus()
+  }, [isMainDisabled])
 
   function submit(run: (callbacks: SubmitCallbacks) => void) {
     if (isSubmitting.current) return
@@ -73,10 +99,20 @@ export function CardActions({
     })
   }
 
-  function openSheet(next: Exclude<Sheet, null>) {
+  function openSheet(next: Exclude<Sheet, null>, from?: Origin) {
     onSheetOpen()
     setSession((value) => value + 1)
+    if (from) setOrigin(from)
     setSheet(next)
+  }
+
+  function openMain() {
+    if (progression.kind === 'max') {
+      setConvertStartsAtMax(true)
+      openSheet('convert', 'main')
+    } else {
+      openSheet('promote', 'main')
+    }
   }
 
   function confirmRecycle() {
@@ -86,64 +122,56 @@ export function CardActions({
 
   return (
     <>
-      <div className="actions">
-        {stackCount > 0 ? (
-          <Button variant="ghost" disabled={isBusy} onClick={() => openSheet('convert')}>
-            Ta pile · ×{stackCount}
-          </Button>
-        ) : null}
-        <Button variant="primary" disabled={isMax || isBusy} onClick={() => openSheet('promote')}>
-          {isMax ? 'Rareté maximale' : 'Améliorer la rareté'}
-        </Button>
-      </div>
-      <div className="actions">
-        {actions.recycle.map((option) => (
-          <Button
-            key={option.variant}
-            variant="ghost"
-            disabled={isBusy}
-            onClick={() => {
-              setPending(option)
-              setSheet('recycle')
-            }}
-          >
-            {option.variant === 'foil' ? 'Recycler la foil' : 'Recycler'} · +{option.dust}
-          </Button>
-        ))}
-        <Button variant="primary" disabled={!foilUpgrade.allowed || isBusy} onClick={onUpgrade}>
-          {foilUpgrade.allowed || !foilUpgrade.reason
-            ? `Passer en foil · ${foilUpgrade.cost}`
-            : UPGRADE_REASONS[foilUpgrade.reason]}
-        </Button>
-      </div>
-      <Dialog open={sheet === 'recycle'} title="Recycler cette carte ?" onClose={close}>
-        {isRecycleBlocked ? (
-          <p className="m-0 text-sm font-semibold text-danger">
-            Convertis d'abord ta pile de doublons.
-          </p>
-        ) : (
-          <p className="m-0 text-sm text-ink-2">
-            Tu gagnes {pending?.dust} paillettes. Tu pourras la retrouver dans un booster.
-          </p>
-        )}
-        {!isRecycleBlocked && pending?.promotedTier ? (
-          <p className="m-0 text-sm font-semibold text-danger">
-            Ta rareté perso {TIER_LABELS[pending.promotedTier]} ★ sera perdue.
-          </p>
-        ) : null}
-        <Button variant="primary" block disabled={isRecycleBlocked} onClick={confirmRecycle}>
-          Recycler
-        </Button>
-      </Dialog>
+      <CardProgressBar
+        progression={progression}
+        isBusy={isBusy}
+        mainRef={mainRef}
+        moreRef={moreRef}
+        onMain={openMain}
+        onMore={() => openSheet('more', 'more')}
+      />
+      <MoreActionsSheet
+        open={sheet === 'more'}
+        actions={actions}
+        dust={dust}
+        isBusy={isBusy}
+        convertAllDust={convertAllDust}
+        onConvert={() => {
+          setConvertStartsAtMax(false)
+          openSheet('convert')
+        }}
+        onFoil={() => openSheet('foil')}
+        onRecycle={(option) => {
+          setPending(option)
+          openSheet('recycle')
+        }}
+        onClose={closeSheet('more')}
+      />
+      <FoilUpgradeSheet
+        open={sheet === 'foil'}
+        cost={actions.foilUpgrade.cost}
+        normalValue={actions.recycle.find((option) => option.variant === 'normal')?.dust ?? 0}
+        canConfirm={dust !== null && foilBlockReason(actions.foilUpgrade, dust) === null}
+        isBusy={isBusy}
+        error={foilError}
+        onConfirm={() => submit(onUpgrade)}
+        onClose={closeSheet('foil')}
+      />
+      <RecycleSheet
+        open={sheet === 'recycle'}
+        option={pending}
+        isBusy={isBusy}
+        onConfirm={confirmRecycle}
+        onClose={closeSheet('recycle')}
+      />
       <PromotionSheet
         open={sheet === 'promote'}
-        promotion={promotion}
-        leagueTier={leagueTier}
-        dust={dust}
+        card={card}
+        progression={progression}
         isBusy={isBusy}
         error={promoteError}
         onConfirm={(from) => submit((callbacks) => onPromote(from, callbacks))}
-        onClose={close}
+        onClose={closeSheet('promote')}
       />
       <ConvertStackSheet
         key={session}
@@ -151,8 +179,14 @@ export function CardActions({
         stack={actions.stack}
         isBusy={isBusy}
         error={convertError}
+        startsAtMax={convertStartsAtMax}
+        promotionTarget={
+          progression.kind === 'max'
+            ? null
+            : { to: progression.to, copiesRequired: progression.copiesRequired }
+        }
         onConfirm={(body) => submit((callbacks) => onConvert(body, callbacks))}
-        onClose={close}
+        onClose={closeSheet('convert')}
       />
     </>
   )

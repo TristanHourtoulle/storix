@@ -3,6 +3,7 @@ import {
   planStackTake,
   stackSize,
   type ConvertStackBody,
+  type CardTier,
   type CopyVariant,
   type StackEntryView,
 } from '@storix/shared'
@@ -11,12 +12,16 @@ import { Chip } from '@/components/ui/chip'
 import { Dialog } from '@/components/ui/dialog'
 import { Notice } from '@/components/ui/notice'
 import { Segmented } from '@/components/ui/segmented'
+import { countLabel } from '../progression-copy'
+import { TIER_LABELS } from '../tier-labels'
 
 interface ConvertStackSheetProps {
   open: boolean
   stack: StackEntryView[]
   isBusy: boolean
   error: string | null
+  startsAtMax: boolean
+  promotionTarget: { to: CardTier; copiesRequired: number } | null
   onConfirm: (body: ConvertStackBody) => void
   onClose: () => void
 }
@@ -32,19 +37,27 @@ export function ConvertStackSheet({
   stack,
   isBusy,
   error,
+  startsAtMax,
+  promotionTarget,
   onConfirm,
   onClose,
 }: ConvertStackSheetProps) {
   const normalCount = stackSize(stack, 'normal')
   const foilCount = stackSize(stack, 'foil')
   const [picked, setPicked] = useState<CopyVariant | null>(null)
-  const [wanted, setWanted] = useState(1)
+  const [wanted, setWanted] = useState(startsAtMax ? MAX_QUANTITY : 1)
   const variant: CopyVariant =
     picked === 'foil' && foilCount > 0 ? 'foil' : normalCount > 0 ? 'normal' : 'foil'
   const count = variant === 'foil' ? foilCount : normalCount
   const max = Math.min(count, MAX_QUANTITY)
   const quantity = clamp(wanted, max)
   const dust = planStackTake(stack, quantity, 'richest', variant)?.dust ?? 0
+  const total = stackSize(stack)
+  const remaining = total - quantity
+  const isBelowTarget =
+    promotionTarget !== null &&
+    total >= promotionTarget.copiesRequired &&
+    remaining < promotionTarget.copiesRequired
   const options = [
     { id: 'normal', label: `Normales (${normalCount})` },
     { id: 'foil', label: `Foils (${foilCount})` },
@@ -87,6 +100,12 @@ export function ConvertStackSheet({
         <Chip label="Tout" isOn={quantity === max} onToggle={() => setWanted(max)} />
       </div>
       <p className="sheet-step">+{dust} paillettes</p>
+      {isBelowTarget ? (
+        <p className="m-0 text-sm font-semibold text-danger">
+          Il ne te restera que {countLabel(remaining, 'doublon', 'doublons')} : plus assez pour
+          passer {TIER_LABELS[promotionTarget.to]} ★.
+        </p>
+      ) : null}
       {error ? <Notice tone="error">{error}</Notice> : null}
       <Button
         variant="primary"

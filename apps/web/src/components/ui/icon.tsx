@@ -33,6 +33,12 @@ export type IconName =
   | 'bell'
   | 'camera'
   | 'flip'
+  | 'more'
+  | 'stack'
+  | 'recycle'
+  | 'up'
+  | 'crown'
+  | 'arrow'
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -73,7 +79,16 @@ const PATHS: Record<IconName, string> = {
     'M8 3h6a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM10.5 14h1M19 8a7 7 0 0 1-3 12M16 16v4h4',
   'eye-off':
     'M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.4 5.2A9.8 9.8 0 0 1 12 5c5 0 8.5 4 9.5 7-.4 1.2-1.2 2.3-2.2 3.3M6.5 6.6C4.5 8 3.2 10 2.5 12c1 3 4.5 7 9.5 7 1.6 0 3-.4 4.2-1',
+  more: 'M5.5 12h.01M12 12h.01M18.5 12h.01',
+  stack: 'M6 8h12v12H6zM8 5h8M10 2.5h4',
+  recycle:
+    'M4 12a8 8 0 0 1 13.7-5.6L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5M4 20v-4.5h4.5',
+  up: 'M12 19V6M6 11l6-6 6 6',
+  crown: 'M4 8l4 4 4-7 4 7 4-4-2 11H6z',
+  arrow: 'M5 12h13M13 6l6 6-6 6',
 }
+
+const STROKE_WIDTHS: Partial<Record<IconName, number>> = { more: 3 }
 
 interface IconProps {
   name: IconName
@@ -86,7 +101,7 @@ export function Icon({ name, className = 'size-6' }: IconProps) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.8}
+      strokeWidth={STROKE_WIDTHS[name] ?? 1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

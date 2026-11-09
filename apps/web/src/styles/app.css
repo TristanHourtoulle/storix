@@ -2,6 +2,8 @@
 @import './game.css';
 @import './collection.css';
 @import './card-detail.css';
+@import './card-vitrine.css';
+@import './card-vitrine-sheets.css';
 @import './moderation.css';
 @import './rotate-overlay.css';
 
@@ -240,8 +242,10 @@
   }
   .card.lg.t-L .card-holo,
   .card.xl.t-L .card-holo,
+  .card.showcase.t-L .card-holo,
   .card.lg.t-M .card-holo,
-  .card.xl.t-M .card-holo {
+  .card.xl.t-M .card-holo,
+  .card.showcase.t-M .card-holo {
     animation: shine 4.5s linear infinite;
   }
   .t-M::before {
@@ -268,7 +272,8 @@
     mask-composite: exclude;
   }
   .card.lg.t-M::before,
-  .card.xl.t-M::before {
+  .card.xl.t-M::before,
+  .card.showcase.t-M::before {
     animation: mythic-spin 6s linear infinite;
   }
   .card-gem {
@@ -306,15 +311,18 @@
     color: var(--tc);
   }
   .card.lg .card-band,
-  .card.xl .card-band {
+  .card.xl .card-band,
+  .card.showcase .card-band {
     padding: 12px 14px;
   }
   .card.lg .card-name,
-  .card.xl .card-name {
+  .card.xl .card-name,
+  .card.showcase .card-name {
     font-size: 17px;
   }
   .card.lg .card-tier,
-  .card.xl .card-tier {
+  .card.xl .card-tier,
+  .card.showcase .card-tier {
     font-size: 11px;
   }
 }
