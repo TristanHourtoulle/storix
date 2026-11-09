@@ -8,6 +8,16 @@ export interface CollectionCursor {
 
 const CURSOR_SEPARATOR = '.'
 
+const MAX_CARD_NUMBER = 2_147_483_647
+
+/**
+ * Stands for a numeric cursor sent by a client built before the rarest-first order. It ends the
+ * collection with an empty last page; remove it once no such client remains.
+ */
+export const LEGACY_COLLECTION_CURSOR = 'legacy' as const
+
+export type LegacyCollectionCursor = typeof LEGACY_COLLECTION_CURSOR
+
 function isCardTier(value: string): value is CardTier {
   return (CARD_TIERS as readonly string[]).includes(value)
 }
@@ -24,5 +34,5 @@ export function parseCollectionCursor(raw: string): CollectionCursor | null {
   const [tier = '', digits = ''] = parts
   if (!isCardTier(tier) || !/^[1-9]\d{0,9}$/.test(digits)) return null
   const number = Number(digits)
-  return Number.isSafeInteger(number) && number <= 2_147_483_647 ? { tier, number } : null
+  return number <= MAX_CARD_NUMBER ? { tier, number } : null
 }

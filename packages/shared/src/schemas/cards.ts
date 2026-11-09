@@ -1,5 +1,10 @@
 import { z } from 'zod'
-import { CARD_TIERS, COPY_VARIANTS, parseCollectionCursor } from '../domain'
+import {
+  CARD_TIERS,
+  COPY_VARIANTS,
+  LEGACY_COLLECTION_CURSOR,
+  parseCollectionCursor,
+} from '../domain'
 import { idSchema, isoDateSchema } from './common'
 import { imageSetSchema } from './media'
 import { cardTitleSchema } from './uploads'
@@ -36,10 +41,15 @@ export const collectionCursorSchema = z.string().transform((raw, ctx) => {
   return cursor
 })
 
+export const legacyCollectionCursorSchema = z
+  .string()
+  .regex(/^[1-9]\d{0,9}$/)
+  .transform(() => LEGACY_COLLECTION_CURSOR)
+
 export const listCardsQuerySchema = z.object({
   authorId: idSchema.optional(),
   tier: cardTierSchema.optional(),
-  cursor: collectionCursorSchema.optional(),
+  cursor: z.union([legacyCollectionCursorSchema, collectionCursorSchema]).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(120),
 })
 

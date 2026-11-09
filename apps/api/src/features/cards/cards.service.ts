@@ -1,5 +1,6 @@
 import type { Database } from '@storix/db'
 import {
+  LEGACY_COLLECTION_CURSOR,
   encodeCollectionCursor,
   resolveLeagueSettings,
   type CollectionPage,
@@ -43,6 +44,10 @@ export function createCardsService({ db, signer, clock }: CardsServiceDeps): Car
         viewerId: m.userId,
         authorId: query.authorId,
         tier: query.tier,
+      }
+      if (query.cursor === LEGACY_COLLECTION_CURSOR) {
+        const counts = await countCollection(db, filters)
+        return { cards: [], nextCursor: null, total: counts.total, ownedCount: counts.owned }
       }
       const [rows, counts] = await Promise.all([
         listCollection(db, { ...filters, after: query.cursor, limit: query.limit }),
