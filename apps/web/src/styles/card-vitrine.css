@@ -51,6 +51,10 @@
     animation: vitrine-fade 0.2s;
     outline: none;
   }
+  .card-fullscreen-flight {
+    display: flex;
+    justify-content: center;
+  }
   .card-fullscreen .card.showcase {
     width: min(88vw, 400px, calc((100dvh - 200px) * 63 / 88));
   }
