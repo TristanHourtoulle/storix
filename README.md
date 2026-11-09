@@ -32,7 +32,7 @@ Live at **https://storix.tristanhourtoulle.fr**. See the [design spec](docs/supe
 - **Boosters**: one booster every `intervalMinutes` (default 240) up to `maxStock` (default 6), plus `joinGift` boosters (default 2) for a new member. Five slots, foil odds 1/15. A card enters the booster pool 1 hour after its creation (`newCardDelayMinutes`, default 60).
 - **Arcade opening**: new cards get the long aura and flip; duplicates and upgrades are shown flat. Reduced motion is supported.
 - **Pity**: Epic or better guaranteed on the 10th booster without one; from the 26th booster without a Legendary, +1 % Legendary per booster.
-- **Collection**: owned cards with their mint tier; cards you do not own are locked silhouettes (`???`) with no title and no image in the API response. Filters by member and rarity.
+- **Collection**: owned cards with their mint tier; cards you do not own are locked silhouettes (`???`) with no title and no image in the API response. Sorted rarest first on the tier each card shows (mythic to common), then newest first, with keyset paging on `(tier, number)`. Filters by member and rarity.
 - **Dust economy**: duplicates turn into dust, a copy can be recycled for its value, and a normal copy can be upgraded to foil. Crafting a missing card is disabled for now (route not registered; the domain and service code is kept).
 - **Reactions**: `fire`, `heart`, `star`, on cards you own and did not author. They feed the next rarity run.
 - **Discovered by**: the first member to pull a card is frozen as its discoverer.
@@ -128,7 +128,7 @@ At startup the worker waits until `drizzle.__drizzle_migrations` holds at least 
 - Card object keys are content-hashed: `img/<league>/<sha256>/<size>.<format>`. Portrait keys are per upload and never re-written: `pic/<kind>/<owner>/<upload>/<size>.webp`.
 - Serving: `GET /media/{windowStart}/{hmac}/{objectKey}`. The HMAC-SHA256 covers the window and the key with `MEDIA_URL_SECRET`; windows are 24 h UTC and the current and previous ones are accepted (48 h at most). Successes are `public, max-age=<seconds until expiry>, immutable` with no cookie; errors (including a bad signature, `403`) are `no-store`.
 - CDN: the Railway CDN in front of the api caches `/media/*` per URL (`x-cache: HIT` from the second GET).
-- Service worker: media are cached under a key without the window and signature (`/media/img/...`, cache `storix-media-v1`), so a rotated URL still hits the cache. Card reads use NetworkFirst in `storix-api-v4`; every other `storix-api-*` cache is deleted on activation. `sw.js`, `index.html` and `manifest.webmanifest` are served `no-store`.
+- Service worker: media are cached under a key without the window and signature (`/media/img/...`, cache `storix-media-v1`), so a rotated URL still hits the cache. Card reads use NetworkFirst in `storix-api-v5`; every other `storix-api-*` cache is deleted on activation. `sw.js`, `index.html` and `manifest.webmanifest` are served `no-store`.
 
 ### Security
 

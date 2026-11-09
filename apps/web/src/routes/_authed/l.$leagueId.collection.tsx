@@ -95,11 +95,18 @@ interface CollectionBodyProps {
 }
 
 function CollectionBody({ leagueId, filters, label }: CollectionBodyProps) {
-  const { data, isError, refetch, hasNextPage, isFetchingNextPage, fetchNextPage } =
-    useInfiniteQuery({
-      ...cardsInfiniteQueryOptions(leagueId, filters),
-      placeholderData: keepPreviousData,
-    })
+  const {
+    data,
+    isError,
+    refetch,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    ...cardsInfiniteQueryOptions(leagueId, filters),
+    placeholderData: keepPreviousData,
+  })
   const { authorId, tier } = filters
   useEffect(() => {
     window.scrollTo({ top: 0 })
@@ -118,7 +125,9 @@ function CollectionBody({ leagueId, filters, label }: CollectionBodyProps) {
     )
   }
   const firstPage = data.pages[0]
-  const cards = data.pages.flatMap((page) => page.cards)
+  const cards = [
+    ...new Map(data.pages.flatMap((page) => page.cards).map((card) => [card.id, card])).values(),
+  ]
   const total = firstPage?.total ?? 0
   const owned = firstPage?.ownedCount ?? 0
   const isFiltered = filters.authorId !== null || filters.tier !== null
@@ -157,6 +166,7 @@ function CollectionBody({ leagueId, filters, label }: CollectionBodyProps) {
         cards={cards}
         hasNextPage={hasNextPage}
         isFetchingNextPage={isFetchingNextPage}
+        isFetchNextPageError={isFetchNextPageError}
         fetchNextPage={fetchNextPage}
       />
     </>

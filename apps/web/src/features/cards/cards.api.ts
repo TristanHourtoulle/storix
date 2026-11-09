@@ -21,15 +21,15 @@ function cardPath(leagueId: string, cardId: string): string {
   return `${cardsPath(leagueId)}/${encodeURIComponent(cardId)}`
 }
 
-/** Fetches one page of a league's collection, ownership-aware, newest first. */
+/** Fetches one page of a league's collection, ownership-aware, rarest first then newest first. */
 export function fetchCardPage(
   leagueId: string,
-  params: { authorId: string | null; tier: CardTier | null; cursor: number | undefined },
+  params: { authorId: string | null; tier: CardTier | null; cursor: string | undefined },
 ): Promise<CollectionPage> {
   const query = new URLSearchParams()
   if (params.authorId) query.set('authorId', params.authorId)
   if (params.tier) query.set('tier', params.tier)
-  if (params.cursor !== undefined) query.set('cursor', String(params.cursor))
+  if (params.cursor !== undefined) query.set('cursor', params.cursor)
   const suffix = query.size > 0 ? `?${query.toString()}` : ''
   return apiRequest(`${cardsPath(leagueId)}${suffix}`, { schema: collectionPageSchema })
 }
