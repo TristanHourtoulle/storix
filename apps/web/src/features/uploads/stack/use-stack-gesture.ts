@@ -207,7 +207,9 @@ export function useStackGesture(input: StackGestureInput): {
     },
     onPointerUp: (event) => end(event, false),
     onPointerCancel: (event) => end(event, true),
-    onLostPointerCapture: (event) => end(event, true),
+    onLostPointerCapture: (event) => {
+      if (event.target === event.currentTarget) end(event, true)
+    },
   }
 
   return { bind, isDragging }
