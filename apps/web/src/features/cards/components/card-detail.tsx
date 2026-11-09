@@ -13,6 +13,7 @@ import { authorLabel } from '../author-label'
 import { MotionPrompt } from './motion-prompt'
 import { useMemberAvatars } from '@/features/portraits/use-member-avatars'
 import { MetaCell, discovererLabel, formatDate } from './meta-cell'
+import { PromotedHolders } from './promoted-holders'
 import { ReactionBar } from './reaction-bar'
 
 interface CardDetailProps {
@@ -44,6 +45,8 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
           isProvisional={card.isProvisional}
           isFoil={hasFoil}
           hasFoilPip={hasFoil}
+          isPromoted={card.isPromoted}
+          stackCount={card.stackCount}
         >
           <CardImage
             image={card.image}
@@ -61,9 +64,14 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
         onRequest={requestMotionPermission}
       />
       <div className="pills">
-        <span className={isGold ? 'pill gold' : 'pill'}>{TIER_LABELS[card.displayTier]}</span>
+        <span className={isGold ? 'pill gold' : 'pill'}>
+          {TIER_LABELS[card.displayTier]}
+          {card.isPromoted ? ' ★' : ''}
+        </span>
         {hasFoil ? <span className="pill gold">Foil</span> : null}
-        {card.tier !== card.displayTier ? (
+        {card.isPromoted ? (
+          <span className="pill">Rareté ligue : {TIER_LABELS[card.tier]}</span>
+        ) : card.tier !== card.displayTier ? (
           <span className="pill">Actuellement {TIER_LABELS[card.tier]}</span>
         ) : null}
         {card.isProvisional ? <span className="pill">Provisoire</span> : null}
@@ -88,6 +96,7 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
         />
         <MetaCell label="Sur la photo" value={tagged || 'Personne'} />
       </div>
+      <PromotedHolders holders={card.promotedHolders} avatars={avatars} />
       <ReactionBar
         reactions={card.reactions}
         canReact={card.canReact}

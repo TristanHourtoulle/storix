@@ -36,6 +36,8 @@ export function CollectionCardView({
       isProvisional={card.isProvisional}
       isFoil={isFoilOnly}
       hasFoilPip={card.copies.foil !== null}
+      isPromoted={tier === undefined && card.isPromoted}
+      stackCount={card.stackCount}
     >
       <CardImage
         image={card.image}
