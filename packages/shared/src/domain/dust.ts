@@ -24,6 +24,11 @@ export interface StackedCopy {
   variant: CopyVariant
 }
 
+export interface OwnedPullTarget {
+  tierAtMint: CardTier
+  valueTier: CardTier
+}
+
 export interface CopySettlement {
   cardId: string
   variant: CopyVariant
@@ -60,14 +65,20 @@ export function copyKey(cardId: string, variant: CopyVariant): string {
   return `${cardId}:${variant}`
 }
 
-/** Decides what happens to a pulled copy given the tier of the owned copy of the same variant, and which copy is stacked. */
+/**
+ * Decides what happens to a pulled copy against the owned copy of the same variant: it replaces that
+ * copy only above its value tier, the displaced copy then stacking at its own tier at mint.
+ */
 export function resolvePulledCopy(
-  owned: CardTier | null,
+  owned: OwnedPullTarget | null,
   pulled: StackedCopy,
 ): { outcome: PulledCopyOutcome; stacked: StackedCopy | null } {
   if (owned === null) return { outcome: 'new', stacked: null }
-  if (tierRank(pulled.tierAtMint) > tierRank(owned)) {
-    return { outcome: 'upgraded', stacked: { tierAtMint: owned, variant: pulled.variant } }
+  if (tierRank(pulled.tierAtMint) > tierRank(owned.valueTier)) {
+    return {
+      outcome: 'upgraded',
+      stacked: { tierAtMint: owned.tierAtMint, variant: pulled.variant },
+    }
   }
   return {
     outcome: 'duplicate',
@@ -81,16 +92,16 @@ export function resolvePulledCopy(
  */
 export function settleBoosterCopies(
   pulls: readonly { cardId: string; tier: CardTier; variant: CopyVariant }[],
-  owned: ReadonlyMap<string, CardTier>,
+  owned: ReadonlyMap<string, OwnedPullTarget>,
   stackCounts: ReadonlyMap<string, number>,
 ): {
   settlements: CopySettlement[]
-  owned: ReadonlyMap<string, CardTier>
+  owned: ReadonlyMap<string, OwnedPullTarget>
   stackCounts: ReadonlyMap<string, number>
 } {
   const initial: {
     settlements: CopySettlement[]
-    owned: ReadonlyMap<string, CardTier>
+    owned: ReadonlyMap<string, OwnedPullTarget>
     stackCounts: ReadonlyMap<string, number>
   } = { settlements: [], owned, stackCounts }
   return pulls.reduce((acc, pull) => {
