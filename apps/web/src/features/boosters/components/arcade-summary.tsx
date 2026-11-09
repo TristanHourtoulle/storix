@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
-import type { BoosterPull } from '@storix/shared'
+import type { BoosterPull, Box } from '@storix/shared'
 import { TIER_LABELS } from '@/features/cards/tier-labels'
 import { playSound } from '@/features/sound/sound'
 import { tierKey } from '../arcade/tiers'
@@ -19,27 +19,55 @@ export function ArcadeSummary({ leagueId, pulls }: ArcadeSummaryProps) {
   const best = bestPullIndex(pulls)
   const bestPull = pulls[best]
   const heading = pulls.length > 1 ? `Tes ${pulls.length} cartes` : 'Ta carte'
-  const history = useLoupeHistory()
+  const { isInHistory, push, pop } = useLoupeHistory()
   const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const [isLeaving, setIsLeaving] = useState(false)
   const buttons = useRef(new Map<number, HTMLButtonElement>())
+  const minis = useRef(new Map<number, HTMLDivElement>())
+  const currentIndex = useRef(0)
   const hasEntered = useRef(false)
+  const isCloseRequested = useRef(false)
+  const pendingFocus = useRef<number | null>(null)
 
-  const closeLoupe = useCallback((index: number): void => {
-    hasEntered.current = false
-    setOpenIndex(null)
-    requestAnimationFrame(() => buttons.current.get(index)?.focus())
-  }, [])
+  useEffect(() => {
+    if (openIndex !== null || pendingFocus.current === null) return
+    buttons.current.get(pendingFocus.current)?.focus()
+    pendingFocus.current = null
+  }, [openIndex])
 
   useEffect(() => {
     if (openIndex === null) return
-    if (history.isInHistory) hasEntered.current = true
-    else if (hasEntered.current) closeLoupe(openIndex)
-  }, [history.isInHistory, openIndex, closeLoupe])
+    currentIndex.current = openIndex
+    if (isInHistory) hasEntered.current = true
+    else if (hasEntered.current) setIsLeaving(true)
+  }, [isInHistory, openIndex])
+
+  const getOrigin = useCallback((): Box | null => {
+    const mini = minis.current.get(currentIndex.current)
+    if (!mini) return null
+    const { left, top, width, height } = mini.getBoundingClientRect()
+    return { left, top, width, height }
+  }, [])
+
+  const handleLeft = useCallback((): void => {
+    pendingFocus.current = currentIndex.current
+    hasEntered.current = false
+    isCloseRequested.current = false
+    setIsLeaving(false)
+    setOpenIndex(null)
+  }, [])
+
+  const requestClose = useCallback((): void => {
+    if (isCloseRequested.current) return
+    isCloseRequested.current = true
+    pop()
+  }, [pop])
 
   function open(index: number): void {
     playSound({ name: 'tap' })
+    currentIndex.current = index
     setOpenIndex(index)
-    history.push()
+    push()
   }
 
   return (
@@ -72,7 +100,13 @@ export function ArcadeSummary({ leagueId, pulls }: ArcadeSummaryProps) {
               aria-haspopup="dialog"
               onClick={() => open(index)}
             >
-              <div className="ar-summary-mini">
+              <div
+                ref={(node) => {
+                  if (node) minis.current.set(index, node)
+                  else minis.current.delete(index)
+                }}
+                className={`ar-summary-mini${index === openIndex ? ' is-lifted' : ''}`}
+              >
                 <PulledFace pull={pull} />
               </div>
               <span className="ar-summary-name">{pull.card.title}</span>
@@ -89,8 +123,14 @@ export function ArcadeSummary({ leagueId, pulls }: ArcadeSummaryProps) {
           leagueId={leagueId}
           pulls={pulls}
           index={openIndex}
-          onIndexChange={(index) => setOpenIndex(index)}
-          onRequestClose={history.pop}
+          onIndexChange={(index) => {
+            currentIndex.current = index
+            setOpenIndex(index)
+          }}
+          onRequestClose={requestClose}
+          getOrigin={getOrigin}
+          isLeaving={isLeaving}
+          onLeft={handleLeft}
         />
       ) : null}
     </div>

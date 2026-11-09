@@ -20,6 +20,7 @@ export function useLoupeHistory(): LoupeHistory {
   const isInHistory = useRouterState({ select: (state) => state.location.state.storixLoupe === true })
 
   const push = useCallback((): void => {
+    if (router.state.location.state.storixLoupe === true) return
     void navigate({
       to: '.',
       search: true,
@@ -27,7 +28,7 @@ export function useLoupeHistory(): LoupeHistory {
       state: (previous) => ({ ...previous, storixLoupe: true }),
       resetScroll: false,
     })
-  }, [navigate])
+  }, [navigate, router])
 
   const pop = useCallback((): void => router.history.back(), [router])
 

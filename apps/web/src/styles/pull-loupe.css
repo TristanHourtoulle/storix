@@ -20,10 +20,59 @@
     outline: 2px solid var(--color-accent);
     outline-offset: 4px;
   }
-  .pull-loupe {
+  .card-fullscreen.pull-loupe {
     gap: 14px;
+    background: transparent;
+    animation: none;
   }
-  .pull-loupe .card.showcase {
+  .pull-loupe::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(
+        circle at 50% 42%,
+        color-mix(in srgb, var(--fc) 26%, transparent),
+        transparent 62%
+      ),
+      var(--color-board);
+    transition: opacity 0.38s ease;
+  }
+  .pull-loupe.is-entering::before {
+    animation: loupe-fade-in 0.38s ease;
+  }
+  .pull-loupe.is-leaving::before {
+    opacity: 0;
+  }
+  .pull-loupe > .card-fullscreen-close,
+  .pull-loupe > .loupe-count,
+  .pull-loupe > .loupe-footer {
+    opacity: 0;
+    transition: opacity 0.16s ease;
+  }
+  .pull-loupe.is-open > .card-fullscreen-close,
+  .pull-loupe.is-open > .loupe-count,
+  .pull-loupe.is-open > .loupe-footer {
+    opacity: 1;
+  }
+  .pull-loupe.is-fading.is-entering {
+    animation: loupe-fade-in 0.2s ease;
+  }
+  .pull-loupe.is-fading.is-entering::before {
+    animation: none;
+  }
+  .pull-loupe.is-fading.is-leaving {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .pull-loupe.is-fading.is-leaving::before {
+    opacity: 1;
+  }
+  .ar-summary-item .ar-summary-mini.is-lifted {
+    visibility: hidden;
+  }
+  .card-fullscreen.pull-loupe .card.showcase {
     width: min(84vw, 360px, calc((100dvh - 300px) * 63 / 88));
   }
   .pull-loupe .card-fullscreen-flight {
@@ -121,6 +170,12 @@
   }
   .loupe-actions > * {
     flex: 1;
+  }
+}
+
+@keyframes loupe-fade-in {
+  from {
+    opacity: 0;
   }
 }
 

@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react'
 import { Link } from '@tanstack/react-router'
-import { loupeGesture, wrapIndex, type BoosterPull } from '@storix/shared'
+import { loupeGesture, wrapIndex, type BoosterPull, type Box } from '@storix/shared'
 import { buttonClassName } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
 import { CardFullscreen } from '@/features/cards/components/card-fullscreen'
 import { playSound } from '@/features/sound/sound'
 import '@/styles/pull-loupe.css'
 import { pullCredit, pullLabel } from '../pull-label'
+import { useFlipFlight } from '../use-flip-flight'
 import { PulledFace } from './arcade-card'
 
 type LoupeDirection = 'next' | 'prev'
@@ -17,7 +18,12 @@ interface PullLoupeProps {
   index: number
   onIndexChange: (index: number, direction: LoupeDirection) => void
   onRequestClose: () => void
+  getOrigin: () => Box | null
+  isLeaving: boolean
+  onLeft: () => void
 }
+
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
 
 interface PointerStart {
   x: number
@@ -26,8 +32,19 @@ interface PointerStart {
 }
 
 /** Full-screen loupe over the booster recap: swipe, arrows and dots page through the pack. */
-export function PullLoupe({ leagueId, pulls, index, onIndexChange, onRequestClose }: PullLoupeProps) {
+export function PullLoupe({
+  leagueId,
+  pulls,
+  index,
+  onIndexChange,
+  onRequestClose,
+  getOrigin,
+  isLeaving,
+  onLeft,
+}: PullLoupeProps) {
   const [direction, setDirection] = useState<LoupeDirection | null>(null)
+  const [isReducedMotion] = useState(() => window.matchMedia(REDUCED_MOTION_QUERY).matches)
+  const { flightRef, phase, isFading, leave } = useFlipFlight({ getOrigin, isReducedMotion, onLeft })
   const start = useRef<PointerStart | null>(null)
   const countRef = useRef<HTMLParagraphElement>(null)
   const pull = pulls[index]
@@ -36,13 +53,17 @@ export function PullLoupe({ leagueId, pulls, index, onIndexChange, onRequestClos
   const goTo = useCallback(
     (next: number, nextDirection: LoupeDirection): void => {
       const target = wrapIndex(next, count)
-      if (target === index) return
+      if (target === index || isLeaving) return
       setDirection(nextDirection)
       playSound({ name: 'flipLight' })
       onIndexChange(target, nextDirection)
     },
-    [count, index, onIndexChange],
+    [count, index, isLeaving, onIndexChange],
   )
+
+  useEffect(() => {
+    if (isLeaving) leave()
+  }, [isLeaving, leave])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
@@ -143,7 +164,8 @@ export function PullLoupe({ leagueId, pulls, index, onIndexChange, onRequestClos
       tier={pull.card.tier}
       label="Cartes du booster"
       hint={null}
-      className="pull-loupe"
+      className={`pull-loupe is-${phase}${isFading ? ' is-fading' : ''}`}
+      flightRef={flightRef}
       header={header}
       footer={footer}
       stageHandlers={stageHandlers}
