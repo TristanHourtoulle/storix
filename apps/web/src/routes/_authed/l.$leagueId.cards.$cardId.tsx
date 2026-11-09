@@ -22,6 +22,7 @@ export const Route = createFileRoute('/_authed/l/$leagueId/cards/$cardId')({
 
 function CardDetailScreen() {
   const { leagueId, cardId } = Route.useParams()
+  const { me } = Route.useRouteContext()
   const { author } = Route.useSearch()
   const { card, isPending, isMissing, retry } = useCardDetail(leagueId, cardId)
   const { data: wallet } = useWallet(leagueId)
@@ -51,7 +52,7 @@ function CardDetailScreen() {
         }
       />
       {card?.kind === 'owned' ? (
-        <CardDetail leagueId={leagueId} card={card} onWithdraw={openWithdraw} />
+        <CardDetail leagueId={leagueId} card={card} meId={me.user.id} onWithdraw={openWithdraw} />
       ) : card?.kind === 'hidden' ? (
         <HiddenCardDetail card={card} onWithdraw={openWithdraw} />
       ) : card ? (
