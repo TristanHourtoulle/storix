@@ -11,7 +11,7 @@ export function cardsInfiniteQueryOptions(leagueId: string, filters: CollectionF
   return infiniteQueryOptions({
     queryKey: ['leagues', leagueId, 'cards', filters],
     queryFn: ({ pageParam }) => fetchCardPage(leagueId, { ...filters, cursor: pageParam }),
-    initialPageParam: undefined as number | undefined,
+    initialPageParam: undefined as string | undefined,
     getNextPageParam: (page) => page.nextCursor ?? undefined,
   })
 }
