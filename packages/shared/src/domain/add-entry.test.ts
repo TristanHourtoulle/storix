@@ -13,7 +13,11 @@ function admin(used: number): UploadQuotaStatus {
 describe('shotStripStatus', () => {
   it('opens a fresh member on the first-card headline', () => {
     expect(shotStripStatus({ quota: limited(10, 0), draftCount: 0, shotCount: 0 })).toEqual({
-      left: 10, chip: { kind: 'places', left: 10 }, canShoot: true, continueCount: 0, headline: 'first',
+      left: 10,
+      chip: { kind: 'places', left: 10 },
+      canShoot: true,
+      continueCount: 0,
+      headline: 'first',
     })
   })
   it('counts shots against the remaining quota', () => {
@@ -25,11 +29,17 @@ describe('shotStripStatus', () => {
     expect([s.left, s.continueCount, s.headline]).toEqual([4, 3, 'default'])
   })
   it('is not first once something was uploaded in the last 24 h', () => {
-    expect(shotStripStatus({ quota: limited(9, 1), draftCount: 0, shotCount: 0 }).headline).toBe('default')
+    expect(shotStripStatus({ quota: limited(9, 1), draftCount: 0, shotCount: 0 }).headline).toBe(
+      'default',
+    )
   })
   it('blocks shots but keeps drafts continuable when the quota is full', () => {
     expect(shotStripStatus({ quota: limited(0, 10), draftCount: 3, shotCount: 0 })).toEqual({
-      left: 0, chip: { kind: 'places', left: 0 }, canShoot: false, continueCount: 3, headline: 'quotaFull',
+      left: 0,
+      chip: { kind: 'places', left: 0 },
+      canShoot: false,
+      continueCount: 3,
+      headline: 'quotaFull',
     })
   })
   it('clamps left at 0 when shots exceed remaining', () => {
@@ -54,8 +64,11 @@ describe('shotStripStatus', () => {
 })
 
 describe('fitShots', () => {
-  it('keeps what fits and skips the rest', () => expect(fitShots(3, 5)).toEqual({ accepted: 3, skipped: 2 }))
-  it('skips everything when full', () => expect(fitShots(0, 1)).toEqual({ accepted: 0, skipped: 1 }))
+  it('keeps what fits and skips the rest', () =>
+    expect(fitShots(3, 5)).toEqual({ accepted: 3, skipped: 2 }))
+  it('skips everything when full', () =>
+    expect(fitShots(0, 1)).toEqual({ accepted: 0, skipped: 1 }))
   it('handles an empty pick', () => expect(fitShots(10, 0)).toEqual({ accepted: 0, skipped: 0 }))
-  it('treats a negative left as 0', () => expect(fitShots(-2, 1)).toEqual({ accepted: 0, skipped: 1 }))
+  it('treats a negative left as 0', () =>
+    expect(fitShots(-2, 1)).toEqual({ accepted: 0, skipped: 1 }))
 })

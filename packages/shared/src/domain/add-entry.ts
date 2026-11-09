@@ -1,7 +1,8 @@
 import { MAX_PUBLISH_BATCH } from './upload-drafts'
 import type { UploadQuotaStatus } from './uploads'
 
-export type ShotChip = { kind: 'places'; left: number } | { kind: 'batch'; left: number; max: number }
+export type ShotChip =
+  { kind: 'places'; left: number } | { kind: 'batch'; left: number; max: number }
 
 export type ShotHeadline = 'first' | 'quotaFull' | 'batchFull' | 'default'
 
