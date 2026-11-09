@@ -8,11 +8,12 @@ type RecycleOption = OwnedCardDetail['actions']['recycle'][number]
 interface RecycleSheetProps {
   open: boolean
   option: RecycleOption | null
+  isBusy: boolean
   onConfirm: () => void
   onClose: () => void
 }
 
-export function RecycleSheet({ open, option, onConfirm, onClose }: RecycleSheetProps) {
+export function RecycleSheet({ open, option, isBusy, onConfirm, onClose }: RecycleSheetProps) {
   return (
     <Dialog open={open} title="Recycler cette carte ?" onClose={onClose}>
       <p className="m-0 text-sm text-ink-2">
@@ -23,7 +24,7 @@ export function RecycleSheet({ open, option, onConfirm, onClose }: RecycleSheetP
           Ta rareté perso {TIER_LABELS[option.promotedTier]} ★ sera perdue.
         </p>
       ) : null}
-      <Button variant="danger" block onClick={onConfirm}>
+      <Button variant="danger" block disabled={isBusy} onClick={onConfirm}>
         Recycler · +{option?.dust}
       </Button>
     </Dialog>

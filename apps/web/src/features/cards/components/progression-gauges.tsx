@@ -121,14 +121,16 @@ export function SheetGauges({ progression }: { progression: StepProgression }) {
 export function MaxedBox({
   stackCount,
   convertAllDust,
+  isCompact = false,
 }: {
   stackCount: number
   convertAllDust: number
+  isCompact?: boolean
 }) {
   return (
-    <div className="maxed">
+    <div className={isCompact ? 'maxed is-compact' : 'maxed'}>
       <span className="crown">
-        <Icon name="crown" className="size-5" />
+        <Icon name="crown" className={isCompact ? 'size-4' : 'size-5'} />
       </span>
       <div>
         <b>Rareté maximale</b>

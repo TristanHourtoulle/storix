@@ -74,7 +74,7 @@ function PromotionSteps({
 
   return (
     <>
-      <TierPreview card={card} to={to} isReady={isReady} />
+      <TierPreview card={card} from={from} to={to} isReady={isReady} />
       <p className={`sheet-step vitrine-step ${tone.className}`} style={tone.style}>
         {TIER_LABELS[from]}
         {card.isPromoted ? ' ★' : ''} <span aria-hidden="true">→</span>{' '}

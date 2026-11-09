@@ -1,6 +1,7 @@
 import type { Ref } from 'react'
 import type { CardProgression } from '@storix/shared'
 import { Icon, type IconName } from '@/components/ui/icon'
+import { useHeightVar } from '@/lib/use-height-var'
 import { nextTierTone, progressionButtonLabel } from '../progression-copy'
 import { BarGauges, MaxedBox } from './progression-gauges'
 
@@ -11,6 +12,15 @@ interface CardProgressBarProps {
   moreRef: Ref<HTMLButtonElement>
   onMain: () => void
   onMore: () => void
+}
+
+/** True when the bar's main button cannot be pressed. */
+export function isMainActionDisabled(progression: CardProgression, isBusy: boolean): boolean {
+  return (
+    isBusy ||
+    progression.kind === 'loading' ||
+    (progression.kind === 'max' && progression.stackCount === 0)
+  )
 }
 
 function mainIcon(progression: CardProgression): IconName {
@@ -26,17 +36,19 @@ export function CardProgressBar({
   onMain,
   onMore,
 }: CardProgressBarProps) {
+  const barRef = useHeightVar('--vbar-h')
   const tone = nextTierTone(progression.kind === 'max' ? null : progression.to)
   const isReady = progression.kind === 'ready'
-  const isDisabled =
-    isBusy ||
-    progression.kind === 'loading' ||
-    (progression.kind === 'max' && progression.stackCount === 0)
+  const isDisabled = isMainActionDisabled(progression, isBusy)
 
   return (
-    <section className="vbar" aria-label="Progression de la carte">
+    <section ref={barRef} className="vbar" aria-label="Progression de la carte">
       {progression.kind === 'max' ? (
-        <MaxedBox stackCount={progression.stackCount} convertAllDust={progression.convertAllDust} />
+        <MaxedBox
+          stackCount={progression.stackCount}
+          convertAllDust={progression.convertAllDust}
+          isCompact
+        />
       ) : (
         <BarGauges progression={progression} />
       )}

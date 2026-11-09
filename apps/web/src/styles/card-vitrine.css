@@ -4,7 +4,14 @@
 
 @layer components {
   .card.showcase {
-    width: min(76vw, 340px);
+    width: min(76vw, 340px, max(180px, var(--showcase-fit-w)));
+    --showcase-fit-w: calc(
+      (
+          100dvh - var(--nav-stack-h, var(--spacing-nav)) - var(--vbar-h, 104px) -
+            max(16px, env(safe-area-inset-top)) - 76px
+        ) *
+        63 / 88
+    );
     height: auto;
     aspect-ratio: 63 / 88;
     border-radius: 18px;
@@ -68,7 +75,7 @@
 @layer components {
   .vbar {
     position: sticky;
-    bottom: var(--spacing-nav);
+    bottom: var(--nav-stack-h, var(--spacing-nav));
     z-index: 10;
     margin: 0 -16px -16px;
     padding: 10px 16px 12px;
@@ -247,6 +254,38 @@
     color: var(--color-tier-legendary);
     flex: none;
   }
+  .maxed.is-compact {
+    padding: 3px 10px;
+    gap: 8px;
+    min-height: 24px;
+  }
+  .maxed.is-compact .crown {
+    width: auto;
+    height: auto;
+    background: none;
+  }
+  .maxed.is-compact > div {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+  }
+  .maxed.is-compact b {
+    flex: none;
+    font-size: 13px;
+  }
+  .maxed.is-compact span {
+    overflow: hidden;
+    font-size: 11.5px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .card.showcase .card-stack-badge {
+    top: 10px;
+    left: 10px;
+    padding: 2px 9px;
+    font-size: 13px;
+  }
 }
 
 .vitrine-go {
@@ -260,6 +299,9 @@
 .vitrine-go.is-rainbow {
   --nc: #c084fc;
   background: var(--rainbow);
+}
+.vitrine-go:disabled {
+  animation: none;
 }
 
 @keyframes vitrine-pulse {

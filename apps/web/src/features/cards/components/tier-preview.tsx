@@ -5,20 +5,22 @@ import { OwnedCardFace } from './owned-card-face'
 
 interface TierPreviewProps {
   card: OwnedCardDetail
+  from: CardTier
   to: CardTier
   isReady: boolean
 }
 
-export function TierPreview({ card, to, isReady }: TierPreviewProps) {
+export function TierPreview({ card, from, to, isReady }: TierPreviewProps) {
   return (
     <div
       className="tier-preview"
       role="img"
-      aria-label={`${TIER_LABELS[card.displayTier]} vers ${TIER_LABELS[to]} ★`}
+      aria-label={`${TIER_LABELS[from]} vers ${TIER_LABELS[to]} ★`}
     >
       <OwnedCardFace
         card={card}
         size="md"
+        tier={from}
         className="tier-preview-now"
         hasStack={false}
         imageSizes="104px"

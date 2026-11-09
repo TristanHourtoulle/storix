@@ -78,9 +78,7 @@ export function foilBlockReason(
 ): string | null {
   if (foil.reason === 'foil_owned') return 'Tu as déjà la foil'
   if (foil.reason === 'no_normal') return "Tu n'as pas d'exemplaire normal"
-  const isShort = foil.reason === 'insufficient_dust' || (dust !== null && dust < foil.cost)
-  if (!isShort) return null
-  return dust === null
-    ? 'Il te manque des paillettes'
-    : `Il te manque ${foil.cost - dust} paillettes`
+  const missing = dust === null ? 0 : Math.max(0, foil.cost - dust)
+  if (missing > 0) return `Il te manque ${missing} paillettes`
+  return foil.reason === 'insufficient_dust' ? 'Il te manque des paillettes' : null
 }

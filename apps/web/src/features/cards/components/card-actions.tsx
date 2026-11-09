@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   cardProgression,
   planStackTake,
@@ -9,7 +9,7 @@ import {
   type OwnedCardDetail,
 } from '@storix/shared'
 import { foilBlockReason } from '../progression-copy'
-import { CardProgressBar } from './card-progress-bar'
+import { CardProgressBar, isMainActionDisabled } from './card-progress-bar'
 import { ConvertStackSheet } from './convert-stack-sheet'
 import { FoilUpgradeSheet } from './foil-upgrade-sheet'
 import { MoreActionsSheet } from './more-actions-sheet'
@@ -74,12 +74,19 @@ export function CardActions({
   const closeSheet = (which: Exclude<Sheet, null>) => () =>
     setSheet((current) => (current === which ? null : current))
 
+  const isMainDisabled = isMainActionDisabled(progression, isBusy)
+
   useEffect(() => {
     if (previousSheet.current !== null && sheet === null) {
-      ;(origin === 'more' ? moreRef : mainRef).current?.focus()
+      const target = origin === 'more' || isMainDisabled ? moreRef : mainRef
+      target.current?.focus()
     }
     previousSheet.current = sheet
-  }, [sheet, origin])
+  }, [sheet, origin, isMainDisabled])
+
+  useLayoutEffect(() => {
+    if (isMainDisabled && document.activeElement === mainRef.current) moreRef.current?.focus()
+  }, [isMainDisabled])
 
   function submit(run: (callbacks: SubmitCallbacks) => void) {
     if (isSubmitting.current) return
@@ -127,6 +134,7 @@ export function CardActions({
         open={sheet === 'more'}
         actions={actions}
         dust={dust}
+        isBusy={isBusy}
         convertAllDust={convertAllDust}
         onConvert={() => {
           setConvertStartsAtMax(false)
@@ -152,6 +160,7 @@ export function CardActions({
       <RecycleSheet
         open={sheet === 'recycle'}
         option={pending}
+        isBusy={isBusy}
         onConfirm={confirmRecycle}
         onClose={closeSheet('recycle')}
       />

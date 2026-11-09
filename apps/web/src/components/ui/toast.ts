@@ -12,7 +12,7 @@ function liveRegion(): HTMLElement {
   region.setAttribute('role', 'status')
   region.setAttribute('aria-live', 'polite')
   region.className =
-    'pointer-events-none fixed inset-x-4 bottom-[calc(var(--spacing-nav)+12px)] z-50 flex justify-center'
+    'pointer-events-none fixed inset-x-4 bottom-[calc(var(--nav-stack-h,var(--spacing-nav))+var(--vbar-h,0px)+12px)] z-50 flex justify-center'
   document.body.append(region)
   return region
 }

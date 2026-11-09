@@ -8,6 +8,7 @@ import { purgeLeagueCaches } from '@/features/privacy/purge-cache'
 import { useRemovedCardsSync } from '@/features/privacy/use-removed-cards-sync'
 import { loadLeagueDetail } from '@/features/leagues/leagues.queries'
 import { usePortraitCachePruning } from '@/features/portraits/use-portrait-cache-pruning'
+import { useHeightVar } from '@/lib/use-height-var'
 
 export const Route = createFileRoute('/_authed/l/$leagueId')({
   loader: async ({ context, params, preload }) => {
@@ -30,6 +31,7 @@ function LeagueLayout() {
   useRememberLastLeague(me.user.id, leagueId)
   useRemovedCardsSync(me.user.id, leagueId)
   usePortraitCachePruning(leagueId)
+  const navStackRef = useHeightVar('--nav-stack-h')
   const isBoosterStage = Boolean(matchRoute({ to: '/l/$leagueId/booster', params: { leagueId } }))
   const active = matchRoute({ to: '/l/$leagueId/collection', params: { leagueId } })
     ? 'collection'
@@ -47,7 +49,7 @@ function LeagueLayout() {
       </div>
       <PasskeyPrompt userId={me.user.id} displayUsername={me.user.displayUsername} />
       {isBoosterStage ? null : (
-        <div className="sticky bottom-0 z-40 mt-auto">
+        <div ref={navStackRef} className="sticky bottom-0 z-40 mt-auto">
           <IosInstallHint />
           <BottomNav leagueId={leagueId} active={active} />
         </div>

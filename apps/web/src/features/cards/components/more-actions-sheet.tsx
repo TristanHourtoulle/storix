@@ -11,6 +11,7 @@ interface MoreActionsSheetProps {
   open: boolean
   actions: OwnedCardDetail['actions']
   dust: number | null
+  isBusy: boolean
   convertAllDust: number
   onConvert: () => void
   onFoil: () => void
@@ -64,6 +65,7 @@ export function MoreActionsSheet({
   open,
   actions,
   dust,
+  isBusy,
   convertAllDust,
   onConvert,
   onFoil,
@@ -86,7 +88,7 @@ export function MoreActionsSheet({
               : 'Pile vide · les doublons viennent des boosters'
           }
           value={stackCount > 0 ? `×${stackCount}` : null}
-          isBlocked={stackCount === 0}
+          isBlocked={isBusy || stackCount === 0}
           onSelect={onConvert}
         />
         <ActionRow
@@ -94,7 +96,7 @@ export function MoreActionsSheet({
           title="Passer en foil"
           sub={foilReason ?? 'Reflet cyan, valeur doublée'}
           value={`${actions.foilUpgrade.cost} ✦`}
-          isBlocked={foilReason !== null}
+          isBlocked={isBusy || foilReason !== null}
           onSelect={onFoil}
         />
         {actions.recycle.map((option) => (
@@ -110,7 +112,7 @@ export function MoreActionsSheet({
                   : 'Tu pourras la retrouver dans un booster'
             }
             value={`+${option.dust}`}
-            isBlocked={isRecycleBlocked}
+            isBlocked={isBusy || isRecycleBlocked}
             isDanger
             onSelect={() => onRecycle(option)}
           />

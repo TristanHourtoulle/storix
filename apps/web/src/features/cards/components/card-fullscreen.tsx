@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { useRef, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import type { CardTier } from '@storix/shared'
 import { Icon } from '@/components/ui/icon'
@@ -10,12 +10,21 @@ interface CardFullscreenProps {
   tier: CardTier
   children: ReactNode
   onClose: () => void
+  label?: string
+  hint?: string | null
 }
 
 /** Shows a card face full screen with tilt, closing on X, a background tap or Escape. */
-export function CardFullscreen({ tier, children, onClose }: CardFullscreenProps) {
+export function CardFullscreen({
+  tier,
+  children,
+  onClose,
+  label = 'Carte en plein écran',
+  hint = 'Glisse pour incliner · touche le fond pour fermer',
+}: CardFullscreenProps) {
   const { container, layerRef } = useModalLayer(onClose)
   const { ref } = useHoloTilt()
+  const isPressOnBackground = useRef(false)
   const style = { '--fc': TIER_COLOR_VAR[tier] } as CSSProperties
 
   return createPortal(
@@ -24,11 +33,16 @@ export function CardFullscreen({ tier, children, onClose }: CardFullscreenProps)
       tabIndex={-1}
       role="dialog"
       aria-modal="true"
-      aria-label="Carte en plein écran"
+      aria-label={label}
       className="card-fullscreen"
       style={style}
+      onPointerDown={(event) => {
+        isPressOnBackground.current = event.target === event.currentTarget
+      }}
       onClick={(event) => {
-        if (event.target === event.currentTarget) onClose()
+        const isBackground = event.target === event.currentTarget && isPressOnBackground.current
+        isPressOnBackground.current = false
+        if (isBackground) onClose()
       }}
     >
       <button
@@ -42,7 +56,7 @@ export function CardFullscreen({ tier, children, onClose }: CardFullscreenProps)
       <div className="tilt" ref={ref}>
         {children}
       </div>
-      <p className="card-fullscreen-hint m-0">Glisse pour incliner · touche le fond pour fermer</p>
+      {hint ? <p className="card-fullscreen-hint m-0">{hint}</p> : null}
     </div>,
     container,
   )
