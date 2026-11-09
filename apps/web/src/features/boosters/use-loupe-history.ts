@@ -10,7 +10,7 @@ declare module '@tanstack/react-router' {
 interface LoupeHistory {
   isInHistory: boolean
   push: () => void
-  pop: () => void
+  pop: () => boolean
 }
 
 /** Ties the recap loupe to one history entry, so the phone back button closes it. */
@@ -30,9 +30,10 @@ export function useLoupeHistory(): LoupeHistory {
     })
   }, [navigate, router])
 
-  const pop = useCallback((): void => {
-    if (router.history.location.state.storixLoupe !== true) return
+  const pop = useCallback((): boolean => {
+    if (router.history.location.state.storixLoupe !== true) return false
     router.history.back()
+    return true
   }, [router])
 
   return { isInHistory, push, pop }

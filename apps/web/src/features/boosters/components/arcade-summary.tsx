@@ -63,8 +63,7 @@ export function ArcadeSummary({ leagueId, pulls, openedAt, leagueName }: ArcadeS
 
   const requestClose = useCallback((): void => {
     if (isCloseRequested.current) return
-    isCloseRequested.current = true
-    pop()
+    isCloseRequested.current = pop()
   }, [pop])
 
   function open(index: number): void {
