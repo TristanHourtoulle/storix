@@ -1,3 +1,5 @@
+import type { CollectionSort } from './collection-cursor'
+
 export const DISCOVERY_GROUPS = ['today', 'week', 'month', 'earlier', 'undiscovered'] as const
 
 export type DiscoveryGroup = (typeof DISCOVERY_GROUPS)[number]
@@ -65,4 +67,23 @@ export function buildCollectionRows<T extends { id: string }, G extends string>(
       ...chunk<T, G>(segment, width),
     ]
   })
+}
+
+/** True when the « nouvelles » chip may move new cards first: Découverte already leads with them. */
+export function canPutNewFirst(sort: CollectionSort): boolean {
+  return sort !== 'discovery'
+}
+
+/**
+ * Puts the new items first, in their own order, then the other items, unless the sort already leads
+ * with the latest discoveries, in which case the items are returned as they are.
+ */
+export function orderNewFirst<T extends { id: string }>(
+  items: readonly T[],
+  newItems: readonly T[],
+  sort: CollectionSort,
+): readonly T[] {
+  if (!canPutNewFirst(sort) || newItems.length === 0) return items
+  const newIds = new Set(newItems.map((item) => item.id))
+  return [...newItems, ...items.filter((item) => !newIds.has(item.id))]
 }

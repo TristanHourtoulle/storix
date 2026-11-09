@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { buildCollectionRows, discoveryGroupOf, type DiscoveryGroup } from './collection-layout'
+import {
+  buildCollectionRows,
+  discoveryGroupOf,
+  orderNewFirst,
+  type DiscoveryGroup,
+} from './collection-layout'
 
 const now = new Date(2026, 10, 9, 10, 0).getTime()
 const daysAgo = (days: number, hour = 10, minute = 0) =>
@@ -85,5 +90,33 @@ describe('buildCollectionRows', () => {
       (row) => row.kind === 'header',
     )
     expect(headers.map((row) => row.key)).toEqual(['h:week:a0', 'h:today:b0', 'h:week:c0'])
+  })
+})
+
+describe('orderNewFirst', () => {
+  const list = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }]
+  const fresh = [{ id: 'c' }, { id: 'a' }]
+
+  it('moves new items first in rarity and number sorts', () => {
+    expect(orderNewFirst(list, fresh, 'rarity').map((item) => item.id)).toEqual([
+      'c',
+      'a',
+      'b',
+      'd',
+    ])
+    expect(orderNewFirst(list, fresh, 'number').map((item) => item.id)).toEqual([
+      'c',
+      'a',
+      'b',
+      'd',
+    ])
+  })
+
+  it('keeps the discovery order so no date header repeats', () => {
+    expect(orderNewFirst(list, fresh, 'discovery')).toBe(list)
+  })
+
+  it('keeps the order when nothing is new', () => {
+    expect(orderNewFirst(list, [], 'rarity')).toBe(list)
   })
 })
