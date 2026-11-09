@@ -59,7 +59,7 @@ function stringList(value: unknown): readonly string[] {
 }
 
 function errorName(error: unknown): string {
-  return error instanceof DOMException || error instanceof Error ? error.name : ''
+  return isRecord(error) && typeof error.name === 'string' ? error.name : ''
 }
 
 function constraintLadder(request: {
@@ -140,7 +140,7 @@ export function readCapabilities(track: MediaStreamTrack): CameraCapabilities {
 /** Applies a hardware zoom, clamped to the track's usable range. */
 export function applyNativeZoom(track: MediaStreamTrack, zoom: number): Promise<void> {
   const range = readCapabilities(track).zoom
-  if (!range) return Promise.reject(new CameraOpenError('unavailable'))
+  if (!range) return Promise.reject(new Error('Camera has no hardware zoom'))
   const set: CameraConstraintSet = { zoom: clampZoom(zoom, range) }
   return track.applyConstraints({ advanced: [set] })
 }

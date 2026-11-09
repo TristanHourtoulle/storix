@@ -90,6 +90,7 @@ export function Viewfinder({ camera, block, blockedNotice, overflowNotice }: Vie
   )
 
   const { ref: frameRef, handlers } = useViewfinderGestures({
+    isEnabled: isLive,
     zoom,
     onZoom: camera.setZoom,
     onTap: (tap, pixel) => {
@@ -109,8 +110,8 @@ export function Viewfinder({ camera, block, blockedNotice, overflowNotice }: Vie
       <div
         ref={frameRef}
         data-facing={facing}
-        className="relative aspect-[63/88] w-[min(100cqw,calc(100cqh*63/88))] touch-none overflow-hidden rounded-card-lg bg-black select-none"
-        {...(isLive ? handlers : {})}
+        className="relative aspect-[63/88] w-[min(100cqw,calc(100cqh*63/88))] touch-none overflow-hidden rounded-card-lg bg-black select-none [container-type:inline-size] [-webkit-touch-callout:none]"
+        {...handlers}
       >
         <video
           ref={videoRef}
@@ -123,7 +124,7 @@ export function Viewfinder({ camera, block, blockedNotice, overflowNotice }: Vie
         />
         {shutterTick > 0 ? (
           <span
-            key={shutterTick}
+            key={`blink-${shutterTick}`}
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 animate-vf-blink bg-black/60 motion-reduce:hidden"
           />
@@ -152,7 +153,7 @@ export function Viewfinder({ camera, block, blockedNotice, overflowNotice }: Vie
         ) : null}
         {ring ? (
           <span
-            key={ring.id}
+            key={`ring-${ring.id}`}
             data-focus-ring=""
             aria-hidden="true"
             style={{ left: ring.x, top: ring.y }}

@@ -235,7 +235,7 @@ export function useCameraStream(isWanted: boolean): CameraStream {
     if (!isWanted) {
       release()
       wasLiveRef.current = false
-      phaseRef.current = 'off'
+      setPhase('off')
       return
     }
     void (async () => {
@@ -354,6 +354,7 @@ export function useCameraStream(isWanted: boolean): CameraStream {
     if (phaseRef.current !== 'live' || !video) return null
     const digital = zoomRef.current?.mode === 'digital' ? zoomRef.current.value : 1
     const isFront = isMirroredRef.current
+    const stream = streamRef.current
     try {
       if (isFront) {
         setIsFlashing(true)
@@ -361,6 +362,7 @@ export function useCameraStream(isWanted: boolean): CameraStream {
         await nextAnimationFrame()
         await delay(FLASH_SETTLE_MS)
       }
+      if (streamRef.current !== stream || phaseRef.current !== 'live') return null
       const file = await captureFrame(video, digital)
       if (file) setShutterTick((tick) => tick + 1)
       return file

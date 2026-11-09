@@ -151,11 +151,14 @@ export function CameraStart({ leagueId, session, drafts }: CameraStartProps) {
         />
       </div>
       <ShutterRow
-        isDisabled={!status.canShoot}
+        isDisabled={!status.canShoot || isContinuing}
         mode={SHUTTER_MODES[camera.phase]}
         onShutter={() => void handleShutter()}
         onPick={handlePick}
-        flip={{ isVisible: camera.phase === 'live' && camera.canFlip, onFlip: camera.flip }}
+        flip={{
+          isVisible: (camera.phase === 'live' || camera.phase === 'starting') && camera.canFlip,
+          onFlip: camera.flip,
+        }}
       />
       <FilmStrip drafts={drafts} shots={strip.shots} onRemove={handleRemove} />
       <footer className="-mx-4 px-4 pt-2.5 shadow-[inset_0_1px_0_var(--color-line-nav)]">

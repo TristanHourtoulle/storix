@@ -10,6 +10,7 @@ export interface ViewfinderGestureHandlers {
 }
 
 interface ViewfinderGestureOptions {
+  isEnabled: boolean
   zoom: CameraZoomState | null
   onZoom: (value: number) => void
   onTap: (tap: NormalizedPoint, pixel: { x: number; y: number }) => void
@@ -73,7 +74,7 @@ export function useViewfinderGestures(options: ViewfinderGestureOptions): {
   }, [])
 
   const onPointerDown = useCallback((event: PointerEvent) => {
-    if (isOnControl(event)) return
+    if (!optionsRef.current.isEnabled || isOnControl(event)) return
     const point = { x: event.clientX, y: event.clientY }
     const pointers = new Map([...pointersRef.current, [event.pointerId, point]])
     pointersRef.current = pointers
@@ -130,7 +131,7 @@ export function useViewfinderGestures(options: ViewfinderGestureOptions): {
       !gesture.hasMoved &&
       distance(gesture.start, point) < TAP_MAX_MOVE_PX &&
       event.timeStamp - gesture.startTime < TAP_MAX_MS
-    if (!isTap) return
+    if (!isTap || !optionsRef.current.isEnabled) return
     const rect = event.currentTarget.getBoundingClientRect()
     if (rect.width === 0 || rect.height === 0) return
     const pixel = { x: point.x - rect.left, y: point.y - rect.top }
