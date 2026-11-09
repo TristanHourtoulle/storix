@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   stackSize,
   type CardTier,
@@ -15,15 +15,20 @@ import { PromotionSheet } from './promotion-sheet'
 interface CardActionsProps {
   actions: OwnedCardDetail['actions']
   leagueTier: CardTier
-  dust: number
+  dust: number | null
   isBusy: boolean
   promoteError: string | null
   convertError: string | null
   onRecycle: (variant: CopyVariant) => void
   onUpgrade: () => void
-  onPromote: (from: CardTier, onDone: () => void) => void
-  onConvert: (body: ConvertStackBody, onDone: () => void) => void
+  onPromote: (from: CardTier, callbacks: SubmitCallbacks) => void
+  onConvert: (body: ConvertStackBody, callbacks: SubmitCallbacks) => void
   onSheetOpen: () => void
+}
+
+export interface SubmitCallbacks {
+  onSuccess: () => void
+  onSettled: () => void
 }
 
 type Sheet = 'recycle' | 'promote' | 'convert' | null
@@ -50,10 +55,23 @@ export function CardActions({
   const [pending, setPending] = useState<OwnedCardDetail['actions']['recycle'][number] | null>(null)
   const [sheet, setSheet] = useState<Sheet>(null)
   const [session, setSession] = useState(0)
+  const isSubmitting = useRef(false)
   const { foilUpgrade, promotion } = actions
   const stackCount = stackSize(actions.stack)
   const isMax = promotion.reason === 'max_tier'
+  const isRecycleBlocked = stackCount > 0 && actions.recycle.length === 1
   const close = () => setSheet(null)
+
+  function submit(run: (callbacks: SubmitCallbacks) => void) {
+    if (isSubmitting.current) return
+    isSubmitting.current = true
+    run({
+      onSuccess: close,
+      onSettled: () => {
+        isSubmitting.current = false
+      },
+    })
+  }
 
   function openSheet(next: Exclude<Sheet, null>) {
     onSheetOpen()
@@ -99,15 +117,21 @@ export function CardActions({
         </Button>
       </div>
       <Dialog open={sheet === 'recycle'} title="Recycler cette carte ?" onClose={close}>
-        <p className="m-0 text-sm text-ink-2">
-          Tu gagnes {pending?.dust} paillettes. Tu pourras la retrouver dans un booster.
-        </p>
-        {pending?.promotedTier ? (
+        {isRecycleBlocked ? (
+          <p className="m-0 text-sm font-semibold text-danger">
+            Convertis d'abord ta pile de doublons.
+          </p>
+        ) : (
+          <p className="m-0 text-sm text-ink-2">
+            Tu gagnes {pending?.dust} paillettes. Tu pourras la retrouver dans un booster.
+          </p>
+        )}
+        {!isRecycleBlocked && pending?.promotedTier ? (
           <p className="m-0 text-sm font-semibold text-danger">
             Ta rareté perso {TIER_LABELS[pending.promotedTier]} ★ sera perdue.
           </p>
         ) : null}
-        <Button variant="primary" block onClick={confirmRecycle}>
+        <Button variant="primary" block disabled={isRecycleBlocked} onClick={confirmRecycle}>
           Recycler
         </Button>
       </Dialog>
@@ -118,7 +142,7 @@ export function CardActions({
         dust={dust}
         isBusy={isBusy}
         error={promoteError}
-        onConfirm={(from) => onPromote(from, close)}
+        onConfirm={(from) => submit((callbacks) => onPromote(from, callbacks))}
         onClose={close}
       />
       <ConvertStackSheet
@@ -127,7 +151,7 @@ export function CardActions({
         stack={actions.stack}
         isBusy={isBusy}
         error={convertError}
-        onConfirm={(body) => onConvert(body, close)}
+        onConfirm={(body) => submit((callbacks) => onConvert(body, callbacks))}
         onClose={close}
       />
     </>

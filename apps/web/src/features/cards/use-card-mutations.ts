@@ -4,13 +4,12 @@ import type {
   ConvertStackBody,
   CopyVariant,
   DustBalance,
-  ErrorCode,
   StackActionResult,
   WalletState,
 } from '@storix/shared'
 import { ApiError } from '@/lib/http'
 import { logger } from '@/lib/logger'
-import { walletQueryOptions } from '@/features/game/game.queries'
+import { recentRevealsQueryOptions, walletQueryOptions } from '@/features/game/game.queries'
 import { convertStack, promoteCard, recycleCopy, upgradeToFoil } from './cards.api'
 
 interface CardMutations {
@@ -19,8 +18,6 @@ interface CardMutations {
   promote: UseMutationResult<StackActionResult, Error, CardTier>
   convertStack: UseMutationResult<StackActionResult, Error, ConvertStackBody>
 }
-
-const STALE_CODES: ReadonlySet<ErrorCode> = new Set(['PROMOTION_STALE', 'STACK_CHANGED'])
 
 /** Dust-spending actions on one card; each refreshes the wallet and the card caches. */
 export function useCardMutations(leagueId: string, cardId: string): CardMutations {
@@ -35,6 +32,9 @@ export function useCardMutations(leagueId: string, cardId: string): CardMutation
     void queryClient
       .invalidateQueries({ queryKey: ['leagues', leagueId, 'cards'] })
       .catch(logRefreshFailure)
+    void queryClient
+      .invalidateQueries({ queryKey: recentRevealsQueryOptions(leagueId).queryKey })
+      .catch(logRefreshFailure)
   }
 
   function onFailure(action: string, error: Error): void {
@@ -43,7 +43,7 @@ export function useCardMutations(leagueId: string, cardId: string): CardMutation
       code: error instanceof ApiError ? error.code : undefined,
       status: error instanceof ApiError ? error.status : undefined,
     })
-    if (error instanceof ApiError && STALE_CODES.has(error.code)) {
+    if (error instanceof ApiError && error.status === 409) {
       refreshCards()
       void queryClient.invalidateQueries({ queryKey: walletKey }).catch(logRefreshFailure)
     }

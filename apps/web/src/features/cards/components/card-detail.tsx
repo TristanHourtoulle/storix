@@ -110,14 +110,14 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
       <CardActions
         actions={card.actions}
         leagueTier={card.tier}
-        dust={wallet?.dust ?? 0}
+        dust={wallet?.dust ?? null}
         isBusy={isBusy}
         promoteError={promote.error ? userMessage(promote.error) : null}
         convertError={convertStack.error ? userMessage(convertStack.error) : null}
         onRecycle={(variant) => recycle.mutate(variant)}
         onUpgrade={() => upgradeToFoil.mutate()}
-        onPromote={(from, onDone) => promote.mutate(from, { onSuccess: onDone })}
-        onConvert={(body, onDone) => convertStack.mutate(body, { onSuccess: onDone })}
+        onPromote={(from, callbacks) => promote.mutate(from, callbacks)}
+        onConvert={(body, callbacks) => convertStack.mutate(body, callbacks)}
         onSheetOpen={() => {
           promote.reset()
           convertStack.reset()

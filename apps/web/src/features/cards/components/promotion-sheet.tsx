@@ -8,7 +8,7 @@ interface PromotionSheetProps {
   open: boolean
   promotion: PromotionAction
   leagueTier: CardTier
-  dust: number
+  dust: number | null
   isBusy: boolean
   error: string | null
   onConfirm: (from: CardTier) => void
@@ -36,11 +36,11 @@ export function PromotionSheet({
     ? []
     : [
         missingLine(copiesRequired - copiesAvailable, 'doublon', 'doublons'),
-        missingLine(cost - dust, 'paillette', 'paillettes'),
+        dust === null ? null : missingLine(cost - dust, 'paillette', 'paillettes'),
       ].filter((line): line is string => line !== null)
 
   return (
-    <Dialog open={open} title="Améliorer la rareté" onClose={onClose}>
+    <Dialog open={open} title="Améliorer la rareté" isDismissible={!isBusy} onClose={onClose}>
       {isMax ? (
         <p className="m-0 text-sm text-ink-2">Ta carte est déjà Mythique.</p>
       ) : (
@@ -50,7 +50,7 @@ export function PromotionSheet({
           </p>
           <div className="sheet-rows">
             <p className="sheet-row">{`Doublons : ${copiesAvailable} / ${copiesRequired}`}</p>
-            <p className="sheet-row">{`Paillettes : ${dust} / ${cost}`}</p>
+            <p className="sheet-row">{`Paillettes : ${dust ?? '…'} / ${cost}`}</p>
           </div>
           {missing.map((line) => (
             <p key={line} className="m-0 text-sm font-semibold text-danger">
@@ -65,7 +65,7 @@ export function PromotionSheet({
           <Button
             variant="primary"
             block
-            disabled={!promotion.allowed}
+            disabled={!promotion.allowed || dust === null}
             isLoading={isBusy}
             onClick={() => onConfirm(from)}
           >

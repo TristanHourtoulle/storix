@@ -274,10 +274,10 @@ export function useArcadeOpening(
   const revealAll = useCallback(() => {
     const { phase, revealed } = stateRef.current
     if (phase === 'summary') return
-    const hasHiddenDust = pulls.some((pull, index) => !revealed[index] && hasPileOrDustGain(pull))
+    const hasHiddenGain = pulls.some((pull, index) => !revealed[index] && hasPileOrDustGain(pull))
     stopSounds()
     playSound({ name: 'revealAll' })
-    if (hasHiddenDust) playSound({ name: 'coin' }, REVEAL_ALL_COIN_DELAY)
+    if (hasHiddenGain) playSound({ name: 'coin' }, REVEAL_ALL_COIN_DELAY)
     if (isEpicGuaranteedNext) playSound({ name: 'pity' }, REVEAL_ALL_COIN_DELAY + 0.4)
     directorRef.current?.destroy()
     directorRef.current = null

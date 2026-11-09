@@ -40,8 +40,9 @@ export function CardFace({
       <div className="card-holo" ref={holoRef} />
       <span className="card-gem" />
       {stackCount > 0 ? (
-        <span className="card-stack-badge" aria-label={`${stackCount} doublons en pile`}>
-          ×{stackCount}
+        <span className="card-stack-badge">
+          <span aria-hidden="true">×{stackCount}</span>
+          <span className="sr-only">{`${stackCount} doublons en pile`}</span>
         </span>
       ) : null}
       {hasFoilPip ? <span className="card-foil-pip" aria-hidden="true" /> : null}

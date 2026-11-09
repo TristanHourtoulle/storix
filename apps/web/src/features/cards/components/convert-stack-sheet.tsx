@@ -51,7 +51,7 @@ export function ConvertStackSheet({
   ] as const
 
   return (
-    <Dialog open={open} title="Convertir ta pile" onClose={onClose}>
+    <Dialog open={open} title="Convertir ta pile" isDismissible={!isBusy} onClose={onClose}>
       {normalCount > 0 && foilCount > 0 ? (
         <Segmented
           options={options}
