@@ -141,6 +141,7 @@
     color: var(--color-muted);
   }
   .loupe-arrows {
+    touch-action: manipulation;
     display: flex;
     align-items: center;
     gap: 14px;
@@ -155,6 +156,7 @@
     justify-content: center;
   }
   .loupe-dot {
+    position: relative;
     appearance: none;
     width: 7px;
     height: 7px;
@@ -163,6 +165,11 @@
     border-radius: 50%;
     background: var(--color-line-strong);
     cursor: pointer;
+  }
+  .loupe-dot::after {
+    content: '';
+    position: absolute;
+    inset: -9px -3px;
   }
   .loupe-dot[aria-current='true'] {
     width: 18px;

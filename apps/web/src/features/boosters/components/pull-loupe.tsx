@@ -53,12 +53,12 @@ export function PullLoupe({
   const goTo = useCallback(
     (next: number, nextDirection: LoupeDirection): void => {
       const target = wrapIndex(next, count)
-      if (target === index || isLeaving) return
+      if (target === index || isLeaving || phase === 'entering') return
       setDirection(nextDirection)
       playSound({ name: 'flipLight' })
       onIndexChange(target, nextDirection)
     },
-    [count, index, isLeaving, onIndexChange],
+    [count, index, isLeaving, onIndexChange, phase],
   )
 
   useEffect(() => {
@@ -83,11 +83,18 @@ export function PullLoupe({
       else if (gesture === 'prev') goTo(index - 1, 'prev')
       else if (gesture === 'close') onRequestClose()
     }
+    const clearStart = (): void => {
+      start.current = null
+    }
     document.addEventListener('keydown', handleKeyDown, true)
+    document.addEventListener('pointerdown', clearStart, true)
     document.addEventListener('pointerup', handlePointerUp, true)
+    window.addEventListener('blur', clearStart)
     return () => {
       document.removeEventListener('keydown', handleKeyDown, true)
+      document.removeEventListener('pointerdown', clearStart, true)
       document.removeEventListener('pointerup', handlePointerUp, true)
+      window.removeEventListener('blur', clearStart)
     }
   }, [goTo, index, onRequestClose])
 

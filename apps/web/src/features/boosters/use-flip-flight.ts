@@ -121,7 +121,7 @@ export function useFlipFlight({ getOrigin, isReducedMotion, onLeft }: FlipFlight
     settle('leaving')
     const node = element.current
     const onDone = (): void => latest.current.onLeft()
-    if (!node) {
+    if (!node || latest.current.isReducedMotion) {
       onDone()
       return
     }
