@@ -1,5 +1,7 @@
 import type { Database } from '@storix/db'
 import {
+  LEGACY_COLLECTION_CURSOR,
+  encodeCollectionCursor,
   resolveLeagueSettings,
   type CollectionPage,
   type ListCardsQuery,
@@ -13,7 +15,7 @@ import { findLeagueSettings } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
 import { countReactions } from '../reactions/reactions.repository'
 import { findWallet } from '../wallets/wallets.repository'
-import { isOwned, isVisibleTo, toCardDetail, toCollectionCard } from './card-views'
+import { displayTier, isOwned, isVisibleTo, toCardDetail, toCollectionCard } from './card-views'
 import { countCollection, findCardForViewer, listCollection } from './cards.repository'
 
 const NO_REACTIONS: ReactionCounts = {
@@ -43,15 +45,22 @@ export function createCardsService({ db, signer, clock }: CardsServiceDeps): Car
         authorId: query.authorId,
         tier: query.tier,
       }
+      if (query.cursor === LEGACY_COLLECTION_CURSOR) {
+        const counts = await countCollection(db, filters)
+        return { cards: [], nextCursor: null, total: counts.total, ownedCount: counts.owned }
+      }
       const [rows, counts] = await Promise.all([
-        listCollection(db, { ...filters, beforeNumber: query.cursor, limit: query.limit }),
+        listCollection(db, { ...filters, after: query.cursor, limit: query.limit }),
         countCollection(db, filters),
       ])
       const page = rows.slice(0, query.limit)
       const last = page.at(-1)
       return {
         cards: page.map((row) => toCollectionCard(row, signer)),
-        nextCursor: rows.length > query.limit && last !== undefined ? last.number : null,
+        nextCursor:
+          rows.length > query.limit && last !== undefined
+            ? encodeCollectionCursor({ tier: displayTier(last), number: last.number })
+            : null,
         total: counts.total,
         ownedCount: counts.owned,
       }

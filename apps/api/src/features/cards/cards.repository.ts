@@ -1,6 +1,6 @@
-import { cardCopies, cards, cardTags, media, user, type DbExecutor } from '@storix/db'
-import { mediaVariantsSchema, type CardTier } from '@storix/shared'
-import { and, desc, eq, isNotNull, lt, or, sql, type SQL } from 'drizzle-orm'
+import { cardCopies, cards, cardTags, cardTier, media, user, type DbExecutor } from '@storix/db'
+import { mediaVariantsSchema, type CardTier, type CollectionCursor } from '@storix/shared'
+import { and, desc, eq, isNotNull, or, sql, type SQL } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import {
   authorIsFormerMember,
@@ -119,17 +119,25 @@ function parseVariants<T extends { variants: unknown }>(
   return { ...row, variants: mediaVariantsSchema.parse(row.variants) }
 }
 
+function afterCursor(
+  owned: ReturnType<typeof viewerCopies>,
+  cursor: CollectionCursor | undefined,
+): SQL | undefined {
+  if (cursor === undefined) return undefined
+  return sql`(${displayTierOf(owned)}, ${cards.number}) < (${cursor.tier}::${sql.identifier(cardTier.enumName)}, ${cursor.number})`
+}
+
 function activeOrOwnedHidden(owned: ReturnType<typeof viewerCopies>): SQL | undefined {
   return or(eq(cards.status, 'active'), and(eq(cards.status, 'hidden'), isNotNull(owned.cardId)))
 }
 
 /**
  * Lists active cards, and hidden cards the viewer owns a copy of, with the viewer's copies,
- * newest number first, fetching `limit + 1` rows.
+ * rarest displayed tier first then newest number first, fetching `limit + 1` rows after the cursor.
  */
 export async function listCollection(
   db: DbExecutor,
-  input: CollectionFilters & { beforeNumber?: number; limit: number },
+  input: CollectionFilters & { after?: CollectionCursor; limit: number },
 ): Promise<CollectionRow[]> {
   const owned = viewerCopies(db, input)
   const rows = await db
@@ -142,10 +150,10 @@ export async function listCollection(
     .where(
       and(
         collectionWhere(input, owned, activeOrOwnedHidden(owned)),
-        input.beforeNumber === undefined ? undefined : lt(cards.number, input.beforeNumber),
+        afterCursor(owned, input.after),
       ),
     )
-    .orderBy(desc(cards.number))
+    .orderBy(desc(displayTierOf(owned)), desc(cards.number))
     .limit(input.limit + 1)
   return rows.map(parseVariants)
 }
