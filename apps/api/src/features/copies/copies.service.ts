@@ -80,8 +80,9 @@ export function createCopiesService({ db, clock }: CopiesServiceDeps): CopiesSer
   return {
     recycle: (m, cardId, variant) =>
       withLockedCard(m, cardId, async (ctx) => {
-        const tierAtMint = await deleteCopy(ctx.tx, { cardId, ownerId: m.userId, variant })
-        if (tierAtMint === null) throw copyNotOwned()
+        const deleted = await deleteCopy(ctx.tx, { cardId, ownerId: m.userId, variant })
+        if (deleted === null) throw copyNotOwned()
+        const { tierAtMint } = deleted
         const dust = dustValue(tierAtMint, variant)
         await insertAuditEntry(ctx.tx, {
           leagueId: m.leagueId,
