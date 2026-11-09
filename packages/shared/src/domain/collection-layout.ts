@@ -42,7 +42,7 @@ function chunk<T extends { id: string }, G>(
 
 /**
  * Lays out grid rows of `columns` items. With `groupOf`, each run of consecutive items of one group
- * starts with a header row, and its items are chunked on their own.
+ * starts with a header row keyed by the run's first item, and its items are chunked on their own.
  */
 export function buildCollectionRows<T extends { id: string }, G extends string>(
   items: readonly T[],
@@ -57,8 +57,9 @@ export function buildCollectionRows<T extends { id: string }, G extends string>(
   )
   return starts.flatMap((start, index): CollectionGridRow<T, G>[] => {
     const group = groups[start]
-    if (group === undefined) return []
+    const first = items[start]
+    if (group === undefined || first === undefined) return []
     const segment = items.slice(start, starts[index + 1] ?? items.length)
-    return [{ kind: 'header', group, key: `h:${group}` }, ...chunk<T, G>(segment, width)]
+    return [{ kind: 'header', group, key: `h:${group}:${first.id}` }, ...chunk<T, G>(segment, width)]
   })
 }

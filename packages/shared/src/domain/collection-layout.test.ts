@@ -78,4 +78,12 @@ describe('buildCollectionRows', () => {
     const keys = buildCollectionRows(input, 2, (item) => item.group).map((row) => row.key)
     expect(new Set(keys).size).toBe(keys.length)
   })
+
+  it('keys a repeated group by its run', () => {
+    const input = [...items('week', 1, 'a'), ...items('today', 1, 'b'), ...items('week', 1, 'c')]
+    const headers = buildCollectionRows(input, 3, (item) => item.group).filter(
+      (row) => row.kind === 'header',
+    )
+    expect(headers.map((row) => row.key)).toEqual(['h:week:a0', 'h:today:b0', 'h:week:c0'])
+  })
 })
