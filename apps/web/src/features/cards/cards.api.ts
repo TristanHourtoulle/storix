@@ -2,13 +2,16 @@ import {
   collectionPageSchema,
   dustBalanceSchema,
   reactionCountsSchema,
+  stackActionResultSchema,
   viewerCardDetailSchema,
   type CardTier,
   type CollectionPage,
+  type ConvertStackBody,
   type CopyVariant,
   type DustBalance,
   type ReactionCounts,
   type ReactionType,
+  type StackActionResult,
   type ViewerCardDetail,
 } from '@storix/shared'
 import { apiRequest } from '@/lib/http'
@@ -57,6 +60,32 @@ export function upgradeToFoil(leagueId: string, cardId: string): Promise<DustBal
   return apiRequest(`${cardPath(leagueId, cardId)}/foil`, {
     method: 'POST',
     schema: dustBalanceSchema,
+  })
+}
+
+/** Raises the personal tier of the viewer's copy by one step, from the tier the viewer saw. */
+export function promoteCard(
+  leagueId: string,
+  cardId: string,
+  from: CardTier,
+): Promise<StackActionResult> {
+  return apiRequest(`${cardPath(leagueId, cardId)}/promote`, {
+    method: 'POST',
+    body: { from },
+    schema: stackActionResultSchema,
+  })
+}
+
+/** Converts stacked duplicates of one variant into dust. */
+export function convertStack(
+  leagueId: string,
+  cardId: string,
+  body: ConvertStackBody,
+): Promise<StackActionResult> {
+  return apiRequest(`${cardPath(leagueId, cardId)}/stack/convert`, {
+    method: 'POST',
+    body,
+    schema: stackActionResultSchema,
   })
 }
 
