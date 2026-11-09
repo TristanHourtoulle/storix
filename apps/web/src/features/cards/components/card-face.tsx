@@ -2,8 +2,8 @@ import type { ReactNode, Ref } from 'react'
 import type { CardTier } from '@storix/shared'
 import { TIER_CLASS, TIER_LABELS } from '../tier-labels'
 
-interface CardFaceProps {
-  size: 'sm' | 'md' | 'lg' | 'xl'
+export interface CardFaceProps {
+  size: 'sm' | 'md' | 'lg' | 'xl' | 'hero'
   title: string
   tier: CardTier
   isProvisional: boolean
