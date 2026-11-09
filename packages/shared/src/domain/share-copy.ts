@@ -96,7 +96,7 @@ export function shareFileName(title: string): string {
     trimDashes(
       title
         .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
+        .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-'),
     ).slice(0, SLUG_MAX_LENGTH),
