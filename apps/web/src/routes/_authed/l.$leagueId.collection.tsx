@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 import {
   CARD_TIERS,
   COLLECTION_SORTS,
+  canPutNewFirst,
+  orderNewFirst,
   type CardTier,
   type CollectionCard,
   type CollectionSort,
@@ -52,10 +54,6 @@ export const Route = createFileRoute('/_authed/l/$leagueId/collection')({
 })
 
 const NO_MEMBERS: MemberSummary[] = []
-
-function sortOfKey(key: readonly [string, string, string, CollectionFilters]): CollectionSort {
-  return key[3].sort
-}
 
 const LOADING = <p className="m-0 text-sm text-muted">Chargement…</p>
 
@@ -155,12 +153,16 @@ function CollectionBody({
     isFetchingNextPage,
     isFetchNextPageError,
     fetchNextPage,
+    isPlaceholderData,
   } = useInfiniteQuery({
     ...cardsInfiniteQueryOptions(leagueId, filters),
-    placeholderData: (previous, previousQuery) =>
-      previousQuery && sortOfKey(previousQuery.queryKey) === filters.sort ? previous : undefined,
+    placeholderData: keepPreviousData,
   })
   const { authorId, tier, sort } = filters
+  const [settledSort, setSettledSort] = useState(sort)
+  if (data && !isPlaceholderData && settledSort !== sort) setSettledSort(sort)
+  const isOtherSortShown = isPlaceholderData && settledSort !== sort
+  const canReorderNew = canPutNewFirst(sort)
   useEffect(() => {
     window.scrollTo({ top: 0 })
   }, [authorId, tier, sort])
@@ -172,9 +174,9 @@ function CollectionBody({
     ],
     [data],
   )
-  const gridCards = useMemo<CollectionCard[]>(
-    () => (isNewFirst ? [...visibleNew, ...cards.filter((card) => !newIds.has(card.id))] : cards),
-    [isNewFirst, visibleNew, cards, newIds],
+  const gridCards = useMemo<readonly CollectionCard[]>(
+    () => (isNewFirst ? orderNewFirst(cards, visibleNew, sort) : cards),
+    [isNewFirst, visibleNew, cards, sort],
   )
   const openCard = useCallback(
     (card: CollectionCard) => {
@@ -233,7 +235,8 @@ function CollectionBody({
         sort={sort}
         onOpenSort={() => setIsSortOpen(true)}
         newCount={visibleNew.length}
-        isNewFirst={isNewFirst}
+        isNewFirst={isNewFirst && canReorderNew}
+        canReorderNew={canReorderNew}
         onToggleNewFirst={toggleNewFirst}
         onMarkAllSeen={onMarkAllSeen}
       />
@@ -248,17 +251,21 @@ function CollectionBody({
           Ouvre un booster pour découvrir tes premières cartes.
         </p>
       )}
-      <CollectionGrid
-        leagueId={leagueId}
-        cards={gridCards}
-        isGrouped={sort === 'discovery'}
-        newIds={newIds}
-        onOpenCard={openCard}
-        hasNextPage={hasNextPage}
-        isFetchingNextPage={isFetchingNextPage}
-        isFetchNextPageError={isFetchNextPageError}
-        fetchNextPage={fetchNextPage}
-      />
+      {isOtherSortShown ? (
+        LOADING
+      ) : (
+        <CollectionGrid
+          leagueId={leagueId}
+          cards={gridCards}
+          isGrouped={sort === 'discovery'}
+          newIds={newIds}
+          onOpenCard={openCard}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          isFetchNextPageError={isFetchNextPageError}
+          fetchNextPage={fetchNextPage}
+        />
+      )}
     </>
   )
 }

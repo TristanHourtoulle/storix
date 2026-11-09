@@ -16,7 +16,7 @@ import { CollectionCardView } from './collection-card-view'
 
 interface CollectionGridProps {
   leagueId: string
-  cards: CollectionCard[]
+  cards: readonly CollectionCard[]
   isGrouped: boolean
   newIds: ReadonlySet<string>
   onOpenCard: (card: CollectionCard) => void

@@ -165,6 +165,9 @@
     white-space: nowrap;
     cursor: pointer;
   }
+  span.chip-new {
+    cursor: default;
+  }
   .chip-new[aria-pressed='true'] {
     background: var(--color-tier-uncommon);
     color: var(--color-bg);

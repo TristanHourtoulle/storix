@@ -7,6 +7,7 @@ interface CollectionToolbarProps {
   onOpenSort: () => void
   newCount: number
   isNewFirst: boolean
+  canReorderNew: boolean
   onToggleNewFirst: () => void
   onMarkAllSeen: () => void
 }
@@ -16,11 +17,13 @@ export function CollectionToolbar({
   onOpenSort,
   newCount,
   isNewFirst,
+  canReorderNew,
   onToggleNewFirst,
   onMarkAllSeen,
 }: CollectionToolbarProps) {
   const label = sortLabel(sort)
   const hasNew = newCount > 0
+  const newLabel = `✦ ${newCount} ${newCount > 1 ? 'nouvelles' : 'nouvelle'}`
 
   return (
     <div className="flex flex-col gap-2">
@@ -35,16 +38,17 @@ export function CollectionToolbar({
           <span>Trier :</span> {label}
           <Icon name="chevron-down" className="size-[15px]" />
         </button>
-        {hasNew ? (
+        {hasNew && canReorderNew ? (
           <button
             type="button"
             className="chip-new"
             aria-pressed={isNewFirst}
             onClick={onToggleNewFirst}
           >
-            {`✦ ${newCount} ${newCount > 1 ? 'nouvelles' : 'nouvelle'}`}
+            {newLabel}
           </button>
         ) : null}
+        {hasNew && !canReorderNew ? <span className="chip-new">{newLabel}</span> : null}
       </div>
       {hasNew ? (
         <button type="button" className="mark-all" onClick={onMarkAllSeen}>
