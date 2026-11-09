@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
-import { CARD_TIERS, type CardTier, type MemberSummary } from '@storix/shared'
+import { CARD_TIERS, COLLECTION_SORTS, type CardTier, type MemberSummary } from '@storix/shared'
 import { Button, buttonClassName } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Notice } from '@/components/ui/notice'
@@ -12,6 +12,7 @@ import { CollectionProgress } from '@/features/cards/components/collection-progr
 import { MemberFilter } from '@/features/cards/components/member-filter'
 import { RarityFilter } from '@/features/cards/components/rarity-filter'
 import { cardsInfiniteQueryOptions, type CollectionFilters } from '@/features/cards/cards.queries'
+import { useCollectionSort } from '@/features/cards/use-collection-sort'
 import { DustBalance } from '@/features/game/components/dust-balance'
 import { useWallet } from '@/features/game/use-wallet'
 import { membersQueryOptions } from '@/features/members/members.queries'
@@ -29,6 +30,7 @@ export const Route = createFileRoute('/_authed/l/$leagueId/collection')({
     author: z.string().optional(),
     tier: z.enum(CARD_TIERS).optional(),
     by: z.enum(['member', 'rarity']).optional(),
+    sort: z.enum(COLLECTION_SORTS).optional(),
     notice: z.literal('withdrawn').optional(),
   }),
   loader: ({ context, params }) =>
@@ -43,12 +45,14 @@ const LOADING = <p className="m-0 text-sm text-muted">Chargement…</p>
 
 function Collection() {
   const { leagueId } = Route.useParams()
-  const { author, tier, by, notice } = Route.useSearch()
+  const { author, tier, by, sort: urlSort, notice } = Route.useSearch()
+  const { me } = Route.useRouteContext()
   const navigate = useNavigate({ from: Route.fullPath })
   const members = useQuery(membersQueryOptions(leagueId)).data ?? NO_MEMBERS
   const { data: wallet } = useWallet(leagueId)
+  const { sort } = useCollectionSort(me.user.id, leagueId, urlSort)
   const mode: FilterMode = by ?? 'member'
-  const filters: CollectionFilters = { authorId: author ?? null, tier: tier ?? null }
+  const filters: CollectionFilters = { authorId: author ?? null, tier: tier ?? null, sort }
   const authorName = members.find((member) => member.userId === filters.authorId)?.displayUsername
 
   function selectAuthor(id: string | null) {
