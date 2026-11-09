@@ -34,7 +34,7 @@ function CardDetailScreen() {
   const closeWithdraw = () => setIsWithdrawing(false)
 
   return (
-    <main className="screen">
+    <main className="screen flex-1">
       <TopBar
         title={card ? `Carte ${formatCardNumber(card.number)}` : 'Carte'}
         end={<DustBalance dust={wallet?.dust} />}

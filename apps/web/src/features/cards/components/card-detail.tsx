@@ -41,12 +41,12 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
     .flatMap((person) => (person.displayUsername ? [person.displayUsername] : []))
     .join(', ')
   const copies = card.copiesInLeague
-  const actionError = recycle.error ?? upgradeToFoil.error
+  const actionError = recycle.error
   const isBusy =
     recycle.isPending || upgradeToFoil.isPending || promote.isPending || convertStack.isPending
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-1 flex-col items-center gap-4">
       <button
         type="button"
         className="tilt card-open"
@@ -66,11 +66,11 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
           if (isTap) setIsFullscreen(true)
         }}
       >
-        <OwnedCardFace card={card} size="hero" imageSizes="min(76vw, 340px)" isEager />
+        <OwnedCardFace card={card} size="showcase" imageSizes="min(76vw, 340px)" isEager />
       </button>
       {isFullscreen ? (
         <CardFullscreen tier={card.displayTier} onClose={() => setIsFullscreen(false)}>
-          <OwnedCardFace card={card} size="hero" imageSizes="min(88vw, 400px)" isEager />
+          <OwnedCardFace card={card} size="showcase" imageSizes="min(88vw, 400px)" isEager />
         </CardFullscreen>
       ) : null}
       <MotionPrompt
@@ -117,22 +117,6 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
         canReact={card.canReact}
         onToggle={reactions.toggle}
       />
-      <CardActions
-        card={card}
-        actions={card.actions}
-        dust={wallet?.dust ?? null}
-        isBusy={isBusy}
-        promoteError={promote.error ? userMessage(promote.error) : null}
-        convertError={convertStack.error ? userMessage(convertStack.error) : null}
-        onRecycle={(variant) => recycle.mutate(variant)}
-        onUpgrade={() => upgradeToFoil.mutate()}
-        onPromote={(from, callbacks) => promote.mutate(from, callbacks)}
-        onConvert={(body, callbacks) => convertStack.mutate(body, callbacks)}
-        onSheetOpen={() => {
-          promote.reset()
-          convertStack.reset()
-        }}
-      />
       {card.canWithdraw ? (
         <Button variant="ghost" onClick={onWithdraw}>
           Retirer cette photo
@@ -142,6 +126,23 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
       {!actionError && reactions.isError ? (
         <Notice tone="error">Action impossible pour le moment. Réessaie.</Notice>
       ) : null}
+      <CardActions
+        card={card}
+        dust={wallet?.dust ?? null}
+        isBusy={isBusy}
+        promoteError={promote.error ? userMessage(promote.error) : null}
+        convertError={convertStack.error ? userMessage(convertStack.error) : null}
+        foilError={upgradeToFoil.error ? userMessage(upgradeToFoil.error) : null}
+        onRecycle={(variant) => recycle.mutate(variant)}
+        onUpgrade={(callbacks) => upgradeToFoil.mutate(undefined, callbacks)}
+        onPromote={(from, callbacks) => promote.mutate(from, callbacks)}
+        onConvert={(body, callbacks) => convertStack.mutate(body, callbacks)}
+        onSheetOpen={() => {
+          promote.reset()
+          convertStack.reset()
+          upgradeToFoil.reset()
+        }}
+      />
     </div>
   )
 }

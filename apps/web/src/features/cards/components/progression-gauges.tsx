@@ -77,7 +77,7 @@ export function BarGauges({ progression }: { progression: StepProgression }) {
           value={`${values.dust ?? '…'}/${values.cost}`}
           isOk={values.isDustOk}
         />
-        <div className="g-bar dust" aria-hidden="true">
+        <div className="g-bar is-dust" aria-hidden="true">
           <i style={{ width: `${values.dustPercent}%` }} />
         </div>
       </div>
@@ -110,7 +110,7 @@ export function SheetGauges({ progression }: { progression: StepProgression }) {
           value={`${values.dust ?? '…'} / ${values.cost}`}
           isOk={values.isDustOk}
         />
-        <div className="g-bar dust" aria-hidden="true">
+        <div className="g-bar is-dust" aria-hidden="true">
           <i style={{ width: `${values.dustPercent}%` }} />
         </div>
       </div>

@@ -3,7 +3,7 @@ import type { CardTier } from '@storix/shared'
 import { TIER_CLASS, TIER_LABELS } from '../tier-labels'
 
 export interface CardFaceProps {
-  size: 'sm' | 'md' | 'lg' | 'xl' | 'hero'
+  size: 'sm' | 'md' | 'lg' | 'xl' | 'showcase'
   title: string
   tier: CardTier
   isProvisional: boolean
