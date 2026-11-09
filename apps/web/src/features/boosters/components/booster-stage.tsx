@@ -1,4 +1,5 @@
 import { useRef, useState, type CSSProperties } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import type { BoosterOpening } from '@storix/shared'
 import { Button, buttonClassName } from '@/components/ui/button'
@@ -6,6 +7,7 @@ import { Icon } from '@/components/ui/icon'
 import { TopBar } from '@/components/ui/top-bar'
 import { PushPrompt } from '@/features/push/components/push-prompt'
 import { newBoosterRequestId } from '@/features/game/booster-request'
+import { leagueDetailQueryOptions } from '@/features/leagues/leagues.queries'
 import '@/styles/booster-stage.css'
 import '@/styles/booster-card.css'
 import '@/styles/booster-pack.css'
@@ -47,6 +49,7 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
   const isComplete = revealedCount === pullCount
   const shownPull = state.phase === 'shown' ? pulls[state.current] : undefined
   const hasStock = opening.wallet.booster.stock > 0
+  const leagueName = useQuery(leagueDetailQueryOptions(leagueId)).data?.name ?? ''
 
   function openAnother() {
     if (isOpeningNext) return
@@ -92,7 +95,14 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
           aria-disabled={state.phase === 'opening' || state.phase === 'revealing'}
           onClick={onTap}
         />
-        {state.phase === 'summary' ? <ArcadeSummary pulls={pulls} /> : null}
+        {state.phase === 'summary' ? (
+          <ArcadeSummary
+            leagueId={leagueId}
+            pulls={pulls}
+            openedAt={opening.openedAt}
+            leagueName={leagueName}
+          />
+        ) : null}
       </div>
       <p className="sr-only" aria-live="polite">
         {state.announcement}

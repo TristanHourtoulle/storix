@@ -6,6 +6,7 @@ export type IconName =
   | 'profile'
   | 'close'
   | 'back'
+  | 'forward'
   | 'share'
   | 'dust'
   | 'chevron-down'
@@ -48,6 +49,7 @@ const PATHS: Record<IconName, string> = {
   profile: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
   close: 'M6 6l12 12M18 6L6 18',
   back: 'M15 5l-7 7 7 7',
+  forward: 'M9 5l7 7-7 7',
   share: 'M12 3v12M8 7l4-4 4 4M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6',
   'chevron-down': 'M6 9l6 6 6-6',
   'chevron-right': 'M9 6l6 6-6 6',
