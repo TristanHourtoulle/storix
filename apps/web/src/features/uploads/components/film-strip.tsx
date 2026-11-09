@@ -83,7 +83,7 @@ export function FilmStrip({ drafts, shots, onRemove }: FilmStripProps) {
   return (
     <section
       aria-label="Pellicule"
-      className="-mx-4 flex min-h-[84px] flex-none items-center gap-2 overflow-x-auto px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="-mx-4 flex min-h-[68px] flex-none items-center gap-2 overflow-x-auto px-4 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       {isEmpty ? (
         <span className="text-xs text-faint">Tes prises s&apos;aligneront ici.</span>

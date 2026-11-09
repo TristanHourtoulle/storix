@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import type { ShotBlock } from '@storix/shared/domain'
 import { Notice } from '@/components/ui/notice'
 import { isIos } from '@/lib/platform'
 import { CAMERA_COPY, zoomLabel } from '../camera/camera-copy'
@@ -9,7 +10,7 @@ import { ViewfinderPanel } from './viewfinder-panel'
 
 export interface ViewfinderProps {
   camera: CameraStream
-  block: 'quota' | 'batch' | null
+  block: ShotBlock | null
   blockedNotice: { title: string; body: string } | null
   overflowNotice: string | null
 }
@@ -104,7 +105,7 @@ export function Viewfinder({ camera, block, blockedNotice, overflowNotice }: Vie
   const isZoomed = zoom !== null && zoom.value > zoom.range.min
 
   return (
-    <div className="absolute inset-0 grid place-items-center">
+    <div className="absolute inset-0 grid place-items-center [container-type:size]">
       <div
         ref={frameRef}
         data-facing={facing}

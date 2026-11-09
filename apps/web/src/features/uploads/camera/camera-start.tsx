@@ -1,25 +1,20 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCanGoBack, useNavigate, useRouter } from '@tanstack/react-router'
 import type { UploadDraft } from '@storix/shared'
 import { fitShots, shotStripStatus, type ShotChip } from '@storix/shared/domain'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
-import { Notice } from '@/components/ui/notice'
 import { TopBar } from '@/components/ui/top-bar'
-import { CameraFrame } from '../components/camera-frame'
+import { playSound } from '@/features/sound/sound'
 import { FilmStrip } from '../components/film-strip'
 import { ShotLeaveDialog } from '../components/shot-leave-dialog'
-import { ShutterRow } from '../components/shutter-row'
+import { ShutterRow, type ShutterMode } from '../components/shutter-row'
+import { Viewfinder } from '../components/viewfinder'
 import type { DraftOverflow } from '../draft-capacity'
 import type { UploadSession } from '../session/use-upload-session'
-import {
-  continueLabel,
-  overflowMessage,
-  shotBody,
-  shotChipLabel,
-  shotHeadline,
-} from '../upload-copy'
+import { continueLabel, overflowMessage, shotBlockedNotice, shotChipLabel } from '../upload-copy'
 import { useUploadQuota } from '../use-upload-quota'
+import { useCameraStream, type CameraPhase } from './use-camera-stream'
 import { useShotLeaveGuard } from './use-shot-leave-guard'
 import { useShotStrip } from './use-shot-strip'
 
@@ -27,6 +22,17 @@ export interface CameraStartProps {
   leagueId: string
   session: UploadSession
   drafts: readonly UploadDraft[]
+}
+
+const SHUTTER_MODES: Record<CameraPhase, ShutterMode> = {
+  live: 'live',
+  priming: 'enable',
+  paused: 'enable',
+  denied: 'native',
+  busy: 'native',
+  unavailable: 'native',
+  off: 'native',
+  starting: 'waiting',
 }
 
 function chipTone(chip: ShotChip): string {
@@ -55,6 +61,13 @@ export function CameraStart({ leagueId, session, drafts }: CameraStartProps) {
   const { cards, overflow: sessionOverflow } = session.state
   const guard = useShotLeaveGuard(strip.shots.length > 0 && !isContinuing)
   const overflow = sessionOverflow ?? stripOverflow
+  const camera = useCameraStream(status.canShoot && !isContinuing)
+  const capturingRef = useRef(false)
+  const leftRef = useRef(status.left)
+
+  useEffect(() => {
+    leftRef.current = status.left
+  })
 
   const handlePick = (files: File[]): void => {
     const { accepted, skipped } = fitShots(status.left, files.length)
@@ -62,6 +75,28 @@ export function CameraStart({ leagueId, session, drafts }: CameraStartProps) {
     setStripOverflow(
       skipped > 0 ? { kind: quota.unlimited ? 'batch' : 'dailyQuota', skipped, accepted } : null,
     )
+  }
+
+  const handleShutter = async (): Promise<void> => {
+    if (camera.phase !== 'live') {
+      camera.enable()
+      return
+    }
+    if (capturingRef.current || !status.canShoot) return
+    capturingRef.current = true
+    try {
+      const file = await camera.capture()
+      if (!file) {
+        playSound({ name: 'error' })
+        return
+      }
+      if (fitShots(leftRef.current, 1).accepted === 0) return
+      playSound({ name: 'photoAdded' })
+      strip.add([file])
+      setStripOverflow(null)
+    } finally {
+      capturingRef.current = false
+    }
   }
 
   const handleRemove = (id: string): void => {
@@ -91,7 +126,7 @@ export function CameraStart({ leagueId, session, drafts }: CameraStartProps) {
   }
 
   return (
-    <main className="screen flex-1">
+    <main className="screen flex-1 gap-2">
       <TopBar
         title="Prendre des cartes"
         start={
@@ -107,14 +142,21 @@ export function CameraStart({ leagueId, session, drafts }: CameraStartProps) {
           </span>
         }
       />
-      {overflow ? <Notice tone="info">{overflowMessage(overflow)}</Notice> : null}
-      <div className="flex flex-1 flex-col items-center justify-center gap-6">
-        <CameraFrame
-          headline={shotHeadline(status.headline)}
-          body={shotBody(status.headline, drafts.length > 0)}
+      <div className="relative min-h-0 flex-1">
+        <Viewfinder
+          camera={camera}
+          block={status.block}
+          blockedNotice={shotBlockedNotice(status.block, drafts.length > 0)}
+          overflowNotice={overflow ? overflowMessage(overflow) : null}
         />
-        <ShutterRow isDisabled={!status.canShoot} onPick={handlePick} />
       </div>
+      <ShutterRow
+        isDisabled={!status.canShoot}
+        mode={SHUTTER_MODES[camera.phase]}
+        onShutter={() => void handleShutter()}
+        onPick={handlePick}
+        flip={{ isVisible: camera.phase === 'live' && camera.canFlip, onFlip: camera.flip }}
+      />
       <FilmStrip drafts={drafts} shots={strip.shots} onRemove={handleRemove} />
       <footer className="-mx-4 px-4 pt-2.5 shadow-[inset_0_1px_0_var(--color-line-nav)]">
         <Button
