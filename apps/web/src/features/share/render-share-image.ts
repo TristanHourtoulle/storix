@@ -22,12 +22,17 @@ export async function renderShareImage(
   style: ShareStyle,
   subject: ShareSubject,
 ): Promise<RenderedShareImage> {
-  const [, assets] = await Promise.all([ensureShareFonts(), loadShareAssets(subject, style)])
+  const [, assets] = await Promise.all([ensureShareFonts(subject), loadShareAssets(subject, style)])
   const canvas = document.createElement('canvas')
   canvas.width = SHARE_WIDTH
   canvas.height = SHARE_HEIGHT
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('Canvas 2D is not available')
-  const logoBox = drawShareLayout(ctx, style, subject, assets)
-  return { blob: await canvasToPng(canvas), logoBox }
+  try {
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Canvas 2D is not available')
+    const logoBox = drawShareLayout(ctx, style, subject, assets)
+    return { blob: await canvasToPng(canvas), logoBox }
+  } finally {
+    canvas.width = 0
+    canvas.height = 0
+  }
 }
