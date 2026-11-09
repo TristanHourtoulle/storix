@@ -51,6 +51,12 @@
     opacity: 0;
     transition: opacity 0.16s ease;
   }
+  .pull-loupe:not(.is-open) > .card-fullscreen-close,
+  .pull-loupe:not(.is-open) > .loupe-count,
+  .pull-loupe:not(.is-open) > .loupe-footer,
+  .pull-loupe.is-leaving {
+    pointer-events: none;
+  }
   .pull-loupe.is-open > .card-fullscreen-close,
   .pull-loupe.is-open > .loupe-count,
   .pull-loupe.is-open > .loupe-footer {

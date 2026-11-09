@@ -38,8 +38,12 @@ export function ArcadeSummary({ leagueId, pulls }: ArcadeSummaryProps) {
   useEffect(() => {
     if (openIndex === null) return
     currentIndex.current = openIndex
-    if (isInHistory) hasEntered.current = true
-    else if (hasEntered.current) setIsLeaving(true)
+    if (isInHistory) {
+      hasEntered.current = true
+    } else if (hasEntered.current) {
+      isCloseRequested.current = true
+      setIsLeaving(true)
+    }
   }, [isInHistory, openIndex])
 
   const getOrigin = useCallback((): Box | null => {
