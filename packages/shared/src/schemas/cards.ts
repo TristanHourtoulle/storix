@@ -55,6 +55,24 @@ export const listCardsQuerySchema = z.object({
 
 export const copyVariantSchema = z.enum(COPY_VARIANTS)
 
+export const stackEntrySchema = z.object({
+  variant: copyVariantSchema,
+  tierAtMint: cardTierSchema,
+  count: z.int().positive(),
+})
+
+export const promotionActionSchema = z.object({
+  from: cardTierSchema,
+  to: cardTierSchema.nullable(),
+  cost: z.int().min(0).nullable(),
+  copiesRequired: z.int().positive(),
+  copiesAvailable: z.int().min(0),
+  allowed: z.boolean(),
+  reason: z.enum(['not_owned', 'max_tier', 'not_enough_copies', 'insufficient_dust']).nullable(),
+})
+
+export const promotedHolderSchema = z.object({ holder: cardPersonSchema, tier: cardTierSchema })
+
 export const ownedCopiesSchema = z.object({
   normal: cardTierSchema.nullable(),
   foil: cardTierSchema.nullable(),
@@ -181,3 +199,6 @@ export type ViewerCardDetail = z.infer<typeof viewerCardDetailSchema>
 export type ReactionCounts = z.infer<typeof reactionCountsSchema>
 export type HiddenCardDetail = z.infer<typeof hiddenCardDetailSchema>
 export type TaggedCard = z.infer<typeof taggedCardSchema>
+export type StackEntryView = z.infer<typeof stackEntrySchema>
+export type PromotionAction = z.infer<typeof promotionActionSchema>
+export type PromotedHolder = z.infer<typeof promotedHolderSchema>
