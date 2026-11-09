@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useCanGoBack, useNavigate, useRouter } from '@tanstack/react-router'
 import type { UploadDraft } from '@storix/shared'
 import { fitShots, shotStripStatus, type ShotChip } from '@storix/shared/domain'
@@ -29,16 +29,15 @@ export interface CameraStartProps {
   drafts: readonly UploadDraft[]
 }
 
-interface ContinueAttempt {
-  overflowBefore: DraftOverflow | null
-}
-
 function chipTone(chip: ShotChip): string {
   if (chip.kind === 'batch') return 'text-tier-legendary'
   return chip.left === 0 ? 'text-danger' : 'text-ink-2'
 }
 
-/** The camera-first start screen of the add flow: shutter, Galerie, film strip and "Continuer". */
+/**
+ * The camera-first start screen of the add flow: shutter, Galerie, film strip and "Continuer".
+ * "Continuer" never hands the session files it would reject outright, so the screen always switches.
+ */
 export function CameraStart({ leagueId, session, drafts }: CameraStartProps) {
   const quota = useUploadQuota(leagueId)
   const strip = useShotStrip()
@@ -48,17 +47,12 @@ export function CameraStart({ leagueId, session, drafts }: CameraStartProps) {
     shotCount: strip.shots.length,
   })
   const [stripOverflow, setStripOverflow] = useState<DraftOverflow | null>(null)
-  const [attempt, setAttempt] = useState<ContinueAttempt | null>(null)
+  const [isContinuing, setIsContinuing] = useState(false)
+  const isContinuingRef = useRef(false)
   const canGoBack = useCanGoBack()
   const router = useRouter()
   const navigate = useNavigate()
   const { cards, overflow: sessionOverflow } = session.state
-  const wasRejected =
-    attempt !== null &&
-    cards.length === 0 &&
-    sessionOverflow !== null &&
-    sessionOverflow !== attempt.overflowBefore
-  const isContinuing = attempt !== null && !wasRejected
   const guard = useShotLeaveGuard(strip.shots.length > 0 && !isContinuing)
   const overflow = sessionOverflow ?? stripOverflow
 
@@ -70,11 +64,22 @@ export function CameraStart({ leagueId, session, drafts }: CameraStartProps) {
     )
   }
 
-  const handleContinue = (): void => {
-    if (isContinuing) return
-    setAttempt({ overflowBefore: sessionOverflow })
+  const handleRemove = (id: string): void => {
+    strip.remove(id)
+    setStripOverflow(null)
+  }
+
+  const handleContinue = async (): Promise<void> => {
+    if (isContinuingRef.current) return
     const files = strip.files()
     const shouldResume = cards.length === 0 && drafts.length > 0
+    if (!shouldResume && !quota.unlimited && quota.remaining === 0) {
+      setStripOverflow({ kind: 'dailyQuota', skipped: files.length, accepted: 0 })
+      return
+    }
+    isContinuingRef.current = true
+    setIsContinuing(true)
+    await strip.drain()
     if (shouldResume) session.resume([...drafts])
     const stacked = shouldResume && quota.unlimited ? drafts.length : 0
     if (files.length > 0) void session.add(files, stacked)
@@ -110,13 +115,13 @@ export function CameraStart({ leagueId, session, drafts }: CameraStartProps) {
         />
         <ShutterRow isDisabled={!status.canShoot} onPick={handlePick} />
       </div>
-      <FilmStrip drafts={drafts} shots={strip.shots} onRemove={strip.remove} />
+      <FilmStrip drafts={drafts} shots={strip.shots} onRemove={handleRemove} />
       <footer className="-mx-4 px-4 pt-2.5 shadow-[inset_0_1px_0_var(--color-line-nav)]">
         <Button
           variant="primary"
           block
           disabled={status.continueCount === 0 || isContinuing}
-          onClick={handleContinue}
+          onClick={() => void handleContinue()}
         >
           {continueLabel(status.continueCount)}
         </Button>

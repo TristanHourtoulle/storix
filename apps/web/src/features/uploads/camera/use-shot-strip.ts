@@ -15,6 +15,7 @@ export interface ShotStrip {
   add(files: readonly File[]): void
   remove(id: string): void
   files(): File[]
+  drain(): Promise<void>
 }
 
 function patchShot(shots: readonly Shot[], id: string, patch: Partial<Shot>): readonly Shot[] {
@@ -28,6 +29,7 @@ export function useShotStrip(): ShotStrip {
   const urlsRef = useRef<ReadonlyMap<string, string>>(new Map())
   const removedRef = useRef<ReadonlySet<string>>(new Set())
   const queueRef = useRef<Promise<void>>(Promise.resolve())
+  const isDrainedRef = useRef(false)
 
   useEffect(() => {
     isMountedRef.current = true
@@ -39,7 +41,8 @@ export function useShotStrip(): ShotStrip {
   }, [])
 
   const isGone = useCallback(
-    (id: string): boolean => !isMountedRef.current || removedRef.current.has(id),
+    (id: string): boolean =>
+      !isMountedRef.current || isDrainedRef.current || removedRef.current.has(id),
     [],
   )
 
@@ -96,5 +99,10 @@ export function useShotStrip(): ShotStrip {
 
   const files = useCallback((): File[] => shots.map((shot) => shot.file), [shots])
 
-  return useMemo(() => ({ shots, add, remove, files }), [shots, add, remove, files])
+  const drain = useCallback((): Promise<void> => {
+    isDrainedRef.current = true
+    return queueRef.current
+  }, [])
+
+  return useMemo(() => ({ shots, add, remove, files, drain }), [shots, add, remove, files, drain])
 }

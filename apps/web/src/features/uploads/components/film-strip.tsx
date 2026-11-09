@@ -15,15 +15,16 @@ const TILE = 'relative block aspect-[63/88] w-11 flex-none rounded-thumb'
 
 function DraftTile({ draft, index }: { draft: UploadDraft; index: number }) {
   const { media } = draft
+  const src = media?.image.webp[0]?.url
   return (
     <span
       role="img"
       aria-label={`Brouillon, carte ${index}`}
       className={`${TILE} overflow-hidden bg-surface-2 ring-2 ring-tier-legendary`}
     >
-      {media ? (
+      {media && src ? (
         <CroppedImage
-          src={media.image.webp[0]?.url ?? ''}
+          src={src}
           image={media.image}
           imageSize={{ width: media.width, height: media.height }}
           crop={draft.crop}
@@ -40,7 +41,11 @@ function ShotTile({ shot, index, onRemove }: { shot: Shot; index: number; onRemo
   const placeholder = shot.hasThumbFailed ? 'bg-surface-2' : 'animate-pulse bg-surface-2'
   return (
     <span className={TILE}>
-      <span className="absolute inset-0 overflow-hidden rounded-thumb">
+      <span
+        role="img"
+        aria-label={`Prise ${index}`}
+        className="absolute inset-0 overflow-hidden rounded-thumb"
+      >
         {shot.thumbUrl ? (
           <img src={shot.thumbUrl} alt="" className="size-full object-cover" />
         ) : (
