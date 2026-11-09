@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { OwnedCardDetail } from '@storix/shared'
 import { Avatar } from '@/components/ui/avatar'
@@ -9,7 +9,7 @@ import { userMessage } from '@/features/errors/user-message'
 import { useWallet } from '@/features/game/use-wallet'
 import { leagueDetailQueryOptions } from '@/features/leagues/leagues.queries'
 import { ShareSheet } from '@/features/share/components/share-sheet'
-import { subjectFromCardDetail } from '@/features/share/share-subject'
+import { subjectFromCardDetail, type ShareSubject } from '@/features/share/share-subject'
 import { useCardMutations } from '../use-card-mutations'
 import { useHoloTilt } from '../use-holo-tilt'
 import { useReactions } from '../use-reactions'
@@ -36,12 +36,8 @@ interface CardDetailProps {
 export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps) {
   const { ref, needsMotionPermission, isMotionDenied, requestMotionPermission } = useHoloTilt()
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [isSharing, setIsSharing] = useState(false)
+  const [shareSubject, setShareSubject] = useState<ShareSubject | null>(null)
   const leagueName = useQuery(leagueDetailQueryOptions(leagueId)).data?.name ?? ''
-  const shareSubject = useMemo(
-    () => subjectFromCardDetail(card, meId, leagueName),
-    [card, meId, leagueName],
-  )
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
   const reactions = useReactions(leagueId, card.id)
   const avatars = useMemberAvatars(leagueId)
@@ -129,11 +125,16 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
         canReact={card.canReact}
         onToggle={reactions.toggle}
       />
-      <Button variant="ghost" onClick={() => setIsSharing(true)}>
+      <Button
+        variant="ghost"
+        onClick={() => setShareSubject(subjectFromCardDetail(card, meId, leagueName))}
+      >
         <Icon name="share" className="size-5" />
         Partager
       </Button>
-      {isSharing ? <ShareSheet subject={shareSubject} onClose={() => setIsSharing(false)} /> : null}
+      {shareSubject ? (
+        <ShareSheet subject={shareSubject} onClose={() => setShareSubject(null)} />
+      ) : null}
       {card.canWithdraw ? (
         <Button variant="ghost" onClick={onWithdraw}>
           Retirer cette photo
