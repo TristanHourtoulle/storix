@@ -48,6 +48,13 @@ describe('collection visit', () => {
     expect(newCardIds([{ id: 'first', discoveredAt: 1 }], next)).toEqual(['first'])
   })
 
+  it('close with an unknown newest date keeps the visit open', () => {
+    const open = openCollectionVisit(EMPTY_COLLECTION_VISIT)
+    expect(closeCollectionVisit(open, undefined)).toBe(open)
+    const reopened = openCollectionVisit(closeCollectionVisit(open, undefined))
+    expect(newCardIds([{ id: 'a', discoveredAt: 5 }], reopened)).toEqual([])
+  })
+
   it('close is a no-op when not open', () => {
     const state = visited(50)
     expect(closeCollectionVisit(state, 90)).toBe(state)

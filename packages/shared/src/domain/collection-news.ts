@@ -41,13 +41,14 @@ export function openCollectionVisit(state: CollectionVisitState): CollectionVisi
 
 /**
  * Closes an open visit, anchoring `seenThroughAt` to the newest server discovery date, never below
- * its previous value, and to 0 when the viewer owns no card yet.
+ * its previous value, and to 0 when the viewer owns no card yet (`null`). An unknown newest date
+ * (`undefined`, the latest discoveries are not loaded) keeps the visit open.
  */
 export function closeCollectionVisit(
   state: CollectionVisitState,
-  newestDiscovered: number | null,
+  newestDiscovered: number | null | undefined,
 ): CollectionVisitState {
-  if (!state.isOpen) return state
+  if (!state.isOpen || newestDiscovered === undefined) return state
   const anchors = [state.seenThroughAt, newestDiscovered].filter((value) => value !== null)
   return { ...state, isOpen: false, seenThroughAt: anchors.length === 0 ? 0 : Math.max(...anchors) }
 }
