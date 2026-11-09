@@ -94,7 +94,6 @@ export async function lockOwnedCopies(
       variant: cardCopies.variant,
       tierAtMint: cardCopies.tierAtMint,
       promotedTier: cardCopies.promotedTier,
-      createdAt: cardCopies.createdAt,
     })
     .from(cardCopies)
     .where(
