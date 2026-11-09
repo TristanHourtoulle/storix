@@ -4,7 +4,7 @@ import type { UploadQuotaStatus } from './uploads'
 export type ShotChip =
   { kind: 'places'; left: number } | { kind: 'batch'; left: number; max: number }
 
-export type ShotHeadline = 'first' | 'quotaFull' | 'batchFull' | 'default'
+export type ShotBlock = 'quota' | 'batch'
 
 export interface ShotStripInput {
   quota: UploadQuotaStatus
@@ -17,13 +17,7 @@ export interface ShotStripStatus {
   chip: ShotChip
   canShoot: boolean
   continueCount: number
-  headline: ShotHeadline
-}
-
-function headlineOf(input: ShotStripInput, left: number): ShotHeadline {
-  if (left === 0) return input.quota.unlimited ? 'batchFull' : 'quotaFull'
-  const isFirst = input.quota.used === 0 && input.draftCount === 0 && input.shotCount === 0
-  return isFirst ? 'first' : 'default'
+  block: ShotBlock | null
 }
 
 /** Derives what the camera start screen can still take and shows, from the quota, drafts and shots. */
@@ -40,7 +34,7 @@ export function shotStripStatus(input: ShotStripInput): ShotStripStatus {
     chip,
     canShoot: left > 0,
     continueCount: draftCount + shotCount,
-    headline: headlineOf(input, left),
+    block: left > 0 ? null : quota.unlimited ? 'batch' : 'quota',
   }
 }
 

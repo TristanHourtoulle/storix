@@ -1,4 +1,4 @@
-import type { ShotChip, ShotHeadline } from '@storix/shared/domain'
+import type { ShotBlock, ShotChip } from '@storix/shared/domain'
 import { UNLIMITED_BATCH_SIZE, type DraftOverflow } from './draft-capacity'
 
 /** `"{count} {singular|plural}"`, French style: 0 and 1 take the singular. */
@@ -15,13 +15,6 @@ export function overflowMessage({ kind, skipped, accepted }: DraftOverflow): str
     : `Il ne te restait ${accepted === 1 ? "qu'une photo" : `que ${accepted} photos`} aujourd'hui, ${ignored}.`
 }
 
-const SHOT_HEADLINES: Record<ShotHeadline, string> = {
-  first: 'Ta première carte se prend ici',
-  quotaFull: 'Limite atteinte pour 24 h',
-  batchFull: '30 photos max par envoi',
-  default: 'Cadre comme une carte',
-}
-
 /** The camera screen quota chip: "{n} places" for a member, "{left} / 30 max" for an admin. */
 export function shotChipLabel(chip: ShotChip): string {
   return chip.kind === 'places'
@@ -29,17 +22,24 @@ export function shotChipLabel(chip: ShotChip): string {
     : `${chip.left} / ${chip.max} max`
 }
 
-/** The camera screen headline. */
-export function shotHeadline(headline: ShotHeadline): string {
-  return SHOT_HEADLINES[headline]
-}
-
-/** The camera screen line under the headline. */
-export function shotBody(headline: ShotHeadline, hasDrafts: boolean): string {
-  if (headline !== 'quotaFull') {
-    return "Le déclencheur ouvre l'appareil photo. Tu recadres ensuite dans la pile."
+/** The in-frame notice when no shot fits (V13), or null. */
+export function shotBlockedNotice(
+  block: ShotBlock | null,
+  hasDrafts: boolean,
+): { title: string; body: string } | null {
+  if (block === 'batch') {
+    return {
+      title: `${UNLIMITED_BATCH_SIZE} photos max par envoi`,
+      body: 'Envoie celles-ci, puis reviens pour la suite.',
+    }
   }
-  return `Des places se libèrent au fil des 24 h.${hasDrafts ? ' Ton brouillon reste publiable.' : ''}`
+  if (block === 'quota') {
+    return {
+      title: 'Limite atteinte pour 24 h',
+      body: `Des places se libèrent au fil des 24 h.${hasDrafts ? ' Ton brouillon reste publiable.' : ''}`,
+    }
+  }
+  return null
 }
 
 /** "Continuer avec {n} photos", or "Continuer" when nothing is in the strip. */

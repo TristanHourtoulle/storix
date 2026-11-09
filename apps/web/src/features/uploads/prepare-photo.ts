@@ -1,6 +1,7 @@
 import { CLIENT_MAX_EDGE_PX, resolveCaptureDate } from '@storix/shared'
 import { parse } from 'exifr/dist/lite.esm.mjs'
 import { logger } from '@/lib/logger'
+import { viewfinderCaptureDate } from './camera/capture'
 import { encodeScaledJpeg } from './decode-image'
 
 export interface PreparedPhoto {
@@ -37,7 +38,7 @@ async function readCaptureDate(file: File): Promise<string | null> {
 
 /** Reads the capture date, then re-encodes the photo as an upright JPEG capped at CLIENT_MAX_EDGE_PX. */
 export async function preparePhoto(file: File): Promise<PreparedPhoto> {
-  const capturedAt = await readCaptureDate(file)
+  const capturedAt = (await readCaptureDate(file)) ?? viewfinderCaptureDate(file)
   const { blob, width, height } = await encodeScaledJpeg(file, CLIENT_MAX_EDGE_PX)
   return { blob, width, height, capturedAt, previewUrl: URL.createObjectURL(blob) }
 }

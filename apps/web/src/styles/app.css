@@ -53,6 +53,30 @@
       background-position: -110% 0;
     }
   }
+  --animate-vf-blink: vf-blink 160ms ease-out forwards;
+  @keyframes vf-blink {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  --animate-vf-ring: vf-ring 700ms ease-out forwards;
+  @keyframes vf-ring {
+    0% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.35);
+    }
+    60% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
 }
 
 @layer base {
