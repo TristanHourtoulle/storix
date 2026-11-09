@@ -67,7 +67,11 @@ export function createCardsService({ db, signer, clock }: CardsServiceDeps): Car
         cards: page.map((row) => toCollectionCard(row, signer)),
         nextCursor:
           rows.length > query.limit && last !== undefined
-            ? encodeCollectionCursor({ tier: displayTier(last), number: last.number })
+            ? encodeCollectionCursor({
+                kind: 'rarity',
+                tier: displayTier(last),
+                number: last.number,
+              })
             : null,
         total: counts.total,
         ownedCount: counts.owned,

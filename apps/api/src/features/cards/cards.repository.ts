@@ -164,7 +164,7 @@ function afterCursor(
   owned: ReturnType<typeof viewerCopies>,
   cursor: CollectionCursor | undefined,
 ): SQL | undefined {
-  if (cursor === undefined) return undefined
+  if (cursor?.kind !== 'rarity') return undefined
   return sql`(${displayTierOf(owned)}, ${cards.number}) < (${cursor.tier}::${sql.identifier(cardTier.enumName)}, ${cursor.number})`
 }
 
