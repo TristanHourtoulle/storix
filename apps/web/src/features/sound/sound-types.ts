@@ -8,6 +8,7 @@ export type SoundRequest =
   | { name: 'slam'; index: number }
   | { name: 'aura'; level: number; duration: number }
   | { name: 'flip' }
+  | { name: 'flipLight' }
   | { name: 'stamp'; level: number }
   | { name: 'coin' }
   | { name: 'revealAll' }
@@ -35,6 +36,7 @@ export const SOUND_CATEGORY: Readonly<Record<SoundName, SoundCategory>> = {
   slam: 'booster',
   aura: 'booster',
   flip: 'booster',
+  flipLight: 'booster',
   stamp: 'booster',
   coin: 'booster',
   revealAll: 'booster',

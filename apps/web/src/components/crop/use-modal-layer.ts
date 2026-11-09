@@ -1,6 +1,16 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 
-const FOCUSABLE = 'button:not(:disabled), input:not(:disabled), [tabindex]:not([tabindex="-1"])'
+const FOCUSABLE = [
+  'a[href]',
+  'area[href]',
+  'button:not(:disabled)',
+  'input:not(:disabled)',
+  'select:not(:disabled)',
+  'textarea:not(:disabled)',
+  'summary',
+  '[contenteditable]:not([contenteditable="false"])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ')
 
 interface ModalLayer {
   container: HTMLElement
@@ -8,8 +18,12 @@ interface ModalLayer {
   refocus: () => void
 }
 
+let layerStack: readonly RefObject<HTMLDivElement | null>[] = []
+
 function trapTab(layer: HTMLElement, event: KeyboardEvent): void {
-  const focusables = [...layer.querySelectorAll<HTMLElement>(FOCUSABLE)]
+  const focusables = [...layer.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
+    (element) => element.tabIndex >= 0 && element.closest('[inert]') === null,
+  )
   const first = focusables[0]
   const last = focusables[focusables.length - 1]
   event.preventDefault()
@@ -70,9 +84,10 @@ export function useModalLayer(onCancel: () => void): ModalLayer {
   useEffect(() => {
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
     layerRef.current?.focus()
+    layerStack = [...layerStack, layerRef]
     const handleKeyDown = (event: KeyboardEvent): void => {
       const layer = layerRef.current
-      if (!layer) return
+      if (!layer || layerStack.at(-1) !== layerRef) return
       if (event.key === 'Escape') {
         event.preventDefault()
         event.stopPropagation()
@@ -84,6 +99,7 @@ export function useModalLayer(onCancel: () => void): ModalLayer {
     document.addEventListener('keydown', handleKeyDown, true)
     return () => {
       document.removeEventListener('keydown', handleKeyDown, true)
+      layerStack = layerStack.filter((entry) => entry !== layerRef)
       previous?.focus()
     }
   }, [])

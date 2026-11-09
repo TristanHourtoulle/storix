@@ -119,6 +119,8 @@ export function renderSound(v: Voice, request: SoundRequest): number {
       return booster.aura(v, request.level, request.duration)
     case 'flip':
       return booster.flip(v)
+    case 'flipLight':
+      return booster.flip(v, 0.45)
     case 'stamp':
       return booster.stamp(v, request.level)
     case 'coin':

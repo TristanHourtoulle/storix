@@ -163,11 +163,11 @@ export function stamp(v: Voice, l: number): number {
 }
 
 /** Paper card flip: high-passed swish, a crisp click at turnover and a faint landing tap. */
-export function flip(v: Voice): number {
-  v.noise({ d: 0.11, g: 0.2, a: 0.006, f: 2000, f2: 6000, q: 1.1, hp: 1500 })
-  v.noise({ t: 0.07, d: 0.012, g: 0.28, a: 0.001, type: 'highpass', f: 4500 })
-  v.tone({ f: 3400, t: 0.07, d: 0.012, type: 'triangle', g: 0.03, a: 0.001 })
-  v.noise({ t: 0.15, d: 0.03, g: 0.06, a: 0.002, f: 2600, q: 2.5, hp: 1500 })
+export function flip(v: Voice, gain = 1): number {
+  v.noise({ d: 0.11, g: 0.2 * gain, a: 0.006, f: 2000, f2: 6000, q: 1.1, hp: 1500 })
+  v.noise({ t: 0.07, d: 0.012, g: 0.28 * gain, a: 0.001, type: 'highpass', f: 4500 })
+  v.tone({ f: 3400, t: 0.07, d: 0.012, type: 'triangle', g: 0.03 * gain, a: 0.001 })
+  v.noise({ t: 0.15, d: 0.03, g: 0.06 * gain, a: 0.002, f: 2600, q: 2.5, hp: 1500 })
   return 0.2
 }
 

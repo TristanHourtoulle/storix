@@ -1,5 +1,5 @@
 import type { BoosterPull } from '@storix/shared'
-import { CardFace } from '@/features/cards/components/card-face'
+import { CardFace, type CardFaceProps } from '@/features/cards/components/card-face'
 import { CardImage } from '@/features/cards/components/card-image'
 import { tierKey } from '../arcade/tiers'
 
@@ -22,15 +22,23 @@ export function CardBackArt() {
 
 interface PulledFaceProps {
   pull: BoosterPull
+  size?: CardFaceProps['size']
+  imageSizes?: string
   isHighPriority?: boolean
   registerImage?: (img: HTMLImageElement | null) => void
 }
 
-export function PulledFace({ pull, isHighPriority = false, registerImage }: PulledFaceProps) {
+export function PulledFace({
+  pull,
+  size = 'lg',
+  imageSizes = '220px',
+  isHighPriority = false,
+  registerImage,
+}: PulledFaceProps) {
   const { card } = pull
   return (
     <CardFace
-      size="lg"
+      size={size}
       title={card.title}
       tier={card.tier}
       isProvisional={false}
@@ -41,7 +49,7 @@ export function PulledFace({ pull, isHighPriority = false, registerImage }: Pull
         thumbhash={card.thumbhash}
         width={card.width}
         height={card.height}
-        sizes="220px"
+        sizes={imageSizes}
         isEager
         isHighPriority={isHighPriority}
         onImageRef={registerImage}

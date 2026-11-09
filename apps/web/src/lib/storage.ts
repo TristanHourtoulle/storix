@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
   soundSettings: 'storix.soundSettings',
   pushPromptDismissed: 'storix.pushPromptDismissed',
   pushSavedDevice: 'storix.pushSavedDevice',
+  shareStyle: 'storix.shareStyle',
   passkeyPromptDismissed: (userId: string): string => `storix.passkeyPromptDismissed.${userId}`,
 } as const
 

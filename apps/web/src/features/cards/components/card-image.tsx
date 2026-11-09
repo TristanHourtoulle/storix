@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import type { ImageSet, ImageSource } from '@storix/shared'
+import { largestSource } from '../image-source'
 import { useThumbhashUrl } from '../use-thumbhash-url'
 
 interface CardImageProps {
@@ -15,13 +16,6 @@ interface CardImageProps {
 
 function toSrcSet(sources: ImageSource[]): string {
   return sources.map((source) => `${source.url} ${source.width}w`).join(', ')
-}
-
-function largest(sources: ImageSource[]): ImageSource | undefined {
-  return sources.reduce<ImageSource | undefined>(
-    (best, source) => (best && best.width >= source.width ? best : source),
-    undefined,
-  )
 }
 
 export function CardImage({
@@ -44,7 +38,7 @@ export function CardImage({
     [onImageRef],
   )
   const placeholder = useThumbhashUrl(thumbhash)
-  const fallback = largest(image.webp)
+  const fallback = largestSource(image.webp)
 
   return (
     <div
