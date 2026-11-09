@@ -8,6 +8,7 @@ export interface OwnedCopyRow {
   variant: CopyVariant
   tierAtMint: CardTier
   promotedTier: CardTier | null
+  createdAt: Date
 }
 
 export interface DeletedCopy {
@@ -52,6 +53,7 @@ export async function listOwnedCopies(
       variant: cardCopies.variant,
       tierAtMint: cardCopies.tierAtMint,
       promotedTier: cardCopies.promotedTier,
+      createdAt: cardCopies.createdAt,
     })
     .from(cardCopies)
     .where(
@@ -92,6 +94,7 @@ export async function lockOwnedCopies(
       variant: cardCopies.variant,
       tierAtMint: cardCopies.tierAtMint,
       promotedTier: cardCopies.promotedTier,
+      createdAt: cardCopies.createdAt,
     })
     .from(cardCopies)
     .where(

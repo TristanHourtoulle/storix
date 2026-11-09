@@ -97,6 +97,7 @@ export const ownedCardSummarySchema = cardSummarySchema.extend({
   copies: ownedCopiesSchema,
   isPromoted: z.boolean(),
   stackCount: z.int().min(0),
+  discoveredAt: isoDateSchema,
 })
 
 export const lockedCardSummarySchema = z.strictObject({
@@ -122,6 +123,7 @@ export const hiddenCardSummarySchema = z.strictObject({
   width: z.int().positive(),
   height: z.int().positive(),
   copies: ownedCopiesSchema,
+  discoveredAt: isoDateSchema.nullable(),
 })
 
 export const collectionCardSchema = z.discriminatedUnion('kind', [

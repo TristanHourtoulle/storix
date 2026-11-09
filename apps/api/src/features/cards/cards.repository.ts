@@ -8,8 +8,13 @@ import {
   user,
   type DbExecutor,
 } from '@storix/db'
-import { mediaVariantsSchema, type CardTier, type CollectionCursor } from '@storix/shared'
-import { and, desc, eq, isNotNull, or, sql, type SQL } from 'drizzle-orm'
+import {
+  mediaVariantsSchema,
+  type CardTier,
+  type CollectionCursor,
+  type CollectionSort,
+} from '@storix/shared'
+import { and, desc, eq, isNotNull, isNull, lt, or, sql, type SQL } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import {
   authorIsFormerMember,
@@ -37,6 +42,7 @@ export interface CollectionRow {
   normalPromotedTier: CardTier | null
   foilPromotedTier: CardTier | null
   stackCount: number
+  firstCopyAt: Date | null
 }
 
 export interface CardTaggedRow {
@@ -88,6 +94,9 @@ function viewerCopies(db: DbExecutor, input: { leagueId: string; viewerId: strin
         sql<CardTier | null>`max(${cardCopies.promotedTier}) filter (where ${cardCopies.variant} = 'foil')`.as(
           'foil_promoted_tier',
         ),
+      firstCopyAt: sql<Date | null>`date_trunc('milliseconds', min(${cardCopies.createdAt}))`
+        .mapWith(cardCopies.createdAt)
+        .as('first_copy_at'),
     })
     .from(cardCopies)
     .where(and(eq(cardCopies.leagueId, input.leagueId), eq(cardCopies.ownerId, input.viewerId)))
@@ -133,6 +142,7 @@ function collectionColumns(
     normalPromotedTier: owned.normalPromotedTier,
     foilPromotedTier: owned.foilPromotedTier,
     stackCount: sql<number>`coalesce(${stacked.stackCount}, 0)::int`,
+    firstCopyAt: owned.firstCopyAt,
   }
 }
 
@@ -160,12 +170,45 @@ function parseVariants<T extends { variants: unknown }>(
   return { ...row, variants: mediaVariantsSchema.parse(row.variants) }
 }
 
+function tierParam(tier: CardTier): SQL {
+  return sql`${tier}::${sql.identifier(cardTier.enumName)}`
+}
+
 function afterCursor(
   owned: ReturnType<typeof viewerCopies>,
   cursor: CollectionCursor | undefined,
 ): SQL | undefined {
-  if (cursor?.kind !== 'rarity') return undefined
-  return sql`(${displayTierOf(owned)}, ${cards.number}) < (${cursor.tier}::${sql.identifier(cardTier.enumName)}, ${cursor.number})`
+  if (cursor === undefined) return undefined
+  switch (cursor.kind) {
+    case 'rarity':
+      return sql`(${displayTierOf(owned)}, ${cards.number}) < (${tierParam(cursor.tier)}, ${cursor.number})`
+    case 'discovered': {
+      const iso = new Date(cursor.discoveredAt).toISOString()
+      return or(
+        isNull(owned.firstCopyAt),
+        sql`(${owned.firstCopyAt}, ${displayTierOf(owned)}, ${cards.number}) < (${iso}::timestamptz, ${tierParam(cursor.tier)}, ${cursor.number})`,
+      )
+    }
+    case 'undiscovered':
+      return and(isNull(owned.firstCopyAt), lt(cards.number, cursor.number))
+    case 'number':
+      return lt(cards.number, cursor.number)
+  }
+}
+
+function orderFor(sort: CollectionSort, owned: ReturnType<typeof viewerCopies>): SQL[] {
+  switch (sort) {
+    case 'rarity':
+      return [desc(displayTierOf(owned)), desc(cards.number)]
+    case 'discovery':
+      return [
+        sql`${owned.firstCopyAt} DESC NULLS LAST`,
+        sql`(CASE WHEN ${owned.cardId} IS NOT NULL THEN ${displayTierOf(owned)} END) DESC NULLS LAST`,
+        desc(cards.number),
+      ]
+    case 'number':
+      return [desc(cards.number)]
+  }
 }
 
 function activeOrOwnedHidden(owned: ReturnType<typeof viewerCopies>): SQL | undefined {
@@ -173,12 +216,14 @@ function activeOrOwnedHidden(owned: ReturnType<typeof viewerCopies>): SQL | unde
 }
 
 /**
- * Lists active cards, and hidden cards the viewer owns a copy of, with the viewer's copies,
- * rarest displayed tier first then newest number first, fetching `limit + 1` rows after the cursor.
+ * Lists active cards, and hidden cards the viewer owns a copy of, with the viewer's copies, fetching
+ * `limit + 1` rows after the cursor. `rarity` orders by displayed tier then number, `discovery` by
+ * the viewer's first copy (millisecond precision) then displayed tier then number with unowned
+ * cards last by number, and `number` by number, each newest or rarest first.
  */
 export async function listCollection(
   db: DbExecutor,
-  input: CollectionFilters & { after?: CollectionCursor; limit: number },
+  input: CollectionFilters & { sort: CollectionSort; after?: CollectionCursor; limit: number },
 ): Promise<CollectionRow[]> {
   const owned = viewerCopies(db, input)
   const stacked = viewerStacks(db, input)
@@ -196,7 +241,7 @@ export async function listCollection(
         afterCursor(owned, input.after),
       ),
     )
-    .orderBy(desc(displayTierOf(owned)), desc(cards.number))
+    .orderBy(...orderFor(input.sort, owned))
     .limit(input.limit + 1)
   return rows.map(parseVariants)
 }
