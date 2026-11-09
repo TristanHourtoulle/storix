@@ -2,6 +2,8 @@ import type { OwnedCardDetail } from '@storix/shared'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Notice } from '@/components/ui/notice'
+import { userMessage } from '@/features/errors/user-message'
+import { useWallet } from '@/features/game/use-wallet'
 import { useCardMutations } from '../use-card-mutations'
 import { useHoloTilt } from '../use-holo-tilt'
 import { useReactions } from '../use-reactions'
@@ -26,14 +28,17 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
   const { ref, needsMotionPermission, isMotionDenied, requestMotionPermission } = useHoloTilt()
   const reactions = useReactions(leagueId, card.id)
   const avatars = useMemberAvatars(leagueId)
-  const { recycle, upgradeToFoil } = useCardMutations(leagueId, card.id)
+  const { recycle, upgradeToFoil, promote, convertStack } = useCardMutations(leagueId, card.id)
+  const { data: wallet } = useWallet(leagueId)
   const isGold = card.displayTier === 'legendary' || card.displayTier === 'mythic'
   const hasFoil = card.copies.foil !== null
   const tagged = card.tagged
     .flatMap((person) => (person.displayUsername ? [person.displayUsername] : []))
     .join(', ')
   const copies = card.copiesInLeague
-  const hasFailed = recycle.isError || upgradeToFoil.isError || reactions.isError
+  const actionError = recycle.error ?? upgradeToFoil.error
+  const isBusy =
+    recycle.isPending || upgradeToFoil.isPending || promote.isPending || convertStack.isPending
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -104,16 +109,29 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
       />
       <CardActions
         actions={card.actions}
-        isBusy={recycle.isPending || upgradeToFoil.isPending}
+        leagueTier={card.tier}
+        dust={wallet?.dust ?? 0}
+        isBusy={isBusy}
+        promoteError={promote.error ? userMessage(promote.error) : null}
+        convertError={convertStack.error ? userMessage(convertStack.error) : null}
         onRecycle={(variant) => recycle.mutate(variant)}
         onUpgrade={() => upgradeToFoil.mutate()}
+        onPromote={(from, onDone) => promote.mutate(from, { onSuccess: onDone })}
+        onConvert={(body, onDone) => convertStack.mutate(body, { onSuccess: onDone })}
+        onSheetOpen={() => {
+          promote.reset()
+          convertStack.reset()
+        }}
       />
       {card.canWithdraw ? (
         <Button variant="ghost" onClick={onWithdraw}>
           Retirer cette photo
         </Button>
       ) : null}
-      {hasFailed ? <Notice tone="error">Action impossible pour le moment. Réessaie.</Notice> : null}
+      {actionError ? <Notice tone="error">{userMessage(actionError)}</Notice> : null}
+      {!actionError && reactions.isError ? (
+        <Notice tone="error">Action impossible pour le moment. Réessaie.</Notice>
+      ) : null}
     </div>
   )
 }

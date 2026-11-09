@@ -66,3 +66,49 @@
     gap: 8px;
   }
 }
+
+@layer components {
+  .sheet-step {
+    margin: 0;
+    font: 700 18px var(--font-display);
+    text-align: center;
+  }
+  .sheet-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .sheet-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 0;
+    font: 600 14px var(--font-display);
+    color: var(--color-ink-2);
+  }
+  .stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  .stepper-btn {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 14px;
+    font: 700 20px var(--font-display);
+    color: var(--color-ink);
+    background: var(--color-surface-2);
+    box-shadow: inset 0 0 0 1px var(--color-line-strong);
+    cursor: pointer;
+  }
+  .stepper-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .stepper-value {
+    min-width: 40px;
+    font: 700 20px var(--font-display);
+    text-align: center;
+  }
+}
