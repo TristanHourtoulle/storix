@@ -151,6 +151,8 @@ export function CardActions({
         stack={actions.stack}
         isBusy={isBusy}
         error={convertError}
+        startsAtMax={false}
+        promotionTarget={null}
         onConfirm={(body) => submit((callbacks) => onConvert(body, callbacks))}
         onClose={close}
       />

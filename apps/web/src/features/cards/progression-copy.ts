@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import type { CardProgression, CardTier } from '@storix/shared'
+import type { CardProgression, CardTier, OwnedCardDetail } from '@storix/shared'
 import { TIER_COLOR_VAR, TIER_LABELS } from './tier-labels'
 
 type StepProgression = Exclude<CardProgression, { kind: 'max' }>
@@ -69,4 +69,18 @@ export function maxedLine(stackCount: number, convertAllDust: number): string {
   if (stackCount === 0) return 'Plus rien à améliorer sur cette carte.'
   if (stackCount === 1) return `Ton doublon vaut ${convertAllDust} paillettes.`
   return `Tes ${stackCount} doublons valent ${convertAllDust} paillettes.`
+}
+
+/** Returns why the foil upgrade is blocked, or null when it can be confirmed. */
+export function foilBlockReason(
+  foil: OwnedCardDetail['actions']['foilUpgrade'],
+  dust: number | null,
+): string | null {
+  if (foil.reason === 'foil_owned') return 'Tu as déjà la foil'
+  if (foil.reason === 'no_normal') return "Tu n'as pas d'exemplaire normal"
+  const isShort = foil.reason === 'insufficient_dust' || (dust !== null && dust < foil.cost)
+  if (!isShort) return null
+  return dust === null
+    ? 'Il te manque des paillettes'
+    : `Il te manque ${foil.cost - dust} paillettes`
 }
