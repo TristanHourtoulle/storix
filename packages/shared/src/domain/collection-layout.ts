@@ -60,6 +60,9 @@ export function buildCollectionRows<T extends { id: string }, G extends string>(
     const first = items[start]
     if (group === undefined || first === undefined) return []
     const segment = items.slice(start, starts[index + 1] ?? items.length)
-    return [{ kind: 'header', group, key: `h:${group}:${first.id}` }, ...chunk<T, G>(segment, width)]
+    return [
+      { kind: 'header', group, key: `h:${group}:${first.id}` },
+      ...chunk<T, G>(segment, width),
+    ]
   })
 }
