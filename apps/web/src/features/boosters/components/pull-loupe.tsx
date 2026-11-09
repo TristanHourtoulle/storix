@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
 import { Link } from '@tanstack/react-router'
 import { loupeGesture, wrapIndex, type BoosterPull, type Box } from '@storix/shared'
-import { buttonClassName } from '@/components/ui/button'
+import { Button, buttonClassName } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
 import { CardFullscreen } from '@/features/cards/components/card-fullscreen'
+import { ShareSheet } from '@/features/share/components/share-sheet'
+import { subjectFromPulls } from '@/features/share/share-subject'
 import { playSound } from '@/features/sound/sound'
 import '@/styles/pull-loupe.css'
 import { pullCredit, pullLabel } from '../pull-label'
@@ -21,6 +23,8 @@ interface PullLoupeProps {
   getOrigin: () => Box | null
   isLeaving: boolean
   onLeft: () => void
+  openedAt: string
+  leagueName: string
 }
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
@@ -41,24 +45,32 @@ export function PullLoupe({
   getOrigin,
   isLeaving,
   onLeft,
+  openedAt,
+  leagueName,
 }: PullLoupeProps) {
   const [direction, setDirection] = useState<LoupeDirection | null>(null)
+  const [isSharing, setIsSharing] = useState(false)
   const [isReducedMotion] = useState(() => window.matchMedia(REDUCED_MOTION_QUERY).matches)
   const { flightRef, phase, isFading, leave } = useFlipFlight({ getOrigin, isReducedMotion, onLeft })
   const start = useRef<PointerStart | null>(null)
   const countRef = useRef<HTMLParagraphElement>(null)
   const pull = pulls[index]
   const count = pulls.length
+  const subject = useMemo(
+    () => (pull ? subjectFromPulls(pulls, index, openedAt, leagueName) : null),
+    [pull, pulls, index, openedAt, leagueName],
+  )
+  const closeShare = useCallback((): void => setIsSharing(false), [])
 
   const goTo = useCallback(
     (next: number, nextDirection: LoupeDirection): void => {
       const target = wrapIndex(next, count)
-      if (target === index || isLeaving || phase === 'entering') return
+      if (target === index || isLeaving || isSharing || phase === 'entering') return
       setDirection(nextDirection)
       playSound({ name: 'flipLight' })
       onIndexChange(target, nextDirection)
     },
-    [count, index, isLeaving, onIndexChange, phase],
+    [count, index, isLeaving, isSharing, onIndexChange, phase],
   )
 
   useEffect(() => {
@@ -154,6 +166,10 @@ export function PullLoupe({
         </div>
       ) : null}
       <div className="loupe-actions">
+        <Button variant="primary" sound="none" onClick={() => setIsSharing(true)}>
+          <Icon name="share" className="size-5" />
+          Partager
+        </Button>
         <Link
           to="/l/$leagueId/cards/$cardId"
           params={{ leagueId, cardId: pull.card.id }}
@@ -167,20 +183,23 @@ export function PullLoupe({
   )
 
   return (
-    <CardFullscreen
-      tier={pull.card.tier}
-      label="Cartes du booster"
-      hint={null}
-      className={`pull-loupe is-${phase}${isFading ? ' is-fading' : ''}`}
-      flightRef={flightRef}
-      header={header}
-      footer={footer}
-      stageHandlers={stageHandlers}
-      onClose={onRequestClose}
-    >
-      <div key={index} className={`loupe-card${direction ? ` slide-in-${direction}` : ''}`}>
-        <PulledFace pull={pull} size="showcase" imageSizes="min(84vw, 360px)" />
-      </div>
-    </CardFullscreen>
+    <>
+      <CardFullscreen
+        tier={pull.card.tier}
+        label="Cartes du booster"
+        hint={null}
+        className={`pull-loupe is-${phase}${isFading ? ' is-fading' : ''}`}
+        flightRef={flightRef}
+        header={header}
+        footer={footer}
+        stageHandlers={stageHandlers}
+        onClose={onRequestClose}
+      >
+        <div key={index} className={`loupe-card${direction ? ` slide-in-${direction}` : ''}`}>
+          <PulledFace pull={pull} size="showcase" imageSizes="min(84vw, 360px)" />
+        </div>
+      </CardFullscreen>
+      {isSharing && subject && !isLeaving ? <ShareSheet subject={subject} onClose={closeShare} /> : null}
+    </>
   )
 }

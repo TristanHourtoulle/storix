@@ -15,7 +15,7 @@ interface ArcadeSummaryProps {
   leagueName: string
 }
 
-export function ArcadeSummary({ leagueId, pulls }: ArcadeSummaryProps) {
+export function ArcadeSummary({ leagueId, pulls, openedAt, leagueName }: ArcadeSummaryProps) {
   const best = bestPullIndex(pulls)
   const bestPull = pulls[best]
   const heading = pulls.length > 1 ? `Tes ${pulls.length} cartes` : 'Ta carte'
@@ -135,6 +135,8 @@ export function ArcadeSummary({ leagueId, pulls }: ArcadeSummaryProps) {
           getOrigin={getOrigin}
           isLeaving={isLeaving}
           onLeft={handleLeft}
+          openedAt={openedAt}
+          leagueName={leagueName}
         />
       ) : null}
     </div>
