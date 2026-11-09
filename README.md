@@ -139,7 +139,7 @@ At startup the worker waits until `drizzle.__drizzle_migrations` holds at least 
 - Card object keys are content-hashed: `img/<league>/<sha256>/<size>.<format>`. Portrait keys are per upload and never re-written: `pic/<kind>/<owner>/<upload>/<size>.webp`.
 - Serving: `GET /media/{windowStart}/{hmac}/{objectKey}`. The HMAC-SHA256 covers the window and the key with `MEDIA_URL_SECRET`; windows are 24 h UTC and the current and previous ones are accepted (48 h at most). Successes are `public, max-age=<seconds until expiry>, immutable` with no cookie; errors (including a bad signature, `403`) are `no-store`.
 - CDN: the Railway CDN in front of the api caches `/media/*` per URL (`x-cache: HIT` from the second GET).
-- Service worker: media are cached under a key without the window and signature (`/media/img/...`, cache `storix-media-v1`), so a rotated URL still hits the cache. Card reads use NetworkFirst in `storix-api-v5`; every other `storix-api-*` cache is deleted on activation. `sw.js`, `index.html` and `manifest.webmanifest` are served `no-store`.
+- Service worker: media are cached under a key without the window and signature (`/media/img/...`, cache `storix-media-v1`), so a rotated URL still hits the cache. Card reads use NetworkFirst in `storix-api-v6`; every other `storix-api-*` cache is deleted on activation. `sw.js`, `index.html` and `manifest.webmanifest` are served `no-store`.
 
 ### Security
 
