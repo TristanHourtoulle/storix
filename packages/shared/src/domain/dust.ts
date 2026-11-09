@@ -142,16 +142,16 @@ export function craftDecision(input: {
   return { cost, allowed: true, reason: null }
 }
 
-/** Decides whether a member may upgrade their normal copy to foil, priced on that copy's tier at mint. */
+/** Decides whether a member may upgrade their normal copy to foil, priced on that copy's value tier. */
 export function foilUpgradeDecision(input: {
   currentTier: CardTier
-  normalTierAtMint: CardTier | null
+  normalValueTier: CardTier | null
   ownsFoil: boolean
   dust: number
 }): { cost: number; allowed: boolean; reason: FoilUpgradeBlock | null } {
-  const cost = foilUpgradeCost(input.normalTierAtMint ?? input.currentTier)
+  const cost = foilUpgradeCost(input.normalValueTier ?? input.currentTier)
   const block = (reason: FoilUpgradeBlock) => ({ cost, allowed: false, reason })
-  if (input.normalTierAtMint === null) return block('no_normal')
+  if (input.normalValueTier === null) return block('no_normal')
   if (input.ownsFoil) return block('foil_owned')
   if (input.dust < cost) return block('insufficient_dust')
   return { cost, allowed: true, reason: null }

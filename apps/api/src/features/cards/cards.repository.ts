@@ -1,4 +1,13 @@
-import { cardCopies, cards, cardTags, cardTier, media, user, type DbExecutor } from '@storix/db'
+import {
+  cardCopies,
+  cardCopyStacks,
+  cards,
+  cardTags,
+  cardTier,
+  media,
+  user,
+  type DbExecutor,
+} from '@storix/db'
 import { mediaVariantsSchema, type CardTier, type CollectionCursor } from '@storix/shared'
 import { and, desc, eq, isNotNull, or, sql, type SQL } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
@@ -25,6 +34,9 @@ export interface CollectionRow {
   variants: (typeof media.$inferSelect)['variants']
   normalTier: CardTier | null
   foilTier: CardTier | null
+  normalPromotedTier: CardTier | null
+  foilPromotedTier: CardTier | null
+  stackCount: number
 }
 
 export interface CardTaggedRow {
@@ -68,6 +80,14 @@ function viewerCopies(db: DbExecutor, input: { leagueId: string; viewerId: strin
         sql<CardTier | null>`max(${cardCopies.tierAtMint}) filter (where ${cardCopies.variant} = 'foil')`.as(
           'foil_tier',
         ),
+      normalPromotedTier:
+        sql<CardTier | null>`max(${cardCopies.promotedTier}) filter (where ${cardCopies.variant} = 'normal')`.as(
+          'normal_promoted_tier',
+        ),
+      foilPromotedTier:
+        sql<CardTier | null>`max(${cardCopies.promotedTier}) filter (where ${cardCopies.variant} = 'foil')`.as(
+          'foil_promoted_tier',
+        ),
     })
     .from(cardCopies)
     .where(and(eq(cardCopies.leagueId, input.leagueId), eq(cardCopies.ownerId, input.viewerId)))
@@ -75,7 +95,24 @@ function viewerCopies(db: DbExecutor, input: { leagueId: string; viewerId: strin
     .as('owned')
 }
 
-function collectionColumns(owned: ReturnType<typeof viewerCopies>) {
+function viewerStacks(db: DbExecutor, input: { leagueId: string; viewerId: string }) {
+  return db
+    .select({
+      cardId: cardCopyStacks.cardId,
+      stackCount: sql<number>`sum(${cardCopyStacks.count})::int`.as('stack_count'),
+    })
+    .from(cardCopyStacks)
+    .where(
+      and(eq(cardCopyStacks.leagueId, input.leagueId), eq(cardCopyStacks.ownerId, input.viewerId)),
+    )
+    .groupBy(cardCopyStacks.cardId)
+    .as('stacked')
+}
+
+function collectionColumns(
+  owned: ReturnType<typeof viewerCopies>,
+  stacked: ReturnType<typeof viewerStacks>,
+) {
   return {
     id: cards.id,
     number: cards.number,
@@ -93,11 +130,15 @@ function collectionColumns(owned: ReturnType<typeof viewerCopies>) {
     variants: media.variants,
     normalTier: owned.normalTier,
     foilTier: owned.foilTier,
+    normalPromotedTier: owned.normalPromotedTier,
+    foilPromotedTier: owned.foilPromotedTier,
+    stackCount: sql<number>`coalesce(${stacked.stackCount}, 0)::int`,
   }
 }
 
+/** Mirrors `personalDisplayTier`: a promoted copy never shows below the league tier. */
 function displayTierOf(owned: ReturnType<typeof viewerCopies>): SQL<CardTier> {
-  return sql<CardTier>`coalesce(greatest(${owned.normalTier}, ${owned.foilTier}), ${cards.tier})`
+  return sql<CardTier>`(CASE WHEN greatest(${owned.normalPromotedTier}, ${owned.foilPromotedTier}) IS NULL THEN coalesce(greatest(${owned.normalTier}, ${owned.foilTier}), ${cards.tier}) ELSE greatest(${owned.normalTier}, ${owned.foilTier}, ${owned.normalPromotedTier}, ${owned.foilPromotedTier}, ${cards.tier}) END)`
 }
 
 function collectionWhere(
@@ -140,13 +181,15 @@ export async function listCollection(
   input: CollectionFilters & { after?: CollectionCursor; limit: number },
 ): Promise<CollectionRow[]> {
   const owned = viewerCopies(db, input)
+  const stacked = viewerStacks(db, input)
   const rows = await db
-    .select(collectionColumns(owned))
+    .select(collectionColumns(owned, stacked))
     .from(cards)
     .innerJoin(media, eq(media.id, cards.mediaId))
     .leftJoin(user, eq(user.id, cards.authorId))
     .leftJoin(authorMembership, authorMembershipOn)
     .leftJoin(owned, eq(owned.cardId, cards.id))
+    .leftJoin(stacked, eq(stacked.cardId, cards.id))
     .where(
       and(
         collectionWhere(input, owned, activeOrOwnedHidden(owned)),
@@ -181,9 +224,10 @@ export async function findCardForViewer(
   input: { leagueId: string; cardId: string; viewerId: string },
 ): Promise<CardViewerRow | null> {
   const owned = viewerCopies(db, input)
+  const stacked = viewerStacks(db, input)
   const rows = await db
     .select({
-      ...collectionColumns(owned),
+      ...collectionColumns(owned, stacked),
       capturedAt: media.capturedAt,
       isCaptureDateValidated: media.isCaptureDateValidated,
       createdAt: cards.createdAt,
@@ -197,6 +241,7 @@ export async function findCardForViewer(
     .leftJoin(authorMembership, authorMembershipOn)
     .leftJoin(discoverer, eq(discoverer.id, cards.discoveredById))
     .leftJoin(owned, eq(owned.cardId, cards.id))
+    .leftJoin(stacked, eq(stacked.cardId, cards.id))
     .where(and(eq(cards.id, input.cardId), eq(cards.leagueId, input.leagueId)))
     .limit(1)
   const row = rows[0]

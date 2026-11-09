@@ -11,11 +11,19 @@ import {
 import { notFound } from '../../lib/errors'
 import type { MediaSigner } from '../../lib/media-signer'
 import { countCardCopies } from '../copies/copies.repository'
+import { listPromotedHolderCopies, listStackEntries } from '../copies/stacks.repository'
 import { findLeagueSettings } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
 import { countReactions } from '../reactions/reactions.repository'
 import { findWallet } from '../wallets/wallets.repository'
-import { displayTier, isOwned, isVisibleTo, toCardDetail, toCollectionCard } from './card-views'
+import {
+  displayTier,
+  isOwned,
+  isVisibleTo,
+  toCardDetail,
+  toCollectionCard,
+  toPromotedHolders,
+} from './card-views'
 import { countCollection, findCardForViewer, listCollection } from './cards.repository'
 
 const NO_REACTIONS: ReactionCounts = {
@@ -74,11 +82,15 @@ export function createCardsService({ db, signer, clock }: CardsServiceDeps): Car
       })
       if (row === null || !isVisibleTo(row)) throw notFound('Card not found')
       const owned = isOwned(row) && row.status === 'active'
-      const [settings, wallet, reactions, copiesInLeague] = await Promise.all([
+      const [settings, wallet, reactions, copiesInLeague, stack, holderRows] = await Promise.all([
         findLeagueSettings(db, m.leagueId),
         findWallet(db, m.leagueId, m.userId),
         owned ? countReactions(db, { cardId, viewerId: m.userId }) : NO_REACTIONS,
         owned ? countCardCopies(db, cardId) : 0,
+        owned
+          ? listStackEntries(db, { leagueId: m.leagueId, ownerId: m.userId, cardIds: [cardId] })
+          : [],
+        owned ? listPromotedHolderCopies(db, { cardId, excludeOwnerId: m.userId }) : [],
       ])
       return toCardDetail(row, {
         viewerId: m.userId,
@@ -88,6 +100,8 @@ export function createCardsService({ db, signer, clock }: CardsServiceDeps): Car
         reactions,
         copiesInLeague,
         delayMinutes: resolveLeagueSettings(settings).newCardDelayMinutes,
+        stack: stack.map(({ variant, tierAtMint, count }) => ({ variant, tierAtMint, count })),
+        promotedHolders: toPromotedHolders(holderRows, row.tier),
       })
     },
   }

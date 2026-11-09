@@ -341,17 +341,17 @@ export function createBoostersService({ db, signer, clock }: BoostersServiceDeps
         since: new Date(clock().getTime() - REVEALS_WINDOW_MS),
         limit: REVEALS_LIMIT,
       })
-      const copies = await listOwnedCopies(db, {
-        leagueId: m.leagueId,
-        ownerId: m.userId,
-        cardIds: [...new Set(rows.map((row) => row.cardId))],
-      })
+      const cardIds = [...new Set(rows.map((row) => row.cardId))]
+      const [copies, stacks] = await Promise.all([
+        listOwnedCopies(db, { leagueId: m.leagueId, ownerId: m.userId, cardIds }),
+        listStackEntries(db, { leagueId: m.leagueId, ownerId: m.userId, cardIds }),
+      ])
       return rows.map((row) => ({
         pulledBy: { userId: row.pulledById, displayUsername: row.pulledByName },
         pulledAt: row.pulledAt.toISOString(),
         variant: row.variant,
         tierAtMint: row.tierAtMint,
-        card: toCollectionCard(withViewerCopies(toRevealCard(row), copies), signer),
+        card: toCollectionCard(withViewerCopies(toRevealCard(row), copies, stacks), signer),
       }))
     },
 

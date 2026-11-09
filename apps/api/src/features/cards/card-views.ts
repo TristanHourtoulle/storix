@@ -1,11 +1,15 @@
 import {
   canReact,
   canWithdrawCard,
+  copyDustValue,
+  copyValueTier,
   craftDecision,
-  dustValue,
   foilUpgradeDecision,
   isBoosterEligible,
-  maxTier,
+  isPromoted,
+  personalDisplayTier,
+  promotionDecision,
+  tierRank,
   type CardAuthor,
   type CardPerson,
   type CardTier,
@@ -15,13 +19,22 @@ import {
   type HiddenCardSummary,
   type LockedCardSummary,
   type MediaVariantSize,
+  type OwnedCardDetail,
   type OwnedCardSummary,
+  type OwnedCopyState,
+  type PromotedHolder,
+  type PromotionAction,
   type ReactionCounts,
+  type StackEntry,
   type ViewerCardDetail,
 } from '@storix/shared'
 import type { MediaSigner } from '../../lib/media-signer'
+import type { OwnedCopyRow } from '../copies/copies.repository'
+import type { CardStackEntry, PromotedHolderRow } from '../copies/stacks.repository'
 import type { CardViewerRow, CollectionRow } from './cards.repository'
 import { toImageSet } from './image-set'
+
+const MAX_PROMOTED_HOLDERS = 50
 
 const SUMMARY_SIZES: readonly MediaVariantSize[] = [256, 768]
 const DETAIL_SIZES: readonly MediaVariantSize[] = [256, 768, 1600]
@@ -34,9 +47,14 @@ export interface CardDetailContext {
   reactions: ReactionCounts
   copiesInLeague: number
   delayMinutes: number
+  stack: StackEntry[]
+  promotedHolders: PromotedHolder[]
 }
 
-export type CollectionCardBase = Omit<CollectionRow, 'normalTier' | 'foilTier'>
+export type CollectionCardBase = Omit<
+  CollectionRow,
+  'normalTier' | 'foilTier' | 'normalPromotedTier' | 'foilPromotedTier' | 'stackCount'
+>
 
 /** Returns true when the viewer owns any copy of the card. */
 export function isOwned(row: CollectionRow): boolean {
@@ -48,20 +66,67 @@ export function isVisibleTo(row: CollectionRow): boolean {
   return row.status === 'active' || isOwned(row)
 }
 
-/** Returns the tier shown to the viewer: the best owned copy's tier at mint, else the current tier. */
-export function displayTier(row: CollectionRow): CardTier {
-  if (row.normalTier !== null && row.foilTier !== null) return maxTier(row.normalTier, row.foilTier)
-  return row.normalTier ?? row.foilTier ?? row.tier
+/** Returns the viewer's copies of a card as domain copy states, normal first. */
+export function rowCopies(row: CollectionRow): OwnedCopyState[] {
+  const entries: [CopyVariant, CardTier | null, CardTier | null][] = [
+    ['normal', row.normalTier, row.normalPromotedTier],
+    ['foil', row.foilTier, row.foilPromotedTier],
+  ]
+  return entries.flatMap(([variant, tierAtMint, promotedTier]) =>
+    tierAtMint === null ? [] : [{ variant, tierAtMint, promotedTier }],
+  )
 }
 
-/** Attaches the viewer's copies of a card, keyed by (card, owner, variant), to its base row. */
+/** Returns the tier shown to the viewer: the best of their copies, a promoted one never below the league tier, else the league tier. */
+export function displayTier(row: CollectionRow): CardTier {
+  return personalDisplayTier(rowCopies(row), row.tier)
+}
+
+/** Attaches the viewer's copies and stacked copies of a card, keyed by (card, owner, variant), to its base row. */
 export function withViewerCopies(
   card: CollectionCardBase,
-  copies: readonly { cardId: string; variant: CopyVariant; tierAtMint: CardTier }[],
+  copies: readonly OwnedCopyRow[],
+  stacks: readonly CardStackEntry[] = [],
 ): CollectionRow {
-  const tierOf = (variant: CopyVariant) =>
-    copies.find((copy) => copy.cardId === card.id && copy.variant === variant)?.tierAtMint ?? null
-  return { ...card, normalTier: tierOf('normal'), foilTier: tierOf('foil') }
+  const copyOf = (variant: CopyVariant) =>
+    copies.find((copy) => copy.cardId === card.id && copy.variant === variant)
+  const normal = copyOf('normal')
+  const foil = copyOf('foil')
+  return {
+    ...card,
+    normalTier: normal?.tierAtMint ?? null,
+    foilTier: foil?.tierAtMint ?? null,
+    normalPromotedTier: normal?.promotedTier ?? null,
+    foilPromotedTier: foil?.promotedTier ?? null,
+    stackCount: stacks
+      .filter((entry) => entry.cardId === card.id)
+      .reduce((sum, entry) => sum + entry.count, 0),
+  }
+}
+
+/** Groups other owners' copies into one promoted holder each, at their displayed tier, rarest first then by name. */
+export function toPromotedHolders(
+  rows: readonly PromotedHolderRow[],
+  leagueTier: CardTier,
+): PromotedHolder[] {
+  const ownerIds = [...new Set(rows.map((row) => row.ownerId))]
+  return ownerIds
+    .map((ownerId) => {
+      const owned = rows.filter((row) => row.ownerId === ownerId)
+      return {
+        holder: { userId: ownerId, displayUsername: owned[0]?.displayUsername ?? null },
+        tier: personalDisplayTier(
+          owned.map((row) => row.copy),
+          leagueTier,
+        ),
+      }
+    })
+    .toSorted(
+      (a, b) =>
+        tierRank(b.tier) - tierRank(a.tier) ||
+        (a.holder.displayUsername ?? '').localeCompare(b.holder.displayUsername ?? '', 'fr'),
+    )
+    .slice(0, MAX_PROMOTED_HOLDERS)
 }
 
 /** Projects a card's author columns to the author view shared by every card payload. */
@@ -97,6 +162,8 @@ function toOwnedSummary(
     height: row.height,
     image: toImageSet(row.variants, sizes, signer),
     copies: { normal: row.normalTier, foil: row.foilTier },
+    isPromoted: isPromoted(rowCopies(row)),
+    stackCount: row.stackCount,
   }
 }
 
@@ -135,14 +202,34 @@ function toDiscoveredBy(row: CardViewerRow): CardPerson | null {
   return { userId: row.discoveredById, displayUsername: row.discovererName }
 }
 
-function ownedCopies(row: CollectionRow): { variant: CopyVariant; dust: number }[] {
-  const entries: [CopyVariant, CollectionRow['normalTier']][] = [
-    ['normal', row.normalTier],
-    ['foil', row.foilTier],
-  ]
-  return entries.flatMap(([variant, tierAtMint]) =>
-    tierAtMint === null ? [] : [{ variant, dust: dustValue(tierAtMint, variant) }],
-  )
+function recycleActions(row: CollectionRow): OwnedCardDetail['actions']['recycle'] {
+  return rowCopies(row).map((copy) => ({
+    variant: copy.variant,
+    dust: copyDustValue(copy),
+    promotedTier: copy.promotedTier,
+  }))
+}
+
+/** Decides whether the viewer may raise the personal tier of their copy, shared by the detail and the action. */
+export function promotionActionFor(
+  row: CollectionRow,
+  input: { stack: readonly StackEntry[]; dust: number },
+): PromotionAction {
+  const decision = promotionDecision({
+    copies: rowCopies(row),
+    leagueTier: row.tier,
+    stack: input.stack,
+    dust: input.dust,
+  })
+  return {
+    from: decision.from,
+    to: decision.to,
+    cost: decision.cost,
+    copiesRequired: decision.copiesRequired,
+    copiesAvailable: decision.copiesAvailable,
+    allowed: decision.allowed,
+    reason: decision.reason,
+  }
 }
 
 /** Decides whether the viewer may craft the card, shared by the card detail and the craft action. */
@@ -163,9 +250,10 @@ export function foilUpgradeDecisionFor(
   row: CollectionRow,
   dust: number,
 ): ReturnType<typeof foilUpgradeDecision> {
+  const normal = rowCopies(row).find((copy) => copy.variant === 'normal')
   return foilUpgradeDecision({
     currentTier: row.tier,
-    normalTierAtMint: row.normalTier,
+    normalValueTier: normal === undefined ? null : copyValueTier(normal),
     ownsFoil: row.foilTier !== null,
     dust,
   })
@@ -221,9 +309,12 @@ export function toCardDetail(row: CardViewerRow, ctx: CardDetailContext): Viewer
     reactions: ctx.reactions,
     canReact: canReactTo(row, ctx.viewerId),
     canWithdraw,
+    promotedHolders: ctx.promotedHolders,
     actions: {
-      recycle: ownedCopies(row),
+      recycle: recycleActions(row),
       foilUpgrade: foilUpgradeDecisionFor(row, ctx.dust),
+      stack: ctx.stack,
+      promotion: promotionActionFor(row, { stack: ctx.stack, dust: ctx.dust }),
     },
   }
 }

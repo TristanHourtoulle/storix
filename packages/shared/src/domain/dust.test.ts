@@ -100,6 +100,16 @@ describe('dust', () => {
       ['upgraded', { tierAtMint: 'common', variant: 'normal' }, 1],
     ])
   })
+  it('prices the foil upgrade on the value tier of the normal copy', () => {
+    expect(
+      foilUpgradeDecision({
+        currentTier: 'rare',
+        normalValueTier: 'epic',
+        ownsFoil: false,
+        dust: 200,
+      }).cost,
+    ).toBe(200)
+  })
   it('decides craft and foil upgrade', () => {
     const base = {
       currentTier: 'rare' as const,
@@ -118,12 +128,12 @@ describe('dust', () => {
     expect(craftDecision({ ...base, dust: 99 }).reason).toBe('insufficient_dust')
     const foil = {
       currentTier: 'epic' as const,
-      normalTierAtMint: 'epic' as const,
+      normalValueTier: 'epic' as const,
       ownsFoil: false,
       dust: 200,
     }
     expect(foilUpgradeDecision(foil)).toEqual({ cost: 200, allowed: true, reason: null })
-    expect(foilUpgradeDecision({ ...foil, normalTierAtMint: null })).toEqual({
+    expect(foilUpgradeDecision({ ...foil, normalValueTier: null })).toEqual({
       cost: 200,
       allowed: false,
       reason: 'no_normal',
@@ -134,7 +144,7 @@ describe('dust', () => {
   it('prices the foil upgrade on the normal copy tier at mint, like its recycle value', () => {
     const dropped = {
       currentTier: 'common' as const,
-      normalTierAtMint: 'legendary' as const,
+      normalValueTier: 'legendary' as const,
       ownsFoil: false,
       dust: 799,
     }
@@ -145,8 +155,7 @@ describe('dust', () => {
     })
     expect(foilUpgradeDecision({ ...dropped, dust: 800 }).allowed).toBe(true)
     expect(
-      foilUpgradeDecision({ ...dropped, currentTier: 'legendary', normalTierAtMint: 'common' })
-        .cost,
+      foilUpgradeDecision({ ...dropped, currentTier: 'legendary', normalValueTier: 'common' }).cost,
     ).toBe(10)
   })
 })

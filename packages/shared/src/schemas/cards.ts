@@ -82,6 +82,8 @@ export const ownedCardSummarySchema = cardSummarySchema.extend({
   kind: z.literal('owned'),
   displayTier: cardTierSchema,
   copies: ownedCopiesSchema,
+  isPromoted: z.boolean(),
+  stackCount: z.int().min(0),
 })
 
 export const lockedCardSummarySchema = z.strictObject({
@@ -140,8 +142,17 @@ export const ownedCardDetailSchema = ownedCardSummarySchema.extend({
   reactions: reactionCountsSchema,
   canReact: z.boolean(),
   canWithdraw: z.boolean(),
+  promotedHolders: z.array(promotedHolderSchema).max(50),
   actions: z.object({
-    recycle: z.array(z.object({ variant: copyVariantSchema, dust: z.int().positive() })),
+    recycle: z.array(
+      z.object({
+        variant: copyVariantSchema,
+        dust: z.int().positive(),
+        promotedTier: cardTierSchema.nullable(),
+      }),
+    ),
+    stack: z.array(stackEntrySchema),
+    promotion: promotionActionSchema,
     foilUpgrade: z.object({
       cost: z.int().min(0),
       allowed: z.boolean(),
