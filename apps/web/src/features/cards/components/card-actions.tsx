@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import {
+  cardProgression,
   stackSize,
   type CardTier,
   type ConvertStackBody,
@@ -13,8 +14,8 @@ import { ConvertStackSheet } from './convert-stack-sheet'
 import { PromotionSheet } from './promotion-sheet'
 
 interface CardActionsProps {
+  card: OwnedCardDetail
   actions: OwnedCardDetail['actions']
-  leagueTier: CardTier
   dust: number | null
   isBusy: boolean
   promoteError: string | null
@@ -40,8 +41,8 @@ const UPGRADE_REASONS = {
 } as const
 
 export function CardActions({
+  card,
   actions,
-  leagueTier,
   dust,
   isBusy,
   promoteError,
@@ -137,9 +138,8 @@ export function CardActions({
       </Dialog>
       <PromotionSheet
         open={sheet === 'promote'}
-        promotion={promotion}
-        leagueTier={leagueTier}
-        dust={dust}
+        card={card}
+        progression={cardProgression({ promotion, stack: actions.stack, dust })}
         isBusy={isBusy}
         error={promoteError}
         onConfirm={(from) => submit((callbacks) => onPromote(from, callbacks))}

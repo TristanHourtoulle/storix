@@ -118,8 +118,8 @@ export function CardDetail({ leagueId, card, onWithdraw }: CardDetailProps) {
         onToggle={reactions.toggle}
       />
       <CardActions
+        card={card}
         actions={card.actions}
-        leagueTier={card.tier}
         dust={wallet?.dust ?? null}
         isBusy={isBusy}
         promoteError={promote.error ? userMessage(promote.error) : null}

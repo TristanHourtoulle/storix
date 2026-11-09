@@ -1,78 +1,130 @@
-import type { CardTier, PromotionAction } from '@storix/shared'
+import type { CardProgression, CardTier, OwnedCardDetail } from '@storix/shared'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
+import { Icon } from '@/components/ui/icon'
 import { Notice } from '@/components/ui/notice'
+import { missingSummary, nextTierTone } from '../progression-copy'
 import { TIER_LABELS } from '../tier-labels'
+import { MaxedBox, SheetGauges } from './progression-gauges'
+import { TierPreview } from './tier-preview'
 
 interface PromotionSheetProps {
   open: boolean
-  promotion: PromotionAction
-  leagueTier: CardTier
-  dust: number | null
+  card: OwnedCardDetail
+  progression: CardProgression
   isBusy: boolean
   error: string | null
   onConfirm: (from: CardTier) => void
   onClose: () => void
 }
 
-function missingLine(missing: number, singular: string, plural: string): string | null {
-  if (missing <= 0) return null
-  return `Il te manque ${missing} ${missing > 1 ? plural : singular}`
-}
-
 export function PromotionSheet({
   open,
-  promotion,
-  leagueTier,
-  dust,
+  card,
+  progression,
   isBusy,
   error,
   onConfirm,
   onClose,
 }: PromotionSheetProps) {
-  const { from, to, cost, copiesAvailable, copiesRequired } = promotion
-  const isMax = promotion.reason === 'max_tier' || to === null || cost === null
-  const missing = isMax
-    ? []
-    : [
-        missingLine(copiesRequired - copiesAvailable, 'doublon', 'doublons'),
-        dust === null ? null : missingLine(cost - dust, 'paillette', 'paillettes'),
-      ].filter((line): line is string => line !== null)
+  const { from } = card.actions.promotion
 
   return (
     <Dialog open={open} title="Améliorer la rareté" isDismissible={!isBusy} onClose={onClose}>
-      {isMax ? (
-        <p className="m-0 text-sm text-ink-2">Ta carte est déjà Mythique.</p>
+      {progression.kind === 'max' ? (
+        <MaxedBox stackCount={progression.stackCount} convertAllDust={progression.convertAllDust} />
       ) : (
+        <PromotionSteps
+          card={card}
+          progression={progression}
+          from={from}
+          isBusy={isBusy}
+          error={error}
+          onConfirm={onConfirm}
+          onClose={onClose}
+        />
+      )}
+    </Dialog>
+  )
+}
+
+interface PromotionStepsProps {
+  card: OwnedCardDetail
+  progression: Exclude<CardProgression, { kind: 'max' }>
+  from: CardTier
+  isBusy: boolean
+  error: string | null
+  onConfirm: (from: CardTier) => void
+  onClose: () => void
+}
+
+function PromotionSteps({
+  card,
+  progression,
+  from,
+  isBusy,
+  error,
+  onConfirm,
+  onClose,
+}: PromotionStepsProps) {
+  const { to, cost, missingCopies } = progression
+  const isReady = progression.kind === 'ready'
+  const tone = nextTierTone(to)
+  const summary = missingSummary(progression)
+
+  return (
+    <>
+      <TierPreview card={card} to={to} isReady={isReady} />
+      <p className={`sheet-step vitrine-step ${tone.className}`} style={tone.style}>
+        {TIER_LABELS[from]}
+        {card.isPromoted ? ' ★' : ''} <span aria-hidden="true">→</span>{' '}
+        <span className="to">{TIER_LABELS[to]} ★</span>
+      </p>
+      <div className={tone.className} style={tone.style}>
+        <SheetGauges progression={progression} />
+      </div>
+      {summary === null ? null : isReady ? (
+        <p className="miss ok">
+          <Icon name="check" className="size-4" />
+          {summary}
+        </p>
+      ) : (
+        <p className="miss">
+          <span className="k">Encore</span>
+          {summary}
+        </p>
+      )}
+      {isReady ? (
         <>
-          <p className="sheet-step">
-            {TIER_LABELS[from]} → {TIER_LABELS[to]} ★
-          </p>
-          <div className="sheet-rows">
-            <p className="sheet-row">{`Doublons : ${copiesAvailable} / ${copiesRequired}`}</p>
-            <p className="sheet-row">{`Paillettes : ${dust ?? '…'} / ${cost}`}</p>
-          </div>
-          {missing.map((line) => (
-            <p key={line} className="m-0 text-sm font-semibold text-danger">
-              {line}
-            </p>
-          ))}
           <p className="m-0 text-sm text-ink-2">
-            Seule ta carte change. La rareté de la ligue reste {TIER_LABELS[leagueTier]}. Ta rareté
+            Seule ta carte change. La rareté de la ligue reste {TIER_LABELS[card.tier]}. Ta rareté
             perso ne baissera jamais.
           </p>
           {error ? <Notice tone="error">{error}</Notice> : null}
           <Button
             variant="primary"
             block
-            disabled={!promotion.allowed || dust === null}
+            className={`vitrine-go ${tone.className}`}
+            style={tone.style}
             isLoading={isBusy}
             onClick={() => onConfirm(from)}
           >
             Améliorer · {cost} paillettes
           </Button>
         </>
+      ) : (
+        <>
+          <p className="m-0 text-sm text-ink-2">
+            {missingCopies > 0
+              ? "Les doublons arrivent quand un booster te redonne cette carte : ils s'empilent ici."
+              : "Recycle ou convertis d'autres cartes pour gagner des paillettes."}
+          </p>
+          {error ? <Notice tone="error">{error}</Notice> : null}
+          <Button variant="ghost" block onClick={onClose}>
+            Compris
+          </Button>
+        </>
       )}
-    </Dialog>
+    </>
   )
 }
