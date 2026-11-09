@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
@@ -6,8 +6,10 @@ import {
   CARD_TIERS,
   COLLECTION_SORTS,
   type CardTier,
+  type CollectionCard,
   type CollectionSort,
   type MemberSummary,
+  type OwnedCardSummary,
 } from '@storix/shared'
 import { Button, buttonClassName } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -20,6 +22,7 @@ import { MemberFilter } from '@/features/cards/components/member-filter'
 import { RarityFilter } from '@/features/cards/components/rarity-filter'
 import { SortSheet } from '@/features/cards/components/sort-sheet'
 import { cardsInfiniteQueryOptions, type CollectionFilters } from '@/features/cards/cards.queries'
+import { useCollectionNews } from '@/features/cards/news/use-collection-news'
 import { useCollectionSort } from '@/features/cards/use-collection-sort'
 import { DustBalance } from '@/features/game/components/dust-balance'
 import { useWallet } from '@/features/game/use-wallet'
@@ -49,7 +52,6 @@ export const Route = createFileRoute('/_authed/l/$leagueId/collection')({
 })
 
 const NO_MEMBERS: MemberSummary[] = []
-const NO_NEW_IDS: ReadonlySet<string> = new Set()
 
 function sortOfKey(key: readonly [string, string, string, CollectionFilters]): CollectionSort {
   return key[3].sort
@@ -67,6 +69,16 @@ function Collection() {
   const { sort, pickSort } = useCollectionSort(me.user.id, leagueId, urlSort)
   const mode: FilterMode = by ?? 'member'
   const filters: CollectionFilters = { authorId: author ?? null, tier: tier ?? null, sort }
+  const news = useCollectionNews(me.user.id, leagueId)
+  const visibleNew = useMemo(
+    () =>
+      news.newCards.filter(
+        (card) =>
+          (filters.authorId === null || card.author.userId === filters.authorId) &&
+          (filters.tier === null || card.displayTier === filters.tier),
+      ),
+    [news.newCards, filters.authorId, filters.tier],
+  )
   const authorName = members.find((member) => member.userId === filters.authorId)?.displayUsername
 
   function selectAuthor(id: string | null) {
@@ -102,6 +114,10 @@ function Collection() {
         filters={filters}
         label={authorName ? `Cartes de ${authorName}` : 'Toutes les cartes'}
         onPickSort={pickSort}
+        visibleNew={visibleNew}
+        newIds={news.newIds}
+        onMarkSeen={news.markSeen}
+        onMarkAllSeen={news.markAll}
       />
     </main>
   )
@@ -112,10 +128,25 @@ interface CollectionBodyProps {
   filters: CollectionFilters
   label: string
   onPickSort: (sort: CollectionSort) => void
+  visibleNew: OwnedCardSummary[]
+  newIds: ReadonlySet<string>
+  onMarkSeen: (cardId: string) => void
+  onMarkAllSeen: () => void
 }
 
-function CollectionBody({ leagueId, filters, label, onPickSort }: CollectionBodyProps) {
+function CollectionBody({
+  leagueId,
+  filters,
+  label,
+  onPickSort,
+  visibleNew,
+  newIds,
+  onMarkSeen,
+  onMarkAllSeen,
+}: CollectionBodyProps) {
   const [isSortOpen, setIsSortOpen] = useState(false)
+  const [isNewFirst, setIsNewFirst] = useState(false)
+  if (isNewFirst && visibleNew.length === 0) setIsNewFirst(false)
   const {
     data,
     isError,
@@ -141,6 +172,21 @@ function CollectionBody({ leagueId, filters, label, onPickSort }: CollectionBody
     ],
     [data],
   )
+  const gridCards = useMemo<CollectionCard[]>(
+    () => (isNewFirst ? [...visibleNew, ...cards.filter((card) => !newIds.has(card.id))] : cards),
+    [isNewFirst, visibleNew, cards, newIds],
+  )
+  const openCard = useCallback(
+    (card: CollectionCard) => {
+      if (newIds.has(card.id)) onMarkSeen(card.id)
+    },
+    [newIds, onMarkSeen],
+  )
+
+  function toggleNewFirst() {
+    setIsNewFirst((value) => !value)
+    window.scrollTo({ top: 0 })
+  }
 
   if (!data) {
     return isError ? (
@@ -186,10 +232,10 @@ function CollectionBody({ leagueId, filters, label, onPickSort }: CollectionBody
       <CollectionToolbar
         sort={sort}
         onOpenSort={() => setIsSortOpen(true)}
-        newCount={0}
-        isNewFirst={false}
-        onToggleNewFirst={() => undefined}
-        onMarkAllSeen={() => undefined}
+        newCount={visibleNew.length}
+        isNewFirst={isNewFirst}
+        onToggleNewFirst={toggleNewFirst}
+        onMarkAllSeen={onMarkAllSeen}
       />
       <SortSheet
         open={isSortOpen}
@@ -204,10 +250,10 @@ function CollectionBody({ leagueId, filters, label, onPickSort }: CollectionBody
       )}
       <CollectionGrid
         leagueId={leagueId}
-        cards={cards}
+        cards={gridCards}
         isGrouped={sort === 'discovery'}
-        newIds={NO_NEW_IDS}
-        onOpenCard={() => undefined}
+        newIds={newIds}
+        onOpenCard={openCard}
         hasNextPage={hasNextPage}
         isFetchingNextPage={isFetchingNextPage}
         isFetchNextPageError={isFetchNextPageError}

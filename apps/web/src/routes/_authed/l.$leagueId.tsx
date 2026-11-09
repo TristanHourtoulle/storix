@@ -3,6 +3,7 @@ import { BottomNav } from '@/components/ui/bottom-nav'
 import { PasskeyPrompt } from '@/features/auth/components/passkey-prompt'
 import { IosInstallHint } from '@/features/pwa/components/ios-install-hint'
 import { meQueryOptions } from '@/features/auth/session.queries'
+import { useCollectionVisitTracker } from '@/features/cards/news/use-collection-visit-tracker'
 import { clearLastLeagueId, useRememberLastLeague } from '@/features/leagues/last-league'
 import { purgeLeagueCaches } from '@/features/privacy/purge-cache'
 import { useRemovedCardsSync } from '@/features/privacy/use-removed-cards-sync'
@@ -30,6 +31,7 @@ function LeagueLayout() {
   useRememberLastLeague(me.user.id, leagueId)
   useRemovedCardsSync(me.user.id, leagueId)
   usePortraitCachePruning(leagueId)
+  useCollectionVisitTracker(me.user.id, leagueId)
   const isBoosterStage = Boolean(matchRoute({ to: '/l/$leagueId/booster', params: { leagueId } }))
   const active = matchRoute({ to: '/l/$leagueId/collection', params: { leagueId } })
     ? 'collection'
