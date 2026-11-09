@@ -1,16 +1,24 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
-import { CARD_TIERS, COLLECTION_SORTS, type CardTier, type MemberSummary } from '@storix/shared'
+import {
+  CARD_TIERS,
+  COLLECTION_SORTS,
+  type CardTier,
+  type CollectionSort,
+  type MemberSummary,
+} from '@storix/shared'
 import { Button, buttonClassName } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Notice } from '@/components/ui/notice'
 import { Segmented } from '@/components/ui/segmented'
 import { CollectionGrid } from '@/features/cards/components/collection-grid'
 import { CollectionProgress } from '@/features/cards/components/collection-progress'
+import { CollectionToolbar } from '@/features/cards/components/collection-toolbar'
 import { MemberFilter } from '@/features/cards/components/member-filter'
 import { RarityFilter } from '@/features/cards/components/rarity-filter'
+import { SortSheet } from '@/features/cards/components/sort-sheet'
 import { cardsInfiniteQueryOptions, type CollectionFilters } from '@/features/cards/cards.queries'
 import { useCollectionSort } from '@/features/cards/use-collection-sort'
 import { DustBalance } from '@/features/game/components/dust-balance'
@@ -50,7 +58,7 @@ function Collection() {
   const navigate = useNavigate({ from: Route.fullPath })
   const members = useQuery(membersQueryOptions(leagueId)).data ?? NO_MEMBERS
   const { data: wallet } = useWallet(leagueId)
-  const { sort } = useCollectionSort(me.user.id, leagueId, urlSort)
+  const { sort, pickSort } = useCollectionSort(me.user.id, leagueId, urlSort)
   const mode: FilterMode = by ?? 'member'
   const filters: CollectionFilters = { authorId: author ?? null, tier: tier ?? null, sort }
   const authorName = members.find((member) => member.userId === filters.authorId)?.displayUsername
@@ -87,6 +95,7 @@ function Collection() {
         leagueId={leagueId}
         filters={filters}
         label={authorName ? `Cartes de ${authorName}` : 'Toutes les cartes'}
+        onPickSort={pickSort}
       />
     </main>
   )
@@ -96,9 +105,11 @@ interface CollectionBodyProps {
   leagueId: string
   filters: CollectionFilters
   label: string
+  onPickSort: (sort: CollectionSort) => void
 }
 
-function CollectionBody({ leagueId, filters, label }: CollectionBodyProps) {
+function CollectionBody({ leagueId, filters, label, onPickSort }: CollectionBodyProps) {
+  const [isSortOpen, setIsSortOpen] = useState(false)
   const {
     data,
     isError,
@@ -111,10 +122,10 @@ function CollectionBody({ leagueId, filters, label }: CollectionBodyProps) {
     ...cardsInfiniteQueryOptions(leagueId, filters),
     placeholderData: keepPreviousData,
   })
-  const { authorId, tier } = filters
+  const { authorId, tier, sort } = filters
   useEffect(() => {
     window.scrollTo({ top: 0 })
-  }, [authorId, tier])
+  }, [authorId, tier, sort])
 
   if (!data) {
     return isError ? (
@@ -160,6 +171,20 @@ function CollectionBody({ leagueId, filters, label }: CollectionBodyProps) {
   return (
     <>
       <CollectionProgress owned={owned} total={total} label={label} />
+      <CollectionToolbar
+        sort={sort}
+        onOpenSort={() => setIsSortOpen(true)}
+        newCount={0}
+        isNewFirst={false}
+        onToggleNewFirst={() => undefined}
+        onMarkAllSeen={() => undefined}
+      />
+      <SortSheet
+        open={isSortOpen}
+        value={sort}
+        onPick={onPickSort}
+        onClose={() => setIsSortOpen(false)}
+      />
       {owned === 0 && (
         <p className="m-0 text-sm text-muted">
           Ouvre un booster pour découvrir tes premières cartes.
