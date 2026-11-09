@@ -20,6 +20,16 @@ function leagueOf(params: object): unknown {
   return 'leagueId' in params ? params.leagueId : undefined
 }
 
+interface RouteLocation {
+  routeId: string
+  params: object
+}
+
+/** Tells whether a navigation leaves the route, or the league, rather than changing its search. */
+export function isLeavingRoute(current: RouteLocation, next: RouteLocation): boolean {
+  return current.routeId !== next.routeId || leagueOf(current.params) !== leagueOf(next.params)
+}
+
 /**
  * Guards leaving the add flow with "Quitter l'ajout ?" (R21): router navigations, the Android back
  * gesture included, are held by the blocker, and the native prompt shows only while photos are still
@@ -52,9 +62,7 @@ export function useLeaveGuard(
   useEffect(() => () => resolveRef.current?.(false), [])
 
   const shouldBlockFn = useCallback<ShouldBlockFn>(({ current, next }) => {
-    const isLeaving =
-      current.routeId !== next.routeId || leagueOf(current.params) !== leagueOf(next.params)
-    if (!isLeaving || !isEditing(sessionRef.current)) return false
+    if (!isLeavingRoute(current, next) || !isEditing(sessionRef.current)) return false
     const closeOverlay = overlayRef.current
     if (closeOverlay) {
       closeOverlay()

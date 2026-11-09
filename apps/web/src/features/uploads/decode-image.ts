@@ -62,3 +62,39 @@ export function canvasToJpeg(canvas: HTMLCanvasElement): Promise<Blob> {
     )
   })
 }
+
+function scaledSize(
+  width: number,
+  height: number,
+  maxEdge: number,
+): { width: number; height: number } {
+  const scale = Math.min(1, maxEdge / Math.max(width, height))
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  }
+}
+
+/** Decodes upright and re-encodes as a JPEG whose longest edge is at most `maxEdge`. */
+export async function encodeScaledJpeg(
+  file: Blob,
+  maxEdge: number,
+): Promise<{ blob: Blob; width: number; height: number }> {
+  const decoded = await decodeImage(file)
+  const canvas = document.createElement('canvas')
+  try {
+    if (decoded.width === 0 || decoded.height === 0) throw new UserFacingError(UNSUPPORTED_MESSAGE)
+    const size = scaledSize(decoded.width, decoded.height, maxEdge)
+    canvas.width = size.width
+    canvas.height = size.height
+    const context = canvas.getContext('2d')
+    if (!context) throw new UserFacingError(UNSUPPORTED_MESSAGE)
+    context.drawImage(decoded.source, 0, 0, size.width, size.height)
+    const blob = await canvasToJpeg(canvas)
+    return { blob, ...size }
+  } finally {
+    canvas.width = 0
+    canvas.height = 0
+    decoded.release()
+  }
+}

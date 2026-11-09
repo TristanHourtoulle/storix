@@ -1,8 +1,7 @@
 import { CLIENT_MAX_EDGE_PX, resolveCaptureDate } from '@storix/shared'
 import { parse } from 'exifr/dist/lite.esm.mjs'
-import { UserFacingError } from '@/features/errors/user-message'
 import { logger } from '@/lib/logger'
-import { UNSUPPORTED_MESSAGE, canvasToJpeg, decodeImage } from './decode-image'
+import { encodeScaledJpeg } from './decode-image'
 
 export interface PreparedPhoto {
   blob: Blob
@@ -36,32 +35,9 @@ async function readCaptureDate(file: File): Promise<string | null> {
   }
 }
 
-function scaledSize(width: number, height: number): { width: number; height: number } {
-  const scale = Math.min(1, CLIENT_MAX_EDGE_PX / Math.max(width, height))
-  return {
-    width: Math.max(1, Math.round(width * scale)),
-    height: Math.max(1, Math.round(height * scale)),
-  }
-}
-
 /** Reads the capture date, then re-encodes the photo as an upright JPEG capped at CLIENT_MAX_EDGE_PX. */
 export async function preparePhoto(file: File): Promise<PreparedPhoto> {
   const capturedAt = await readCaptureDate(file)
-  const decoded = await decodeImage(file)
-  const canvas = document.createElement('canvas')
-  try {
-    if (decoded.width === 0 || decoded.height === 0) throw new UserFacingError(UNSUPPORTED_MESSAGE)
-    const size = scaledSize(decoded.width, decoded.height)
-    canvas.width = size.width
-    canvas.height = size.height
-    const context = canvas.getContext('2d')
-    if (!context) throw new UserFacingError(UNSUPPORTED_MESSAGE)
-    context.drawImage(decoded.source, 0, 0, size.width, size.height)
-    const blob = await canvasToJpeg(canvas)
-    return { blob, ...size, capturedAt, previewUrl: URL.createObjectURL(blob) }
-  } finally {
-    canvas.width = 0
-    canvas.height = 0
-    decoded.release()
-  }
+  const { blob, width, height } = await encodeScaledJpeg(file, CLIENT_MAX_EDGE_PX)
+  return { blob, width, height, capturedAt, previewUrl: URL.createObjectURL(blob) }
 }

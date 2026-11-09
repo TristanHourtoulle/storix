@@ -2,20 +2,15 @@ import { useEffect } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 import type { UploadDraft } from '@storix/shared'
-import { EmptyState } from '@/components/ui/empty-state'
-import { Notice } from '@/components/ui/notice'
-import { TopBar } from '@/components/ui/top-bar'
 import { useMembers } from '@/features/members/use-members'
 import { membersQueryOptions } from '@/features/members/members.queries'
-import { DraftBanner } from '@/features/uploads/components/draft-banner'
+import { CameraStart } from '@/features/uploads/camera/camera-start'
 import { LeaveDialog } from '@/features/uploads/components/leave-dialog'
-import { PhotoPicker } from '@/features/uploads/components/photo-picker'
 import { PublishDone } from '@/features/uploads/components/publish-done'
 import { UploadSummary } from '@/features/uploads/components/upload-summary'
 import { draftCapacityOf } from '@/features/uploads/draft-capacity'
-import { useUploadSession, type UploadSession } from '@/features/uploads/session/use-upload-session'
+import { useUploadSession } from '@/features/uploads/session/use-upload-session'
 import { CardStack } from '@/features/uploads/stack/card-stack'
-import { overflowMessage, plural } from '@/features/uploads/upload-copy'
 import { draftsQueryOptions, useDrafts } from '@/features/uploads/use-drafts'
 import { useLeaveGuard } from '@/features/uploads/use-leave-guard'
 import { usePublish } from '@/features/uploads/use-publish'
@@ -36,48 +31,6 @@ export const Route = createFileRoute('/_authed/l/$leagueId/add')({
 })
 
 const NO_DRAFTS: UploadDraft[] = []
-
-interface StartScreenProps {
-  leagueId: string
-  session: UploadSession
-  drafts: readonly UploadDraft[]
-}
-
-function StartScreen({ leagueId, session, drafts }: StartScreenProps) {
-  const quota = useUploadQuota(leagueId)
-  const { overflow, cards } = session.state
-
-  const handlePick = (files: File[]): void => {
-    const shouldResume = cards.length === 0 && drafts.length > 0
-    if (shouldResume) session.resume([...drafts])
-    const stacked = shouldResume && quota.unlimited ? drafts.length : 0
-    void session.add(files, stacked)
-  }
-
-  return (
-    <main className="screen">
-      <TopBar title="Nouvelles cartes" />
-      {overflow ? <Notice tone="info">{overflowMessage(overflow)}</Notice> : null}
-      <DraftBanner leagueId={leagueId} />
-      {quota.remaining === 0 ? (
-        <EmptyState
-          icon="plus"
-          title="Limite atteinte"
-          body="Tu pourras ajouter d'autres photos demain."
-        />
-      ) : (
-        <>
-          <p className="m-0 text-[13px] text-muted">
-            {quota.unlimited
-              ? 'Admin · uploads illimités'
-              : `Il te reste ${plural(quota.remaining, 'photo', 'photos')} aujourd'hui`}
-          </p>
-          <PhotoPicker variant="button" onPick={handlePick} />
-        </>
-      )}
-    </main>
-  )
-}
 
 function AddPhotos() {
   const { leagueId } = Route.useParams()
@@ -162,5 +115,5 @@ function AddPhotos() {
     )
   }
 
-  return <StartScreen leagueId={leagueId} session={session} drafts={drafts} />
+  return <CameraStart leagueId={leagueId} session={session} drafts={drafts} />
 }
