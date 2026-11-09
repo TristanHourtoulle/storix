@@ -175,15 +175,18 @@
   }
   .share-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
   }
   .share-row > * {
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
     gap: 6px;
-    padding-inline: 8px;
-    font-size: 13.5px;
+    padding-inline: 10px;
     white-space: nowrap;
+  }
+  .share-row svg {
+    flex: none;
   }
   .share-fallback {
     align-items: center;
@@ -211,6 +214,10 @@
     color: var(--color-muted);
     text-align: center;
   }
+}
+
+.share-row > button {
+  font-size: 13.5px;
 }
 
 @media (prefers-reduced-motion: reduce) {
