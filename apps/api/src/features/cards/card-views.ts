@@ -15,6 +15,8 @@ import {
   type CardPerson,
   type CardTier,
   type CollectionCard,
+  type CollectionCursor,
+  type CollectionSort,
   type CopyVariant,
   type HiddenCardDetail,
   type HiddenCardSummary,
@@ -54,12 +56,17 @@ export interface CardDetailContext {
 
 export type CollectionCardBase = Omit<
   CollectionRow,
-  'normalTier' | 'foilTier' | 'normalPromotedTier' | 'foilPromotedTier' | 'stackCount'
+  | 'normalTier'
+  | 'foilTier'
+  | 'normalPromotedTier'
+  | 'foilPromotedTier'
+  | 'stackCount'
+  | 'firstCopyAt'
 >
 
-/** Returns true when the viewer owns any copy of the card. */
-export function isOwned(row: CollectionRow): boolean {
-  return row.normalTier !== null || row.foilTier !== null
+/** Returns true when the viewer owns any copy of the card, which gives it a first copy date. */
+export function isOwned<T extends CollectionRow>(row: T): row is T & { firstCopyAt: Date } {
+  return row.firstCopyAt !== null
 }
 
 /** Returns true when the viewer may see the card at all: active, or hidden with a copy of it. */
@@ -93,6 +100,13 @@ export function withViewerCopies(
     copies.find((copy) => copy.cardId === card.id && copy.variant === variant)
   const normal = copyOf('normal')
   const foil = copyOf('foil')
+  const firstCopyAt = copies
+    .filter((copy) => copy.cardId === card.id)
+    .reduce<Date | null>(
+      (earliest, copy) =>
+        earliest === null || copy.createdAt < earliest ? copy.createdAt : earliest,
+      null,
+    )
   return {
     ...card,
     normalTier: normal?.tierAtMint ?? null,
@@ -100,6 +114,26 @@ export function withViewerCopies(
     normalPromotedTier: normal?.promotedTier ?? null,
     foilPromotedTier: foil?.promotedTier ?? null,
     stackCount: stackCountsByCard(stacks).get(card.id) ?? 0,
+    firstCopyAt,
+  }
+}
+
+/** Returns the cursor of the sort that starts the next page after the given row. */
+export function nextCollectionCursor(sort: CollectionSort, row: CollectionRow): CollectionCursor {
+  switch (sort) {
+    case 'rarity':
+      return { kind: 'rarity', tier: displayTier(row), number: row.number }
+    case 'discovery':
+      return row.firstCopyAt === null
+        ? { kind: 'undiscovered', number: row.number }
+        : {
+            kind: 'discovered',
+            discoveredAt: row.firstCopyAt.getTime(),
+            tier: displayTier(row),
+            number: row.number,
+          }
+    case 'number':
+      return { kind: 'number', number: row.number }
   }
 }
 
@@ -142,7 +176,7 @@ export function toCardAuthor(row: {
 }
 
 function toOwnedSummary(
-  row: CollectionRow,
+  row: CollectionRow & { firstCopyAt: Date },
   sizes: readonly MediaVariantSize[],
   signer: MediaSigner,
 ): OwnedCardSummary {
@@ -163,6 +197,7 @@ function toOwnedSummary(
     copies: { normal: row.normalTier, foil: row.foilTier },
     isPromoted: isPromoted(rowCopies(row)),
     stackCount: row.stackCount,
+    discoveredAt: row.firstCopyAt.toISOString(),
   }
 }
 
@@ -192,6 +227,7 @@ function toHiddenSummary(row: CollectionRow): HiddenCardSummary {
     width: row.width,
     height: row.height,
     copies: { normal: row.normalTier, foil: row.foilTier },
+    discoveredAt: row.firstCopyAt?.toISOString() ?? null,
   }
 }
 

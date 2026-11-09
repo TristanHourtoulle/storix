@@ -8,6 +8,10 @@ export const STORAGE_KEYS = {
     `storix.pendingRemovals.${userId}.${leagueId}`,
   acknowledgedRemovals: (userId: string, leagueId: string): string =>
     `storix.acknowledgedRemovals.${userId}.${leagueId}`,
+  collectionSort: (userId: string, leagueId: string): string =>
+    `storix.collectionSort.${userId}.${leagueId}`,
+  collectionVisit: (userId: string, leagueId: string): string =>
+    `storix.collectionVisit.${userId}.${leagueId}`,
   iosHintDismissed: 'storix.iosHintDismissed',
   motionPermission: 'storix.motionPermission',
   cameraGranted: 'storix.cameraGranted',
@@ -62,6 +66,8 @@ export function removeLeagueStorage(userId: string, leagueId: string): void {
   removeStorage(STORAGE_KEYS.removalCursor(userId, leagueId))
   removeStorage(STORAGE_KEYS.pendingRemovals(userId, leagueId))
   removeStorage(STORAGE_KEYS.acknowledgedRemovals(userId, leagueId))
+  removeStorage(STORAGE_KEYS.collectionSort(userId, leagueId))
+  removeStorage(STORAGE_KEYS.collectionVisit(userId, leagueId))
 }
 
 /** Removes every key stored for a user on this device. */
@@ -74,6 +80,8 @@ export function removeUserStorage(userId: string): void {
     STORAGE_KEYS.removalCursor(userId, ''),
     STORAGE_KEYS.pendingRemovals(userId, ''),
     STORAGE_KEYS.acknowledgedRemovals(userId, ''),
+    STORAGE_KEYS.collectionSort(userId, ''),
+    STORAGE_KEYS.collectionVisit(userId, ''),
   ]
   listStorageKeys()
     .filter((key) => exactKeys.has(key) || prefixes.some((prefix) => key.startsWith(prefix)))

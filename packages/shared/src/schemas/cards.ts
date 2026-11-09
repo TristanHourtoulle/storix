@@ -1,8 +1,11 @@
 import { z } from 'zod'
 import {
   CARD_TIERS,
+  COLLECTION_SORTS,
   COPY_VARIANTS,
+  DEFAULT_COLLECTION_SORT,
   LEGACY_COLLECTION_CURSOR,
+  cursorSort,
   parseCollectionCursor,
 } from '../domain'
 import { idSchema, isoDateSchema } from './common'
@@ -46,12 +49,22 @@ export const legacyCollectionCursorSchema = z
   .regex(/^[1-9]\d{0,9}$/)
   .transform(() => LEGACY_COLLECTION_CURSOR)
 
-export const listCardsQuerySchema = z.object({
-  authorId: idSchema.optional(),
-  tier: cardTierSchema.optional(),
-  cursor: z.union([legacyCollectionCursorSchema, collectionCursorSchema]).optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(120),
-})
+export const collectionSortSchema = z.enum(COLLECTION_SORTS)
+
+export const listCardsQuerySchema = z
+  .object({
+    authorId: idSchema.optional(),
+    tier: cardTierSchema.optional(),
+    sort: collectionSortSchema.default(DEFAULT_COLLECTION_SORT),
+    cursor: z.union([legacyCollectionCursorSchema, collectionCursorSchema]).optional(),
+    limit: z.coerce.number().int().min(1).max(200).default(120),
+  })
+  .superRefine((query, ctx) => {
+    if (query.cursor === undefined || query.cursor === LEGACY_COLLECTION_CURSOR) return
+    if (cursorSort(query.cursor) !== query.sort) {
+      ctx.addIssue({ code: 'custom', path: ['cursor'], message: 'Cursor does not match sort' })
+    }
+  })
 
 export const copyVariantSchema = z.enum(COPY_VARIANTS)
 
@@ -84,6 +97,7 @@ export const ownedCardSummarySchema = cardSummarySchema.extend({
   copies: ownedCopiesSchema,
   isPromoted: z.boolean(),
   stackCount: z.int().min(0),
+  discoveredAt: isoDateSchema,
 })
 
 export const lockedCardSummarySchema = z.strictObject({
@@ -109,6 +123,7 @@ export const hiddenCardSummarySchema = z.strictObject({
   width: z.int().positive(),
   height: z.int().positive(),
   copies: ownedCopiesSchema,
+  discoveredAt: isoDateSchema.nullable(),
 })
 
 export const collectionCardSchema = z.discriminatedUnion('kind', [

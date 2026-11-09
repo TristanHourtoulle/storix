@@ -17,9 +17,9 @@ import type { Membership } from '../leagues/leagues.service'
 import { countReactions } from '../reactions/reactions.repository'
 import { findWallet } from '../wallets/wallets.repository'
 import {
-  displayTier,
   isOwned,
   isVisibleTo,
+  nextCollectionCursor,
   toCardDetail,
   toCollectionCard,
   toPromotedHolders,
@@ -58,7 +58,12 @@ export function createCardsService({ db, signer, clock }: CardsServiceDeps): Car
         return { cards: [], nextCursor: null, total: counts.total, ownedCount: counts.owned }
       }
       const [rows, counts] = await Promise.all([
-        listCollection(db, { ...filters, after: query.cursor, limit: query.limit }),
+        listCollection(db, {
+          ...filters,
+          sort: query.sort,
+          after: query.cursor,
+          limit: query.limit,
+        }),
         countCollection(db, filters),
       ])
       const page = rows.slice(0, query.limit)
@@ -67,7 +72,7 @@ export function createCardsService({ db, signer, clock }: CardsServiceDeps): Car
         cards: page.map((row) => toCollectionCard(row, signer)),
         nextCursor:
           rows.length > query.limit && last !== undefined
-            ? encodeCollectionCursor({ tier: displayTier(last), number: last.number })
+            ? encodeCollectionCursor(nextCollectionCursor(query.sort, last))
             : null,
         total: counts.total,
         ownedCount: counts.owned,
