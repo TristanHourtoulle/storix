@@ -72,6 +72,7 @@ export function NewsStage({ leagueId, deck, mode, onClose }: NewsStageProps) {
     if (phase === 'recap') doneRef.current?.focus()
   }, [phase])
   const shownCard = phase === 'shown' ? cards[state.current] : undefined
+  const liveIndex = phase === 'shown' || phase === 'revealing' ? state.current : -1
   const slots = cards.map((card) => ({
     key: card.key,
     tier: card.tier,
@@ -117,11 +118,11 @@ export function NewsStage({ leagueId, deck, mode, onClose }: NewsStageProps) {
                 subtitle={formatReleaseLabel(deck.publishedAt)}
                 isChargeHidden
               />
-              {cards.map((card) => (
+              {cards.map((card, index) => (
                 <ArcadeCardShell
                   key={card.key}
                   tier={card.tier}
-                  front={<NewsCardFace card={card} />}
+                  front={<NewsCardFace card={card} isLive={index === liveIndex} />}
                 />
               ))}
               <canvas ref={canvasRef} className="ar-fx" />

@@ -1,0 +1,239 @@
+@layer components {
+  .ni-share .sh-prev {
+    position: absolute;
+    left: 18px;
+    top: 6px;
+    width: 132px;
+    height: 165px;
+    overflow: hidden;
+    border-radius: 14px;
+    background: var(--color-bg);
+    box-shadow:
+      0 0 0 1px var(--color-line-strong),
+      0 14px 30px rgba(0, 0, 0, 0.5);
+  }
+  .ni-share .pv {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    opacity: 0;
+  }
+  .ni-share .pv.pv2 {
+    opacity: 1;
+  }
+  .ni-share .pv1 {
+    background:
+      radial-gradient(80% 60% at 50% 40%, rgba(96, 165, 250, 0.25), transparent), var(--color-bg);
+  }
+  .ni-share .pv2 {
+    justify-content: flex-start;
+    padding-top: 10px;
+    background:
+      radial-gradient(90% 60% at 50% 45%, rgba(251, 191, 36, 0.3), transparent), var(--color-bg);
+  }
+  .ni-share .pv3 {
+    background:
+      radial-gradient(80% 60% at 50% 40%, rgba(167, 139, 250, 0.28), transparent), var(--color-bg);
+  }
+  .ni-share .ni-mc.is-w78 {
+    width: 78px;
+    height: 109px;
+  }
+  .ni-share .ni-mc.is-w70 {
+    width: 70px;
+    height: 98px;
+  }
+  .ni-share .pv-ban {
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--color-tier-legendary);
+    color: var(--color-bg);
+    font: 700 11px var(--font-display);
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.5);
+    transform: rotate(-3deg);
+  }
+  .ni-share .pv-mark {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font: 600 8px var(--font-display);
+    color: var(--color-muted);
+  }
+  .ni-share .pv-mark .lg {
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+  }
+  .ni-share .pv-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 28px);
+    justify-content: center;
+    gap: 5px;
+  }
+  .ni-share .pv-grid .ni-mc {
+    width: 28px;
+    height: 39px;
+    border-radius: 5px;
+  }
+  .ni-share .pv-t {
+    font: 700 10px var(--font-display);
+  }
+  .ni-share .sh-chips {
+    position: absolute;
+    left: 162px;
+    right: 14px;
+    top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .ni-share .sh-chips span {
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 1px var(--color-line);
+    font: 600 11.5px var(--font-display);
+    color: var(--color-ink-2);
+  }
+  .ni-share .sh-chips span.c2 {
+    background: var(--color-ink);
+    color: var(--color-bg);
+    box-shadow: none;
+  }
+  .ni-share .sh-chips small {
+    font-size: 9.5px;
+    line-height: 1.3;
+    color: var(--color-faint);
+  }
+  .ni-share .sh-sheet {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    top: 184px;
+    height: 74px;
+    padding: 7px 10px;
+    border-radius: 16px;
+    background: var(--color-surface-2);
+    box-shadow: inset 0 0 0 1px var(--color-line-strong);
+  }
+  .ni-share .sh-sheet small {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 9px;
+    color: var(--color-muted);
+  }
+  .ni-share .apps {
+    display: flex;
+    justify-content: space-between;
+  }
+  .ni-share .app {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    width: 50px;
+    font-size: 8.5px;
+    color: var(--color-ink-3);
+  }
+  .ni-share .app i {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    color: #fff;
+  }
+  .ni-share .app i .ni-i {
+    width: 17px;
+    height: 17px;
+  }
+  .ni-share .app .a1 {
+    background: linear-gradient(160deg, #4ade80, #16a34a);
+  }
+  .ni-share .app .a2 {
+    background: linear-gradient(160deg, #60a5fa, #a78bfa 60%, #f472b6);
+  }
+  .ni-share .app .a3,
+  .ni-share .app .a4 {
+    background: var(--color-line-strong);
+  }
+  .ni-share .app .tap {
+    position: absolute;
+    left: 9px;
+    top: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    box-shadow: 0 0 0 2px #fff;
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .ni-share.is-live .pv {
+      animation: ni-third 7.5s step-end infinite;
+    }
+    .ni-share.is-live .pv2 {
+      animation-delay: -5s;
+    }
+    .ni-share.is-live .pv3 {
+      animation-delay: -2.5s;
+    }
+    .ni-share.is-live .sh-chips span {
+      animation: ni-third-chip 7.5s step-end infinite;
+    }
+    .ni-share.is-live .sh-chips .c2 {
+      animation-delay: -5s;
+    }
+    .ni-share.is-live .sh-chips .c3 {
+      animation-delay: -2.5s;
+    }
+    .ni-share.is-live .app .tap {
+      animation: ni-tap 2.5s ease-out infinite;
+    }
+  }
+}
+
+@keyframes ni-third {
+  0%,
+  33% {
+    opacity: 1;
+  }
+  33.4%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes ni-third-chip {
+  0% {
+    background: var(--color-ink);
+    color: var(--color-bg);
+    box-shadow: none;
+  }
+  33.4%,
+  100% {
+    background: var(--color-surface);
+    color: var(--color-ink-2);
+    box-shadow: inset 0 0 0 1px var(--color-line);
+  }
+}
+@keyframes ni-tap {
+  0%,
+  70% {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+  78% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  92%,
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}

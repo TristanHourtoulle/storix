@@ -47,7 +47,7 @@ export function NewsRecap({ deck, mode, renderTry }: NewsRecapProps) {
     return (
       <div className="ar-summary news-recap is-focus" data-t={tierKey(focused.tier)}>
         <div className="news-recap-big">
-          <NewsCardFace card={focused} />
+          <NewsCardFace card={focused} isLive />
         </div>
         <p className="news-body">{focused.body}</p>
         {renderTry(focused)}
