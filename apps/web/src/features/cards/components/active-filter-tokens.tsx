@@ -29,7 +29,7 @@ export function ActiveFilterTokens({ filters, members, onChange }: ActiveFilterT
       ) : null}
       {filters.hideLocked ? (
         <FilterToken
-          label="Possédées"
+          label="À découvrir masquées"
           onRemove={() => onChange({ ...filters, hideLocked: false })}
         />
       ) : null}

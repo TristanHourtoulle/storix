@@ -21,11 +21,7 @@ import { CollectionToolbar } from '@/features/cards/components/collection-toolba
 import { FilterSheet } from '@/features/cards/components/filter-sheet'
 import { SortSheet } from '@/features/cards/components/sort-sheet'
 import { cardsInfiniteQueryOptions, type CollectionFilters } from '@/features/cards/cards.queries'
-import {
-  activeFilterCount,
-  collectionLabel,
-  type CollectionFilterState,
-} from '@/features/cards/collection-filters'
+import { collectionLabel, type CollectionFilterState } from '@/features/cards/collection-filters'
 import { useCollectionNews } from '@/features/cards/news/use-collection-news'
 import { useCollectionSort } from '@/features/cards/use-collection-sort'
 import { DustBalance } from '@/features/game/components/dust-balance'
@@ -79,17 +75,20 @@ function Collection() {
     [news.newCards, authorId, selectedTier],
   )
 
-  function applyFilters(next: CollectionFilterState) {
-    void navigate({
-      search: (prev) => ({
-        ...prev,
-        author: next.authorId ?? undefined,
-        tier: next.tier ?? undefined,
-        hideLocked: next.hideLocked || undefined,
-      }),
-      replace: true,
-    })
-  }
+  const applyFilters = useCallback(
+    (next: CollectionFilterState) => {
+      void navigate({
+        search: (prev) => ({
+          ...prev,
+          author: next.authorId ?? undefined,
+          tier: next.tier ?? undefined,
+          hideLocked: next.hideLocked || undefined,
+        }),
+        replace: true,
+      })
+    },
+    [navigate],
+  )
 
   return (
     <main className="screen">
@@ -145,6 +144,7 @@ function CollectionBody({
 }: CollectionBodyProps) {
   const [isSortOpen, setIsSortOpen] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const openFilters = useCallback(() => setIsFilterOpen(true), [])
   const [isNewFirst, setIsNewFirst] = useState(false)
   if (isNewFirst && visibleNew.length === 0) setIsNewFirst(false)
   const {
@@ -198,7 +198,7 @@ function CollectionBody({
       <CollectionToolbar
         filters={filterState}
         members={members}
-        onOpenFilters={() => setIsFilterOpen(true)}
+        onOpenFilters={openFilters}
         onChangeFilters={onApplyFilters}
         sort={sort}
         onOpenSort={() => setIsSortOpen(true)}
@@ -245,7 +245,8 @@ function CollectionBody({
   const firstPage = data.pages[0]
   const total = firstPage?.total ?? 0
   const owned = firstPage?.ownedCount ?? 0
-  const isFiltered = activeFilterCount(filterState) > 0
+  const isFiltered = filterState.authorId !== null || filterState.tier !== null
+  const isOwnedEmpty = hideLocked && gridCards.length === 0 && !hasNextPage
 
   if (total === 0) {
     return isFiltered ? (
@@ -275,13 +276,15 @@ function CollectionBody({
     <>
       <CollectionProgress owned={owned} total={total} label={label} />
       {sortControls}
-      {owned === 0 && (
+      {owned === 0 && !isOwnedEmpty && (
         <p className="m-0 text-sm text-muted">
           Ouvre un booster pour découvrir tes premières cartes.
         </p>
       )}
       {isOtherSortShown ? (
         LOADING
+      ) : isOwnedEmpty ? (
+        <p className="m-0 text-sm text-muted">Aucune carte possédée dans ce filtre.</p>
       ) : (
         <CollectionGrid
           leagueId={leagueId}

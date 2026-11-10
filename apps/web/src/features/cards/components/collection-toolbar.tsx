@@ -38,7 +38,7 @@ export function CollectionToolbar({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 [scrollbar-width:none]">
+      <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none]">
         <button
           type="button"
           className="sort-btn"
