@@ -3,9 +3,11 @@ import { cardRarityHistory, cards, leagues, type DbExecutor } from '@storix/db'
 import type { CardTier, ComputedTier, TierSource } from '@storix/shared/domain'
 
 export {
+  insertLeagueEvents,
   listRarityInputs,
   lockLeagueEconomyShared,
   lockLeagueRarity,
+  type NewLeagueEvent,
   type RarityInputRow,
 } from '@storix/db'
 

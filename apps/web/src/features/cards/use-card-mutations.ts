@@ -9,7 +9,8 @@ import type {
 } from '@storix/shared'
 import { ApiError } from '@/lib/http'
 import { logger } from '@/lib/logger'
-import { recentRevealsQueryOptions, walletQueryOptions } from '@/features/game/game.queries'
+import { walletQueryOptions } from '@/features/game/game.queries'
+import { refreshFeed } from '@/features/league-feed/league-feed.queries'
 import { convertStack, promoteCard, recycleCopy, upgradeToFoil } from './cards.api'
 import { refreshEmblems } from '@/features/emblems/emblems.queries'
 
@@ -33,9 +34,7 @@ export function useCardMutations(leagueId: string, cardId: string): CardMutation
     void queryClient
       .invalidateQueries({ queryKey: ['leagues', leagueId, 'cards'] })
       .catch(logRefreshFailure)
-    void queryClient
-      .invalidateQueries({ queryKey: recentRevealsQueryOptions(leagueId).queryKey })
-      .catch(logRefreshFailure)
+    refreshFeed(queryClient, leagueId)
   }
 
   function onFailure(action: string, error: Error): void {

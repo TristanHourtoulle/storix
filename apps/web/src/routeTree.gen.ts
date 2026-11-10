@@ -17,6 +17,7 @@ import { Route as JoinTokenRouteImport } from './routes/join.$token'
 import { Route as AuthedLLeagueIdRouteImport } from './routes/_authed/l.$leagueId'
 import { Route as AuthedLeaguesNewRouteImport } from './routes/_authed/leagues.new'
 import { Route as AuthedLLeagueIdIndexRouteImport } from './routes/_authed/l.$leagueId.index'
+import { Route as AuthedLLeagueIdActivityRouteImport } from './routes/_authed/l.$leagueId.activity'
 import { Route as AuthedLLeagueIdAddRouteImport } from './routes/_authed/l.$leagueId.add'
 import { Route as AuthedLLeagueIdAdminRouteImport } from './routes/_authed/l.$leagueId.admin'
 import { Route as AuthedLLeagueIdBoosterRouteImport } from './routes/_authed/l.$leagueId.booster'
@@ -72,6 +73,11 @@ const AuthedLeaguesNewRoute = AuthedLeaguesNewRouteImport.update({
 const AuthedLLeagueIdIndexRoute = AuthedLLeagueIdIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthedLLeagueIdRoute,
+} as any)
+const AuthedLLeagueIdActivityRoute = AuthedLLeagueIdActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
   getParentRoute: () => AuthedLLeagueIdRoute,
 } as any)
 const AuthedLLeagueIdAddRoute = AuthedLLeagueIdAddRouteImport.update({
@@ -180,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/join/$token': typeof JoinTokenRoute
   '/l/$leagueId': typeof AuthedLLeagueIdRouteWithChildren
   '/leagues/new': typeof AuthedLeaguesNewRoute
+  '/l/$leagueId/activity': typeof AuthedLLeagueIdActivityRoute
   '/l/$leagueId/add': typeof AuthedLLeagueIdAddRoute
   '/l/$leagueId/admin': typeof AuthedLLeagueIdAdminRoute
   '/l/$leagueId/booster': typeof AuthedLLeagueIdBoosterRoute
@@ -205,6 +212,7 @@ export interface FileRoutesByTo {
   '/join/$token': typeof JoinTokenRoute
   '/': typeof AuthedIndexRoute
   '/leagues/new': typeof AuthedLeaguesNewRoute
+  '/l/$leagueId/activity': typeof AuthedLLeagueIdActivityRoute
   '/l/$leagueId/add': typeof AuthedLLeagueIdAddRoute
   '/l/$leagueId/admin': typeof AuthedLLeagueIdAdminRoute
   '/l/$leagueId/booster': typeof AuthedLLeagueIdBoosterRoute
@@ -233,6 +241,7 @@ export interface FileRoutesById {
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/l/$leagueId': typeof AuthedLLeagueIdRouteWithChildren
   '/_authed/leagues/new': typeof AuthedLeaguesNewRoute
+  '/_authed/l/$leagueId/activity': typeof AuthedLLeagueIdActivityRoute
   '/_authed/l/$leagueId/add': typeof AuthedLLeagueIdAddRoute
   '/_authed/l/$leagueId/admin': typeof AuthedLLeagueIdAdminRoute
   '/_authed/l/$leagueId/booster': typeof AuthedLLeagueIdBoosterRoute
@@ -261,6 +270,7 @@ export interface FileRouteTypes {
     | '/join/$token'
     | '/l/$leagueId'
     | '/leagues/new'
+    | '/l/$leagueId/activity'
     | '/l/$leagueId/add'
     | '/l/$leagueId/admin'
     | '/l/$leagueId/booster'
@@ -286,6 +296,7 @@ export interface FileRouteTypes {
     | '/join/$token'
     | '/'
     | '/leagues/new'
+    | '/l/$leagueId/activity'
     | '/l/$leagueId/add'
     | '/l/$leagueId/admin'
     | '/l/$leagueId/booster'
@@ -313,6 +324,7 @@ export interface FileRouteTypes {
     | '/_authed/'
     | '/_authed/l/$leagueId'
     | '/_authed/leagues/new'
+    | '/_authed/l/$leagueId/activity'
     | '/_authed/l/$leagueId/add'
     | '/_authed/l/$leagueId/admin'
     | '/_authed/l/$leagueId/booster'
@@ -396,6 +408,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/l/$leagueId/'
       preLoaderRoute: typeof AuthedLLeagueIdIndexRouteImport
+      parentRoute: typeof AuthedLLeagueIdRoute
+    }
+    '/_authed/l/$leagueId/activity': {
+      id: '/_authed/l/$leagueId/activity'
+      path: '/activity'
+      fullPath: '/l/$leagueId/activity'
+      preLoaderRoute: typeof AuthedLLeagueIdActivityRouteImport
       parentRoute: typeof AuthedLLeagueIdRoute
     }
     '/_authed/l/$leagueId/add': {
@@ -521,6 +540,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedLLeagueIdRouteChildren {
+  AuthedLLeagueIdActivityRoute: typeof AuthedLLeagueIdActivityRoute
   AuthedLLeagueIdAddRoute: typeof AuthedLLeagueIdAddRoute
   AuthedLLeagueIdAdminRoute: typeof AuthedLLeagueIdAdminRoute
   AuthedLLeagueIdBoosterRoute: typeof AuthedLLeagueIdBoosterRoute
@@ -542,6 +562,7 @@ interface AuthedLLeagueIdRouteChildren {
 }
 
 const AuthedLLeagueIdRouteChildren: AuthedLLeagueIdRouteChildren = {
+  AuthedLLeagueIdActivityRoute: AuthedLLeagueIdActivityRoute,
   AuthedLLeagueIdAddRoute: AuthedLLeagueIdAddRoute,
   AuthedLLeagueIdAdminRoute: AuthedLLeagueIdAdminRoute,
   AuthedLLeagueIdBoosterRoute: AuthedLLeagueIdBoosterRoute,

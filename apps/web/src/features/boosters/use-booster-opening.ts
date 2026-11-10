@@ -4,6 +4,7 @@ import type { BoosterOpening, ErrorCode } from '@storix/shared'
 import { ApiError } from '@/lib/http'
 import { boosterOpeningQueryOptions, walletQueryOptions } from '../game/game.queries'
 import { refreshEmblems } from '@/features/emblems/emblems.queries'
+import { refreshFeed } from '@/features/league-feed/league-feed.queries'
 
 /** Extracts the API error code of a failed opening, if any. */
 export function getOpeningErrorCode(error: unknown): ErrorCode | null {
@@ -12,7 +13,7 @@ export function getOpeningErrorCode(error: unknown): ErrorCode | null {
 
 /**
  * Opens a booster for a request id. The id lives in the URL so a reload or retry returns the same cards.
- * On success the wallet cache is replaced and the collection and reveals are invalidated.
+ * On success the wallet cache is replaced and the collection and league feed are invalidated.
  */
 export function useBoosterOpening(
   leagueId: string,
@@ -28,7 +29,7 @@ export function useBoosterOpening(
     if (!wallet) return
     queryClient.setQueryData(walletQueryOptions(leagueId).queryKey, wallet)
     void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'cards'] })
-    void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'reveals'] })
+    refreshFeed(queryClient, leagueId)
     void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'booster-history'] })
     refreshEmblems(queryClient, leagueId)
   }, [queryClient, leagueId, openingId, wallet])

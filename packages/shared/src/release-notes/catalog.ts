@@ -3,6 +3,28 @@ import type { ReleaseNote } from '../schemas/whats-new'
 /** Every feature release shown in the "Nouveautés" booster, newest first. */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    id: '2026-11-10-d',
+    publishedAt: '2026-11-10T22:00:00+01:00',
+    cards: [
+      {
+        key: 'league-feed',
+        title: 'Dans la ligue',
+        body: "Sur l'accueil, suis tout ce qui se passe : tirages, photos, améliorations, emblèmes. Et envoie un Bravo à tes amis.",
+        tier: 'legendary',
+        illustration: 'feed',
+        tryTarget: 'home',
+      },
+      {
+        key: 'celebration',
+        title: 'Le sacre',
+        body: "Améliore une carte ou passe-la en foil : elle monte, change d'aura et reçoit son ★. À partager !",
+        tier: 'epic',
+        illustration: 'celebration',
+        tryTarget: 'collection-upgradable',
+      },
+    ],
+  },
+  {
     id: '2026-11-10-c',
     publishedAt: '2026-11-10T21:00:00+01:00',
     cards: [

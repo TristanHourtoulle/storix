@@ -42,6 +42,7 @@ const MESSAGES: Record<ErrorCode, string> = {
   EMBLEM_NOT_EARNED: 'Tu ne peux mettre en avant que des emblèmes débloqués.',
   SHOWCASE_INVALID: 'Ta vitrine ne peut contenir que des cartes que tu possèdes.',
   TAG_NOT_ALLOWED: 'Tu ne peux pas modifier cette identification.',
+  BRAVO_NOT_ALLOWED: 'Tu ne peux pas féliciter cet exploit.',
   INTERNAL_ERROR: 'Une erreur est survenue.',
 }
 

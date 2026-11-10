@@ -16,7 +16,7 @@ import {
   type PoolCard,
   type PulledCopyOutcome,
 } from '@storix/shared'
-import { and, asc, desc, eq, exists, gt, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
+import { and, asc, eq, exists, gt, inArray, isNull, lte, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import {
   authorIsFormerMember,
@@ -94,26 +94,11 @@ export interface PullViewRow extends CardMediaColumns {
   capturedAt: Date | null
 }
 
-export interface RevealRow extends CardMediaColumns {
-  status: 'active' | 'hidden'
-  pulledById: string
-  pulledByName: string | null
-  pulledAt: Date
-  variant: CopyVariant
-  tierAtMint: CardTier
-  tier: CardTier
-  isProvisional: boolean
-}
-
 const author = alias(user, 'author')
-const puller = alias(user, 'puller')
 
 const authorName = sql<
   string | null
 >`coalesce(${author.displayUsername}, ${author.username}, ${author.name})`
-const pullerName = sql<
-  string | null
->`coalesce(${puller.displayUsername}, ${puller.username}, ${puller.name})`
 
 const cardMediaColumns = {
   cardId: cards.id,
@@ -315,41 +300,4 @@ export async function claimDiscoveries(
     )
     .returning({ id: cards.id })
   return rows.map((row) => row.id)
-}
-
-/** Lists the league's latest Rare-or-better pulls since a date, newest first. */
-export async function listRecentReveals(
-  db: DbExecutor,
-  input: { leagueId: string; since: Date; limit: number },
-): Promise<RevealRow[]> {
-  const rows = await db
-    .select({
-      ...cardMediaColumns,
-      status: cards.status,
-      pulledById: boosterOpenings.userId,
-      pulledByName: pullerName,
-      pulledAt: boosterOpenings.openedAt,
-      variant: boosterPulls.variant,
-      tierAtMint: boosterPulls.tierAtMint,
-      tier: cards.tier,
-      isProvisional: cards.isProvisional,
-    })
-    .from(boosterPulls)
-    .innerJoin(boosterOpenings, eq(boosterOpenings.id, boosterPulls.openingId))
-    .innerJoin(cards, eq(cards.id, boosterPulls.cardId))
-    .innerJoin(media, eq(media.id, cards.mediaId))
-    .leftJoin(author, eq(author.id, cards.authorId))
-    .leftJoin(authorMembership, authorMembershipOn)
-    .leftJoin(puller, eq(puller.id, boosterOpenings.userId))
-    .where(
-      and(
-        eq(boosterOpenings.leagueId, input.leagueId),
-        gte(boosterOpenings.openedAt, input.since),
-        gte(boosterPulls.tierAtMint, 'rare'),
-        eq(cards.status, 'active'),
-      ),
-    )
-    .orderBy(desc(boosterOpenings.openedAt), asc(boosterPulls.slot))
-    .limit(input.limit)
-  return rows.map(parseVariants)
 }

@@ -1,9 +1,7 @@
 import { z } from 'zod'
 import {
   cardAuthorSchema,
-  cardPersonSchema,
   cardTierSchema,
-  collectionCardSchema,
   copyVariantSchema,
 } from './cards'
 import { isoDateSchema } from './common'
@@ -45,17 +43,6 @@ export const boosterOpeningSchema = z.object({
   wallet: walletStateSchema,
 })
 
-export const recentRevealSchema = z.object({
-  pulledBy: cardPersonSchema,
-  pulledAt: isoDateSchema,
-  variant: copyVariantSchema,
-  tierAtMint: cardTierSchema,
-  card: collectionCardSchema,
-})
-
-export const recentRevealsSchema = z.array(recentRevealSchema).max(6)
-
 export type OpenBoosterBody = z.infer<typeof openBoosterBodySchema>
 export type BoosterPull = z.infer<typeof boosterPullSchema>
 export type BoosterOpening = z.infer<typeof boosterOpeningSchema>
-export type RecentReveal = z.infer<typeof recentRevealSchema>

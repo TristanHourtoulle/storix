@@ -6,6 +6,7 @@ import { IosInstallHint } from '@/features/pwa/components/ios-install-hint'
 import { meQueryOptions } from '@/features/auth/session.queries'
 import { useCollectionVisitTracker } from '@/features/cards/news/use-collection-visit-tracker'
 import { EmblemGate } from '@/features/emblems/components/emblem-gate'
+import { MythicBannerGate } from '@/features/league-feed/components/mythic-banner-gate'
 import { clearLastLeagueId, useRememberLastLeague } from '@/features/leagues/last-league'
 import { purgeLeagueCaches } from '@/features/privacy/purge-cache'
 import { useRemovedCardsSync } from '@/features/privacy/use-removed-cards-sync'
@@ -44,6 +45,9 @@ function LeagueLayout() {
   useCollectionVisitTracker(me.user.id, leagueId)
   const { hasUnseen } = useWhatsNew()
   const [isNewsOpen, setIsNewsOpen] = useState(false)
+  const [isPasskeyOpen, setIsPasskeyOpen] = useState(false)
+  const [isEmblemOpen, setIsEmblemOpen] = useState(false)
+  const [isMythicOpen, setIsMythicOpen] = useState(false)
   const isNewsPending = hasUnseen && !wasAutoShown(me.user.id)
   const onboarding = useOnboarding()
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
@@ -86,9 +90,27 @@ function LeagueLayout() {
         isSuspended={
           isBoosterStage || isAddScreen || isOnboardingBlocking || isNewsOpen || isNewsPending
         }
+        onOpenChange={setIsEmblemOpen}
       />
-      {isNewsOpen || isNewsPending || isOnboardingBlocking ? null : (
-        <PasskeyPrompt userId={me.user.id} displayUsername={me.user.displayUsername} />
+      <MythicBannerGate
+        leagueId={leagueId}
+        isSuspended={
+          isBoosterStage ||
+          isAddScreen ||
+          isOnboardingBlocking ||
+          isNewsOpen ||
+          isNewsPending ||
+          isPasskeyOpen ||
+          isEmblemOpen
+        }
+        onOpenChange={setIsMythicOpen}
+      />
+      {isNewsOpen || isNewsPending || isOnboardingBlocking || isMythicOpen ? null : (
+        <PasskeyPrompt
+          userId={me.user.id}
+          displayUsername={me.user.displayUsername}
+          onOpenChange={setIsPasskeyOpen}
+        />
       )}
       {isBoosterStage ? null : (
         <div ref={navStackRef} className="sticky bottom-0 z-40 mt-auto">

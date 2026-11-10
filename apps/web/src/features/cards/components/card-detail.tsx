@@ -9,6 +9,7 @@ import { userMessage } from '@/features/errors/user-message'
 import { useWallet } from '@/features/game/use-wallet'
 import { leagueDetailQueryOptions } from '@/features/leagues/leagues.queries'
 import { ShareSheet } from '@/features/share/components/share-sheet'
+import { writeShareStyle } from '@/features/share/share-style'
 import { subjectFromCardDetail, type ShareSubject } from '@/features/share/share-subject'
 import { useCardMutations } from '../use-card-mutations'
 import { useCardTag } from '../use-card-tag'
@@ -24,6 +25,7 @@ import { useMemberAvatars } from '@/features/portraits/use-member-avatars'
 import { AuthorLink } from './author-link'
 import { MetaCell, discovererLabel, formatDate } from './meta-cell'
 import { PromotedHolders } from './promoted-holders'
+import { PromotionCelebration, type Celebration } from './promotion-celebration'
 import { RarityJourney } from './rarity-journey'
 import { ReactionBar } from './reaction-bar'
 import { ReactionsSheet, type ReactionTab } from './reactions-sheet'
@@ -43,6 +45,7 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
   const { ref, needsMotionPermission, isMotionDenied, requestMotionPermission } = useHoloTilt()
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [shareSubject, setShareSubject] = useState<ShareSubject | null>(null)
+  const [celebration, setCelebration] = useState<Celebration | null>(null)
   const league = useQuery(leagueDetailQueryOptions(leagueId)).data
   const leagueName = league?.name ?? ''
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
@@ -183,6 +186,18 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
       {shareSubject ? (
         <ShareSheet subject={shareSubject} onClose={() => setShareSubject(null)} />
       ) : null}
+      {celebration ? (
+        <PromotionCelebration
+          card={card}
+          celebration={celebration}
+          onShare={() => {
+            writeShareStyle('flex')
+            setCelebration(null)
+            setShareSubject(subjectFromCardDetail(card, meId, leagueName))
+          }}
+          onClose={() => setCelebration(null)}
+        />
+      ) : null}
       {card.canWithdraw ? (
         <Button variant="ghost" onClick={onWithdraw}>
           Retirer cette photo
@@ -201,8 +216,26 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
         convertError={convertStack.error ? userMessage(convertStack.error) : null}
         foilError={upgradeToFoil.error ? userMessage(upgradeToFoil.error) : null}
         onRecycle={(variant) => recycle.mutate(variant)}
-        onUpgrade={(callbacks) => upgradeToFoil.mutate(undefined, callbacks)}
-        onPromote={(from, callbacks) => promote.mutate(from, callbacks)}
+        onUpgrade={(callbacks) => {
+          const tier = card.displayTier
+          upgradeToFoil.mutate(undefined, {
+            ...callbacks,
+            onSuccess: () => {
+              callbacks.onSuccess()
+              setCelebration({ kind: 'foil', tier })
+            },
+          })
+        }}
+        onPromote={(from, callbacks) => {
+          const { to } = card.actions.promotion
+          promote.mutate(from, {
+            ...callbacks,
+            onSuccess: () => {
+              callbacks.onSuccess()
+              if (to !== null) setCelebration({ kind: 'promote', from, to })
+            },
+          })
+        }}
         onConvert={(body, callbacks) => convertStack.mutate(body, callbacks)}
         tagState={{ isTagged, isBusy: tag.add.isPending || tag.remove.isPending }}
         onToggleTag={() => {

@@ -11,12 +11,14 @@ import { authRoutes } from './auth/auth.routes'
 import { clientIpPolicy, rateLimitKeyGenerator } from './config/client-ip'
 import { buildServices, type AppDeps } from './deps'
 import { accountRoutes } from './features/account/account.routes'
+import { auditRoutes } from './features/audit/audit.routes'
 import { boostersRoutes } from './features/boosters/boosters.routes'
 import { cardsRoutes } from './features/cards/cards.routes'
 import { copiesRoutes } from './features/copies/copies.routes'
 import { emblemsRoutes } from './features/emblems/emblems.routes'
 import { healthRoutes } from './features/health/health.routes'
 import { invitationsRoutes } from './features/invitations/invitations.routes'
+import { leagueFeedRoutes } from './features/league-feed/league-feed.routes'
 import { leagueSettingsRoutes } from './features/league-settings/league-settings.routes'
 import { leaguesRoutes } from './features/leagues/leagues.routes'
 import { mediaRoutes } from './features/media/media.routes'
@@ -100,12 +102,14 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(boostersRoutes(services.boosters, services.boosterHistory), { prefix: '/api' })
   await app.register(copiesRoutes(services.copies, services.stacks), { prefix: '/api' })
   await app.register(reactionsRoutes(services.reactions), { prefix: '/api' })
+  await app.register(leagueFeedRoutes(services.leagueFeed), { prefix: '/api' })
   await app.register(emblemsRoutes(services.emblems), { prefix: '/api' })
   await app.register(tagsRoutes(services.tags), { prefix: '/api' })
   await app.register(showcaseRoutes(services.showcase), { prefix: '/api' })
   await app.register(removalsRoutes(services.removals), { prefix: '/api' })
   await app.register(leagueSettingsRoutes(services.leagueSettings), { prefix: '/api' })
   await app.register(moderationRoutes(services.moderation), { prefix: '/api' })
+  await app.register(auditRoutes(services.audit), { prefix: '/api' })
   await app.register(withdrawalsRoutes(services.withdrawals), { prefix: '/api' })
   await app.register(portraitsRoutes(services.portraits), { prefix: '/api' })
   await app.register(pushRoutes(services.push), { prefix: '/api' })

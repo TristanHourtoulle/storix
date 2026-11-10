@@ -12,6 +12,7 @@ import {
 import { AppError, notFound } from '../../lib/errors'
 import { insertAuditEntry } from '../audit/audit.repository'
 import { awardAfter, type EmblemAwards } from '../emblems/emblems.service'
+import { insertLeagueEvents } from '../league-feed/league-events.repository'
 import type { Membership } from '../leagues/leagues.service'
 import { lockCardTier, lockOwnedCopies, setPromotedTier } from './copies.repository'
 import { copyNotOwned, setDust, withLockedCard, type LockedContext } from './locked-card'
@@ -80,14 +81,26 @@ export function createStacksService({ db, clock, emblems }: StacksServiceDeps): 
             })
           }
           await consume(ctx, key, take.taken)
-          const promoted = await setPromotedTier(ctx.tx, {
+          const copyId = await setPromotedTier(ctx.tx, {
             cardId,
             ownerId: m.userId,
             variant,
             promotedTier: to,
             now: ctx.now,
           })
-          if (!promoted) throw copyNotOwned()
+          if (copyId === null) throw copyNotOwned()
+          await insertLeagueEvents(ctx.tx, [
+            {
+              leagueId: m.leagueId,
+              actorId: m.userId,
+              type: 'card_promoted',
+              cardId,
+              tier: to,
+              payload: { fromTier: decision.from, toTier: to },
+              dedupeKey: `promote:${copyId}:${to}`,
+              visibleAt: ctx.now,
+            },
+          ])
           await insertAuditEntry(ctx.tx, {
             leagueId: m.leagueId,
             actorId: m.userId,

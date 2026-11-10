@@ -4,7 +4,7 @@ import { meQueryOptions } from '@/features/auth/session.queries'
 import { userMessage } from '@/features/errors/user-message'
 import { updateDisplayName } from './account.api'
 
-/** Updates the display name, refreshes `me` and invalidates the league views (members, cards, reveals) that show names. */
+/** Updates the display name, refreshes `me` and invalidates the league views (members, cards, feed) that show names. */
 export function useUpdateDisplayName(): {
   save: (body: UpdateDisplayNameBody) => void
   reset: () => void
