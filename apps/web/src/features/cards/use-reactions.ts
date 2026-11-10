@@ -3,6 +3,8 @@ import type { Query } from '@tanstack/react-query'
 import type { ReactionCounts, ReactionType, ViewerCardDetail } from '@storix/shared'
 import { logger } from '@/lib/logger'
 import { refreshEmblems } from '@/features/emblems/emblems.queries'
+import { refreshMissions } from '@/features/missions/missions.queries'
+import { refreshLeagueGoal } from '@/features/league-goal/league-goal.queries'
 import { setReaction } from './cards.api'
 import { cardDetailQueryOptions } from './cards.queries'
 import { cardReactorsQueryKey } from './use-card-reactors'
@@ -84,6 +86,8 @@ export function useReactions(leagueId: string, cardId: string) {
         logger.warn('Reactors refresh failed', { error: cause })
       })
       refreshEmblems(queryClient, leagueId)
+      refreshMissions(queryClient, leagueId)
+      refreshLeagueGoal(queryClient, leagueId)
     },
     onSuccess: (reactions) => {
       if (hasOtherPending()) return

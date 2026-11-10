@@ -14,11 +14,14 @@ import {
   isTierAtLeast,
   MIN_DRAWABLE_CARDS_FOR_BOOSTER,
   nextPityState,
+  pickBoosterSource,
   resolveLeagueSettings,
   settleBoosterCopies,
   stackCountsByCard,
   tierRank,
   type BoosterCadence,
+  type BoosterSource,
+  type BoosterStockState,
   type CardTier,
   type BoosterDraw,
   type BoosterOpening,
@@ -41,6 +44,7 @@ import {
   ensureWallet,
   lockWallet,
   updateWallet,
+  type WalletPatch,
   type WalletRow,
 } from '../wallets/wallets.repository'
 import {
@@ -167,21 +171,19 @@ async function openNewBooster(
   wallet: WalletRow,
   signer: MediaSigner,
 ): Promise<BoosterOpening> {
-  const consumed = consumeBooster(
-    { stock: wallet.boosterStock, anchor: wallet.boosterStockAt },
-    ctx.now,
-    ctx.cadence,
-  )
-  if (consumed === null) {
-    const { nextAt } = computeBoosterStock(
-      { stock: wallet.boosterStock, anchor: wallet.boosterStockAt },
-      ctx.now,
-      ctx.cadence,
-    )
+  const stockState = { stock: wallet.boosterStock, anchor: wallet.boosterStockAt }
+  const timed = computeBoosterStock(stockState, ctx.now, ctx.cadence)
+  const source = pickBoosterSource({
+    premiumGifts: wallet.premiumGifts,
+    availableStock: timed.available,
+    bonus: wallet.bonusBoosters,
+  })
+  if (source === null) {
     throw new AppError('BOOSTER_STOCK_EMPTY', 409, 'No booster available', {
-      nextAt: nextAt === null ? null : nextAt.toISOString(),
+      nextAt: timed.nextAt === null ? null : timed.nextAt.toISOString(),
     })
   }
+  const consumedPatch = consumeFromSource(source, wallet, stockState, ctx)
   const pool = await listBoosterPool(ctx.tx, {
     leagueId: ctx.m.leagueId,
     eligibleBefore: boosterEligibleBefore(ctx.now, ctx.delayMinutes),
@@ -196,7 +198,7 @@ async function openNewBooster(
 
   const pityBefore = { sinceEpic: wallet.pitySinceEpic, sinceLegendary: wallet.pitySinceLegendary }
   const seed = generateBoosterSeed()
-  const isPremium = isPremiumBooster(wallet.boostersOpened)
+  const isPremium = source === 'premium_gift' || isPremiumBooster(wallet.boostersOpened)
   const draws = drawBooster({
     pool,
     pity: pityBefore,
@@ -240,6 +242,7 @@ async function openNewBooster(
     poolDigest: sha256Hex(boosterPoolDigestInput(pool)),
     dustGained: 0,
     isPremium,
+    source,
   })
   await mintCopies(ctx, settlements, opening.id)
   await addToStack(
@@ -284,8 +287,7 @@ async function openNewBooster(
     draws.map((draw) => draw.tier),
   )
   const patch = {
-    boosterStock: consumed.stock,
-    boosterStockAt: consumed.anchor,
+    ...consumedPatch,
     pitySinceEpic: pityAfter.sinceEpic,
     pitySinceLegendary: pityAfter.sinceLegendary,
     boostersOpened: wallet.boostersOpened + 1,
@@ -294,6 +296,19 @@ async function openNewBooster(
   await updateWallet(ctx.tx, { leagueId: ctx.m.leagueId, userId: ctx.m.userId }, patch)
   const walletState = await walletStateFor(ctx, { ...wallet, ...patch })
   return present(ctx, { ...opening, dustGained: 0 }, walletState, signer)
+}
+
+function consumeFromSource(
+  source: BoosterSource,
+  wallet: WalletRow,
+  stockState: BoosterStockState,
+  ctx: OpeningContext,
+): Pick<WalletPatch, 'boosterStock' | 'boosterStockAt' | 'bonusBoosters' | 'premiumGifts'> {
+  if (source === 'premium_gift') return { premiumGifts: wallet.premiumGifts - 1 }
+  if (source === 'bonus') return { bonusBoosters: wallet.bonusBoosters - 1 }
+  const consumed = consumeBooster(stockState, ctx.now, ctx.cadence)
+  if (consumed === null) throw new Error('Timed booster source without available stock')
+  return { boosterStock: consumed.stock, boosterStockAt: consumed.anchor }
 }
 
 function openingEvents(

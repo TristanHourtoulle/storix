@@ -12,6 +12,7 @@ export function DustBalance({ dust }: DustBalanceProps) {
   return (
     <div
       className="dust"
+      data-dust-target
       role="img"
       aria-label={`${dust} ${dust > 1 ? 'paillettes' : 'paillette'}`}
     >

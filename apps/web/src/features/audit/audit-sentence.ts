@@ -263,6 +263,35 @@ function economySentence(actor: SentencePart, entry: AuditEntry): AuditSentence 
         ],
       )
     }
+    case 'mission.claimed': {
+      const dust = num(meta, 'dust') ?? 0
+      const boosters = num(meta, 'boosters') ?? 0
+      return sentence(
+        [actor, ` a récupéré la mission « ${str(meta, 'label') ?? ''} »`],
+        [
+          ...(dust > 0 ? [`+${dust} paillettes`] : []),
+          ...(boosters > 0 ? [`+${boosters} booster${boosters > 1 ? 's' : ''}`] : []),
+          ...(meta?.autoClaimed === true ? ['Créditée automatiquement à la remise à zéro.'] : []),
+        ],
+      )
+    }
+    case 'league_goal.reward_granted': {
+      const boosters = num(meta, 'boosters') ?? 0
+      const gifts = num(meta, 'premiumGifts') ?? 0
+      const members = num(meta, 'members')
+      return sentence(
+        [
+          gifts > 0
+            ? 'Palier bonus de l’objectif de la ligue atteint'
+            : 'Objectif de la ligue atteint',
+        ],
+        [
+          ...(boosters > 0 ? [`+${boosters} boosters pour chaque membre`] : []),
+          ...(gifts > 0 ? [`+${gifts} booster premium pour chaque membre`] : []),
+          ...(members === null ? [] : [`${members} membres récompensés`]),
+        ],
+      )
+    }
     default:
       return sentence([actor, ' a converti des doublons en paillettes'])
   }
@@ -379,6 +408,8 @@ export function auditSentence(entry: AuditEntry): AuditSentence {
     case 'copy.foil_upgraded':
     case 'copy.promoted':
     case 'stack.converted':
+    case 'mission.claimed':
+    case 'league_goal.reward_granted':
       return economySentence(actor, entry)
     case 'card.created':
     case 'card.hidden':

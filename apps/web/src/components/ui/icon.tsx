@@ -49,6 +49,10 @@ export type IconName =
   | 'pin'
   | 'door'
   | 'search'
+  | 'target'
+  | 'trophy'
+  | 'clap'
+  | 'eye'
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -106,6 +110,11 @@ const PATHS: Record<IconName, string> = {
   up: 'M12 19V6M6 11l6-6 6 6',
   crown: 'M4 8l4 4 4-7 4 7 4-4-2 11H6z',
   arrow: 'M5 12h13M13 6l6 6-6 6',
+  target:
+    'M12 4a8 8 0 1 0 0 16 8 8 0 1 0 0-16zM12 8a4 4 0 1 0 0 8 4 4 0 1 0 0-8zM12 11a1 1 0 1 0 0 2 1 1 0 1 0 0-2z',
+  trophy: 'M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8',
+  clap: 'M8 13l-2-2a1.5 1.5 0 0 1 2-2l4 4M10 9l3-3a1.5 1.5 0 0 1 2 2l-1 1M14 10l1-1a1.5 1.5 0 0 1 2 2l-5 5a5 5 0 0 1-7-7',
+  eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 1 0 0-6z',
 }
 
 const STROKE_WIDTHS: Partial<Record<IconName, number>> = { more: 3 }

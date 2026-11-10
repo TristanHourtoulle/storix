@@ -35,11 +35,15 @@ import { registerMediaProcessJob } from './jobs/media-process.job'
 import { registerMediaPublishJob } from './jobs/media-publish.job'
 import { createMediaQueue } from './jobs/media-queue'
 import { registerMediaSweepJob } from './jobs/media-sweep.job'
+import { registerLeagueGoalsJobs } from './jobs/league-goals.job'
+import { registerMissionsSettleJob } from './jobs/missions-settle.job'
 import { registerRarityNightlyJob } from './jobs/rarity-nightly.job'
 import { createRarityQueue } from './jobs/rarity-queue'
 import { registerRarityRecomputeJob } from './jobs/rarity-recompute.job'
 import { registerStorageDeleteJob } from './jobs/storage-delete.job'
 import { createStorageGcQueue, registerStorageGcJob } from './jobs/storage-gc.job'
+import { createLeagueGoalsService } from './features/league-goal/league-goals.service'
+import { createMissionsSettleService } from './features/missions/missions-settle.service'
 import { createLogger } from './lib/logger'
 import { createPushSender } from './lib/push-sender'
 import { ensureMediaPublishQueue } from './jobs/media-publish-queue'
@@ -165,6 +169,11 @@ async function start(): Promise<void> {
   const storageGc = createStorageGcService({ db: database.db, storage, clock, logger })
   await registerStorageDeleteJob(boss, storageDelete, logger)
   await registerStorageGcJob(boss, storageGc)
+  await registerMissionsSettleJob(
+    boss,
+    createMissionsSettleService({ db: database.db, clock, logger }),
+  )
+  await registerLeagueGoalsJobs(boss, createLeagueGoalsService({ db: database.db, clock, logger }))
   if (vapid) {
     const sender = createPushSender(vapid, logger)
     const boosterFull = createBoosterFullService({ db: database.db, sender, clock, logger })

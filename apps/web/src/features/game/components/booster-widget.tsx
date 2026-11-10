@@ -59,6 +59,22 @@ function PoolTooSmallMeta({
   )
 }
 
+function ExtraBoosters({ bonus, premiumGifts }: { bonus: number; premiumGifts: number }) {
+  if (bonus === 0 && premiumGifts === 0) return null
+  const parts = [
+    bonus > 0 ? `+${bonus} bonus` : null,
+    premiumGifts > 0 ? `${premiumGifts} premium ${premiumGifts > 1 ? 'offerts' : 'offert'}` : null,
+  ].filter((part) => part !== null)
+  return (
+    <p className="hero-pity">
+      <span className="hero-pity-dot is-bonus" aria-hidden="true" />
+      <span>
+        dont <strong className="is-bonus">{parts.join(' · ')}</strong>
+      </span>
+    </p>
+  )
+}
+
 function EpicGuarantee({ pity }: { pity: WalletState['pity'] }) {
   if (!pity.epicAvailable) return null
   const remaining =
@@ -80,7 +96,8 @@ export function BoosterWidget({
   onOpen,
   onElapsed,
 }: BoosterWidgetProps) {
-  const { stock, maxStock, nextAt } = wallet.booster
+  const { stock, maxStock, nextAt, bonus, premiumGifts } = wallet.booster
+  const ready = stock + bonus + premiumGifts
   const { pool } = wallet
   const isPoolTooSmall = !canOpenBooster(pool.drawableCount)
   const remainingMs = useCountdown(nextAt, onElapsed)
@@ -90,11 +107,12 @@ export function BoosterWidget({
 
   return (
     <section className="hero" aria-label="Boosters">
-      <BoosterPack size="lg" isPremium={wallet.premium.boostersUntil === 1} />
+      <BoosterPack size="lg" isPremium={premiumGifts > 0 || wallet.premium.boostersUntil === 1} />
       <div className="hero-body">
-        <p className="eyebrow">{stock > 0 ? 'Booster prêt' : 'Prochain booster'}</p>
-        <p className="hero-title">{titleFor(stock)}</p>
+        <p className="eyebrow">{ready > 0 ? 'Booster prêt' : 'Prochain booster'}</p>
+        <p className="hero-title">{titleFor(ready)}</p>
         <StockPips stock={stock} max={maxStock} />
+        <ExtraBoosters bonus={bonus} premiumGifts={premiumGifts} />
         {isPoolTooSmall ? (
           <PoolTooSmallMeta
             drawableCount={pool.drawableCount}
@@ -118,7 +136,7 @@ export function BoosterWidget({
           variant="primary"
           sound="none"
           onClick={onOpen}
-          disabled={stock === 0 || isPoolTooSmall}
+          disabled={ready === 0 || isPoolTooSmall}
         >
           Ouvrir
         </Button>

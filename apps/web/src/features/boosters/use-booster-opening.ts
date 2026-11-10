@@ -5,6 +5,8 @@ import { ApiError } from '@/lib/http'
 import { boosterOpeningQueryOptions, walletQueryOptions } from '../game/game.queries'
 import { refreshEmblems } from '@/features/emblems/emblems.queries'
 import { refreshFeed } from '@/features/league-feed/league-feed.queries'
+import { refreshMissions } from '@/features/missions/missions.queries'
+import { refreshLeagueGoal } from '@/features/league-goal/league-goal.queries'
 
 /** Extracts the API error code of a failed opening, if any. */
 export function getOpeningErrorCode(error: unknown): ErrorCode | null {
@@ -32,6 +34,8 @@ export function useBoosterOpening(
     refreshFeed(queryClient, leagueId)
     void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'booster-history'] })
     refreshEmblems(queryClient, leagueId)
+    refreshMissions(queryClient, leagueId)
+    refreshLeagueGoal(queryClient, leagueId)
   }, [queryClient, leagueId, openingId, wallet])
 
   useEffect(() => {

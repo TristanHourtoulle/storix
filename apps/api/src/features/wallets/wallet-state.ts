@@ -29,6 +29,8 @@ export function toWalletState(
       nextAt: stock.nextAt === null ? null : stock.nextAt.toISOString(),
       intervalSeconds: cadence.intervalMinutes * 60,
       joinGift: cadence.joinGift,
+      bonus: row.bonusBoosters,
+      premiumGifts: row.premiumGifts,
     },
     pool: {
       drawableCount: pool.drawableCount,

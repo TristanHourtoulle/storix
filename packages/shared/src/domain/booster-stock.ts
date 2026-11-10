@@ -50,3 +50,19 @@ export function consumeBooster(
   if (computed.available < 1) return null
   return { stock: computed.available - 1, anchor: computed.anchor }
 }
+
+export const BOOSTER_SOURCES = ['timer', 'bonus', 'premium_gift'] as const
+
+export type BoosterSource = (typeof BOOSTER_SOURCES)[number]
+
+/** Picks where the next booster comes from: a premium gift first, then the timed stock, then the bonus reserve. */
+export function pickBoosterSource(state: {
+  premiumGifts: number
+  availableStock: number
+  bonus: number
+}): BoosterSource | null {
+  if (state.premiumGifts > 0) return 'premium_gift'
+  if (state.availableStock > 0) return 'timer'
+  if (state.bonus > 0) return 'bonus'
+  return null
+}

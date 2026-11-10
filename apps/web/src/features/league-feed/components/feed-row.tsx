@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   emblemDefinition,
@@ -13,11 +13,26 @@ import { MiniCard } from '@/features/cards/components/mini-card'
 import { TIER_CLASS, TIER_LABELS } from '@/features/cards/tier-labels'
 import { countOf, tierColorStyle } from '@/features/members/member-copy'
 import { timeAgo } from '@/lib/paris-dates'
-import { actorName, actorsLabel, cardMention, isBigRow, rowIcon, rowTier } from '../feed-copy'
+import {
+  actorName,
+  actorsLabel,
+  cardMention,
+  goalAmount,
+  isBigRow,
+  leadEmblem,
+  rowIcon,
+  rowTier,
+} from '../feed-copy'
 
 const MINI_SIZES = '48px'
 const THUMB_SIZES = '26px'
 const NAMED_EMBLEMS = 2
+const GOAL_TONE = { '--tc': 'var(--color-cyan-soft)' } as CSSProperties
+const GOAL_KINDS: ReadonlySet<FeedRowData['kind']> = new Set([
+  'league_goal_reached',
+  'league_goal_bonus',
+  'league_goal_missed',
+])
 
 interface FeedRowProps {
   leagueId: string
@@ -134,6 +149,35 @@ function sentence(row: FeedRowData): ReactNode {
           {cardMention(row.card).replace(/^une/, 'Une')} est devenue <Tier row={row} />
         </>
       )
+    case 'missions_week_completed':
+      return (
+        <>
+          {who} {isPlural ? 'ont bouclé leurs' : 'a bouclé ses'} missions de la semaine
+        </>
+      )
+    case 'league_goal_reached':
+      return (
+        <>
+          <b>Objectif atteint</b>
+          {row.goal === null ? '' : ` · ${goalAmount(row.goal.type, row.goal.target)}`} · +2
+          boosters pour tous
+        </>
+      )
+    case 'league_goal_bonus':
+      return (
+        <>
+          <b>Palier bonus</b> · +1 premium
+        </>
+      )
+    case 'league_goal_missed':
+      return row.goal === null ? (
+        <b>Objectif manqué</b>
+      ) : (
+        <>
+          <b>Objectif manqué</b> de{' '}
+          {goalAmount(row.goal.type, Math.max(1, row.goal.target - row.goal.progress))}
+        </>
+      )
   }
 }
 
@@ -166,8 +210,8 @@ function RowIcon({ row, avatars }: Pick<FeedRowProps, 'row' | 'avatars'>) {
       </span>
     )
   }
-  const [emblemId] = row.emblemIds
-  if (row.kind === 'emblem_unlocked' && emblemId !== undefined) {
+  const emblemId = leadEmblem(row.emblemIds)
+  if (row.kind === 'emblem_unlocked' && emblemId !== null) {
     return (
       <span className="feed-ic">
         <EmblemIcon id={emblemId} className="feed-glyph" />
@@ -248,7 +292,10 @@ export function FeedRow({ leagueId, row, meId, avatars, onBravo }: FeedRowProps)
   const showsBravo = row.kind === 'card_promoted' && (canBravo || row.bravoCount > 0)
 
   return (
-    <div className={classes.filter(Boolean).join(' ')} style={tierColorStyle(tier)}>
+    <div
+      className={classes.filter(Boolean).join(' ')}
+      style={GOAL_KINDS.has(row.kind) ? GOAL_TONE : tierColorStyle(tier)}
+    >
       <RowIcon row={row} avatars={avatars} />
       <span className="feed-txt">
         <RowLink leagueId={leagueId} row={row}>

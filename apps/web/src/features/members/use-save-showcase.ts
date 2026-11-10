@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { refreshMissions } from '@/features/missions/missions.queries'
 import { logger } from '@/lib/logger'
 import { resetShowcase, saveShowcase } from './member-profile.api'
 import { memberProfileQueryOptions } from './members.queries'
@@ -6,10 +7,12 @@ import { memberProfileQueryOptions } from './members.queries'
 /** Saves or resets the viewer's showcase, then refreshes their page. */
 export function useSaveShowcase(leagueId: string, userId: string) {
   const queryClient = useQueryClient()
-  const refresh = () =>
-    queryClient.invalidateQueries({
+  const refresh = () => {
+    refreshMissions(queryClient, leagueId)
+    return queryClient.invalidateQueries({
       queryKey: memberProfileQueryOptions(leagueId, userId).queryKey,
     })
+  }
   const save = useMutation({
     mutationFn: (cardIds: readonly string[]) => saveShowcase(leagueId, cardIds),
     onSuccess: refresh,

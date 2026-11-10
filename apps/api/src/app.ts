@@ -19,6 +19,8 @@ import { emblemsRoutes } from './features/emblems/emblems.routes'
 import { healthRoutes } from './features/health/health.routes'
 import { invitationsRoutes } from './features/invitations/invitations.routes'
 import { leagueFeedRoutes } from './features/league-feed/league-feed.routes'
+import { missionsRoutes } from './features/missions/missions.routes'
+import { leagueGoalRoutes } from './features/league-goal/league-goal.routes'
 import { leagueSettingsRoutes } from './features/league-settings/league-settings.routes'
 import { leaguesRoutes } from './features/leagues/leagues.routes'
 import { mediaRoutes } from './features/media/media.routes'
@@ -103,6 +105,8 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(copiesRoutes(services.copies, services.stacks), { prefix: '/api' })
   await app.register(reactionsRoutes(services.reactions), { prefix: '/api' })
   await app.register(leagueFeedRoutes(services.leagueFeed), { prefix: '/api' })
+  await app.register(missionsRoutes(services.missions), { prefix: '/api' })
+  await app.register(leagueGoalRoutes(services.leagueGoal), { prefix: '/api' })
   await app.register(emblemsRoutes(services.emblems), { prefix: '/api' })
   await app.register(tagsRoutes(services.tags), { prefix: '/api' })
   await app.register(showcaseRoutes(services.showcase), { prefix: '/api' })

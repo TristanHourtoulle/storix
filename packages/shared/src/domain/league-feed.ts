@@ -1,5 +1,6 @@
 import { type CardTier, isTierAtLeast, tierRank } from './cards'
 import type { EmblemId } from './emblems'
+import type { GoalType } from './league-goal'
 
 export const LEAGUE_EVENT_TYPES = [
   'booster_opened',
@@ -10,6 +11,10 @@ export const LEAGUE_EVENT_TYPES = [
   'emblem_unlocked',
   'member_joined',
   'card_tier_reached',
+  'missions_week_completed',
+  'league_goal_reached',
+  'league_goal_bonus',
+  'league_goal_missed',
 ] as const
 
 export type LeagueEventType = (typeof LEAGUE_EVENT_TYPES)[number]
@@ -22,7 +27,7 @@ export const FEED_FILTERS: Readonly<Record<FeedFilter, readonly LeagueEventType[
   all: LEAGUE_EVENT_TYPES,
   pulls: ['booster_opened', 'card_pulled', 'card_tier_reached'],
   photos: ['card_published'],
-  feats: ['card_promoted', 'card_foiled', 'emblem_unlocked'],
+  feats: ['card_promoted', 'card_foiled', 'emblem_unlocked', 'missions_week_completed'],
 }
 
 export const FEED_WINDOW_DAYS = 30
@@ -39,6 +44,10 @@ export interface LeagueEventPayload {
   emblemId?: EmblemId
   openingId?: string
   count?: number
+  goalType?: GoalType
+  target?: number
+  progress?: number
+  weekKey?: string
 }
 
 export interface FeedEvent {
@@ -70,6 +79,14 @@ const NEVER_GROUPED: ReadonlySet<LeagueEventType> = new Set([
   'card_tier_reached',
   'card_promoted',
   'member_joined',
+  'league_goal_reached',
+  'league_goal_bonus',
+  'league_goal_missed',
+])
+
+const GROUPED_ACROSS_ACTORS: ReadonlySet<LeagueEventType> = new Set([
+  'booster_opened',
+  'missions_week_completed',
 ])
 
 function groupKeyOf(event: FeedEvent): string | null {
@@ -77,7 +94,7 @@ function groupKeyOf(event: FeedEvent): string | null {
   if (event.type === 'card_pulled' && isTierAtLeast(event.payload.tier ?? 'common', 'legendary')) {
     return null
   }
-  if (event.type === 'booster_opened') return event.type
+  if (GROUPED_ACROSS_ACTORS.has(event.type)) return event.type
   return `${event.type}:${event.actorId ?? ''}`
 }
 

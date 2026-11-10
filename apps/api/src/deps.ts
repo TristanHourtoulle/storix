@@ -14,6 +14,11 @@ import {
   createLeagueFeedService,
   type LeagueFeedService,
 } from './features/league-feed/league-feed.service'
+import { createMissionsService, type MissionsService } from './features/missions/missions.service'
+import {
+  createLeagueGoalService,
+  type LeagueGoalService,
+} from './features/league-goal/league-goal.service'
 import { createBoostersService, type BoostersService } from './features/boosters/boosters.service'
 import { createCardsService, type CardsService } from './features/cards/cards.service'
 import { createCopiesService, type CopiesService } from './features/copies/copies.service'
@@ -102,6 +107,8 @@ export interface Services {
   health: HealthService
   invitations: InvitationsService
   leagueFeed: LeagueFeedService
+  missions: MissionsService
+  leagueGoal: LeagueGoalService
   leagues: LeaguesService
   leagueSettings: LeagueSettingsService
   me: MeService
@@ -173,6 +180,12 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       appOrigin: deps.env.APP_ORIGIN,
     }),
     leagueFeed: createLeagueFeedService({
+      db: deps.db,
+      signer: deps.mediaSigner,
+      clock: deps.clock,
+    }),
+    missions: createMissionsService({ db: deps.db, clock: deps.clock }),
+    leagueGoal: createLeagueGoalService({
       db: deps.db,
       signer: deps.mediaSigner,
       clock: deps.clock,

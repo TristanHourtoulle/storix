@@ -8,6 +8,8 @@
 @import './reactions-sheet.css';
 @import './booster-history.css';
 @import './league-feed.css';
+@import './missions.css';
+@import './league-goal.css';
 @import './promotion-celebration.css';
 @import './journal.css';
 @import './tab-bar.css';
@@ -33,7 +35,9 @@
   --color-faint: #8a8aa0;
   --color-accent: #a78bfa;
   --color-accent-hover: #c4b5fd;
+  --color-accent-deep: #8b5cf6;
   --color-cyan: #22d3ee;
+  --color-cyan-soft: #67e8f9;
   --color-danger: #f87171;
   --color-tier-common: #a1a1aa;
   --color-tier-uncommon: #4ade80;

@@ -1,5 +1,10 @@
-import { lockLeagueEconomyShared, memberWallets, type DbExecutor } from '@storix/db'
-import { computeBoosterFullAt, type BoosterCadence } from '@storix/shared'
+import {
+  lockLeagueEconomyShared,
+  memberWallets,
+  newWalletValues,
+  type DbExecutor,
+} from '@storix/db'
+import type { BoosterCadence } from '@storix/shared'
 import { and, eq } from 'drizzle-orm'
 
 export { lockLeagueEconomyExclusive, lockLeagueEconomyShared } from '@storix/db'
@@ -13,6 +18,8 @@ export interface WalletRow {
   pitySinceEpic: number
   pitySinceLegendary: number
   boostersOpened: number
+  bonusBoosters: number
+  premiumGifts: number
 }
 
 export interface WalletKey {
@@ -35,6 +42,8 @@ const walletColumns = {
   pitySinceEpic: memberWallets.pitySinceEpic,
   pitySinceLegendary: memberWallets.pitySinceLegendary,
   boostersOpened: memberWallets.boostersOpened,
+  bonusBoosters: memberWallets.bonusBoosters,
+  premiumGifts: memberWallets.premiumGifts,
 }
 
 function keyCondition(leagueId: string, userId: string) {
@@ -43,18 +52,7 @@ function keyCondition(leagueId: string, userId: string) {
 
 /** Creates the wallet with the joining gift unless it already exists, already marked as notified when the gift fills the stock. */
 export async function ensureWallet(db: DbExecutor, input: EnsureWalletInput): Promise<void> {
-  const { cadence, now } = input
-  const fullAt = computeBoosterFullAt({ stock: cadence.joinGift, anchor: now }, cadence)
-  await db
-    .insert(memberWallets)
-    .values({
-      leagueId: input.leagueId,
-      userId: input.userId,
-      boosterStock: cadence.joinGift,
-      boosterStockAt: now,
-      boosterFullNotifiedAt: fullAt.getTime() <= now.getTime() ? now : null,
-    })
-    .onConflictDoNothing()
+  await db.insert(memberWallets).values(newWalletValues(input)).onConflictDoNothing()
 }
 
 /** Finds a member wallet. */

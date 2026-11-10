@@ -78,6 +78,12 @@ function toActor(actorId: string | null, actors: ReadonlyMap<string, FeedActorRo
   return { userId: row.isMember ? row.userId : null, displayUsername: row.displayUsername }
 }
 
+function goalOf(group: FeedGroup): FeedRow['goal'] {
+  const { goalType, target, progress } = group.payload
+  if (goalType === undefined || target === undefined || progress === undefined) return null
+  return { type: goalType, target, progress }
+}
+
 function toRow(group: FeedGroup, ctx: FeedContext): FeedRow {
   const bravo = group.type === 'card_promoted' ? ctx.bravos.get(group.key) : undefined
   return {
@@ -96,6 +102,7 @@ function toRow(group: FeedGroup, ctx: FeedContext): FeedRow {
     fromTier: group.payload.fromTier ?? null,
     toTier: group.payload.toTier ?? null,
     emblemIds: group.emblemIds,
+    goal: goalOf(group),
     bravoCount: bravo?.bravoCount ?? 0,
     hasBravoed: bravo?.hasBravoed ?? false,
     isNew: group.isNew,

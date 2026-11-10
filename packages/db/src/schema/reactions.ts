@@ -20,5 +20,6 @@ export const reactions = pgTable(
   (t) => [
     primaryKey({ columns: [t.cardId, t.userId, t.type] }),
     index('reactions_user_id_idx').on(t.userId),
+    index('reactions_user_created_idx').on(t.userId, t.createdAt),
   ],
 )

@@ -3,6 +3,28 @@ import type { ReleaseNote } from '../schemas/whats-new'
 /** Every feature release shown in the "Nouveautés" booster, newest first. */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    id: '2026-11-10-e',
+    publishedAt: '2026-11-10T23:00:00+01:00',
+    cards: [
+      {
+        key: 'missions',
+        title: 'Missions',
+        body: '3 missions par jour et 4 pour la semaine, sous ton booster. Réclame tes paillettes et des boosters bonus.',
+        tier: 'legendary',
+        illustration: 'missions',
+        tryTarget: 'home',
+      },
+      {
+        key: 'league-goal',
+        title: 'Objectif de ligue',
+        body: 'Chaque semaine, une jauge commune : atteinte, +2 boosters pour tous. Au palier bonus, un premium offert.',
+        tier: 'epic',
+        illustration: 'goal',
+        tryTarget: 'home',
+      },
+    ],
+  },
+  {
     id: '2026-11-10-d',
     publishedAt: '2026-11-10T22:00:00+01:00',
     cards: [

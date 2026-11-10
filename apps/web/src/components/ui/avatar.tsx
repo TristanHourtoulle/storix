@@ -6,12 +6,14 @@ import { PortraitImage, useVisiblePortrait } from './portrait-image'
 interface AvatarProps {
   label: string
   portrait?: Portrait | null
-  size?: 'xs' | 'compact' | 'sm' | 'md' | 'lg' | 'xl'
+  size?: 'xs' | 'mini' | 'compact' | 'sm' | 'md' | 'lg' | 'xl'
   isTinted?: boolean
+  tint?: string
 }
 
 const DIMENSIONS = {
   xs: 'size-5 text-[8px]',
+  mini: 'size-6 text-[9.5px]',
   compact: 'size-[30px] text-[11px]',
   sm: 'size-9 text-xs',
   md: 'size-11 text-[15px]',
@@ -21,6 +23,7 @@ const DIMENSIONS = {
 
 const IMAGE_SIZES = {
   xs: '20px',
+  mini: '24px',
   compact: '30px',
   sm: '36px',
   md: '44px',
@@ -32,7 +35,13 @@ const IMAGE_SIZES = {
  * Round member avatar: the portrait when set and loadable, the initials otherwise.
  * Tinted avatars show two letters on a pastel background derived from the name.
  */
-export function Avatar({ label, portrait = null, size = 'sm', isTinted = false }: AvatarProps) {
+export function Avatar({
+  label,
+  portrait = null,
+  size = 'sm',
+  isTinted = false,
+  tint,
+}: AvatarProps) {
   const { visible, markFailed } = useVisiblePortrait(portrait)
   const isTintShown = isTinted && !visible
   const tone = isTintShown
@@ -42,7 +51,7 @@ export function Avatar({ label, portrait = null, size = 'sm', isTinted = false }
     <span
       aria-hidden="true"
       className={`grid flex-none place-items-center overflow-hidden rounded-full font-display ${tone} ${DIMENSIONS[size]}`}
-      style={isTintShown ? { backgroundColor: avatarTint(label) } : undefined}
+      style={isTintShown ? { backgroundColor: tint ?? avatarTint(label) } : undefined}
     >
       {visible ? (
         <PortraitImage

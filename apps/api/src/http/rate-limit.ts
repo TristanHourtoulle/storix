@@ -26,6 +26,12 @@ export const rateLimits = {
   onboardingSeenIp: { max: 60, timeWindow: '1 minute' },
   emblemsSeen: { max: 30, timeWindow: '1 minute' },
   profileEdit: { max: 30, timeWindow: '1 minute' },
+  missionsRead: { max: 60, timeWindow: '1 minute' },
+  missionClaim: { max: 30, timeWindow: '1 minute' },
+  missionReroll: { max: 10, timeWindow: '1 minute' },
+  memberVisit: { max: 30, timeWindow: '1 minute' },
+  goalRead: { max: 60, timeWindow: '1 minute' },
+  goalBannerSeen: { max: 20, timeWindow: '1 minute' },
 } as const
 
 export interface RateLimit {

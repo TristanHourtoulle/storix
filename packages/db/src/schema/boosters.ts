@@ -14,7 +14,7 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { COPY_VARIANTS, type PityState } from '@storix/shared'
+import { type BoosterSource, COPY_VARIANTS, type PityState } from '@storix/shared'
 import { cardTier, cards } from './cards'
 import { leagueMembers, leagues } from './leagues'
 
@@ -36,10 +36,12 @@ export const boosterOpenings = pgTable(
     poolDigest: text('pool_digest').notNull(),
     dustGained: integer('dust_gained').notNull().default(0),
     isPremium: boolean('is_premium').notNull().default(false),
+    source: text('source').$type<BoosterSource>().notNull().default('timer'),
     openedAt: timestamp('opened_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     unique('booster_openings_request_unique').on(t.leagueId, t.userId, t.requestId),
+    check('booster_openings_source_check', sql`${t.source} IN ('timer', 'bonus', 'premium_gift')`),
     index('booster_openings_league_opened_idx').on(t.leagueId, t.openedAt.desc()),
     index('booster_openings_member_opened_idx').on(
       t.leagueId,
