@@ -5,10 +5,16 @@ import { whatsNewTargetsQueryOptions } from './whats-new.queries'
 
 export type NewsTryLink =
   | { to: '/l/$leagueId/add'; params: { leagueId: string } }
+  | { to: '/l/$leagueId'; params: { leagueId: string } }
   | {
       to: '/l/$leagueId/collection'
       params: { leagueId: string }
       search: { sort: 'discovery' }
+    }
+  | {
+      to: '/l/$leagueId/collection'
+      params: { leagueId: string }
+      search: { upgradable: true }
     }
   | { to: '/l/$leagueId/cards/$cardId'; params: { leagueId: string; cardId: string } }
 
@@ -28,10 +34,16 @@ function linkFor(
   switch (target) {
     case 'add':
       return { to: '/l/$leagueId/add', params: { leagueId } }
+    case 'home':
+      return { to: '/l/$leagueId', params: { leagueId } }
     case 'collection-discovery':
       return targets.showcaseCardId === null
         ? null
         : { to: '/l/$leagueId/collection', params: { leagueId }, search: { sort: 'discovery' } }
+    case 'collection-upgradable':
+      return targets.stackCardId === null
+        ? null
+        : { to: '/l/$leagueId/collection', params: { leagueId }, search: { upgradable: true } }
     case 'showcase-card':
       return cardLink(leagueId, targets.showcaseCardId)
     case 'stack-card':

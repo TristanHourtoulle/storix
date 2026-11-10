@@ -1,0 +1,149 @@
+@layer components {
+  .ni-upg .up-sheet {
+    position: absolute;
+    left: 30px;
+    right: 30px;
+    top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 1px var(--color-line);
+    font: 600 10.5px var(--font-display);
+  }
+  .ni-upg .up-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--color-ink-2);
+  }
+  .ni-upg .up-switch {
+    position: relative;
+    width: 28px;
+    height: 16px;
+    border-radius: 999px;
+    background: var(--color-accent);
+  }
+  .ni-upg .up-switch i {
+    position: absolute;
+    top: 2px;
+    left: 14px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--color-ink);
+  }
+  .ni-upg .up-grid {
+    position: absolute;
+    left: 24px;
+    top: 100px;
+    display: grid;
+    grid-template-columns: repeat(4, 52px);
+    gap: 8px;
+  }
+  .ni-upg .up-grid .ni-mc {
+    width: 52px;
+    height: 73px;
+    overflow: visible;
+  }
+  .ni-upg .up-grid .ni-art,
+  .ni-upg .up-grid .ni-holo {
+    border-radius: inherit;
+  }
+  .ni-upg .up-dim {
+    opacity: 0.25;
+  }
+  .ni-upg .up-ready {
+    box-shadow:
+      0 0 0 1.5px var(--tc),
+      0 0 12px color-mix(in srgb, var(--tc) 55%, transparent);
+  }
+  .ni-upg .up-count {
+    position: absolute;
+    bottom: -7px;
+    left: 50%;
+    z-index: 6;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 1px var(--color-line-strong);
+    font: 700 8px/1.2 var(--font-display);
+    transform: translateX(-50%);
+  }
+  .ni-upg .up-badge {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    z-index: 6;
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--color-tier-uncommon);
+    color: var(--color-bg);
+  }
+  .ni-upg .up-badge .ni-i {
+    width: 11px;
+    height: 11px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .ni-upg.is-live .up-switch {
+      animation: ni-up-switch 7s step-end infinite;
+    }
+    .ni-upg.is-live .up-switch i {
+      animation: ni-up-knob 7s ease-in-out infinite;
+    }
+    .ni-upg.is-live .up-dim {
+      animation: ni-up-dim 7s ease-in-out infinite;
+    }
+    .ni-upg.is-live .up-badge {
+      animation: ni-up-badge 7s ease-out infinite;
+    }
+  }
+}
+
+@keyframes ni-up-switch {
+  0% {
+    background: var(--color-surface-2);
+  }
+  20% {
+    background: var(--color-accent);
+  }
+}
+@keyframes ni-up-knob {
+  0%,
+  16% {
+    left: 2px;
+  }
+  22%,
+  100% {
+    left: 14px;
+  }
+}
+@keyframes ni-up-dim {
+  0%,
+  20% {
+    opacity: 1;
+  }
+  32%,
+  100% {
+    opacity: 0.25;
+  }
+}
+@keyframes ni-up-badge {
+  0%,
+  32% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  46%,
+  100% {
+    transform: scale(1);
+  }
+}

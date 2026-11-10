@@ -3,6 +3,36 @@ import type { ReleaseNote } from '../schemas/whats-new'
 /** Every feature release shown in the "Nouveautés" booster, newest first. */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    id: '2026-11-10',
+    publishedAt: '2026-11-10T18:00:00+01:00',
+    cards: [
+      {
+        key: 'premium',
+        title: 'Un booster premium sur 20',
+        body: "Tous les 20 boosters, un premium doré : 5e carte Légendaire garantie, avec 15 % de chances de Mythique. La jauge de l'accueil te dit quand.",
+        tier: 'legendary',
+        illustration: 'premium',
+        tryTarget: 'home',
+      },
+      {
+        key: 'mythic',
+        title: 'Les Mythiques arrivent',
+        body: 'Dès 50 cartes, la meilleure de ta ligue devient Mythique, puis une de plus tous les 100. Toutes les chances sont dans « Probabilités ».',
+        tier: 'mythic',
+        illustration: 'mythic',
+        tryTarget: 'home',
+      },
+      {
+        key: 'upgradable',
+        title: 'Filtre « À améliorer »',
+        body: "Dans Filtres, retrouve d'un coup les cartes à ×10 que tes paillettes peuvent déjà faire monter.",
+        tier: 'uncommon',
+        illustration: 'upgrade',
+        tryTarget: 'collection-upgradable',
+      },
+    ],
+  },
+  {
     id: '2026-11-09',
     publishedAt: '2026-11-09T18:00:00+01:00',
     cards: [
