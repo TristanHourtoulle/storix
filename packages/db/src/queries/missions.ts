@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { and, asc, eq, isNull, sql, type SQL } from 'drizzle-orm'
+import { and, asc, eq, getTableColumns, gte, isNull, lt, sql, type SQL } from 'drizzle-orm'
 import {
   BOOSTER_SEED_HEX_LENGTH,
   missionDefinition,
@@ -14,8 +14,9 @@ import {
 } from '@storix/shared/domain'
 import type { DbExecutor } from '../client'
 import { lockLeagueEconomyShared } from '../locks/league-locks'
-import { auditLog, memberMissions, memberWallets } from '../schema/index'
+import { auditLog, leagueMembers, memberMissions, memberWallets } from '../schema/index'
 import { insertLeagueEvents } from './league-events'
+import { ensureMemberWallets } from './wallets'
 
 export interface MissionMember {
   leagueId: string
@@ -222,6 +223,11 @@ export async function claimMission(
     .where(and(eq(memberMissions.id, row.id), isNull(memberMissions.claimedAt)))
     .returning()
   if (claimed === undefined) return { status: 'already_claimed' }
+  await ensureMemberWallets(db, {
+    leagueId: input.leagueId,
+    userIds: [input.userId],
+    now: input.now,
+  })
   const [wallet] = await db
     .update(memberWallets)
     .set({
@@ -272,20 +278,36 @@ async function isWeekCompleted(
   return rows.length >= WEEKLY_MISSION_COUNT && rows.every((row) => row.claimedAt !== null)
 }
 
-/** Lists the unclaimed mission rows of a period across all leagues, for the reset settlement. */
+/**
+ * Lists the unclaimed mission rows of current members whose period ended, across all leagues, for the reset settlement.
+ * Covers every period key in [fromKey, beforeKey) so a missed run is caught up by the next one.
+ */
 export async function listUnclaimedMissions(
   db: DbExecutor,
-  ref: MissionPeriodRef,
+  input: { period: MissionPeriod; fromKey: string; beforeKey: string },
 ): Promise<MissionRecord[]> {
   return db
-    .select()
+    .select(getTableColumns(memberMissions))
     .from(memberMissions)
+    .innerJoin(
+      leagueMembers,
+      and(
+        eq(leagueMembers.leagueId, memberMissions.leagueId),
+        eq(leagueMembers.userId, memberMissions.userId),
+      ),
+    )
     .where(
       and(
-        eq(memberMissions.period, ref.period),
-        eq(memberMissions.periodKey, ref.key),
+        eq(memberMissions.period, input.period),
+        gte(memberMissions.periodKey, input.fromKey),
+        lt(memberMissions.periodKey, input.beforeKey),
         isNull(memberMissions.claimedAt),
       ),
     )
-    .orderBy(asc(memberMissions.leagueId), asc(memberMissions.userId), asc(memberMissions.slot))
+    .orderBy(
+      asc(memberMissions.periodKey),
+      asc(memberMissions.leagueId),
+      asc(memberMissions.userId),
+      asc(memberMissions.slot),
+    )
 }

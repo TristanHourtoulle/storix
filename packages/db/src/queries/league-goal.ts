@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql, type SQL } from 'drizzle-orm'
+import { and, asc, eq, isNull, lt, sql, type SQL } from 'drizzle-orm'
 import {
   bonusTarget,
   GOAL_ACTIVE_WINDOW_DAYS,
@@ -15,6 +15,7 @@ import type { DbExecutor } from '../client'
 import { lockLeagueEconomyShared } from '../locks/league-locks'
 import { auditLog, leagueGoals, leagues, memberWallets } from '../schema/index'
 import { insertLeagueEvents } from './league-events'
+import { ensureMemberWallets } from './wallets'
 
 export type LeagueGoalRecord = typeof leagueGoals.$inferSelect
 
@@ -107,6 +108,11 @@ export async function ensureWeekGoal(
 ): Promise<LeagueGoalRecord> {
   const existing = await findGoal(db, input.leagueId, input.weekKey)
   if (existing !== null) return existing
+  await closePastGoals(db, {
+    leagueId: input.leagueId,
+    beforeWeekKey: input.weekKey,
+    now: input.now,
+  })
   const type = goalTypeForWeek(input.weekKey)
   const factor = factorAfter(await findGoal(db, input.leagueId, previousWeekKey(input.weekKey)))
   const target = goalTarget(type, await countActiveMembers(db, input.leagueId, input.now), factor)
@@ -132,6 +138,7 @@ async function grantToAllMembers(
   reward: { boosters: number; premiumGifts: number },
   now: Date,
 ): Promise<number> {
+  await ensureMemberWallets(db, { leagueId: goal.leagueId, now })
   const rows = await db
     .update(memberWallets)
     .set({
@@ -239,12 +246,51 @@ export async function closeGoal(
   ])
 }
 
-/** Lists the open goals of a week across leagues, for the worker tick and close jobs. */
+/** Lists the open goals of a week across leagues, for the worker tick. */
 export async function listOpenGoals(db: DbExecutor, weekKey: string): Promise<LeagueGoalRecord[]> {
   return db
     .select()
     .from(leagueGoals)
     .where(and(eq(leagueGoals.weekKey, weekKey), isNull(leagueGoals.closedAt)))
+}
+
+/** Lists the goals of past weeks that were never closed, optionally for one league, oldest first. */
+export async function listUnclosedPastGoals(
+  db: DbExecutor,
+  input: { beforeWeekKey: string; leagueId?: string },
+): Promise<LeagueGoalRecord[]> {
+  return db
+    .select()
+    .from(leagueGoals)
+    .where(
+      and(
+        lt(leagueGoals.weekKey, input.beforeWeekKey),
+        isNull(leagueGoals.closedAt),
+        input.leagueId === undefined ? undefined : eq(leagueGoals.leagueId, input.leagueId),
+      ),
+    )
+    .orderBy(asc(leagueGoals.weekKey))
+}
+
+/** Settles and closes one finished goal: rewards a tier reached by the end of its week, then marks it closed. */
+export async function settleFinishedGoal(
+  db: DbExecutor,
+  input: { goal: LeagueGoalRecord; now: Date },
+): Promise<void> {
+  const progress = await goalProgress(db, input.goal)
+  const current = await advanceGoal(db, { goal: input.goal, progress, now: input.now })
+  await closeGoal(db, { goal: current, progress, now: input.now })
+}
+
+async function closePastGoals(
+  db: DbExecutor,
+  input: { leagueId: string; beforeWeekKey: string; now: Date },
+): Promise<void> {
+  const goals = await listUnclosedPastGoals(db, input)
+  await goals.reduce<Promise<void>>(async (pending, goal) => {
+    await pending
+    await settleFinishedGoal(db, { goal, now: input.now })
+  }, Promise.resolve())
 }
 
 /** Sums the contributions of a goal's week. */
