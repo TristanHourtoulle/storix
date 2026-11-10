@@ -12,6 +12,7 @@ import {
   type CardTier,
   type CopyVariant,
   type MediaVariant,
+  type BoosterSource,
   type PityState,
   type PoolCard,
   type PulledCopyOutcome,
@@ -52,6 +53,7 @@ export interface InsertOpeningRow {
   poolDigest: string
   dustGained: number
   isPremium: boolean
+  source: BoosterSource
 }
 
 export interface InsertPullRow {
