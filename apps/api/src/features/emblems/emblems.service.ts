@@ -11,7 +11,7 @@ import type { ErrorLogger } from '../../lib/error-logger'
 import { AppError, notFound } from '../../lib/errors'
 import { runInTransaction } from '../../lib/transaction'
 import type { Membership } from '../leagues/leagues.service'
-import { findMembership } from '../members/members.repository'
+import { findMembership, lockMemberships } from '../members/members.repository'
 import {
   listEarnedEmblems,
   markEmblemsSeen,
@@ -115,6 +115,7 @@ export function createEmblemsService({ db, clock }: EmblemsServiceDeps): Emblems
 
     setFeatured: (m, emblemIds) =>
       runInTransaction(db, async (tx) => {
+        await lockMemberships(tx, m.leagueId, [m.userId])
         const earned = new Set((await listEarnedEmblems(tx, m)).map((row) => row.id))
         if (emblemIds.some((id) => !earned.has(id))) {
           throw new AppError('EMBLEM_NOT_EARNED', 409, 'Only earned emblems can be featured')

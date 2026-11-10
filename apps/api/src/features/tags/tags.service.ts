@@ -5,7 +5,7 @@ import { runInTransaction } from '../../lib/transaction'
 import { isOwned } from '../cards/card-views'
 import { findCardForViewer } from '../cards/cards.repository'
 import type { Membership } from '../leagues/leagues.service'
-import { countCardTags, deleteCardTag, insertCardTag } from './tags.repository'
+import { countCardTags, deleteCardTag, insertCardTag, lockCardForTags } from './tags.repository'
 
 export interface TagsService {
   tagSelf(m: Membership, cardId: string): Promise<void>
@@ -33,6 +33,7 @@ export function createTagsService({ db, clock }: TagsServiceDeps): TagsService {
         })
         if (card === null || card.status !== 'active') throw notFound('Card not found')
         if (!isOwned(card)) throw tagNotAllowed('Only owners can tag themselves on a card')
+        await lockCardForTags(tx, cardId)
         if ((await countCardTags(tx, cardId)) >= CARD_TAGS_MAX) {
           throw tagNotAllowed('This card has too many tags')
         }

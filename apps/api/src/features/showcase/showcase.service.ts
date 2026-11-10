@@ -3,6 +3,7 @@ import { AppError } from '../../lib/errors'
 import { runInTransaction } from '../../lib/transaction'
 import type { Membership } from '../leagues/leagues.service'
 import { listOwnedCardsRanked } from '../members/member-profile.repository'
+import { lockMemberships } from '../members/members.repository'
 import { deleteShowcase, replaceShowcase } from './showcase.repository'
 
 export interface ShowcaseService {
@@ -20,6 +21,7 @@ export function createShowcaseService({ db }: ShowcaseServiceDeps): ShowcaseServ
     save: (m, cardIds) =>
       runInTransaction(db, async (tx) => {
         const member = { leagueId: m.leagueId, userId: m.userId }
+        await lockMemberships(tx, m.leagueId, [m.userId])
         const owned = new Set(await listOwnedCardsRanked(tx, member))
         if (cardIds.some((cardId) => !owned.has(cardId))) {
           throw new AppError('SHOWCASE_INVALID', 409, 'Only active cards you own can be shown')

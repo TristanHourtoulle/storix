@@ -1,9 +1,14 @@
-import { cardTags, type DbExecutor } from '@storix/db'
+import { cards, cardTags, type DbExecutor } from '@storix/db'
 import { and, count, eq } from 'drizzle-orm'
 
 export interface CardTagKey {
   cardId: string
   userId: string
+}
+
+/** Locks a card row so concurrent tag changes on it are serialized. */
+export async function lockCardForTags(db: DbExecutor, cardId: string): Promise<void> {
+  await db.select({ id: cards.id }).from(cards).where(eq(cards.id, cardId)).for('update')
 }
 
 /** Counts the members tagged on a card. */
