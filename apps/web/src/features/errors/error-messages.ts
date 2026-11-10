@@ -43,6 +43,9 @@ const MESSAGES: Record<ErrorCode, string> = {
   SHOWCASE_INVALID: 'Ta vitrine ne peut contenir que des cartes que tu possèdes.',
   TAG_NOT_ALLOWED: 'Tu ne peux pas modifier cette identification.',
   BRAVO_NOT_ALLOWED: 'Tu ne peux pas féliciter cet exploit.',
+  MISSION_ALREADY_CLAIMED: 'Cette mission est déjà récupérée.',
+  MISSION_NOT_COMPLETE: "Cette mission n'est pas encore terminée.",
+  MISSION_REROLL_NOT_ALLOWED: 'Tu ne peux plus changer cette mission aujourd’hui.',
   INTERNAL_ERROR: 'Une erreur est survenue.',
 }
 
