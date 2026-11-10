@@ -19,7 +19,9 @@ export async function registerEmblemsEvaluateJob(
         )
         continue
       }
-      await service.evaluateLeague(payload.data.leagueId)
+      const { leagueId, userId } = payload.data
+      if (userId === undefined) await service.evaluateLeague(leagueId)
+      else await service.evaluateMember(leagueId, userId)
     }
   })
 }

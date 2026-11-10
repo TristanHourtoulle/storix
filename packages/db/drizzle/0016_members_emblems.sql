@@ -19,6 +19,7 @@ CREATE TABLE "member_showcase" (
 	CONSTRAINT "member_showcase_slot_range" CHECK ("member_showcase"."slot" BETWEEN 1 AND 6)
 );
 --> statement-breakpoint
+ALTER TABLE "league_members" ADD COLUMN "emblems_evaluated_at" timestamp with time zone;--> statement-breakpoint
 ALTER TABLE "card_tags" ADD COLUMN "tagged_by_id" text;--> statement-breakpoint
 ALTER TABLE "card_tags" ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;--> statement-breakpoint
 UPDATE "card_tags" SET "created_at" = '2000-01-01T00:00:00Z';--> statement-breakpoint

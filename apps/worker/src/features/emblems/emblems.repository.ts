@@ -1,5 +1,5 @@
-import { eq } from 'drizzle-orm'
-import { leagueMembers, leagues, type DbExecutor } from '@storix/db'
+import { and, eq, isNull } from 'drizzle-orm'
+import { leagueMembers, type DbExecutor } from '@storix/db'
 
 export { awardEarnedEmblems } from '@storix/db'
 
@@ -12,8 +12,37 @@ export async function listMemberIds(db: DbExecutor, leagueId: string): Promise<s
   return rows.map((row) => row.userId)
 }
 
-/** Lists every league id. */
-export async function listLeagueIds(db: DbExecutor): Promise<string[]> {
-  const rows = await db.select({ id: leagues.id }).from(leagues)
-  return rows.map((row) => row.id)
+/** Returns true when the user is still a member of the league. */
+export async function isMember(
+  db: DbExecutor,
+  m: { leagueId: string; userId: string },
+): Promise<boolean> {
+  const rows = await db
+    .select({ userId: leagueMembers.userId })
+    .from(leagueMembers)
+    .where(and(eq(leagueMembers.leagueId, m.leagueId), eq(leagueMembers.userId, m.userId)))
+    .limit(1)
+  return rows.length > 0
+}
+
+/** Lists the members whose emblems were never evaluated, league by league. */
+export async function listUnevaluatedMembers(
+  db: DbExecutor,
+): Promise<{ leagueId: string; userId: string }[]> {
+  return db
+    .select({ leagueId: leagueMembers.leagueId, userId: leagueMembers.userId })
+    .from(leagueMembers)
+    .where(isNull(leagueMembers.emblemsEvaluatedAt))
+    .orderBy(leagueMembers.leagueId, leagueMembers.userId)
+}
+
+/** Records that a member's emblems were evaluated at the given time. */
+export async function markEmblemsEvaluated(
+  db: DbExecutor,
+  m: { leagueId: string; userId: string; now: Date },
+): Promise<void> {
+  await db
+    .update(leagueMembers)
+    .set({ emblemsEvaluatedAt: m.now })
+    .where(and(eq(leagueMembers.leagueId, m.leagueId), eq(leagueMembers.userId, m.userId)))
 }

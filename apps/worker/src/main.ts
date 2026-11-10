@@ -159,7 +159,7 @@ async function start(): Promise<void> {
     logger,
   })
   await registerEmblemsEvaluateJob(boss, emblems, logger)
-  await emblems.enqueueAllLeagues()
+  await emblems.enqueueUnevaluatedMembers()
   await registerRarityNightlyJob(boss, rarity)
   await boss.send(RARITY_NIGHTLY_JOB, null)
   const storageGc = createStorageGcService({ db: database.db, storage, clock, logger })

@@ -1,5 +1,5 @@
 {
-  "id": "a2c15165-29d8-4f05-a14c-6c18f4daac4d",
+  "id": "76700f6e-fb6a-416c-91ef-c2956310e032",
   "prevId": "aa84bb49-d547-4452-a23b-97f2627f68de",
   "version": "7",
   "dialect": "postgresql",
@@ -551,6 +551,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "emblems_evaluated_at": {
+          "name": "emblems_evaluated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
