@@ -7,11 +7,18 @@ interface ProfileSubPageProps {
   leagueId: string
   title: string
   subtitle?: string | undefined
+  backLabel?: string
   children: ReactNode
 }
 
-/** Profile sub-page with a back link to the profile; moves focus to its title on open. */
-export function ProfileSubPage({ leagueId, title, subtitle, children }: ProfileSubPageProps) {
+/** Profile sub-page whose back button returns to the previous screen, or the profile; moves focus to its title on open. */
+export function ProfileSubPage({
+  leagueId,
+  title,
+  subtitle,
+  backLabel = 'Retour au profil',
+  children,
+}: ProfileSubPageProps) {
   const titleRef = useRef<HTMLHeadingElement>(null)
   const router = useRouter()
 
@@ -34,7 +41,7 @@ export function ProfileSubPage({ leagueId, title, subtitle, children }: ProfileS
         title={title}
         titleRef={titleRef}
         start={
-          <button type="button" onClick={goBack} aria-label="Retour au profil" className="icon-btn">
+          <button type="button" onClick={goBack} aria-label={backLabel} className="icon-btn">
             <Icon name="back" className="size-5" />
           </button>
         }

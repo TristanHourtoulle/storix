@@ -90,7 +90,7 @@ function Profile() {
       {currentLeague ? (
         <LeagueScopeCard league={currentLeague} leagues={leagues} hasTaggedDot={hasNewTag} />
       ) : null}
-      <SettingsGroup title="Dans cette ligue">
+      <SettingsGroup title="Joueurs et progression">
         <li>
           <Link to="/l/$leagueId/members" params={params} className={settingsRowClassName()}>
             <SettingsRowContent

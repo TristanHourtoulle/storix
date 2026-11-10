@@ -30,6 +30,7 @@ function MemberScreen() {
       leagueId={leagueId}
       title={profile.data?.header.displayUsername ?? 'Membre'}
       subtitle={leagueName}
+      backLabel="Retour"
     >
       {profile.data ? (
         <MemberPage
