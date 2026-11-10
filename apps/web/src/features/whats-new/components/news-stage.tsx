@@ -12,11 +12,12 @@ import '@/styles/booster-stage.css'
 import '@/styles/booster-card.css'
 import '@/styles/booster-pack.css'
 import '@/styles/whats-new.css'
-import type { NewsDeck } from '../news-deck'
+import { featureCountLabel, type NewsDeck } from '../news-deck'
 import { formatReleaseLabel } from '../release-dates'
 import { useNewsOpening } from '../use-news-opening'
 import { useNewsTargets, type NewsTryLink } from '../use-news-targets'
 import { NewsCardFace } from './news-card-face'
+import { NewsRecap } from './news-recap'
 
 export type NewsCloseReason = 'skip' | 'done' | 'try'
 
@@ -29,10 +30,6 @@ export interface NewsStageProps {
 
 const WORLD_STYLE = { height: STAGE_HEIGHT, '--cy': `${CENTER_Y}px` } as CSSProperties
 const STAMP_STYLE = { top: STAMP_TOP }
-
-function countLabel(count: number): string {
-  return count > 1 ? `${count} nouveautés` : '1 nouveauté'
-}
 
 interface NewsTryProps {
   link: NewsTryLink | null
@@ -65,6 +62,10 @@ export function NewsStage({ leagueId, deck, mode, onClose }: NewsStageProps) {
     tier: card.tier,
     mini: <NewsCardFace card={card} />,
   }))
+
+  function tryIt() {
+    onClose('try')
+  }
 
   function finish() {
     playSound({ name: 'confirm' })
@@ -111,7 +112,13 @@ export function NewsStage({ leagueId, deck, mode, onClose }: NewsStageProps) {
               <p className="ar-stamp" style={STAMP_STYLE} />
             </div>
           </div>
-          {phase === 'recap' ? null : (
+          {phase === 'recap' ? (
+            <NewsRecap
+              deck={deck}
+              mode={mode}
+              renderTry={(card) => <NewsTry link={hrefFor(card.tryTarget)} onTry={tryIt} />}
+            />
+          ) : (
             <button
               type="button"
               className="ar-tap news-tap"
@@ -129,12 +136,12 @@ export function NewsStage({ leagueId, deck, mode, onClose }: NewsStageProps) {
         </p>
         <div className="news-foot">
           {phase === 'pack' || phase === 'opening' ? (
-            <p className="news-count">{`${countLabel(deck.featureCount)} · aucune carte à gagner`}</p>
+            <p className="news-count">{`${featureCountLabel(deck.featureCount)} · aucune carte à gagner`}</p>
           ) : null}
           {shownCard ? (
             <>
               <p className="news-body">{shownCard.body}</p>
-              <NewsTry link={hrefFor(shownCard.tryTarget)} onTry={() => onClose('try')} />
+              <NewsTry link={hrefFor(shownCard.tryTarget)} onTry={tryIt} />
             </>
           ) : null}
           {phase === 'recap' ? (

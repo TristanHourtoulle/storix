@@ -54,3 +54,8 @@ export function newsDeckOf(releases: readonly ReleaseNote[]): NewsDeck | null {
     featureCount: pack.cards.length + pack.overflowTitles.length,
   }
 }
+
+/** Counts features in French, e.g. "1 nouveauté" or "5 nouveautés". */
+export function featureCountLabel(count: number): string {
+  return count > 1 ? `${count} nouveautés` : '1 nouveauté'
+}

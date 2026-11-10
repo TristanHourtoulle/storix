@@ -326,3 +326,24 @@
     animation: none !important;
   }
 }
+
+@layer components {
+  .news-recap.is-focus {
+    align-items: center;
+    justify-content: center;
+    animation: ar-rise 0.25s ease-out;
+  }
+  .news-recap.is-focus > .news-body,
+  .news-recap.is-focus > a,
+  .news-recap.is-focus > button {
+    width: 100%;
+  }
+  .news-recap-big {
+    flex: none;
+  }
+  .news-recap-big .card.lg {
+    box-shadow:
+      0 0 0 2px var(--tc),
+      0 0 34px color-mix(in srgb, var(--tc) 45%, transparent);
+  }
+}
