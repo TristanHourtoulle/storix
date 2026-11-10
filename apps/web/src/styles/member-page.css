@@ -57,7 +57,7 @@
     display: flex;
     flex-direction: column-reverse;
     min-width: 0;
-    padding: 9px 10px;
+    padding: 9px 8px;
     border-radius: 14px;
     background: var(--color-surface);
     box-shadow: var(--shadow-hairline);
@@ -73,10 +73,16 @@
     color: var(--tc);
   }
   .mpage-stat dt {
-    font-size: 11px;
+    font-size: 10.5px;
     line-height: 1.2;
     color: var(--color-faint);
-    overflow-wrap: anywhere;
+    overflow-wrap: normal;
+    hyphens: manual;
+  }
+  @media (max-width: 374px) {
+    .mpage-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
   .mpage-sec {
     display: grid;
@@ -144,7 +150,23 @@
     color: var(--color-bg);
     box-shadow: none;
   }
+  .mpage-tabs button[data-tab='tagged'] {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  @media (max-width: 374px) {
+    .mpage-tabs button {
+      padding: 0 11px;
+    }
+  }
+  .mpage-tab-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .mpage-tab-count {
+    flex: none;
     font-variant-numeric: tabular-nums;
     opacity: 0.7;
   }

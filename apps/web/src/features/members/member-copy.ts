@@ -23,7 +23,12 @@ export function tierColorStyle(tier: CardTier | null): CSSProperties {
   return { '--tc': tier ? TIER_COLOR_VAR[tier] : 'var(--color-accent)' } as CSSProperties
 }
 
+/** Singular or plural noun for a count, e.g. "photo" for 1, "photos" for 18. */
+export function pluralOf(count: number, one: string, many: string): string {
+  return count > 1 ? many : one
+}
+
 /** Singular or plural noun after a count, e.g. "1 photo", "18 photos". */
 export function countOf(count: number, one: string, many: string): string {
-  return `${count} ${count > 1 ? many : one}`
+  return `${count} ${pluralOf(count, one, many)}`
 }

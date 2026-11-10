@@ -56,6 +56,7 @@ export function MemberTabs({ labels, counts, selected, onSelect, children }: Mem
                 else tabRefs.current.delete(tab)
               }}
               id={tabId(tab)}
+              data-tab={tab}
               type="button"
               role="tab"
               aria-selected={isSelected}
@@ -63,7 +64,7 @@ export function MemberTabs({ labels, counts, selected, onSelect, children }: Mem
               tabIndex={isSelected ? 0 : -1}
               onClick={() => onSelect(tab)}
             >
-              {labels[tab]}
+              <span className="mpage-tab-label">{labels[tab]}</span>
               <span className="mpage-tab-count">{counts[tab]}</span>
             </button>
           )
