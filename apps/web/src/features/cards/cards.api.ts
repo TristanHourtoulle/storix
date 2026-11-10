@@ -19,7 +19,7 @@ import {
   type StackActionResult,
   type ViewerCardDetail,
 } from '@storix/shared'
-import { apiRequest } from '@/lib/http'
+import { apiRequest, apiRequestVoid } from '@/lib/http'
 
 function cardsPath(leagueId: string): string {
   return `/api/leagues/${encodeURIComponent(leagueId)}/cards`
@@ -40,6 +40,8 @@ export function fetchCardPage(
     authorId: string | null
     tier: CardTier | null
     upgradable?: boolean
+    taggedUserId?: string | null
+    revealOwn?: boolean
     sort: CollectionSort
     cursor: string | undefined
     limit?: number
@@ -49,6 +51,8 @@ export function fetchCardPage(
   if (params.authorId) query.set('authorId', params.authorId)
   if (params.tier) query.set('tier', params.tier)
   if (params.upgradable) query.set('upgradable', 'true')
+  if (params.taggedUserId) query.set('taggedUserId', params.taggedUserId)
+  if (params.revealOwn) query.set('revealOwn', 'true')
   if (params.cursor !== undefined) query.set('cursor', params.cursor)
   if (params.limit !== undefined) query.set('limit', String(params.limit))
   return apiRequest(`${cardsPath(leagueId)}?${query.toString()}`, { schema: collectionPageSchema })
@@ -129,4 +133,16 @@ export function fetchRarityHistory(leagueId: string, cardId: string): Promise<Ra
 /** Fetches who reacted to a card the viewer owns, one row per person, newest first. */
 export function fetchCardReactors(leagueId: string, cardId: string): Promise<CardReactors> {
   return apiRequest(`${cardPath(leagueId, cardId)}/reactions`, { schema: cardReactorsSchema })
+}
+
+/** Tags the viewer on a card they own ("Je suis sur la photo"). */
+export function tagSelf(leagueId: string, cardId: string): Promise<void> {
+  return apiRequestVoid(`${cardPath(leagueId, cardId)}/tags/me`, { method: 'POST' })
+}
+
+/** Removes a member's tag from a card; allowed for that member, the author or an admin. */
+export function removeCardTag(leagueId: string, cardId: string, userId: string): Promise<void> {
+  return apiRequestVoid(`${cardPath(leagueId, cardId)}/tags/${encodeURIComponent(userId)}`, {
+    method: 'DELETE',
+  })
 }

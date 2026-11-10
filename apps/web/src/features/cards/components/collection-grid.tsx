@@ -48,7 +48,7 @@ function playLocked(): void {
 
 function groupAt(now: number): (card: CollectionCard) => DiscoveryGroup {
   return (card) =>
-    card.kind === 'locked' || card.discoveredAt === null
+    card.kind === 'locked' || card.kind === 'unpulled' || card.discoveredAt === null
       ? 'undiscovered'
       : discoveryGroupOf(Date.parse(card.discoveredAt), now)
 }
