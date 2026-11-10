@@ -55,6 +55,7 @@ export const listCardsQuerySchema = z
   .object({
     authorId: idSchema.optional(),
     tier: cardTierSchema.optional(),
+    upgradable: z.stringbool().optional(),
     sort: collectionSortSchema.default(DEFAULT_COLLECTION_SORT),
     cursor: z.union([legacyCollectionCursorSchema, collectionCursorSchema]).optional(),
     limit: z.coerce.number().int().min(1).max(200).default(120),

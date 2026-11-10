@@ -33,6 +33,12 @@ export function ActiveFilterTokens({ filters, members, onChange }: ActiveFilterT
           onRemove={() => onChange({ ...filters, hideLocked: false })}
         />
       ) : null}
+      {filters.upgradable ? (
+        <FilterToken
+          label="À améliorer"
+          onRemove={() => onChange({ ...filters, upgradable: false })}
+        />
+      ) : null}
     </>
   )
 }

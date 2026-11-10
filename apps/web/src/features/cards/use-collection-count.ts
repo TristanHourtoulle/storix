@@ -5,10 +5,10 @@ import type { CollectionFilterState } from './collection-filters'
 /** Number of cards the given filters would show, or null until the first count arrives. */
 export function useCollectionCount(
   leagueId: string,
-  { authorId, tier, hideLocked }: CollectionFilterState,
+  { authorId, tier, hideLocked, upgradable }: CollectionFilterState,
 ): number | null {
   const { data } = useQuery({
-    ...collectionCountQueryOptions(leagueId, { authorId, tier }),
+    ...collectionCountQueryOptions(leagueId, { authorId, tier, upgradable }),
     placeholderData: keepPreviousData,
   })
   if (!data) return null

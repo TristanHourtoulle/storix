@@ -68,6 +68,19 @@ function FilterSheetForm({ leagueId, value, members, onApply, onClose }: FilterS
         </span>
         <span aria-hidden="true" className="filter-switch-track" />
       </button>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={draft.upgradable}
+        className="filter-switch"
+        onClick={() => setDraft((prev) => ({ ...prev, upgradable: !prev.upgradable }))}
+      >
+        <span className="filter-switch-text">
+          <b>À améliorer</b>
+          <span>Ne montre que celles que tu peux améliorer maintenant.</span>
+        </span>
+        <span aria-hidden="true" className="filter-switch-track" />
+      </button>
       <div className="flex gap-3">
         <Button variant="ghost" className="flex-1" onClick={() => setDraft(NO_FILTERS)}>
           Réinitialiser

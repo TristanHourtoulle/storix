@@ -52,6 +52,7 @@ export function createCardsService({ db, signer, clock }: CardsServiceDeps): Car
         viewerId: m.userId,
         authorId: query.authorId,
         tier: query.tier,
+        upgradable: query.upgradable,
       }
       if (query.cursor === LEGACY_COLLECTION_CURSOR) {
         const counts = await countCollection(db, filters)
