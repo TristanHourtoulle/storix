@@ -5,6 +5,7 @@ import { publishProblemSchema, type PublishProblem, type UploadState } from '@st
 import { userMessage } from '@/features/errors/user-message'
 import { playSound } from '@/features/sound/sound'
 import { ApiError } from '@/lib/http'
+import { leagueGoalQueryKey } from '@/features/league-goal/league-goal.queries'
 import { missionsQueryKey } from '@/features/missions/missions.queries'
 import { logger } from '@/lib/logger'
 import { isBlankTitle, type StackCard } from './session/session-reducer'
@@ -158,6 +159,7 @@ export function usePublish(leagueId: string, session: UploadSession) {
         queryClient.invalidateQueries({ queryKey: uploadQuotaQueryKey(leagueId) }),
         queryClient.invalidateQueries({ queryKey: draftsQueryKey(leagueId) }),
         queryClient.invalidateQueries({ queryKey: missionsQueryKey(leagueId) }),
+        queryClient.invalidateQueries({ queryKey: leagueGoalQueryKey(leagueId) }),
       ])
     } catch (error) {
       logger.warn('Publish failed', { error })

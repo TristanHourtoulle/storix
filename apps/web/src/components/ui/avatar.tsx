@@ -6,12 +6,13 @@ import { PortraitImage, useVisiblePortrait } from './portrait-image'
 interface AvatarProps {
   label: string
   portrait?: Portrait | null
-  size?: 'xs' | 'compact' | 'sm' | 'md' | 'lg' | 'xl'
+  size?: 'xs' | 'mini' | 'compact' | 'sm' | 'md' | 'lg' | 'xl'
   isTinted?: boolean
 }
 
 const DIMENSIONS = {
   xs: 'size-5 text-[8px]',
+  mini: 'size-6 text-[9.5px]',
   compact: 'size-[30px] text-[11px]',
   sm: 'size-9 text-xs',
   md: 'size-11 text-[15px]',
@@ -21,6 +22,7 @@ const DIMENSIONS = {
 
 const IMAGE_SIZES = {
   xs: '20px',
+  mini: '24px',
   compact: '30px',
   sm: '36px',
   md: '44px',

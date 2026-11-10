@@ -7,6 +7,7 @@ import { DustBalance } from '@/features/game/components/dust-balance'
 import { walletQueryOptions } from '@/features/game/game.queries'
 import { useWallet } from '@/features/game/use-wallet'
 import { FeedSection } from '@/features/league-feed/components/feed-section'
+import { GoalSection } from '@/features/league-goal/components/goal-section'
 import { MissionsSection } from '@/features/missions/components/missions-section'
 import { RemovalNotice } from '@/features/privacy/components/removal-notice'
 import { useRemovedCardsSync } from '@/features/privacy/use-removed-cards-sync'
@@ -71,6 +72,7 @@ function LeagueHome() {
       ) : (
         <div aria-hidden="true" className="hero" />
       )}
+      {wallet ? <GoalSection leagueId={leagueId} me={me} /> : null}
       {wallet ? <MissionsSection leagueId={leagueId} /> : null}
       {league.memberCount === 1 && league.permissions.canManageInvitations ? (
         <Link

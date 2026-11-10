@@ -6,6 +6,7 @@ import { IosInstallHint } from '@/features/pwa/components/ios-install-hint'
 import { meQueryOptions } from '@/features/auth/session.queries'
 import { useCollectionVisitTracker } from '@/features/cards/news/use-collection-visit-tracker'
 import { EmblemGate } from '@/features/emblems/components/emblem-gate'
+import { GoalBannerGate } from '@/features/league-goal/components/goal-banner-gate'
 import { MythicBannerGate } from '@/features/league-feed/components/mythic-banner-gate'
 import { clearLastLeagueId, useRememberLastLeague } from '@/features/leagues/last-league'
 import { purgeLeagueCaches } from '@/features/privacy/purge-cache'
@@ -48,6 +49,7 @@ function LeagueLayout() {
   const [isPasskeyOpen, setIsPasskeyOpen] = useState(false)
   const [isEmblemOpen, setIsEmblemOpen] = useState(false)
   const [isMythicOpen, setIsMythicOpen] = useState(false)
+  const [isGoalOpen, setIsGoalOpen] = useState(false)
   const isNewsPending = hasUnseen && !wasAutoShown(me.user.id)
   const onboarding = useOnboarding()
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
@@ -101,11 +103,26 @@ function LeagueLayout() {
           isNewsOpen ||
           isNewsPending ||
           isPasskeyOpen ||
-          isEmblemOpen
+          isEmblemOpen ||
+          isGoalOpen
         }
         onOpenChange={setIsMythicOpen}
       />
-      {isNewsOpen || isNewsPending || isOnboardingBlocking || isMythicOpen ? null : (
+      <GoalBannerGate
+        leagueId={leagueId}
+        isSuspended={
+          isBoosterStage ||
+          isAddScreen ||
+          isOnboardingBlocking ||
+          isNewsOpen ||
+          isNewsPending ||
+          isPasskeyOpen ||
+          isEmblemOpen ||
+          isMythicOpen
+        }
+        onOpenChange={setIsGoalOpen}
+      />
+      {isNewsOpen || isNewsPending || isOnboardingBlocking || isMythicOpen || isGoalOpen ? null : (
         <PasskeyPrompt
           userId={me.user.id}
           displayUsername={me.user.displayUsername}

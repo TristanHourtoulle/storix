@@ -158,6 +158,13 @@
     background: var(--color-tier-legendary);
     box-shadow: 0 0 8px var(--color-tier-legendary);
   }
+  .hero-pity strong.is-bonus {
+    color: var(--color-cyan);
+  }
+  .hero-pity-dot.is-bonus {
+    background: var(--color-cyan);
+    box-shadow: 0 0 8px var(--color-cyan);
+  }
   .hero-premium {
     display: flex;
     flex-direction: column;

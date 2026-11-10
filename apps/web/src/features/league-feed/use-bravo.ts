@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import type { FeedBravo, FeedHighlights, FeedPage } from '@storix/shared'
 import { refreshMissions } from '@/features/missions/missions.queries'
+import { refreshLeagueGoal } from '@/features/league-goal/league-goal.queries'
 import { logger } from '@/lib/logger'
 import { sendBravo } from './league-feed.api'
 import { feedQueryKey } from './league-feed.queries'
@@ -48,6 +49,7 @@ export function useBravo(leagueId: string) {
     onSuccess: (bravo, { eventId }) => {
       apply(eventId, bravo)
       refreshMissions(queryClient, leagueId)
+      refreshLeagueGoal(queryClient, leagueId)
     },
     onError: (error) => {
       logger.warn('Bravo failed', { error })
