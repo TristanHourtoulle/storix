@@ -1,11 +1,11 @@
-import type { ReleaseNote } from '@storix/shared'
+import type { ReleaseDay, ReleaseNote } from '@storix/shared'
 import { featureCountLabel } from '../news-deck'
 import { formatReleaseDay } from '../release-dates'
 
 interface NewsPackListProps {
-  releases: readonly ReleaseNote[]
+  days: readonly ReleaseDay<ReleaseNote>[]
   isUnseen: (releaseId: string) => boolean
-  onOpen: (release: ReleaseNote) => void
+  onOpen: (day: ReleaseDay<ReleaseNote>) => void
 }
 
 interface MiniPackProps {
@@ -29,19 +29,22 @@ function MiniPack({ day, isSealed }: MiniPackProps) {
   )
 }
 
-/** One sealed or opened mini pack per release, newest first; tapping one replays it. */
-export function NewsPackList({ releases, isUnseen, onOpen }: NewsPackListProps) {
+/** One sealed or opened mini pack per publication day, newest first; tapping one replays that day. */
+export function NewsPackList({ days, isUnseen, onOpen }: NewsPackListProps) {
   return (
     <ul className="m-0 flex list-none flex-col divide-y divide-line overflow-hidden rounded-control bg-surface p-0 shadow-hairline">
-      {releases.map((release) => {
-        const day = formatReleaseDay(release.publishedAt)
-        const isNew = isUnseen(release.id)
+      {days.map((releaseDay) => {
+        const newest = releaseDay.releases[0]
+        if (newest === undefined) return null
+        const day = formatReleaseDay(newest.publishedAt)
+        const isNew = releaseDay.releases.some((release) => isUnseen(release.id))
+        const cards = releaseDay.releases.flatMap((release) => release.cards)
         return (
-          <li key={release.id}>
+          <li key={releaseDay.day}>
             <button
               type="button"
               aria-haspopup="dialog"
-              onClick={() => onOpen(release)}
+              onClick={() => onOpen(releaseDay)}
               className="flex w-full cursor-pointer items-center gap-3.5 border-0 bg-transparent px-3.5 py-3 text-left font-[inherit] text-ink hover:bg-surface-2 focus-visible:bg-surface-2"
             >
               <MiniPack day={day} isSealed={isNew} />
@@ -54,11 +57,9 @@ export function NewsPackList({ releases, isUnseen, onOpen }: NewsPackListProps) 
                     </span>
                   ) : null}
                 </span>
-                <span className="text-[13px] text-muted">
-                  {featureCountLabel(release.cards.length)}
-                </span>
+                <span className="text-[13px] text-muted">{featureCountLabel(cards.length)}</span>
                 <span className="truncate text-[13px] text-faint">
-                  {release.cards.map((card) => card.title).join(' · ')}
+                  {cards.map((card) => card.title).join(' · ')}
                 </span>
               </span>
             </button>

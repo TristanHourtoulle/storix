@@ -1,4 +1,4 @@
-import type { ReleaseNote } from '@storix/shared'
+import { groupReleasesByDay, type ReleaseDay, type ReleaseNote } from '@storix/shared'
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useMemo, useState } from 'react'
 import { ProfileSubPage } from '@/features/profile/components/profile-sub-page'
@@ -14,17 +14,21 @@ export const Route = createFileRoute('/_authed/l/$leagueId/profile/nouveautes')(
 function WhatsNewScreen() {
   const { leagueId } = Route.useParams()
   const { releases, isUnseen, markSeen } = useWhatsNew()
-  const [openRelease, setOpenRelease] = useState<ReleaseNote | null>(null)
-  const deck = useMemo(() => (openRelease ? newsDeckOf([openRelease]) : null), [openRelease])
+  const days = useMemo(() => groupReleasesByDay(releases), [releases])
+  const [openDay, setOpenDay] = useState<ReleaseDay<ReleaseNote> | null>(null)
+  const deck = useMemo(() => (openDay ? newsDeckOf(openDay.releases) : null), [openDay])
 
   const close = useCallback(() => {
-    if (openRelease !== null && isUnseen(openRelease.id)) markSeen(openRelease.id)
-    setOpenRelease(null)
-  }, [isUnseen, markSeen, openRelease])
+    const newest = openDay?.releases[0]
+    if (newest !== undefined && openDay?.releases.some((release) => isUnseen(release.id))) {
+      markSeen(newest.id)
+    }
+    setOpenDay(null)
+  }, [isUnseen, markSeen, openDay])
 
   return (
     <ProfileSubPage leagueId={leagueId} title="Quoi de neuf">
-      <NewsPackList releases={releases} isUnseen={isUnseen} onOpen={setOpenRelease} />
+      <NewsPackList days={days} isUnseen={isUnseen} onOpen={setOpenDay} />
       {deck ? <NewsStage leagueId={leagueId} deck={deck} mode="replay" onClose={close} /> : null}
     </ProfileSubPage>
   )

@@ -20,6 +20,11 @@ export interface NewsPack<C> {
   overflowTitles: string[]
 }
 
+export interface ReleaseDay<R extends DatedRelease> {
+  day: string
+  releases: R[]
+}
+
 const RELEASE_DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' })
 
 const publishedAfter = (release: DatedRelease, date: Date): boolean =>
@@ -81,4 +86,20 @@ export function buildNewsPack<C>(
     cards: allCards.slice(0, maxCards),
     overflowTitles: allCards.slice(maxCards).map(titleOf),
   }
+}
+
+/**
+ * Groups releases (newest first) by their Paris publication day, keeping both the day order
+ * and the release order within a day; `day` is an ISO date such as "2026-11-10".
+ */
+export function groupReleasesByDay<R extends DatedRelease>(
+  releases: readonly R[],
+): ReleaseDay<R>[] {
+  return releases.reduce<ReleaseDay<R>[]>((days, release) => {
+    const day = RELEASE_DAY.format(new Date(release.publishedAt))
+    const last = days.at(-1)
+    if (last?.day === day)
+      return [...days.slice(0, -1), { day, releases: [...last.releases, release] }]
+    return [...days, { day, releases: [release] }]
+  }, [])
 }

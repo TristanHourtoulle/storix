@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildNewsPack, unseenReleaseIds } from './whats-new'
+import { buildNewsPack, groupReleasesByDay, unseenReleaseIds } from './whats-new'
 
 const RELEASES = [
   { id: '2026-12-01', publishedAt: '2026-12-01T10:00:00+01:00' },
@@ -74,5 +74,25 @@ describe('buildNewsPack', () => {
     expect(result?.cards).toHaveLength(8)
     expect(result?.cards[0]?.title).toBe('2026-12-01-0')
     expect(result?.overflowTitles).toEqual(['2026-11-20-3', '2026-11-20-4'])
+  })
+})
+
+describe('groupReleasesByDay', () => {
+  it('should merge releases published the same Paris day into one entry, newest first', () => {
+    const releases = [
+      { id: '2026-11-10-b', publishedAt: '2026-11-10T20:00:00+01:00' },
+      { id: '2026-11-10', publishedAt: '2026-11-10T00:30:00+01:00' },
+      { id: '2026-11-09', publishedAt: '2026-11-09T23:30:00Z' },
+    ]
+
+    const result = groupReleasesByDay(releases)
+
+    expect(
+      result.map(({ day, releases: dayReleases }) => [day, dayReleases.map((r) => r.id)]),
+    ).toEqual([['2026-11-10', ['2026-11-10-b', '2026-11-10', '2026-11-09']]])
+  })
+
+  it('should return no day for no release', () => {
+    expect(groupReleasesByDay([])).toEqual([])
   })
 })
