@@ -35,6 +35,7 @@ export function fetchCardPage(
   params: {
     authorId: string | null
     tier: CardTier | null
+    upgradable?: boolean
     sort: CollectionSort
     cursor: string | undefined
     limit?: number
@@ -43,6 +44,7 @@ export function fetchCardPage(
   const query = new URLSearchParams({ sort: params.sort })
   if (params.authorId) query.set('authorId', params.authorId)
   if (params.tier) query.set('tier', params.tier)
+  if (params.upgradable) query.set('upgradable', 'true')
   if (params.cursor !== undefined) query.set('cursor', params.cursor)
   if (params.limit !== undefined) query.set('limit', String(params.limit))
   return apiRequest(`${cardsPath(leagueId)}?${query.toString()}`, { schema: collectionPageSchema })

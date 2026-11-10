@@ -5,11 +5,16 @@ import {
   cardTags,
   cardTier,
   media,
+  memberWallets,
   user,
   type DbExecutor,
 } from '@storix/db'
 import {
+  CARD_TIERS,
   mediaVariantsSchema,
+  nextTier,
+  PROMOTION_COPIES,
+  promotionCost,
   type CardTier,
   type CollectionCursor,
   type CollectionSort,
@@ -65,6 +70,7 @@ export interface CollectionFilters {
   viewerId: string
   authorId?: string
   tier?: CardTier
+  upgradable?: boolean
 }
 
 const discoverer = alias(user, 'discoverer')
@@ -151,9 +157,37 @@ function displayTierOf(owned: ReturnType<typeof viewerCopies>): SQL<CardTier> {
   return sql<CardTier>`(CASE WHEN greatest(${owned.normalPromotedTier}, ${owned.foilPromotedTier}) IS NULL THEN coalesce(greatest(${owned.normalTier}, ${owned.foilTier}), ${cards.tier}) ELSE greatest(${owned.normalTier}, ${owned.foilTier}, ${owned.normalPromotedTier}, ${owned.foilPromotedTier}, ${cards.tier}) END)`
 }
 
+/** Mirrors `promotionCost(nextTier(from))` for each tier below mythic, NULL for mythic. */
+function promotionCostOf(from: SQL<CardTier>): SQL<number | null> {
+  const steps = CARD_TIERS.flatMap((tier) => {
+    const target = nextTier(tier)
+    return target === null ? [] : [sql`WHEN ${tierParam(tier)} THEN ${promotionCost(target)}::int`]
+  })
+  return sql<number | null>`(CASE ${from} ${sql.join(steps, sql` `)} END)`
+}
+
+function viewerDust(input: { leagueId: string; viewerId: string }): SQL<number> {
+  return sql<number>`coalesce((SELECT ${memberWallets.dust} FROM ${memberWallets} WHERE ${memberWallets.leagueId} = ${input.leagueId} AND ${memberWallets.userId} = ${input.viewerId}), 0)`
+}
+
+/** Mirrors `promotionDecision(...).allowed`: owned, enough stacked copies and dust for the next tier. */
+function upgradableNow(
+  input: CollectionFilters,
+  owned: ReturnType<typeof viewerCopies>,
+  stacked: ReturnType<typeof viewerStacks>,
+): SQL | undefined {
+  const from = sql<CardTier>`greatest(${displayTierOf(owned)}, ${cards.tier})`
+  return and(
+    isNotNull(owned.cardId),
+    sql`coalesce(${stacked.stackCount}, 0) >= ${PROMOTION_COPIES}::int`,
+    sql`${viewerDust(input)} >= ${promotionCostOf(from)}`,
+  )
+}
+
 function collectionWhere(
   input: CollectionFilters,
   owned: ReturnType<typeof viewerCopies>,
+  stacked: ReturnType<typeof viewerStacks>,
   visibility: SQL | undefined,
 ): SQL | undefined {
   return and(
@@ -161,6 +195,7 @@ function collectionWhere(
     visibility,
     input.authorId === undefined ? undefined : eq(cards.authorId, input.authorId),
     input.tier === undefined ? undefined : eq(displayTierOf(owned), input.tier),
+    input.upgradable === true ? upgradableNow(input, owned, stacked) : undefined,
   )
 }
 
@@ -237,7 +272,7 @@ export async function listCollection(
     .leftJoin(stacked, eq(stacked.cardId, cards.id))
     .where(
       and(
-        collectionWhere(input, owned, activeOrOwnedHidden(owned)),
+        collectionWhere(input, owned, stacked, activeOrOwnedHidden(owned)),
         afterCursor(owned, input.after),
       ),
     )
@@ -252,6 +287,7 @@ export async function countCollection(
   input: CollectionFilters,
 ): Promise<{ total: number; owned: number }> {
   const owned = viewerCopies(db, input)
+  const stacked = viewerStacks(db, input)
   const rows = await db
     .select({
       total: sql<number>`count(*)::int`,
@@ -259,7 +295,8 @@ export async function countCollection(
     })
     .from(cards)
     .leftJoin(owned, eq(owned.cardId, cards.id))
-    .where(collectionWhere(input, owned, eq(cards.status, 'active')))
+    .leftJoin(stacked, eq(stacked.cardId, cards.id))
+    .where(collectionWhere(input, owned, stacked, eq(cards.status, 'active')))
   return rows[0] ?? { total: 0, owned: 0 }
 }
 
