@@ -63,3 +63,17 @@ export const STORAGE_DELETE_SEND_OPTIONS = {
 } as const
 
 export type StorageDeletePayload = z.infer<typeof storageDeletePayloadSchema>
+
+export const EMBLEMS_EVALUATE_JOB = 'emblems.evaluate-league'
+
+export const emblemsEvaluatePayloadSchema = z.object({ leagueId: z.uuid() })
+
+export type EmblemsEvaluatePayload = z.infer<typeof emblemsEvaluatePayloadSchema>
+
+export const EMBLEMS_EVALUATE_QUEUE_OPTIONS = { policy: 'stately' } as const
+
+export const EMBLEMS_EVALUATE_SEND_OPTIONS = {
+  retryLimit: 3,
+  retryDelay: 30,
+  retryBackoff: true,
+} as const

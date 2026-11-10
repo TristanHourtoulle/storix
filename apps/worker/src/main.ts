@@ -7,6 +7,8 @@ import {
   RARITY_RECOMPUTE_QUEUE_OPTIONS,
   STORAGE_DELETE_JOB,
   STORAGE_DELETE_SEND_OPTIONS,
+  EMBLEMS_EVALUATE_JOB,
+  EMBLEMS_EVALUATE_QUEUE_OPTIONS,
 } from '@storix/shared'
 import { assertStorageReachable, createObjectStorage } from '@storix/storage'
 import { PgBoss } from 'pg-boss'
@@ -21,6 +23,9 @@ import { createStorageDeleteService } from './features/storage/storage-delete.se
 import { createStorageGcService } from './features/storage/storage-gc.service'
 import { createRarityRecomputeService } from './features/rarity/rarity-recompute.service'
 import { createBoosterFullService } from './features/push/booster-full.service'
+import { createEmblemsEvaluateService } from './features/emblems/emblems-evaluate.service'
+import { registerEmblemsEvaluateJob } from './jobs/emblems-evaluate.job'
+import { createEmblemsQueue } from './jobs/emblems-queue'
 import {
   ensureBoosterFullScanQueue,
   registerBoosterFullScanJob,
@@ -55,6 +60,7 @@ async function start(): Promise<void> {
 
   const queue = createMediaQueue(boss)
   const rarityQueue = createRarityQueue(boss)
+  const emblemsQueue = createEmblemsQueue(boss)
 
   async function shutdown(signal: string): Promise<void> {
     logger.info({ signal }, 'Shutting down')
@@ -83,6 +89,7 @@ async function start(): Promise<void> {
   await boss.createQueue(MEDIA_SWEEP_JOB)
   await boss.createQueue(RARITY_RECOMPUTE_JOB, RARITY_RECOMPUTE_QUEUE_OPTIONS)
   await boss.createQueue(RARITY_NIGHTLY_JOB)
+  await boss.createQueue(EMBLEMS_EVALUATE_JOB, EMBLEMS_EVALUATE_QUEUE_OPTIONS)
   await boss.createQueue(STORAGE_DELETE_JOB, STORAGE_DELETE_SEND_OPTIONS)
   await boss.updateQueue(STORAGE_DELETE_JOB, STORAGE_DELETE_SEND_OPTIONS)
   await createStorageGcQueue(boss)
@@ -140,10 +147,19 @@ async function start(): Promise<void> {
   const rarity = createRarityRecomputeService({
     db: database.db,
     queue: rarityQueue,
+    emblems: emblemsQueue,
     clock,
     logger,
   })
   await registerRarityRecomputeJob(boss, rarity, logger)
+  const emblems = createEmblemsEvaluateService({
+    db: database.db,
+    queue: emblemsQueue,
+    clock,
+    logger,
+  })
+  await registerEmblemsEvaluateJob(boss, emblems, logger)
+  await emblems.enqueueAllLeagues()
   await registerRarityNightlyJob(boss, rarity)
   await boss.send(RARITY_NIGHTLY_JOB, null)
   const storageGc = createStorageGcService({ db: database.db, storage, clock, logger })
