@@ -9,11 +9,13 @@ export const walletStateSchema = z.object({
     maxStock: z.int().min(1),
     nextAt: isoDateSchema.nullable(),
     intervalSeconds: z.int().min(60),
+    joinGift: z.int().min(0),
   }),
   pool: z.object({
     drawableCount: z.int().min(0),
     minimumCards: z.int().min(1),
     nextEligibleAt: isoDateSchema.nullable(),
+    newCardDelayMinutes: z.int().min(0),
   }),
   pity: z.object({
     epicGuaranteeIn: z.int().min(1),

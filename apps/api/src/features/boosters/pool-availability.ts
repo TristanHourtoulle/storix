@@ -7,6 +7,7 @@ export interface PoolAvailability {
   hasEpicOrBetter: boolean
   hasLegendaryOrBetter: boolean
   nextEligibleAt: Date | null
+  delayMinutes: number
 }
 
 /** Reads what a booster opened at `now` could draw, and when the next young card becomes drawable. */
@@ -24,5 +25,6 @@ export async function loadPoolAvailability(
     hasLegendaryOrBetter: row.hasLegendaryOrBetter,
     nextEligibleAt:
       row.nextCreatedAt === null ? null : boosterEligibleAt(row.nextCreatedAt, input.delayMinutes),
+    delayMinutes: input.delayMinutes,
   }
 }
