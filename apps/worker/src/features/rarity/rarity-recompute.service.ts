@@ -1,6 +1,6 @@
 import type { Database } from '@storix/db'
 import { resolveLeagueSettings } from '@storix/shared'
-import { computeLeagueRarity } from '@storix/shared/domain'
+import { computeLeagueRarity, isTierAtLeast, tierRank } from '@storix/shared/domain'
 import type { EmblemsQueue } from '../../jobs/emblems-queue'
 import type { RarityQueue } from '../../jobs/rarity-queue'
 import type { WorkerLogger } from '../../lib/logger'
@@ -59,6 +59,25 @@ export function createRarityRecomputeService(deps: Deps): RarityRecomputeService
           ]
         })
         await repository.insertRarityHistory(tx, history)
+        const milestones = results.flatMap((result): repository.NewLeagueEvent[] => {
+          const input = inputByCard.get(result.cardId)
+          if (input === undefined) return []
+          if (!isTierAtLeast(result.tier, 'legendary')) return []
+          if (tierRank(result.tier) <= tierRank(input.tier)) return []
+          return [
+            {
+              leagueId,
+              actorId: input.authorId,
+              type: 'card_tier_reached',
+              cardId: result.cardId,
+              tier: result.tier,
+              payload: { tier: result.tier, fromTier: input.tier, toTier: result.tier },
+              dedupeKey: `tier:${result.cardId}:${result.tier}:${now.getTime()}`,
+              visibleAt: now,
+            },
+          ]
+        })
+        await repository.insertLeagueEvents(tx, milestones)
         return { cards: results.length, changed: history.length }
       })
       logger.info({ leagueId, ...outcome }, 'Rarity recomputed')

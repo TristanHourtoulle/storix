@@ -4,6 +4,7 @@ import {
   cards,
   cardTags,
   leagueMembers,
+  leagues,
   media,
   portraits,
   uploads,
@@ -320,6 +321,17 @@ export async function insertCardTags(
     .onConflictDoNothing()
 }
 
+export { insertLeagueEvents } from '@storix/db'
+
+/** Reads the raw settings column of a league. */
+export async function findLeagueSettings(db: DbExecutor, leagueId: string): Promise<unknown> {
+  const [row] = await db
+    .select({ settings: leagues.settings })
+    .from(leagues)
+    .where(eq(leagues.id, leagueId))
+  return row?.settings ?? null
+}
+
 /** Appends an entry to the audit log. */
 export async function insertAuditEntry(
   db: DbExecutor,
@@ -377,7 +389,10 @@ export async function deleteUploads(db: DbExecutor, ids: readonly string[]): Pro
 }
 
 /** Deletes rejected or failed portrait uploads processed before `before` that no portrait references; returns their object keys. */
-export async function deleteSettledPortraitUploads(db: DbExecutor, before: Date): Promise<string[]> {
+export async function deleteSettledPortraitUploads(
+  db: DbExecutor,
+  before: Date,
+): Promise<string[]> {
   const rows = await db
     .delete(uploads)
     .where(
