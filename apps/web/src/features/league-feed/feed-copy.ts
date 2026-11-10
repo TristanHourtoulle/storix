@@ -35,7 +35,7 @@ export function actorsLabel(actors: readonly FeedActor[]): string {
 /** The card's title in quotes when the viewer may read it, "une carte" otherwise. */
 export function cardMention(card: CollectionCard | null): string {
   if (card !== null && (card.kind === 'owned' || card.kind === 'unpulled')) {
-    return `« ${card.title} »`
+    return `«\u00a0${card.title}\u00a0»`
   }
   return 'une carte'
 }
