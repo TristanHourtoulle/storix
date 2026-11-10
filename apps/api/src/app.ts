@@ -94,7 +94,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(uploadsRoutes(services.uploads), { prefix: '/api' })
   await app.register(cardsRoutes(services.cards), { prefix: '/api' })
   await app.register(walletsRoutes(services.wallets), { prefix: '/api' })
-  await app.register(boostersRoutes(services.boosters), { prefix: '/api' })
+  await app.register(boostersRoutes(services.boosters, services.boosterHistory), { prefix: '/api' })
   await app.register(copiesRoutes(services.copies, services.stacks), { prefix: '/api' })
   await app.register(reactionsRoutes(services.reactions), { prefix: '/api' })
   await app.register(removalsRoutes(services.removals), { prefix: '/api' })
