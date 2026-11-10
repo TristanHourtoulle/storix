@@ -1,0 +1,1 @@
+CREATE INDEX "booster_openings_member_opened_idx" ON "booster_openings" USING btree ("league_id","user_id","opened_at" DESC NULLS LAST,"id" DESC NULLS LAST);
