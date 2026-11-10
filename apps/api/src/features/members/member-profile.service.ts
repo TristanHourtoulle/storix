@@ -7,7 +7,7 @@ import {
 } from '@storix/shared'
 import { notFound } from '../../lib/errors'
 import type { MediaSigner } from '../../lib/media-signer'
-import { toCollectionCard, withViewerCopies } from '../cards/card-views'
+import { isOwned, isVisibleTo, toCollectionCard, withViewerCopies } from '../cards/card-views'
 import { listOwnedCopies } from '../copies/copies.repository'
 import { listStackEntries } from '../copies/stacks.repository'
 import { listEarnedEmblems } from '../emblems/emblems.repository'
@@ -45,18 +45,24 @@ export function createMemberProfileService({
       listOwnedCardsRanked(db, member),
     ])
     const cardIds = resolveShowcase(saved, ranked)
-    const viewer = { leagueId: m.leagueId, ownerId: m.userId, cardIds }
-    const [bases, copies, stacks] = await Promise.all([
+    const ownerScope = { leagueId: m.leagueId, ownerId: member.userId, cardIds }
+    const viewerScope = { leagueId: m.leagueId, ownerId: m.userId, cardIds }
+    const [bases, ownerCopies, ownerStacks, viewerCopies, viewerStacks] = await Promise.all([
       listCardBases(db, { leagueId: m.leagueId, cardIds }),
-      listOwnedCopies(db, viewer),
-      listStackEntries(db, viewer),
+      listOwnedCopies(db, ownerScope),
+      listStackEntries(db, ownerScope),
+      listOwnedCopies(db, viewerScope),
+      listStackEntries(db, viewerScope),
     ])
     const baseById = new Map(bases.map((base) => [base.id, base]))
     const cards = cardIds.flatMap((cardId) => {
       const base = baseById.get(cardId)
-      return base === undefined
-        ? []
-        : [toCollectionCard(withViewerCopies(base, copies, stacks), signer)]
+      if (base === undefined) return []
+      const viewerRow = withViewerCopies(base, viewerCopies, viewerStacks)
+      if (!isVisibleTo(viewerRow)) return []
+      const ownerRow = withViewerCopies(base, ownerCopies, ownerStacks)
+      const shown = isOwned(viewerRow) && isOwned(ownerRow) ? ownerRow : viewerRow
+      return [toCollectionCard(shown, signer)]
     })
     return { cards, isCustom: saved.length > 0 }
   }
