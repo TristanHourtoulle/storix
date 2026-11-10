@@ -22,7 +22,7 @@ export const FEED_FILTERS: Readonly<Record<FeedFilter, readonly LeagueEventType[
   all: LEAGUE_EVENT_TYPES,
   pulls: ['booster_opened', 'card_pulled', 'card_tier_reached'],
   photos: ['card_published'],
-  feats: ['card_promoted', 'card_foiled', 'emblem_unlocked', 'member_joined'],
+  feats: ['card_promoted', 'card_foiled', 'emblem_unlocked'],
 }
 
 export const FEED_WINDOW_DAYS = 30
@@ -56,6 +56,8 @@ export interface FeedGroup {
   actorIds: (string | null)[]
   eventIds: string[]
   cardId: string | null
+  cardIds: string[]
+  emblemIds: EmblemId[]
   count: number
   at: Date
   bestTier: CardTier | null
@@ -89,6 +91,12 @@ function isNewEvent(event: FeedEvent, viewerId: string, lastSeenAt: Date | null)
   return lastSeenAt !== null && event.at > lastSeenAt && event.actorId !== viewerId
 }
 
+function withDistinct<T>(list: readonly T[], value: T | null | undefined): T[] {
+  return value === null || value === undefined || list.includes(value)
+    ? [...list]
+    : [...list, value]
+}
+
 function startGroup(event: FeedEvent, isNew: boolean): FeedGroup {
   return {
     key: event.id,
@@ -96,6 +104,8 @@ function startGroup(event: FeedEvent, isNew: boolean): FeedGroup {
     actorIds: [event.actorId],
     eventIds: [event.id],
     cardId: event.cardId,
+    cardIds: withDistinct([], event.cardId),
+    emblemIds: withDistinct([], event.payload.emblemId),
     count: event.payload.count ?? 1,
     at: event.at,
     bestTier: event.payload.tier ?? null,
@@ -112,6 +122,8 @@ function extendGroup(group: FeedGroup, event: FeedEvent, isNew: boolean): FeedGr
       ? group.actorIds
       : [...group.actorIds, event.actorId],
     eventIds: [...group.eventIds, event.id],
+    cardIds: withDistinct(group.cardIds, event.cardId),
+    emblemIds: withDistinct(group.emblemIds, event.payload.emblemId),
     count: group.count + (event.payload.count ?? 1),
     bestTier: bestOf(group.bestTier, event.payload.tier),
     hasPremium: group.hasPremium || event.payload.isPremium === true,
@@ -153,4 +165,33 @@ export function groupFeed(
     { groups: [], open: new Map() },
   )
   return groups
+}
+
+export interface FeedGroupPosition {
+  atMs: number
+  id: string
+}
+
+function isOlderThan(group: FeedGroup, position: FeedGroupPosition): boolean {
+  const ms = group.at.getTime()
+  return ms < position.atMs || (ms === position.atMs && group.key < position.id)
+}
+
+/**
+ * Pages groups built over the whole feed window, so a group's content never depends on where a page ends.
+ * The position is the head event of the last group already shown.
+ */
+export function pageFeedGroups(
+  groups: readonly FeedGroup[],
+  options: { after?: FeedGroupPosition; limit: number },
+): { groups: FeedGroup[]; next: FeedGroupPosition | null } {
+  const { after } = options
+  const start = after === undefined ? 0 : groups.findIndex((group) => isOlderThan(group, after))
+  const page = start < 0 ? [] : groups.slice(start, start + options.limit)
+  const last = page.at(-1)
+  const hasMore = start >= 0 && start + options.limit < groups.length
+  return {
+    groups: page,
+    next: hasMore && last !== undefined ? { atMs: last.at.getTime(), id: last.key } : null,
+  }
 }

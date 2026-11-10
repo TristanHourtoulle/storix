@@ -8,7 +8,7 @@ import {
   user,
   type DbExecutor,
 } from '@storix/db'
-import type { FeedCursor, LeagueEventPayload, LeagueEventType } from '@storix/shared'
+import type { LeagueEventPayload, LeagueEventType } from '@storix/shared'
 import { and, desc, eq, gt, inArray, ne, sql } from 'drizzle-orm'
 import {
   historyAuthor,
@@ -52,7 +52,7 @@ const eventColumns = {
   visibleAt: leagueEvents.visibleAt,
 }
 
-/** Lists visible league events newest first, from the cursor event included, fetching `limit` rows. */
+/** Lists the window's visible league events newest first, at most `limit` rows. */
 export async function listFeedEvents(
   db: DbExecutor,
   input: {
@@ -60,14 +60,9 @@ export async function listFeedEvents(
     types: readonly LeagueEventType[]
     since: Date
     now: Date
-    from?: FeedCursor
     limit: number
   },
 ): Promise<FeedEventRow[]> {
-  const from =
-    input.from === undefined
-      ? undefined
-      : sql`(${visibleAtMs}, ${leagueEvents.id}) <= (${new Date(input.from.atMs).toISOString()}::timestamptz, ${input.from.id}::uuid)`
   return db
     .select(eventColumns)
     .from(leagueEvents)
@@ -77,7 +72,6 @@ export async function listFeedEvents(
         inArray(leagueEvents.type, [...input.types]),
         sql`${leagueEvents.visibleAt} <= ${input.now.toISOString()}::timestamptz`,
         gt(leagueEvents.visibleAt, input.since),
-        from,
       ),
     )
     .orderBy(desc(visibleAtMs), desc(leagueEvents.id))
@@ -170,7 +164,7 @@ export async function listMythicPromotions(
   db: DbExecutor,
   input: { leagueId: string; viewerId: string; after: Date | null; since: Date; now: Date },
 ): Promise<FeedEventRow[]> {
-  const after = input.after ?? input.since
+  const after = input.after === null || input.after < input.since ? input.since : input.after
   return db
     .select(eventColumns)
     .from(leagueEvents)

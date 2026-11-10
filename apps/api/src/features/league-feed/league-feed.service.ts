@@ -2,12 +2,13 @@ import type { Database } from '@storix/db'
 import {
   encodeFeedCursor,
   FEED_FILTERS,
+  FEED_THUMBS,
   FEED_WINDOW_DAYS,
   groupFeed,
+  pageFeedGroups,
   type CollectionCard,
   type FeedActor,
   type FeedBravo,
-  type FeedCursor,
   type FeedEvent,
   type FeedGroup,
   type FeedHighlights,
@@ -51,7 +52,7 @@ export interface LeagueFeedServiceDeps {
   clock: () => Date
 }
 
-const RAW_PAGE_SIZE = 120
+const MAX_WINDOW_EVENTS = 5_000
 const DAY_MS = 86_400_000
 
 interface FeedContext {
@@ -71,15 +72,6 @@ function toFeedEvent(row: FeedEventRow): FeedEvent {
   }
 }
 
-function isAfter(event: FeedEvent, cut: FeedCursor): boolean {
-  const ms = event.at.getTime()
-  return ms > cut.atMs || (ms === cut.atMs && event.id > cut.id)
-}
-
-function cursorOf(event: FeedEvent): FeedCursor {
-  return { atMs: event.at.getTime(), id: event.id }
-}
-
 function toActor(actorId: string | null, actors: ReadonlyMap<string, FeedActorRow>): FeedActor {
   const row = actorId === null ? undefined : actors.get(actorId)
   if (row === undefined) return { userId: null, displayUsername: null }
@@ -94,12 +86,16 @@ function toRow(group: FeedGroup, ctx: FeedContext): FeedRow {
     actors: group.actorIds.map((actorId) => toActor(actorId, ctx.actors)),
     count: group.count,
     card: group.cardId === null ? null : (ctx.cards.get(group.cardId) ?? null),
+    thumbs: group.cardIds.slice(0, FEED_THUMBS).flatMap((cardId) => {
+      const card = ctx.cards.get(cardId)
+      return card === undefined ? [] : [card]
+    }),
     tier: group.bestTier,
     isPremium: group.hasPremium,
     isDiscovery: group.payload.isDiscovery === true,
     fromTier: group.payload.fromTier ?? null,
     toTier: group.payload.toTier ?? null,
-    emblemId: group.payload.emblemId ?? null,
+    emblemIds: group.emblemIds,
     bravoCount: bravo?.bravoCount ?? 0,
     hasBravoed: bravo?.hasBravoed ?? false,
     isNew: group.isNew,
@@ -128,10 +124,12 @@ export function createLeagueFeedService({
     return new Map(rows.map((row) => [row.cardId, toCard(row)]))
   }
 
-  async function contextFor(m: Membership, events: readonly FeedEvent[]): Promise<FeedContext> {
-    const actorIds = events.flatMap((event) => (event.actorId === null ? [] : [event.actorId]))
-    const cardIds = events.flatMap((event) => (event.cardId === null ? [] : [event.cardId]))
-    const promotionIds = events.filter((e) => e.type === 'card_promoted').map((e) => e.id)
+  async function contextFor(m: Membership, groups: readonly FeedGroup[]): Promise<FeedContext> {
+    const actorIds = groups.flatMap((group) =>
+      group.actorIds.flatMap((id) => (id === null ? [] : [id])),
+    )
+    const cardIds = groups.flatMap((group) => group.cardIds.slice(0, FEED_THUMBS))
+    const promotionIds = groups.filter((g) => g.type === 'card_promoted').map((g) => g.key)
     const [cards, actors, bravos] = await Promise.all([
       viewCards(m, cardIds),
       listFeedActors(db, { leagueId: m.leagueId, userIds: [...new Set(actorIds)] }),
@@ -153,28 +151,16 @@ export function createLeagueFeedService({
           types: FEED_FILTERS[query.filter],
           since: new Date(now.getTime() - FEED_WINDOW_DAYS * DAY_MS),
           now,
-          from: query.cursor,
-          limit: RAW_PAGE_SIZE + 1,
+          limit: MAX_WINDOW_EVENTS,
         }),
         findReadAt(db, { leagueId: m.leagueId, userId: m.userId, column: 'feedSeenAt' }),
       ])
-      const boundary = raw[RAW_PAGE_SIZE]
-      const events = raw.slice(0, RAW_PAGE_SIZE).map(toFeedEvent)
-      const options = { viewerId: m.userId, lastSeenAt }
-      const groups = groupFeed(events, options)
-      const firstLeftOut = groups[query.limit]
-      const cutEvent =
-        firstLeftOut === undefined
-          ? undefined
-          : events.find((event) => event.id === firstLeftOut.key)
-      const cut = cutEvent === undefined ? undefined : cursorOf(cutEvent)
-      const kept = cut === undefined ? events : events.filter((event) => isAfter(event, cut))
-      const rows = (cut === undefined ? groups : groupFeed(kept, options)).slice(0, query.limit)
-      const next = cut ?? (boundary === undefined ? undefined : cursorOf(toFeedEvent(boundary)))
-      const ctx = await contextFor(m, kept)
+      const groups = groupFeed(raw.map(toFeedEvent), { viewerId: m.userId, lastSeenAt })
+      const page = pageFeedGroups(groups, { after: query.cursor, limit: query.limit })
+      const ctx = await contextFor(m, page.groups)
       return {
-        rows: rows.map((group) => toRow(group, ctx)),
-        nextCursor: next === undefined ? null : encodeFeedCursor(next),
+        rows: page.groups.map((group) => toRow(group, ctx)),
+        nextCursor: page.next === null ? null : encodeFeedCursor(page.next),
         lastSeenAt: lastSeenAt === null ? null : lastSeenAt.toISOString(),
       }
     },
@@ -209,7 +195,7 @@ export function createLeagueFeedService({
         now,
       })
       const events = rows.map(toFeedEvent)
-      const ctx = await contextFor(m, events)
+      const ctx = await contextFor(m, groupFeed(events, { viewerId: m.userId, lastSeenAt: null }))
       return {
         highlights: events.map((event) => {
           const bravo = ctx.bravos.get(event.id)

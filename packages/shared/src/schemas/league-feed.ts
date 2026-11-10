@@ -6,6 +6,7 @@ import { emblemIdSchema } from './emblems'
 
 export const FEED_DEFAULT_LIMIT = 20
 export const FEED_MAX_LIMIT = 50
+export const FEED_THUMBS = 3
 
 const FEED_CURSOR_PATTERN =
   /^(\d{1,15})\.([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/
@@ -57,12 +58,13 @@ export const feedRowSchema = z.object({
   actors: z.array(feedActorSchema).min(1),
   count: z.int().min(1),
   card: collectionCardSchema.nullable(),
+  thumbs: z.array(collectionCardSchema).max(FEED_THUMBS),
   tier: cardTierSchema.nullable(),
   isPremium: z.boolean(),
   isDiscovery: z.boolean(),
   fromTier: cardTierSchema.nullable(),
   toTier: cardTierSchema.nullable(),
-  emblemId: emblemIdSchema.nullable(),
+  emblemIds: z.array(emblemIdSchema),
   bravoCount: z.int().min(0),
   hasBravoed: z.boolean(),
   isNew: z.boolean(),

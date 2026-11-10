@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { type FeedEvent, groupFeed } from './league-feed'
+import { type FeedEvent, groupFeed, pageFeedGroups } from './league-feed'
 
 const HOUR = 3_600_000
 const NOW = new Date('2026-11-10T12:00:00Z').getTime()
@@ -74,5 +74,23 @@ describe('groupFeed', () => {
       { viewerId: 'max', lastSeenAt },
     )
     expect(rows.map((row) => row.isNew)).toEqual([false, true])
+  })
+})
+
+describe('pageFeedGroups', () => {
+  it('should keep group contents identical whatever the page size', () => {
+    const groups = groupFeed(
+      [
+        event({ id: 'a', type: 'booster_opened', actorId: 'max' }),
+        event({ id: 'b', type: 'member_joined', at: new Date(NOW - HOUR) }),
+        event({ id: 'c', type: 'booster_opened', actorId: 'lea', at: new Date(NOW - 2 * HOUR) }),
+      ],
+      { viewerId: 'tom', lastSeenAt: null },
+    )
+    const first = pageFeedGroups(groups, { limit: 1 })
+    const second = pageFeedGroups(groups, { after: first.next ?? undefined, limit: 1 })
+    expect(first.groups[0]?.count).toBe(2)
+    expect(second.groups.map((group) => group.key)).toEqual(['b'])
+    expect(second.next).toBeNull()
   })
 })
