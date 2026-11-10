@@ -16,6 +16,7 @@ interface SettingsRowContentProps {
   value?: string
   tone?: RowTone
   hasChevron?: boolean
+  hasDot?: boolean
 }
 
 interface SettingsButtonRowProps extends SettingsRowContentProps {
@@ -68,6 +69,7 @@ export function SettingsRowContent({
   value,
   tone = 'default',
   hasChevron = false,
+  hasDot = false,
 }: SettingsRowContentProps) {
   return (
     <>
@@ -82,6 +84,11 @@ export function SettingsRowContent({
         {hint ? <span className="truncate text-[13px] text-muted">{hint}</span> : null}
       </span>
       {value ? <span className="max-w-[40%] truncate text-sm text-muted">{value}</span> : null}
+      {hasDot ? (
+        <span className="size-2 flex-none rounded-full bg-tier-uncommon">
+          <span className="sr-only">nouveau</span>
+        </span>
+      ) : null}
       {hasChevron ? (
         <Icon name="chevron-right" className="size-[18px] flex-none text-faint" />
       ) : null}
