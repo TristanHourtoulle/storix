@@ -81,7 +81,7 @@ function FilterSheetForm({ leagueId, value, members, onApply, onClose }: FilterS
         </span>
         <span aria-hidden="true" className="filter-switch-track" />
       </button>
-      <div className="flex gap-3">
+      <div className="bsheet-footer">
         <Button variant="ghost" className="flex-1" onClick={() => setDraft(NO_FILTERS)}>
           Réinitialiser
         </Button>

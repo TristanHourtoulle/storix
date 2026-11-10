@@ -17,7 +17,10 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-/** Modal sheet sliding up from the bottom of the screen, with a scrim and a grab handle. */
+/**
+ * Modal sheet sliding up from the bottom of the screen, with a scrim and a grab handle.
+ * Wrap actions in an element with the `bsheet-footer` class to keep them pinned while the body scrolls.
+ */
 export function BottomSheet({ open, ...rest }: BottomSheetProps) {
   const [isRendered, setIsRendered] = useState(open)
   if (open && !isRendered) setIsRendered(true)
