@@ -14,8 +14,8 @@ interface GoalCardProps {
 }
 
 const BONUS_MARK_PERCENT = 99
-const BONUS_LABEL_PERCENT = 97
 const FRIEND_AVATARS = 3
+const OWN_AVATAR_TINT = 'var(--color-accent)'
 
 function percent(part: number, whole: number): number {
   return whole > 0 ? Math.min(100, (part / whole) * 100) : 0
@@ -28,7 +28,6 @@ export function GoalCard({ leagueId, goal, me, onElapsed }: GoalCardProps) {
   const wording = GOAL_WORDING[goal.type]
   const targetPercent = percent(goal.target, goal.bonusTarget)
   const friends = goal.contributors.filter((contributor) => contributor.userId !== me.id)
-  const friendsCount = Math.max(0, goal.contributorsCount - (goal.own > 0 ? 1 : 0))
   const friendsTotal = Math.max(0, goal.progress - goal.own)
 
   return (
@@ -57,9 +56,7 @@ export function GoalCard({ leagueId, goal, me, onElapsed }: GoalCardProps) {
       </div>
       <div className="goal-labels" aria-hidden="true">
         <span style={{ left: `${targetPercent}%` }}>{goal.target}</span>
-        <span className="is-bonus" style={{ left: `${BONUS_LABEL_PERCENT}%` }}>
-          {goal.bonusTarget} · bonus
-        </span>
+        <span className="is-bonus">{goal.bonusTarget} · bonus</span>
       </div>
       <div className="goal-foot">
         <span className="goal-reward">
@@ -74,14 +71,20 @@ export function GoalCard({ leagueId, goal, me, onElapsed }: GoalCardProps) {
       <button type="button" className="goal-contrib" onClick={() => setIsHelpersOpen(true)}>
         <span className="goal-crow is-me">
           <span className="goal-av">
-            <Avatar label={me.displayUsername} portrait={me.avatar} size="mini" isTinted />
+            <Avatar
+              label={me.displayUsername}
+              portrait={me.avatar}
+              size="mini"
+              isTinted
+              tint={OWN_AVATAR_TINT}
+            />
           </span>
           <span className="goal-cb">
             <i style={{ width: `${percent(goal.own, goal.progress)}%` }} />
           </span>
           <em>toi · {goal.own}</em>
         </span>
-        {friendsCount > 0 ? (
+        {goal.contributorsCount > 0 ? (
           <span className="goal-crow">
             <span className="goal-avstack">
               {friends.slice(0, FRIEND_AVATARS).map((friend) => (
@@ -98,7 +101,7 @@ export function GoalCard({ leagueId, goal, me, onElapsed }: GoalCardProps) {
             <span className="goal-cb">
               <i style={{ width: `${percent(friendsTotal, goal.progress)}%` }} />
             </span>
-            <em>{wording.friendsDid(friendsCount)}</em>
+            <em>{wording.friendsDid(goal.contributorsCount)}</em>
           </span>
         ) : null}
       </button>

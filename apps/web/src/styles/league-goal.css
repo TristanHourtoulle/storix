@@ -7,11 +7,11 @@
     background:
       radial-gradient(
         100% 90% at 0% 0%,
-        color-mix(in srgb, var(--color-cyan) 14%, transparent),
+        color-mix(in srgb, var(--color-cyan-soft) 14%, transparent),
         transparent 55%
       ),
       var(--color-surface);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-cyan) 30%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-cyan-soft) 30%, transparent);
   }
   .goal-h {
     display: flex;
@@ -24,7 +24,7 @@
     font: 700 11.5px var(--font-display);
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--color-cyan);
+    color: var(--color-cyan-soft);
   }
   .goal-h em {
     font-style: normal;
@@ -38,7 +38,7 @@
     line-height: 1.2;
   }
   .goal-t span {
-    color: var(--color-cyan);
+    color: var(--color-cyan-soft);
     font-variant-numeric: tabular-nums;
   }
   .goal-bar {
@@ -52,8 +52,8 @@
     position: absolute;
     inset: 0 auto 0 0;
     border-radius: 999px;
-    background: linear-gradient(90deg, var(--color-accent), var(--color-cyan));
-    box-shadow: 0 0 17px -3px var(--color-cyan);
+    background: linear-gradient(90deg, var(--color-accent-deep), var(--color-cyan-soft));
+    box-shadow: 0 0 17px -3px var(--color-cyan-soft);
     transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   .goal-mark {
@@ -79,6 +79,8 @@
     white-space: nowrap;
   }
   .goal-labels span.is-bonus {
+    right: 0;
+    transform: none;
     color: var(--color-tier-legendary-soft);
   }
   .goal-foot {
@@ -137,7 +139,7 @@
     display: block;
     height: 100%;
     border-radius: 999px;
-    background: var(--color-cyan);
+    background: var(--color-cyan-soft);
     opacity: 0.8;
   }
   .goal-crow.is-me .goal-cb i {
@@ -216,11 +218,11 @@
     padding: 12px 14px;
     border: 0;
     border-radius: var(--radius-card-lg);
-    background: color-mix(in srgb, var(--color-cyan) 13%, var(--color-surface));
+    background: color-mix(in srgb, var(--color-cyan-soft) 13%, var(--color-surface));
     box-shadow:
-      inset 0 0 0 1px color-mix(in srgb, var(--color-cyan) 55%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--color-cyan-soft) 55%, transparent),
       0 16px 30px -10px rgba(0, 0, 0, 0.7),
-      0 0 24px -8px var(--color-cyan);
+      0 0 24px -8px var(--color-cyan-soft);
     color: var(--color-ink);
     font: inherit;
     text-align: left;
@@ -239,8 +241,8 @@
     border-radius: 7px;
     background: linear-gradient(160deg, #2a1650, #5b21b6 45%, #0e7490);
     box-shadow:
-      0 0 0 1.5px var(--color-cyan),
-      0 0 17px -2px var(--color-cyan);
+      0 0 0 1.5px var(--color-cyan-soft),
+      0 0 17px -2px var(--color-cyan-soft);
   }
   .goal-banner-txt {
     display: grid;
@@ -250,7 +252,7 @@
     font: 700 10px var(--font-display);
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--color-cyan);
+    color: var(--color-cyan-soft);
   }
   .goal-banner b {
     display: block;

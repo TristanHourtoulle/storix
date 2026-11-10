@@ -11,6 +11,7 @@ interface MissionsSheetProps {
   missions: MissionsState
   tab: MissionsTab | null
   isRerolling: boolean
+  claimingIds: ReadonlySet<string>
   onTabChange: (tab: MissionsTab) => void
   onClose: () => void
   onClaim: (mission: Mission, origin: Element) => void
@@ -27,6 +28,7 @@ export function MissionsSheet({
   missions,
   tab,
   isRerolling,
+  claimingIds,
   onTabChange,
   onClose,
   onClaim,
@@ -73,6 +75,7 @@ export function MissionsSheet({
             hasCount
             canReroll={shown === 'day' && missions.day.rerollsLeft > 0 && mission.canReroll}
             isRerolling={isRerolling}
+            isClaiming={claimingIds.has(mission.id)}
             onClaim={onClaim}
             onReroll={onReroll}
           />

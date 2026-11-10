@@ -7,6 +7,7 @@ import { MissionsSheet, type MissionsTab } from './missions-sheet'
 interface MissionsCardProps {
   missions: MissionsState
   isRerolling: boolean
+  claimingIds: ReadonlySet<string>
   onClaim: (mission: Mission, origin: Element) => void
   onReroll: (missionId: string) => void
   onReset: () => void
@@ -20,6 +21,7 @@ function completeCount(rows: readonly Mission[]): number {
 export function MissionsCard({
   missions,
   isRerolling,
+  claimingIds,
   onClaim,
   onReroll,
   onReset,
@@ -50,7 +52,12 @@ export function MissionsCard({
             </small>
           </div>
           {day.rows.map((mission) => (
-            <MissionRow key={mission.id} mission={mission} onClaim={onClaim} />
+            <MissionRow
+              key={mission.id}
+              mission={mission}
+              isClaiming={claimingIds.has(mission.id)}
+              onClaim={onClaim}
+            />
           ))}
           <div className="mcard-wk">
             <span className="mis-ic">
@@ -78,6 +85,7 @@ export function MissionsCard({
         missions={missions}
         tab={openTab}
         isRerolling={isRerolling}
+        claimingIds={claimingIds}
         onTabChange={setOpenTab}
         onClose={() => setOpenTab(null)}
         onClaim={onClaim}

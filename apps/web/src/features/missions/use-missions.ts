@@ -1,8 +1,12 @@
+import { useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { MissionRow, MissionsState, WalletState } from '@storix/shared'
 import { walletQueryOptions } from '@/features/game/game.queries'
 import { refreshFeed } from '@/features/league-feed/league-feed.queries'
 import { playSound } from '@/features/sound/sound'
+import { showToast } from '@/components/ui/toast'
+import { errorMessage } from '@/features/errors/error-messages'
+import { ApiError } from '@/lib/http'
 import { logger } from '@/lib/logger'
 import { flyToDust } from './fly-to-dust'
 import { claimMission, rerollMission } from './missions.api'
@@ -27,19 +31,27 @@ export function useMissions(leagueId: string) {
   const walletKey = walletQueryOptions(leagueId).queryKey
   const query = useQuery(missionsQueryOptions(leagueId))
 
+  const claimingIds = useRef(new Set<string>())
+  const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(() => new Set())
+
   const claimMutation = useMutation({
     mutationFn: (missionId: string) => claimMission(leagueId, missionId),
-    onMutate: async (missionId) => {
-      await queryClient.cancelQueries({ queryKey: missionsKey })
-      queryClient.setQueryData<MissionsState>(missionsKey, (state) =>
-        state ? patchRows(state, missionId, (row) => ({ ...row, isClaimed: true })) : state,
-      )
-    },
     onError: (error) => {
       logger.warn('Mission claim failed', { error })
+      showToast(
+        error instanceof ApiError
+          ? errorMessage(error.code)
+          : 'Impossible de récupérer la récompense, réessaie.',
+      )
       refreshMissions(queryClient, leagueId)
     },
   })
+
+  function setPending(missionId: string, isPending: boolean): void {
+    if (isPending) claimingIds.current.add(missionId)
+    else claimingIds.current.delete(missionId)
+    setPendingIds(new Set(claimingIds.current))
+  }
 
   const rerollMutation = useMutation({
     mutationFn: (missionId: string) => rerollMission(leagueId, missionId),
@@ -58,10 +70,15 @@ export function useMissions(leagueId: string) {
   })
 
   async function claim(row: MissionRow, origin: Element | null): Promise<void> {
-    playSound({ name: 'coin' })
-    const flight = row.reward.dust > 0 && origin !== null ? flyToDust(origin) : Promise.resolve()
+    if (claimingIds.current.has(row.id)) return
+    setPending(row.id, true)
     try {
-      const [result] = await Promise.all([claimMutation.mutateAsync(row.id), flight])
+      const result = await claimMutation.mutateAsync(row.id)
+      playSound({ name: 'coin' })
+      queryClient.setQueryData<MissionsState>(missionsKey, (state) =>
+        state ? patchRows(state, row.id, (mission) => ({ ...mission, isClaimed: true })) : state,
+      )
+      if (row.reward.dust > 0 && origin !== null && origin.isConnected) await flyToDust(origin)
       queryClient.setQueryData<WalletState>(walletKey, (wallet) =>
         wallet ? { ...wallet, dust: result.dust } : wallet,
       )
@@ -69,7 +86,9 @@ export function useMissions(leagueId: string) {
       if (result.weekCompleted) refreshFeed(queryClient, leagueId)
       refreshMissions(queryClient, leagueId)
     } catch {
-      await flight
+      return
+    } finally {
+      setPending(row.id, false)
     }
   }
 
@@ -78,6 +97,7 @@ export function useMissions(leagueId: string) {
     isError: query.isError,
     refetch: query.refetch,
     claim,
+    claimingIds: pendingIds,
     reroll: (missionId: string) => rerollMutation.mutate(missionId),
     isRerolling: rerollMutation.isPending,
   }

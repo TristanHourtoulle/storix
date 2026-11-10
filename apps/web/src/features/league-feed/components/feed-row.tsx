@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   emblemDefinition,
@@ -19,6 +19,7 @@ import {
   cardMention,
   goalAmount,
   isBigRow,
+  leadEmblem,
   rowIcon,
   rowTier,
 } from '../feed-copy'
@@ -26,6 +27,12 @@ import {
 const MINI_SIZES = '48px'
 const THUMB_SIZES = '26px'
 const NAMED_EMBLEMS = 2
+const GOAL_TONE = { '--tc': 'var(--color-cyan-soft)' } as CSSProperties
+const GOAL_KINDS: ReadonlySet<FeedRowData['kind']> = new Set([
+  'league_goal_reached',
+  'league_goal_bonus',
+  'league_goal_missed',
+])
 
 interface FeedRowProps {
   leagueId: string
@@ -203,8 +210,8 @@ function RowIcon({ row, avatars }: Pick<FeedRowProps, 'row' | 'avatars'>) {
       </span>
     )
   }
-  const [emblemId] = row.emblemIds
-  if (row.kind === 'emblem_unlocked' && emblemId !== undefined) {
+  const emblemId = leadEmblem(row.emblemIds)
+  if (row.kind === 'emblem_unlocked' && emblemId !== null) {
     return (
       <span className="feed-ic">
         <EmblemIcon id={emblemId} className="feed-glyph" />
@@ -285,7 +292,10 @@ export function FeedRow({ leagueId, row, meId, avatars, onBravo }: FeedRowProps)
   const showsBravo = row.kind === 'card_promoted' && (canBravo || row.bravoCount > 0)
 
   return (
-    <div className={classes.filter(Boolean).join(' ')} style={tierColorStyle(tier)}>
+    <div
+      className={classes.filter(Boolean).join(' ')}
+      style={GOAL_KINDS.has(row.kind) ? GOAL_TONE : tierColorStyle(tier)}
+    >
       <RowIcon row={row} avatars={avatars} />
       <span className="feed-txt">
         <RowLink leagueId={leagueId} row={row}>

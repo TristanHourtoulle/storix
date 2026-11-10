@@ -1,7 +1,9 @@
 import {
   emblemDefinition,
+  type EmblemId,
   type GoalType,
   isTierAtLeast,
+  tierRank,
   type CardTier,
   type CollectionCard,
   type FeedActor,
@@ -41,10 +43,21 @@ export function cardMention(card: CollectionCard | null): string {
   return 'une carte'
 }
 
+/** The rarest emblem of a row, which gives a grouped emblem row its icon and colour. */
+export function leadEmblem(ids: readonly EmblemId[]): EmblemId | null {
+  return ids.reduce<EmblemId | null>(
+    (best, id) =>
+      best === null || tierRank(emblemDefinition(id).tier) > tierRank(emblemDefinition(best).tier)
+        ? id
+        : best,
+    null,
+  )
+}
+
 /** The tier a row is tinted with: the reached tier for promotions, the emblem's tier, the best tier otherwise. */
 export function rowTier(row: FeedRow): CardTier | null {
-  const [emblemId] = row.emblemIds
-  if (row.kind === 'emblem_unlocked' && emblemId !== undefined) {
+  const emblemId = leadEmblem(row.emblemIds)
+  if (row.kind === 'emblem_unlocked' && emblemId !== null) {
     return emblemDefinition(emblemId).tier
   }
   return row.toTier ?? row.tier
@@ -83,7 +96,6 @@ export function rowIcon(row: FeedRow): IconName {
       return 'check'
     case 'league_goal_reached':
     case 'league_goal_bonus':
-      return 'trophy'
     case 'league_goal_missed':
       return 'target'
   }

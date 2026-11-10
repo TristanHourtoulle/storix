@@ -131,13 +131,18 @@
     padding: 0 12px;
     border: 0;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--color-accent) 70%, #4c1d95);
+    background: var(--color-accent-deep);
     color: #fff;
     font: 600 13px var(--font-display);
     white-space: nowrap;
-    box-shadow: 0 0 17px -5px var(--color-accent);
+    box-shadow: 0 0 17px -5px var(--color-accent-deep);
     cursor: pointer;
     animation: mis-glow 1.6s ease-in-out infinite;
+  }
+  .mis-claim:disabled {
+    cursor: default;
+    opacity: 0.7;
+    animation: none;
   }
   .mis-reroll {
     display: grid;
@@ -268,7 +273,7 @@
 
 @keyframes mis-glow {
   50% {
-    box-shadow: 0 0 24px -2px var(--color-accent);
+    box-shadow: 0 0 24px -2px var(--color-accent-deep);
   }
 }
 

@@ -7,15 +7,18 @@ interface MissionRowProps {
   hasCount?: boolean
   canReroll?: boolean
   isRerolling?: boolean
+  isClaiming?: boolean
   onClaim: (mission: Mission, origin: Element) => void
   onReroll?: (missionId: string) => void
 }
 
 function RewardSlot({
   mission,
+  isClaiming,
   onClaim,
 }: {
   mission: Mission
+  isClaiming: boolean
   onClaim: MissionRowProps['onClaim']
 }) {
   const { reward } = mission
@@ -27,6 +30,8 @@ function RewardSlot({
         type="button"
         className="mis-claim"
         aria-label={`Récupérer ${amount}`}
+        aria-busy={isClaiming}
+        disabled={isClaiming}
         onClick={(event) => onClaim(mission, event.currentTarget)}
       >
         {reward.boosters > 0 ? <i className="mis-pack" /> : <i className="mis-diamond" />}
@@ -56,6 +61,7 @@ export function MissionRow({
   hasCount = false,
   canReroll = false,
   isRerolling = false,
+  isClaiming = false,
   onClaim,
   onReroll,
 }: MissionRowProps) {
@@ -97,7 +103,7 @@ export function MissionRow({
           <Icon name="retry" className="mis-glyph" />
         </button>
       ) : null}
-      <RewardSlot mission={mission} onClaim={onClaim} />
+      <RewardSlot mission={mission} isClaiming={isClaiming} onClaim={onClaim} />
     </div>
   )
 }
