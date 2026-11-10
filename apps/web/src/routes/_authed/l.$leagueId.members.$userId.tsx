@@ -7,6 +7,7 @@ import { EmblemGrid } from '@/features/emblems/components/emblem-grid'
 import { MemberPage } from '@/features/members/components/member-page'
 import { MEMBER_TABS, type MemberTab } from '@/features/members/components/member-tabs'
 import { useMemberProfile } from '@/features/members/use-member-profile'
+import { useMemberVisit } from '@/features/missions/use-member-visit'
 import { ProfileSubPage } from '@/features/profile/components/profile-sub-page'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/members/$userId')({
@@ -20,6 +21,7 @@ function MemberScreen() {
   const navigate = useNavigate({ from: Route.fullPath })
   const leagueName = useMyLeagues().find((league) => league.id === leagueId)?.name
   const profile = useMemberProfile(leagueId, userId)
+  useMemberVisit(leagueId, userId, profile.data?.header.isSelf === false)
 
   function selectTab(next: MemberTab) {
     void navigate({ search: { tab: next === 'photos' ? undefined : next }, replace: true })

@@ -13,6 +13,7 @@ import { walletQueryOptions } from '@/features/game/game.queries'
 import { refreshFeed } from '@/features/league-feed/league-feed.queries'
 import { convertStack, promoteCard, recycleCopy, upgradeToFoil } from './cards.api'
 import { refreshEmblems } from '@/features/emblems/emblems.queries'
+import { refreshMissions } from '@/features/missions/missions.queries'
 
 interface CardMutations {
   recycle: UseMutationResult<DustBalance, Error, CopyVariant>
@@ -55,6 +56,7 @@ export function useCardMutations(leagueId: string, cardId: string): CardMutation
     )
     refreshCards()
     refreshEmblems(queryClient, leagueId)
+    refreshMissions(queryClient, leagueId)
     void queryClient.invalidateQueries({ queryKey: walletKey }).catch(logRefreshFailure)
   }
 

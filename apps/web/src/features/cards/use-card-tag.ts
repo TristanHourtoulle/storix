@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { refreshMissions } from '@/features/missions/missions.queries'
 import { logger } from '@/lib/logger'
 import { taggedCardsQueryOptions } from '@/features/withdrawals/withdrawals.queries'
 import { removeCardTag, tagSelf } from './cards.api'
@@ -14,7 +15,10 @@ export function useCardTag(leagueId: string, cardId: string) {
     ])
   const add = useMutation({
     mutationFn: () => tagSelf(leagueId, cardId),
-    onSuccess: refresh,
+    onSuccess: async () => {
+      refreshMissions(queryClient, leagueId)
+      await refresh()
+    },
     onError: (error) => logger.warn('Self tag failed', { error }),
   })
   const remove = useMutation({
