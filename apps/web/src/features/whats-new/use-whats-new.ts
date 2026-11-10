@@ -38,6 +38,7 @@ export function useWhatsNew(): WhatsNew {
 
   const { mutate } = useMutation({
     mutationFn: markWhatsNewSeen,
+    meta: { sound: 'none' },
     onMutate: async (releaseId) => {
       await queryClient.cancelQueries({ queryKey })
       queryClient.setQueryData(queryKey, (state) =>
