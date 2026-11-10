@@ -30,6 +30,16 @@ describe('unseenReleaseIds', () => {
     expect(result).toEqual(['2026-12-01'])
   })
 
+  it('should treat a release published later on the signup day as seen', () => {
+    const result = unseenReleaseIds(RELEASES, {
+      seenReleaseId: null,
+      seenAt: null,
+      memberSince: new Date('2026-11-20T08:00:00+01:00'),
+    })
+
+    expect(result).toEqual(['2026-12-01'])
+  })
+
   it('should list only newer releases when a middle release is seen', () => {
     const result = unseenReleaseIds(RELEASES, {
       seenReleaseId: '2026-11-20',

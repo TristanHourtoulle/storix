@@ -28,11 +28,13 @@ export function toWalletState(
       maxStock: cadence.maxStock,
       nextAt: stock.nextAt === null ? null : stock.nextAt.toISOString(),
       intervalSeconds: cadence.intervalMinutes * 60,
+      joinGift: cadence.joinGift,
     },
     pool: {
       drawableCount: pool.drawableCount,
       minimumCards: MIN_DRAWABLE_CARDS_FOR_BOOSTER,
       nextEligibleAt: pool.nextEligibleAt === null ? null : pool.nextEligibleAt.toISOString(),
+      newCardDelayMinutes: pool.delayMinutes,
     },
     pity: {
       ...pitySummary({ sinceEpic: row.pitySinceEpic, sinceLegendary: row.pitySinceLegendary }),

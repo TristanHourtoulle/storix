@@ -9,6 +9,9 @@ import { clearLastLeagueId, useRememberLastLeague } from '@/features/leagues/las
 import { purgeLeagueCaches } from '@/features/privacy/purge-cache'
 import { useRemovedCardsSync } from '@/features/privacy/use-removed-cards-sync'
 import { loadLeagueDetail } from '@/features/leagues/leagues.queries'
+import { OnboardingGate } from '@/features/onboarding/components/onboarding-gate'
+import { wasOnboardingShown } from '@/features/onboarding/onboarding-session'
+import { useOnboarding } from '@/features/onboarding/use-onboarding'
 import { usePortraitCachePruning } from '@/features/portraits/use-portrait-cache-pruning'
 import { WhatsNewGate } from '@/features/whats-new/components/whats-new-gate'
 import { wasAutoShown } from '@/features/whats-new/news-session'
@@ -41,6 +44,12 @@ function LeagueLayout() {
   const { hasUnseen } = useWhatsNew()
   const [isNewsOpen, setIsNewsOpen] = useState(false)
   const isNewsPending = hasUnseen && !wasAutoShown(me.user.id)
+  const onboarding = useOnboarding()
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
+  const isOnboardingBlocking =
+    isOnboardingOpen ||
+    onboarding.isPending ||
+    (!onboarding.isSeen && !wasOnboardingShown(me.user.id))
   const isBoosterStage = Boolean(matchRoute({ to: '/l/$leagueId/booster', params: { leagueId } }))
   const isAddScreen = Boolean(matchRoute({ to: '/l/$leagueId/add', params: { leagueId } }))
   const active = matchRoute({ to: '/l/$leagueId/collection', params: { leagueId } })
@@ -57,18 +66,24 @@ function LeagueLayout() {
       <div className="isolate flex flex-1 flex-col">
         <Outlet />
       </div>
-      <WhatsNewGate
+      <OnboardingGate
         leagueId={leagueId}
         userId={me.user.id}
         isSuspended={isBoosterStage || isAddScreen}
+        onOpenChange={setIsOnboardingOpen}
+      />
+      <WhatsNewGate
+        leagueId={leagueId}
+        userId={me.user.id}
+        isSuspended={isBoosterStage || isAddScreen || isOnboardingBlocking}
         onOpenChange={setIsNewsOpen}
       />
-      {isNewsOpen || isNewsPending ? null : (
+      {isNewsOpen || isNewsPending || isOnboardingBlocking ? null : (
         <PasskeyPrompt userId={me.user.id} displayUsername={me.user.displayUsername} />
       )}
       {isBoosterStage ? null : (
         <div ref={navStackRef} className="sticky bottom-0 z-40 mt-auto">
-          <IosInstallHint />
+          {isOnboardingBlocking ? null : <IosInstallHint />}
           <BottomNav leagueId={leagueId} active={active} hasProfileBadge={hasUnseen} />
         </div>
       )}

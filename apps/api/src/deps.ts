@@ -48,6 +48,10 @@ import { createUploadsService, type UploadsService } from './features/uploads/up
 import { createWalletsService, type WalletsService } from './features/wallets/wallets.service'
 import { createWhatsNewService, type WhatsNewService } from './features/whats-new/whats-new.service'
 import {
+  createOnboardingService,
+  type OnboardingService,
+} from './features/onboarding/onboarding.service'
+import {
   createWithdrawalsService,
   type WithdrawalsService,
 } from './features/withdrawals/withdrawals.service'
@@ -89,6 +93,7 @@ export interface Services {
   uploadDrafts: UploadDraftsService
   wallets: WalletsService
   whatsNew: WhatsNewService
+  onboarding: OnboardingService
   withdrawals: WithdrawalsService
 }
 
@@ -198,6 +203,7 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
     }),
     wallets: createWalletsService({ db: deps.db, clock: deps.clock }),
     whatsNew: createWhatsNewService({ db: deps.db, clock: deps.clock }),
+    onboarding: createOnboardingService({ db: deps.db, clock: deps.clock }),
     withdrawals: createWithdrawalsService({
       db: deps.db,
       signer: deps.mediaSigner,

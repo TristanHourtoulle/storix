@@ -20,11 +20,17 @@ export interface NewsPack<C> {
   overflowTitles: string[]
 }
 
+const RELEASE_DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' })
+
 const publishedAfter = (release: DatedRelease, date: Date): boolean =>
   new Date(release.publishedAt).getTime() > date.getTime()
 
+const publishedAfterDay = (release: DatedRelease, date: Date): boolean =>
+  RELEASE_DAY.format(new Date(release.publishedAt)) > RELEASE_DAY.format(date)
+
 /**
  * Lists the ids of the releases a member has not seen yet, newest first.
+ * Without a read row, releases published on or before the signup day (Paris time) count as seen.
  * Releases must be ordered newest first.
  */
 export function unseenReleaseIds(
@@ -41,7 +47,7 @@ export function unseenReleaseIds(
     }
   }
   return releases
-    .filter((release) => publishedAfter(release, memberSince))
+    .filter((release) => publishedAfterDay(release, memberSince))
     .map((release) => release.id)
 }
 

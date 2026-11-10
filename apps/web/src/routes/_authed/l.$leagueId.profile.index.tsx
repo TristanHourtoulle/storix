@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
@@ -15,6 +16,10 @@ import { useLogout } from '@/features/auth/use-logout'
 import { usePasskeys } from '@/features/auth/use-passkeys'
 import { useMyLeagues } from '@/features/leagues/use-my-leagues'
 import { LeaveLeagueRow, OwnerLeaveHint } from '@/features/members/components/leave-league-row'
+import {
+  OnboardingStories,
+  type OnboardingCloseReason,
+} from '@/features/onboarding/components/onboarding-stories'
 import { LeagueScopeCard } from '@/features/profile/components/league-scope-card'
 import { pushStatusSummary } from '@/features/push/push-status'
 import { usePushNotifications } from '@/features/push/use-push-notifications'
@@ -41,11 +46,18 @@ function Profile() {
   const soundSettings = useSoundSettings()
   const push = usePushNotifications()
   const whatsNew = useWhatsNew()
+  const navigate = useNavigate()
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
 
   if (!me) return null
   const currentLeague = leagues.find((league) => league.id === leagueId)
   const params = { leagueId }
   const newestRelease = whatsNew.releases[0]
+
+  function closeOnboarding(reason: OnboardingCloseReason) {
+    setIsOnboardingOpen(false)
+    if (reason === 'photo') void navigate({ to: '/l/$leagueId/add', params })
+  }
 
   return (
     <main className="screen gap-5">
@@ -133,6 +145,20 @@ function Profile() {
       </SettingsGroup>
       <SettingsGroup title="Storix">
         <li>
+          <button
+            type="button"
+            className={settingsRowClassName()}
+            onClick={() => setIsOnboardingOpen(true)}
+          >
+            <SettingsRowContent
+              icon="stack"
+              label="Premiers pas"
+              hint="Revoir le tutoriel"
+              hasChevron
+            />
+          </button>
+        </li>
+        <li>
           <Link
             to="/l/$leagueId/profile/nouveautes"
             params={params}
@@ -168,6 +194,9 @@ function Profile() {
         ) : null}
         <DeleteAccountRow userId={me.user.id} username={me.user.username} />
       </SettingsGroup>
+      {isOnboardingOpen ? (
+        <OnboardingStories leagueId={leagueId} mode="replay" onClose={closeOnboarding} />
+      ) : null}
     </main>
   )
 }

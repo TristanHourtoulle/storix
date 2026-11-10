@@ -31,6 +31,7 @@ import { uploadDraftsRoutes } from './features/uploads/upload-drafts.routes'
 import { uploadsRoutes } from './features/uploads/uploads.routes'
 import { walletsRoutes } from './features/wallets/wallets.routes'
 import { whatsNewRoutes } from './features/whats-new/whats-new.routes'
+import { onboardingRoutes } from './features/onboarding/onboarding.routes'
 import { withdrawalsRoutes } from './features/withdrawals/withdrawals.routes'
 import { registerErrorHandling } from './http/error-handler'
 import { registerOriginCheck } from './http/origin-check'
@@ -103,6 +104,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(portraitsRoutes(services.portraits), { prefix: '/api' })
   await app.register(pushRoutes(services.push), { prefix: '/api' })
   await app.register(whatsNewRoutes(services.whatsNew), { prefix: '/api' })
+  await app.register(onboardingRoutes(services.onboarding), { prefix: '/api' })
   await app.register(mediaRoutes(services.media))
 
   if (isProduction) {
