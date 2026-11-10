@@ -89,6 +89,17 @@ export const feedHighlightsSchema = z.object({
   highlights: z.array(feedHighlightSchema),
 })
 
+export const feedEventParamsSchema = z.object({
+  leagueId: z.uuid(),
+  eventId: z.uuid(),
+})
+
+export const feedBravoSchema = z.object({
+  bravoCount: z.int().min(0),
+  hasBravoed: z.boolean(),
+})
+
+export type FeedBravo = z.infer<typeof feedBravoSchema>
 export type FeedQuery = z.infer<typeof feedQuerySchema>
 export type FeedActor = z.infer<typeof feedActorSchema>
 export type FeedRow = z.infer<typeof feedRowSchema>

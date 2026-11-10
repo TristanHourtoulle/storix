@@ -42,6 +42,7 @@ export const ERROR_CODES = [
   'EMBLEM_NOT_EARNED',
   'SHOWCASE_INVALID',
   'TAG_NOT_ALLOWED',
+  'BRAVO_NOT_ALLOWED',
   'INTERNAL_ERROR',
 ] as const
 

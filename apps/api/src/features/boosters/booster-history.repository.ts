@@ -57,15 +57,17 @@ export interface HistoryStatsRow {
   boostersSinceLegendary: number | null
 }
 
-const author = alias(user, 'history_author')
+/** Alias of the card author used by `historyCardColumns`. */
+export const historyAuthor = alias(user, 'history_author')
 
 const authorName = sql<
   string | null
->`coalesce(${author.displayUsername}, ${author.username}, ${author.name})`
+>`coalesce(${historyAuthor.displayUsername}, ${historyAuthor.username}, ${historyAuthor.name})`
 
 const openedAtMs = sql`date_trunc('milliseconds', ${boosterOpenings.openedAt})`
 
-const pullCardColumns = {
+/** Card, media and author columns of a card row as the collection views expect them. */
+export const historyCardColumns = {
   cardId: cards.id,
   number: cards.number,
   title: cards.title,
@@ -82,7 +84,8 @@ const pullCardColumns = {
   variants: media.variants,
 }
 
-function toCardRow(row: {
+/** Builds a card row from left-joined columns, or null when the card no longer exists. */
+export function toHistoryCardRow(row: {
   cardId: string | null
   number: number | null
   title: string | null
@@ -170,12 +173,12 @@ export async function listPullsWithCards(
       dust: boosterPulls.dust,
       stackCount: boosterPulls.stackCount,
       isDiscovery: boosterPulls.isDiscovery,
-      ...pullCardColumns,
+      ...historyCardColumns,
     })
     .from(boosterPulls)
     .leftJoin(cards, eq(cards.id, boosterPulls.cardId))
     .leftJoin(media, eq(media.id, cards.mediaId))
-    .leftJoin(author, eq(author.id, cards.authorId))
+    .leftJoin(historyAuthor, eq(historyAuthor.id, cards.authorId))
     .leftJoin(authorMembership, authorMembershipOn)
     .where(inArray(boosterPulls.openingId, [...openingIds]))
     .orderBy(asc(boosterPulls.openingId), asc(boosterPulls.slot))
@@ -188,7 +191,7 @@ export async function listPullsWithCards(
     dust: row.dust,
     stackCount: row.stackCount,
     isDiscovery: row.isDiscovery,
-    card: toCardRow(row),
+    card: toHistoryCardRow(row),
   }))
 }
 
@@ -223,13 +226,13 @@ export async function historyStats(
       .select({
         tierAtMint: boosterPulls.tierAtMint,
         pullVariant: boosterPulls.variant,
-        ...pullCardColumns,
+        ...historyCardColumns,
       })
       .from(boosterPulls)
       .innerJoin(boosterOpenings, eq(boosterOpenings.id, boosterPulls.openingId))
       .leftJoin(cards, eq(cards.id, boosterPulls.cardId))
       .leftJoin(media, eq(media.id, cards.mediaId))
-      .leftJoin(author, eq(author.id, cards.authorId))
+      .leftJoin(historyAuthor, eq(historyAuthor.id, cards.authorId))
       .leftJoin(authorMembership, authorMembershipOn)
       .where(memberOpenings(input))
       .orderBy(
@@ -248,7 +251,7 @@ export async function historyStats(
     bestPull:
       top === undefined
         ? null
-        : { tierAtMint: top.tierAtMint, variant: top.pullVariant, card: toCardRow(top) },
+        : { tierAtMint: top.tierAtMint, variant: top.pullVariant, card: toHistoryCardRow(top) },
     boostersSinceLegendary: count?.sinceLegendary ?? null,
   }
 }
