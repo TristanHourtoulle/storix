@@ -1,6 +1,7 @@
 import {
   collectionPageSchema,
   dustBalanceSchema,
+  rarityHistorySchema,
   reactionCountsSchema,
   stackActionResultSchema,
   viewerCardDetailSchema,
@@ -10,6 +11,7 @@ import {
   type ConvertStackBody,
   type CopyVariant,
   type DustBalance,
+  type RarityHistory,
   type ReactionCounts,
   type ReactionType,
   type StackActionResult,
@@ -112,5 +114,12 @@ export function setReaction(
   return apiRequest(`${cardPath(leagueId, cardId)}/reactions/${type}`, {
     method: isOn ? 'PUT' : 'DELETE',
     schema: reactionCountsSchema,
+  })
+}
+
+/** Fetches the rarity journey of a card the viewer owns, newest step first. */
+export function fetchRarityHistory(leagueId: string, cardId: string): Promise<RarityHistory> {
+  return apiRequest(`${cardPath(leagueId, cardId)}/rarity-history`, {
+    schema: rarityHistorySchema,
   })
 }

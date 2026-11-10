@@ -22,6 +22,7 @@ import { MotionPrompt } from './motion-prompt'
 import { useMemberAvatars } from '@/features/portraits/use-member-avatars'
 import { MetaCell, discovererLabel, formatDate } from './meta-cell'
 import { PromotedHolders } from './promoted-holders'
+import { RarityJourney } from './rarity-journey'
 import { ReactionBar } from './reaction-bar'
 
 const TAP_SLOP_PX = 10
@@ -161,6 +162,7 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
           upgradeToFoil.reset()
         }}
       />
+      <RarityJourney leagueId={leagueId} cardId={card.id} />
     </div>
   )
 }
