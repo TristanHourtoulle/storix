@@ -3,6 +3,7 @@ import {
   collectionPageSchema,
   leagueParamsSchema,
   listCardsQuerySchema,
+  rarityHistorySchema,
   viewerCardDetailSchema,
 } from '@storix/shared'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
@@ -32,6 +33,14 @@ export function cardsRoutes(service: CardsService): FastifyPluginAsyncZod {
         schema: { params: cardParamsSchema, response: { 200: viewerCardDetailSchema } },
       },
       (request) => service.getCard(request.membership, request.params.cardId),
+    )
+    app.get(
+      '/leagues/:leagueId/cards/:cardId/rarity-history',
+      {
+        preHandler: [authenticate, requireLeagueRole('member')],
+        schema: { params: cardParamsSchema, response: { 200: rarityHistorySchema } },
+      },
+      (request) => service.getRarityHistory(request.membership, request.params.cardId),
     )
   }
 }

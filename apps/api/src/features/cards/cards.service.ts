@@ -2,9 +2,11 @@ import type { Database } from '@storix/db'
 import {
   LEGACY_COLLECTION_CURSOR,
   encodeCollectionCursor,
+  rarityJourney,
   resolveLeagueSettings,
   type CollectionPage,
   type ListCardsQuery,
+  type RarityHistory,
   type ReactionCounts,
   type ViewerCardDetail,
 } from '@storix/shared'
@@ -25,6 +27,11 @@ import {
   toPromotedHolders,
 } from './card-views'
 import { countCollection, findCardForViewer, listCollection } from './cards.repository'
+import {
+  findViewerPromotion,
+  listRarityHistory,
+  RARITY_HISTORY_LIMIT,
+} from './rarity-history.repository'
 
 const NO_REACTIONS: ReactionCounts = {
   fire: { count: 0, isMine: false },
@@ -35,6 +42,7 @@ const NO_REACTIONS: ReactionCounts = {
 export interface CardsService {
   listCards(m: Membership, query: ListCardsQuery): Promise<CollectionPage>
   getCard(m: Membership, cardId: string): Promise<ViewerCardDetail>
+  getRarityHistory(m: Membership, cardId: string): Promise<RarityHistory>
 }
 
 export interface CardsServiceDeps {
@@ -109,6 +117,22 @@ export function createCardsService({ db, signer, clock }: CardsServiceDeps): Car
         stack: stack.map(({ variant, tierAtMint, count }) => ({ variant, tierAtMint, count })),
         promotedHolders: toPromotedHolders(holderRows, row.tier),
       })
+    },
+
+    async getRarityHistory(m, cardId) {
+      const row = await findCardForViewer(db, {
+        leagueId: m.leagueId,
+        cardId,
+        viewerId: m.userId,
+      })
+      if (row === null || !isOwned(row) || row.status !== 'active') {
+        throw notFound('Card not found')
+      }
+      const [rows, mine] = await Promise.all([
+        listRarityHistory(db, { cardId, limit: RARITY_HISTORY_LIMIT }),
+        findViewerPromotion(db, { leagueId: m.leagueId, cardId, ownerId: m.userId }),
+      ])
+      return { steps: rarityJourney(rows, mine) }
     },
   }
 }
