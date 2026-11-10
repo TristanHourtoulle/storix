@@ -1,4 +1,5 @@
 import { type CardTier, isTierAtLeast, tierRank } from './cards'
+import type { EmblemId } from './emblems'
 
 export const LEAGUE_EVENT_TYPES = [
   'booster_opened',
@@ -35,7 +36,7 @@ export interface LeagueEventPayload {
   isDiscovery?: boolean
   fromTier?: CardTier
   toTier?: CardTier
-  emblemId?: string
+  emblemId?: EmblemId
   openingId?: string
   count?: number
 }

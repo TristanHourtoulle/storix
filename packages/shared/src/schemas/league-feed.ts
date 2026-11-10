@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { FEED_FILTER_IDS, LEAGUE_EVENT_TYPES } from '../domain'
 import { cardTierSchema, collectionCardSchema } from './cards'
 import { isoDateSchema } from './common'
+import { emblemIdSchema } from './emblems'
 
 export const FEED_DEFAULT_LIMIT = 20
 export const FEED_MAX_LIMIT = 50
@@ -61,7 +62,7 @@ export const feedRowSchema = z.object({
   isDiscovery: z.boolean(),
   fromTier: cardTierSchema.nullable(),
   toTier: cardTierSchema.nullable(),
-  emblemId: z.string().nullable(),
+  emblemId: emblemIdSchema.nullable(),
   bravoCount: z.int().min(0),
   hasBravoed: z.boolean(),
   isNew: z.boolean(),
