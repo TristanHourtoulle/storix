@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useMyLeagues } from '@/features/leagues/use-my-leagues'
+import { EmblemGrid } from '@/features/emblems/components/emblem-grid'
 import { MemberPage } from '@/features/members/components/member-page'
 import { MEMBER_TABS, type MemberTab } from '@/features/members/components/member-tabs'
 import { useMemberProfile } from '@/features/members/use-member-profile'
@@ -36,7 +37,9 @@ function MemberScreen() {
           profile={profile.data}
           tab={tab}
           onTabChange={selectTab}
-          emblems={null}
+          emblems={
+            <EmblemGrid leagueId={leagueId} userId={userId} isSelf={profile.data.header.isSelf} />
+          }
         />
       ) : profile.isGone ? (
         <EmptyState

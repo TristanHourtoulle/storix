@@ -5,6 +5,7 @@ import { PasskeyPrompt } from '@/features/auth/components/passkey-prompt'
 import { IosInstallHint } from '@/features/pwa/components/ios-install-hint'
 import { meQueryOptions } from '@/features/auth/session.queries'
 import { useCollectionVisitTracker } from '@/features/cards/news/use-collection-visit-tracker'
+import { EmblemGate } from '@/features/emblems/components/emblem-gate'
 import { clearLastLeagueId, useRememberLastLeague } from '@/features/leagues/last-league'
 import { purgeLeagueCaches } from '@/features/privacy/purge-cache'
 import { useRemovedCardsSync } from '@/features/privacy/use-removed-cards-sync'
@@ -78,6 +79,13 @@ function LeagueLayout() {
         userId={me.user.id}
         isSuspended={isBoosterStage || isAddScreen || isOnboardingBlocking}
         onOpenChange={setIsNewsOpen}
+      />
+      <EmblemGate
+        leagueId={leagueId}
+        userId={me.user.id}
+        isSuspended={
+          isBoosterStage || isAddScreen || isOnboardingBlocking || isNewsOpen || isNewsPending
+        }
       />
       {isNewsOpen || isNewsPending || isOnboardingBlocking ? null : (
         <PasskeyPrompt userId={me.user.id} displayUsername={me.user.displayUsername} />
