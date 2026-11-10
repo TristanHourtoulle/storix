@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PREMIUM_BOOSTER_EVERY } from '../domain'
 import { isoDateSchema } from './common'
 
 export const walletStateSchema = z.object({
@@ -20,6 +21,10 @@ export const walletStateSchema = z.object({
     legendaryBonusPercent: z.int().min(0),
     epicAvailable: z.boolean(),
     legendaryAvailable: z.boolean(),
+  }),
+  premium: z.object({
+    boostersUntil: z.int().min(1).max(PREMIUM_BOOSTER_EVERY),
+    progress: z.number().min(0).max(1),
   }),
 })
 

@@ -1,11 +1,13 @@
 import { z } from 'zod'
-import { COMPUTED_TIERS } from '../domain'
+import { BOUND_TIERS, COMPUTED_TIERS } from '../domain'
 import { cardAuthorSchema, cardTierSchema } from './cards'
 import { isoDateSchema } from './common'
 import { imageSetSchema } from './media'
 import { cardTitleSchema } from './uploads'
 
 export const computedTierSchema = z.enum(COMPUTED_TIERS)
+
+export const boundTierSchema = z.enum(BOUND_TIERS)
 
 export const adminCardsQuerySchema = z.object({
   filter: z.enum(['all', 'active', 'hidden', 'provisional', 'mythic']).default('all'),
@@ -22,8 +24,8 @@ export const adminCardSchema = z.object({
   computedTier: computedTierSchema.nullable(),
   tierSource: z.enum(['computed', 'bounded', 'pinned']),
   pinnedTier: cardTierSchema.nullable(),
-  minTier: computedTierSchema.nullable(),
-  maxTier: computedTierSchema.nullable(),
+  minTier: boundTierSchema.nullable(),
+  maxTier: boundTierSchema.nullable(),
   author: cardAuthorSchema,
   capturedAt: isoDateSchema.nullable(),
   isCaptureDateValidated: z.boolean(),
@@ -46,8 +48,8 @@ export const adminCardPageSchema = z.object({
 export const pinTierBodySchema = z.object({ tier: cardTierSchema.nullable() })
 
 export const tierBoundsBodySchema = z.object({
-  min: computedTierSchema.nullable(),
-  max: computedTierSchema.nullable(),
+  min: boundTierSchema.nullable(),
+  max: boundTierSchema.nullable(),
 })
 
 export const captureDateValidationBodySchema = z.object({ isValidated: z.boolean() })

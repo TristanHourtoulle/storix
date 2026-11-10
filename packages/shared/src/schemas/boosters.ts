@@ -41,6 +41,7 @@ export const boosterOpeningSchema = z.object({
   openedAt: isoDateSchema,
   pulls: z.array(boosterPullSchema).max(5),
   dustGained: z.int().min(0),
+  isPremium: z.boolean(),
   wallet: walletStateSchema,
 })
 
