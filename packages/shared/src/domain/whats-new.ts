@@ -1,0 +1,78 @@
+export interface DatedRelease {
+  id: string
+  publishedAt: string
+}
+
+export interface ReleaseWithCards<C> extends DatedRelease {
+  cards: readonly C[]
+}
+
+export interface ReadState {
+  seenReleaseId: string | null
+  seenAt: Date | null
+  memberSince: Date
+}
+
+export interface NewsPack<C> {
+  newestId: string
+  newestPublishedAt: string
+  cards: C[]
+  overflowTitles: string[]
+}
+
+const publishedAfter = (release: DatedRelease, date: Date): boolean =>
+  new Date(release.publishedAt).getTime() > date.getTime()
+
+/**
+ * Lists the ids of the releases a member has not seen yet, newest first.
+ * Releases must be ordered newest first.
+ */
+export function unseenReleaseIds(
+  releases: readonly DatedRelease[],
+  { seenReleaseId, seenAt, memberSince }: ReadState,
+): string[] {
+  if (seenReleaseId !== null) {
+    const seenIndex = releases.findIndex((release) => release.id === seenReleaseId)
+    if (seenIndex >= 0) return releases.slice(0, seenIndex).map((release) => release.id)
+    if (seenAt !== null) {
+      return releases
+        .filter((release) => publishedAfter(release, seenAt))
+        .map((release) => release.id)
+    }
+  }
+  return releases
+    .filter((release) => publishedAfter(release, memberSince))
+    .map((release) => release.id)
+}
+
+/** Tells whether `candidateId` is a known release newer than `currentId`. */
+export function isNewerRelease(
+  releases: readonly DatedRelease[],
+  candidateId: string,
+  currentId: string | null,
+): boolean {
+  const candidateIndex = releases.findIndex((release) => release.id === candidateId)
+  if (candidateIndex < 0) return false
+  if (currentId === null) return true
+  const currentIndex = releases.findIndex((release) => release.id === currentId)
+  return currentIndex < 0 || candidateIndex < currentIndex
+}
+
+/**
+ * Merges releases (newest first) into one pack capped at `maxCards`;
+ * the titles of the cards left out are returned newest first.
+ */
+export function buildNewsPack<C>(
+  releases: readonly ReleaseWithCards<C>[],
+  { maxCards, titleOf }: { maxCards: number; titleOf: (card: C) => string },
+): NewsPack<C> | null {
+  const newest = releases[0]
+  if (newest === undefined) return null
+  const allCards = releases.flatMap((release) => release.cards)
+  return {
+    newestId: newest.id,
+    newestPublishedAt: newest.publishedAt,
+    cards: allCards.slice(0, maxCards),
+    overflowTitles: allCards.slice(maxCards).map(titleOf),
+  }
+}
