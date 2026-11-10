@@ -25,6 +25,7 @@ export const router = createRouter({
   context: { queryClient },
   defaultPreload: 'intent',
   scrollRestoration: true,
+  getScrollRestorationKey: (location) => location.pathname,
 })
 
 declare module '@tanstack/react-router' {

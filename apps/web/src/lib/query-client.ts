@@ -8,6 +8,9 @@ declare module '@tanstack/react-query' {
   }
 }
 
+const DEFAULT_STALE_TIME_MS = 30_000
+const DEFAULT_GC_TIME_MS = 30 * 60_000
+
 function isClientError(error: unknown): boolean {
   return error instanceof ApiError && error.status >= 400 && error.status < 500
 }
@@ -31,6 +34,8 @@ export function createQueryClient(onUnauthenticated: () => void): QueryClient {
     }),
     defaultOptions: {
       queries: {
+        staleTime: DEFAULT_STALE_TIME_MS,
+        gcTime: DEFAULT_GC_TIME_MS,
         networkMode: 'offlineFirst',
         retry: (failureCount, error) => !isClientError(error) && failureCount < 2,
       },

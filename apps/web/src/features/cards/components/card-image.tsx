@@ -14,6 +14,8 @@ interface CardImageProps {
   onImageRef?: (img: HTMLImageElement | null) => void
 }
 
+const loadedSources = new Set<string>()
+
 function toSrcSet(sources: ImageSource[]): string {
   return sources.map((source) => `${source.url} ${source.width}w`).join(', ')
 }
@@ -28,17 +30,23 @@ export function CardImage({
   isHighPriority = false,
   onImageRef,
 }: CardImageProps) {
-  const [isLoaded, setIsLoaded] = useState(false)
+  const fallback = largestSource(image.webp)
+  const sourceKey = fallback?.url ?? null
+  const wasShownBefore = sourceKey !== null && loadedSources.has(sourceKey)
+  const [isLoaded, setIsLoaded] = useState(wasShownBefore)
   const [hasFailed, setHasFailed] = useState(false)
+  const markLoaded = useCallback(() => {
+    if (sourceKey !== null) loadedSources.add(sourceKey)
+    setIsLoaded(true)
+  }, [sourceKey])
   const imageRef = useCallback(
     (node: HTMLImageElement | null) => {
-      if (node?.complete && node.naturalWidth > 0) setIsLoaded(true)
+      if (node?.complete && node.naturalWidth > 0) markLoaded()
       onImageRef?.(node)
     },
-    [onImageRef],
+    [onImageRef, markLoaded],
   )
   const placeholder = useThumbhashUrl(thumbhash)
-  const fallback = largestSource(image.webp)
 
   return (
     <div
@@ -56,11 +64,11 @@ export function CardImage({
           sizes={sizes}
           loading={isEager ? 'eager' : 'lazy'}
           decoding="async"
-          onLoad={() => setIsLoaded(true)}
+          onLoad={markLoaded}
           ref={imageRef}
           onError={() => setHasFailed(true)}
           fetchPriority={isHighPriority ? 'high' : undefined}
-          className={`size-full object-cover transition-opacity duration-300 motion-reduce:transition-none ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+          className={`size-full object-cover motion-reduce:transition-none ${wasShownBefore ? '' : 'transition-opacity duration-300'} ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
         />
       </picture>
       {hasFailed ? (
