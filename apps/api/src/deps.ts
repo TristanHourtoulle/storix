@@ -32,6 +32,11 @@ import {
 } from './features/moderation/moderation.service'
 import { createMembersService, type MembersService } from './features/members/members.service'
 import {
+  createMemberProfileService,
+  type MemberProfileService,
+} from './features/members/member-profile.service'
+import { createShowcaseService, type ShowcaseService } from './features/showcase/showcase.service'
+import {
   createPortraitsService,
   type PortraitsService,
 } from './features/portraits/portraits.service'
@@ -91,6 +96,8 @@ export interface Services {
   me: MeService
   media: MediaService
   members: MembersService
+  memberProfiles: MemberProfileService
+  showcase: ShowcaseService
   moderation: ModerationService
   portraits: PortraitsService
   push: PushService
@@ -171,6 +178,8 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       jobs: deps.jobs,
       logger,
     }),
+    memberProfiles: createMemberProfileService({ db: deps.db, signer: deps.mediaSigner }),
+    showcase: createShowcaseService({ db: deps.db }),
     moderation: createModerationService({
       db: deps.db,
       signer: deps.mediaSigner,

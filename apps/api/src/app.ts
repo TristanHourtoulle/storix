@@ -27,6 +27,7 @@ import { portraitsRoutes } from './features/portraits/portraits.routes'
 import { pushRoutes } from './features/push/push.routes'
 import { reactionsRoutes } from './features/reactions/reactions.routes'
 import { tagsRoutes } from './features/tags/tags.routes'
+import { showcaseRoutes } from './features/showcase/showcase.routes'
 import { removalsRoutes } from './features/removals/removals.routes'
 import { resetCodesRoutes } from './features/reset-codes/reset-codes.routes'
 import { uploadDraftsRoutes } from './features/uploads/upload-drafts.routes'
@@ -90,7 +91,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(accountRoutes(services.account), { prefix: '/api' })
   await app.register(leaguesRoutes(services.leagues), { prefix: '/api' })
   await app.register(invitationsRoutes(services.invitations), { prefix: '/api' })
-  await app.register(membersRoutes(services.members), { prefix: '/api' })
+  await app.register(membersRoutes(services.members, services.memberProfiles), { prefix: '/api' })
   await app.register(resetCodesRoutes(services.resetCodes), { prefix: '/api' })
   await app.register(uploadDraftsRoutes(services.uploadDrafts), { prefix: '/api' })
   await app.register(uploadsRoutes(services.uploads), { prefix: '/api' })
@@ -101,6 +102,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(reactionsRoutes(services.reactions), { prefix: '/api' })
   await app.register(emblemsRoutes(services.emblems), { prefix: '/api' })
   await app.register(tagsRoutes(services.tags), { prefix: '/api' })
+  await app.register(showcaseRoutes(services.showcase), { prefix: '/api' })
   await app.register(removalsRoutes(services.removals), { prefix: '/api' })
   await app.register(leagueSettingsRoutes(services.leagueSettings), { prefix: '/api' })
   await app.register(moderationRoutes(services.moderation), { prefix: '/api' })
