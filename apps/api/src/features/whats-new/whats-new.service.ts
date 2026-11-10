@@ -15,7 +15,7 @@ import {
   findShowcaseCardId,
   findStackCardId,
   findWhatsNewRead,
-  lockWhatsNewRead,
+  lockUserWhatsNew,
   upsertWhatsNewRead,
   type WhatsNewRead,
 } from './whats-new.repository'
@@ -31,13 +31,7 @@ export interface WhatsNewServiceDeps {
   clock: () => Date
 }
 
-async function stateOf(
-  db: DbExecutor,
-  userId: string,
-  read: WhatsNewRead | null,
-): Promise<WhatsNewState> {
-  const memberSince = await findMemberSince(db, userId)
-  if (memberSince === null) throw unauthenticated()
+function stateOf(read: WhatsNewRead | null, memberSince: Date): WhatsNewState {
   return {
     seenReleaseId: read?.releaseId ?? null,
     unseenReleaseIds: unseenReleaseIds(RELEASE_NOTES, {
@@ -48,11 +42,21 @@ async function stateOf(
   }
 }
 
+async function requireMemberSince(db: DbExecutor, userId: string): Promise<Date> {
+  const memberSince = await findMemberSince(db, userId)
+  if (memberSince === null) throw unauthenticated()
+  return memberSince
+}
+
 /** Builds the service tracking which feature releases each member has seen. */
 export function createWhatsNewService({ db, clock }: WhatsNewServiceDeps): WhatsNewService {
   return {
     async getState(session) {
-      return stateOf(db, session.userId, await findWhatsNewRead(db, session.userId))
+      const [memberSince, read] = await Promise.all([
+        requireMemberSince(db, session.userId),
+        findWhatsNewRead(db, session.userId),
+      ])
+      return stateOf(read, memberSince)
     },
 
     markSeen: (session, releaseId) => {
@@ -61,13 +65,15 @@ export function createWhatsNewService({ db, clock }: WhatsNewServiceDeps): Whats
       }
       return runInTransaction(db, async (tx) => {
         const { userId } = session
-        const current = await lockWhatsNewRead(tx, userId)
+        await lockUserWhatsNew(tx, userId)
+        const memberSince = await requireMemberSince(tx, userId)
+        const current = await findWhatsNewRead(tx, userId)
         if (!isNewerRelease(RELEASE_NOTES, releaseId, current?.releaseId ?? null)) {
-          return stateOf(tx, userId, current)
+          return stateOf(current, memberSince)
         }
         const now = clock()
         await upsertWhatsNewRead(tx, { userId, releaseId, now })
-        return stateOf(tx, userId, { releaseId, seenAt: now })
+        return stateOf({ releaseId, seenAt: now }, memberSince)
       })
     },
 

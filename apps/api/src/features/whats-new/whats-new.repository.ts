@@ -30,18 +30,9 @@ export async function findWhatsNewRead(
   return rows[0] ?? null
 }
 
-/** Reads the seen row of a user and locks it for the current transaction. */
-export async function lockWhatsNewRead(
-  db: DbExecutor,
-  userId: string,
-): Promise<WhatsNewRead | null> {
-  const rows = await db
-    .select({ releaseId: whatsNewReads.releaseId, seenAt: whatsNewReads.seenAt })
-    .from(whatsNewReads)
-    .where(eq(whatsNewReads.userId, userId))
-    .limit(1)
-    .for('update')
-  return rows[0] ?? null
+/** Serializes what's new writes of a user until the current transaction ends, even before their row exists. */
+export async function lockUserWhatsNew(db: DbExecutor, userId: string): Promise<void> {
+  await db.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`whats-new:${userId}`}, 0))`)
 }
 
 /** Stores the last release a user has seen, replacing the previous one. */
