@@ -6,6 +6,9 @@ import {
   encodeAuditCursor,
   groupAuditEntries,
   AUDIT_PAGE_SIZE,
+  type AuditAction,
+  type AuditCount,
+  type AuditFilterQuery,
   type AuditPage,
   type AuditPerson,
   type AuditQuery,
@@ -14,13 +17,16 @@ import type { Membership } from '../leagues/leagues.service'
 import { findReadAt, markReadAt } from '../league-feed/league-feed.repository'
 import {
   hasFailedCodesSince,
+  listAuditKeys,
   listAuditPage,
   listAuditPeople,
+  type AuditFilter,
   type AuditPersonRow,
 } from './audit.repository'
 
 export interface AuditService {
   listJournal(m: Membership, query: AuditQuery): Promise<AuditPage>
+  countJournal(m: Membership, query: AuditFilterQuery): Promise<AuditCount>
   markJournalSeen(m: Membership): Promise<void>
 }
 
@@ -30,6 +36,35 @@ export interface AuditServiceDeps {
 }
 
 const DEFAULT_WINDOW_MS = 30 * 86_400_000
+
+const PUBLIC_METADATA_KEYS: Partial<Record<AuditAction, readonly string[]>> = {
+  'account.display_name_changed': ['from', 'to'],
+  'account.avatar_changed': [],
+  'account.avatar_removed': [],
+  'account.deleted': [],
+}
+
+/** Keeps only the metadata a Journal may show; account actions expose an explicit allow-list. */
+function publicMetadata(
+  action: AuditAction,
+  metadata: Record<string, unknown>,
+): Record<string, unknown> {
+  const allowed = PUBLIC_METADATA_KEYS[action]
+  if (allowed === undefined) return metadata
+  return Object.fromEntries(Object.entries(metadata).filter(([key]) => allowed.includes(key)))
+}
+
+function toFilter(m: Membership, query: AuditFilterQuery, now: Date): AuditFilter {
+  const categories = query.category ?? DEFAULT_AUDIT_CATEGORIES
+  return {
+    leagueId: m.leagueId,
+    actions: auditActionsIn(categories),
+    accountActions: categories.includes('accounts') ? auditActionsIn(['accounts']) : [],
+    memberId: query.memberId,
+    from:
+      query.from === undefined ? new Date(now.getTime() - DEFAULT_WINDOW_MS) : new Date(query.from),
+  }
+}
 
 function toPerson(
   userId: string | null,
@@ -45,19 +80,9 @@ function toPerson(
 export function createAuditService({ db, clock }: AuditServiceDeps): AuditService {
   return {
     async listJournal(m, query) {
-      const now = clock()
-      const categories = query.category ?? DEFAULT_AUDIT_CATEGORIES
-      const from =
-        query.from === undefined
-          ? new Date(now.getTime() - DEFAULT_WINDOW_MS)
-          : new Date(query.from)
       const [rows, journalSeenAt] = await Promise.all([
         listAuditPage(db, {
-          leagueId: m.leagueId,
-          actions: auditActionsIn(categories),
-          accountActions: categories.includes('accounts') ? auditActionsIn(['accounts']) : [],
-          actorId: query.actorId,
-          from,
+          ...toFilter(m, query, clock()),
           after: query.cursor,
           limit: AUDIT_PAGE_SIZE + 1,
         }),
@@ -82,7 +107,7 @@ export function createAuditService({ db, clock }: AuditServiceDeps): AuditServic
           category: auditCategory(entry.action),
           actor: toPerson(entry.actorId, byId),
           target: toPerson(entry.targetUserId, byId),
-          metadata: entry.metadata,
+          metadata: publicMetadata(entry.action, entry.metadata),
           createdAt: entry.createdAt.toISOString(),
           count: entry.count,
           times: entry.times.map((time) => time.toISOString()),
@@ -93,6 +118,11 @@ export function createAuditService({ db, clock }: AuditServiceDeps): AuditServic
             : null,
         hasUnseenAlerts,
       }
+    },
+
+    async countJournal(m, query) {
+      const keys = await listAuditKeys(db, toFilter(m, query, clock()))
+      return { count: groupAuditEntries(keys).length }
     },
 
     async markJournalSeen(m) {

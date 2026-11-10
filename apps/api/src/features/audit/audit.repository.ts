@@ -1,6 +1,6 @@
 import { auditLog, leagueMembers, user, type AuditAction, type DbExecutor } from '@storix/db'
 import type { AuditCursor } from '@storix/shared'
-import { and, desc, eq, gt, gte, inArray, isNull, or, sql } from 'drizzle-orm'
+import { and, desc, eq, gt, gte, inArray, isNull, or, sql, type SQL } from 'drizzle-orm'
 
 export interface AuditEntry {
   leagueId: string | null
@@ -38,23 +38,24 @@ export async function insertAuditEntry(db: DbExecutor, entry: AuditEntry): Promi
   })
 }
 
-/**
- * Lists a league's audit rows newest first, plus league-less account rows of its current members,
- * fetching `limit` rows after the cursor.
- */
-export async function listAuditPage(
-  db: DbExecutor,
-  input: {
-    leagueId: string
-    actions: readonly AuditAction[]
-    accountActions: readonly AuditAction[]
-    actorId?: string
-    from: Date
-    after?: AuditCursor
-    limit: number
-  },
-): Promise<AuditRow[]> {
-  if (input.actions.length === 0) return []
+export interface AuditFilter {
+  leagueId: string
+  actions: readonly AuditAction[]
+  accountActions: readonly AuditAction[]
+  memberId?: string
+  from: Date
+}
+
+export interface AuditKeyRow {
+  id: string
+  action: AuditAction
+  targetUserId: string | null
+  createdAt: Date
+}
+
+const MAX_COUNTED_ROWS = 10_000
+
+function auditWhere(db: DbExecutor, input: AuditFilter): SQL | undefined {
   const members = db
     .select({ userId: leagueMembers.userId })
     .from(leagueMembers)
@@ -67,6 +68,25 @@ export async function listAuditPage(
           inArray(auditLog.action, [...input.accountActions]),
           inArray(auditLog.actorId, members),
         )
+  return and(
+    or(eq(auditLog.leagueId, input.leagueId), accountRows),
+    inArray(auditLog.action, [...input.actions]),
+    input.memberId === undefined
+      ? undefined
+      : or(eq(auditLog.actorId, input.memberId), eq(auditLog.targetUserId, input.memberId)),
+    gte(auditLog.createdAt, input.from),
+  )
+}
+
+/**
+ * Lists a league's audit rows newest first, plus league-less account rows of its current members,
+ * fetching `limit` rows after the cursor. A member filter keeps rows they did or that concern them.
+ */
+export async function listAuditPage(
+  db: DbExecutor,
+  input: AuditFilter & { after?: AuditCursor; limit: number },
+): Promise<AuditRow[]> {
+  if (input.actions.length === 0) return []
   const after =
     input.after === undefined
       ? undefined
@@ -81,17 +101,25 @@ export async function listAuditPage(
       createdAt: auditLog.createdAt,
     })
     .from(auditLog)
-    .where(
-      and(
-        or(eq(auditLog.leagueId, input.leagueId), accountRows),
-        inArray(auditLog.action, [...input.actions]),
-        input.actorId === undefined ? undefined : eq(auditLog.actorId, input.actorId),
-        gte(auditLog.createdAt, input.from),
-        after,
-      ),
-    )
+    .where(and(auditWhere(db, input), after))
     .orderBy(desc(createdAtMs), desc(auditLog.id))
     .limit(input.limit)
+}
+
+/** Lists the keys of every audit row matching the filter, newest first, to count Journal lines. */
+export async function listAuditKeys(db: DbExecutor, input: AuditFilter): Promise<AuditKeyRow[]> {
+  if (input.actions.length === 0) return []
+  return db
+    .select({
+      id: auditLog.id,
+      action: auditLog.action,
+      targetUserId: auditLog.targetUserId,
+      createdAt: auditLog.createdAt,
+    })
+    .from(auditLog)
+    .where(auditWhere(db, input))
+    .orderBy(desc(createdAtMs), desc(auditLog.id))
+    .limit(MAX_COUNTED_ROWS)
 }
 
 /** Resolves people names and whether each is still a member of the league. */

@@ -1,4 +1,10 @@
-import { auditPageSchema, auditQuerySchema, leagueParamsSchema } from '@storix/shared'
+import {
+  auditCountSchema,
+  auditFilterQuerySchema,
+  auditPageSchema,
+  auditQuerySchema,
+  leagueParamsSchema,
+} from '@storix/shared'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { authenticate } from '../../http/authenticate'
 import { requireLeagueRole } from '../../http/league-guard'
@@ -21,6 +27,19 @@ export function auditRoutes(service: AuditService): FastifyPluginAsyncZod {
         },
       },
       (request) => service.listJournal(request.membership, request.query),
+    )
+    app.get(
+      '/leagues/:leagueId/audit/count',
+      {
+        preHandler: admin,
+        config: { rateLimit: rateLimits.adminAction },
+        schema: {
+          params: leagueParamsSchema,
+          querystring: auditFilterQuerySchema,
+          response: { 200: auditCountSchema },
+        },
+      },
+      (request) => service.countJournal(request.membership, request.query),
     )
     app.post(
       '/leagues/:leagueId/audit/seen',

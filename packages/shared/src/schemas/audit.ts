@@ -42,12 +42,17 @@ const auditCategoryListSchema = z
   .transform((raw) => raw.split(',').filter((part) => part.length > 0))
   .pipe(z.array(auditCategorySchema).min(1))
 
-export const auditQuerySchema = z.object({
+export const auditFilterQuerySchema = z.object({
   category: auditCategoryListSchema.optional(),
-  actorId: z.string().min(1).optional(),
+  memberId: z.string().min(1).optional(),
   from: isoDateSchema.optional(),
+})
+
+export const auditQuerySchema = auditFilterQuerySchema.extend({
   cursor: auditCursorSchema.optional(),
 })
+
+export const auditCountSchema = z.object({ count: z.int().min(0) })
 
 export const auditPersonSchema = z.object({
   userId: z.string().nullable(),
@@ -74,6 +79,8 @@ export const auditPageSchema = z.object({
 })
 
 export type AuditQuery = z.infer<typeof auditQuerySchema>
+export type AuditFilterQuery = z.infer<typeof auditFilterQuerySchema>
+export type AuditCount = z.infer<typeof auditCountSchema>
 export type AuditPerson = z.infer<typeof auditPersonSchema>
 export type AuditEntry = z.infer<typeof auditEntrySchema>
 export type AuditPage = z.infer<typeof auditPageSchema>
