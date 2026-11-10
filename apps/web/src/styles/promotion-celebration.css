@@ -1,0 +1,218 @@
+@keyframes celeb-rise {
+  to {
+    transform: none;
+  }
+}
+@keyframes celeb-swap {
+  to {
+    box-shadow:
+      0 0 0 3px var(--tc),
+      0 0 40px -2px var(--tc);
+  }
+}
+@keyframes celeb-sheen {
+  to {
+    background-position: -120% 0;
+  }
+}
+@keyframes celeb-stamp {
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes celeb-fade {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes celeb-rays {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@layer components {
+  .celeb {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 18px;
+    padding: 0 26px;
+    text-align: center;
+    background: radial-gradient(
+      60% 45% at 50% 42%,
+      color-mix(in srgb, var(--tc) 35%, transparent),
+      rgba(5, 5, 7, 0.94) 70%
+    );
+    opacity: 0;
+    transition: opacity 0.3s;
+    outline: none;
+  }
+  .celeb.is-on {
+    opacity: 1;
+  }
+  .celeb-rays {
+    position: absolute;
+    left: 50%;
+    top: 42%;
+    width: 520px;
+    height: 520px;
+    margin: -260px 0 0 -260px;
+    border-radius: 999px;
+    background: repeating-conic-gradient(
+      from 0deg,
+      color-mix(in srgb, var(--tc) 30%, transparent) 0 6deg,
+      transparent 6deg 18deg
+    );
+    mask: radial-gradient(closest-side, #000 20%, transparent 75%);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .celeb.is-on .celeb-rays {
+    animation:
+      celeb-rays 6s linear infinite,
+      celeb-fade 0.6s 0.5s forwards;
+  }
+  .celeb-card {
+    position: relative;
+    display: block;
+    overflow: visible;
+    width: 160px;
+    aspect-ratio: 63 / 88;
+    border-radius: 14px;
+    background: var(--color-surface-2);
+    box-shadow:
+      0 0 0 3px var(--from),
+      0 0 28px -6px var(--from);
+    transform: scale(0.7) translateY(24px);
+  }
+  .celeb-card > div {
+    overflow: hidden;
+    border-radius: inherit;
+  }
+  .celeb-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      115deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.4) 46%,
+      transparent 62%
+    );
+    background-size: 250% 100%;
+    background-position: 120% 0;
+    pointer-events: none;
+  }
+  .celeb.is-on .celeb-card {
+    animation:
+      celeb-rise 0.7s cubic-bezier(0.2, 1.2, 0.4, 1) forwards,
+      celeb-swap 0.5s 0.9s forwards;
+  }
+  .celeb.is-on .celeb-card::after {
+    animation: celeb-sheen 1.1s 1s ease-out forwards;
+  }
+  .celeb-star {
+    position: absolute;
+    right: -16px;
+    top: -16px;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 999px;
+    background: var(--tc);
+    color: var(--color-bg);
+    font: 700 24px var(--font-display);
+    box-shadow:
+      0 0 0 3px var(--color-bg),
+      0 0 18px var(--tc);
+    transform: scale(2.4) rotate(-25deg);
+    opacity: 0;
+  }
+  .celeb.is-on .celeb-star {
+    animation: celeb-stamp 0.35s 1.25s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+  }
+  .celeb-text {
+    position: relative;
+    display: grid;
+    gap: 5px;
+    opacity: 0;
+  }
+  .celeb.is-on .celeb-text {
+    animation: celeb-fade 0.4s 1.4s forwards;
+  }
+  .celeb-text b {
+    font: 700 23px var(--font-display);
+    color: var(--color-ink);
+  }
+  .celeb-tierline {
+    font: 700 14px var(--font-display);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--tc);
+  }
+  .celeb-text small {
+    font-size: 14px;
+    color: var(--color-muted);
+  }
+  .celeb-cta {
+    position: relative;
+    display: flex;
+    gap: 10px;
+    opacity: 0;
+  }
+  .celeb.is-on .celeb-cta {
+    animation: celeb-fade 0.4s 1.7s forwards;
+  }
+  .celeb.is-foil .celeb-card {
+    transform: none;
+    box-shadow:
+      0 0 0 3px var(--tc),
+      0 0 34px -4px var(--color-cyan);
+  }
+  .celeb.is-foil.is-on .celeb-card {
+    animation: none;
+  }
+  .celeb.is-foil.is-on .celeb-card::after {
+    background: linear-gradient(
+      115deg,
+      transparent 25%,
+      rgba(255, 255, 255, 0.4) 45%,
+      rgba(103, 232, 249, 0.35) 55%,
+      transparent 70%
+    );
+    background-size: 250% 100%;
+    animation: celeb-sheen 1.1s 0.3s ease-out forwards;
+  }
+  .celeb.is-foil.is-on .celeb-text {
+    animation-delay: 0.8s;
+  }
+  .celeb.is-foil.is-on .celeb-cta {
+    animation-delay: 1s;
+  }
+  .celeb.is-final .celeb-rays,
+  .celeb.is-final .celeb-text,
+  .celeb.is-final .celeb-cta,
+  .celeb.is-final .celeb-star {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .celeb.is-final .celeb-card {
+    animation: none;
+    transform: none;
+    box-shadow:
+      0 0 0 3px var(--tc),
+      0 0 40px -2px var(--tc);
+  }
+  .celeb.is-final .celeb-rays {
+    animation: celeb-rays 6s linear infinite;
+  }
+}
