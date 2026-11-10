@@ -28,6 +28,7 @@ describe('rarity engine', () => {
       rare: 3,
       epic: 2,
       legendary: 1,
+      mythic: 0,
     })
   })
   it('uses fixed thresholds and no legendary under 15 cards', () => {
@@ -37,6 +38,7 @@ describe('rarity engine', () => {
       rare: 1,
       epic: 3,
       legendary: 0,
+      mythic: 0,
     })
   })
   it('allows cold start legendaries from 15 cards', () => {
@@ -77,5 +79,13 @@ describe('rarity engine', () => {
       tier: 'uncommon',
       tierSource: 'bounded',
     })
+  })
+  it('makes the top-scored card the only computed mythic from 50 cards, none under cold start', () => {
+    const mythics = (count: number) =>
+      computeLeagueRarity({ cards: aged(count), weights: ONLY_AGE, now })
+        .filter((r) => r.computedTier === 'mythic')
+        .map((r) => r.cardId)
+    expect(mythics(60)).toEqual(['c59'])
+    expect(mythics(19)).toEqual([])
   })
 })

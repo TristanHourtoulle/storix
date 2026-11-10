@@ -2,12 +2,23 @@ import { z } from 'zod'
 import { cardTierSchema } from './cards'
 import { idSchema } from './common'
 
-export const NEWS_ILLUSTRATIONS = ['camera', 'stacks', 'showcase', 'share', 'sort'] as const
+export const NEWS_ILLUSTRATIONS = [
+  'camera',
+  'stacks',
+  'showcase',
+  'share',
+  'sort',
+  'premium',
+  'mythic',
+  'upgrade',
+] as const
 export const newsIllustrationSchema = z.enum(NEWS_ILLUSTRATIONS)
 
 export const NEWS_TRY_TARGETS = [
   'add',
+  'home',
   'collection-discovery',
+  'collection-upgradable',
   'showcase-card',
   'stack-card',
   'none',

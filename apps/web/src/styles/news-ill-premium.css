@@ -1,0 +1,156 @@
+@layer components {
+  .ni-prem .pr-gauge {
+    position: absolute;
+    left: 30px;
+    right: 30px;
+    top: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 9px 12px;
+    border-radius: 12px;
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 1px var(--color-line);
+    font: 600 10.5px var(--font-display);
+    color: var(--color-ink-2);
+  }
+  .ni-prem .pr-gauge b {
+    color: var(--color-tier-legendary);
+  }
+  .ni-prem .pr-gauge .l2 {
+    opacity: 0;
+  }
+  .ni-prem .pr-bar {
+    position: relative;
+    width: 100%;
+    height: 5px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--color-surface-2);
+  }
+  .ni-prem .pr-bar i {
+    position: absolute;
+    inset: 0;
+    width: 90%;
+    border-radius: inherit;
+    background: var(--color-tier-legendary);
+    box-shadow: 0 0 8px var(--color-tier-legendary);
+  }
+  .ni-prem .pr-pack,
+  .ni-prem .pr-card {
+    position: absolute;
+    left: 75px;
+    top: 66px;
+    width: 110px;
+    height: 154px;
+  }
+  .ni-prem .pr-pack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border-radius: 14px;
+    background: linear-gradient(160deg, #3b2b66, #1d2b4f);
+    box-shadow:
+      0 0 0 2px var(--color-tier-legendary),
+      0 0 34px color-mix(in srgb, var(--color-tier-legendary) 45%, transparent);
+  }
+  .ni-prem .pr-pack b {
+    font: 700 16px var(--font-display);
+    letter-spacing: 0.12em;
+  }
+  .ni-prem .pr-pack span {
+    font: 700 7.5px var(--font-display);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-tier-legendary);
+  }
+  .ni-prem .pr-card {
+    opacity: 0;
+  }
+  .ni-prem .pr-card .ni-mc {
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    box-shadow:
+      0 0 0 2px var(--tc),
+      0 0 30px color-mix(in srgb, var(--tc) 45%, transparent);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .ni-prem.is-live .pr-bar i {
+      animation: ni-pr-bar 7s ease-out infinite;
+    }
+    .ni-prem.is-live .pr-gauge .l1 {
+      animation: ni-pr-l1 7s step-end infinite;
+    }
+    .ni-prem.is-live .pr-gauge .l2 {
+      animation: ni-pr-l2 7s step-end infinite;
+    }
+    .ni-prem.is-live .pr-pack {
+      animation: ni-pr-pack 7s ease-in-out infinite;
+    }
+    .ni-prem.is-live .pr-card {
+      animation: ni-pr-card 7s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+    }
+  }
+}
+
+@keyframes ni-pr-bar {
+  0%,
+  8% {
+    width: 90%;
+  }
+  24%,
+  100% {
+    width: 100%;
+  }
+}
+@keyframes ni-pr-l1 {
+  0% {
+    opacity: 1;
+  }
+  24% {
+    opacity: 0;
+  }
+}
+@keyframes ni-pr-l2 {
+  0% {
+    opacity: 0;
+  }
+  24% {
+    opacity: 1;
+  }
+}
+@keyframes ni-pr-pack {
+  0%,
+  30% {
+    opacity: 1;
+    transform: none;
+  }
+  36%,
+  42% {
+    opacity: 1;
+    transform: scale(1.06) rotate(-2deg);
+  }
+  50%,
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+@keyframes ni-pr-card {
+  0%,
+  46% {
+    opacity: 0;
+    transform: rotateY(90deg) scale(0.9);
+  }
+  58%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -10,6 +10,7 @@ import {
   createSeededRandom,
   drawBooster,
   DROP_TABLE_VERSION,
+  isPremiumBooster,
   MIN_DRAWABLE_CARDS_FOR_BOOSTER,
   nextPityState,
   resolveLeagueSettings,
@@ -158,6 +159,7 @@ async function present(
     openedAt: opening.openedAt.toISOString(),
     pulls: pulls.map((row) => toBoosterPull(row, signer)),
     dustGained: opening.dustGained,
+    isPremium: opening.isPremium,
     wallet,
   }
 }
@@ -196,7 +198,13 @@ async function openNewBooster(
 
   const pityBefore = { sinceEpic: wallet.pitySinceEpic, sinceLegendary: wallet.pitySinceLegendary }
   const seed = generateBoosterSeed()
-  const draws = drawBooster({ pool, pity: pityBefore, random: createSeededRandom(seed) })
+  const isPremium = isPremiumBooster(wallet.boostersOpened)
+  const draws = drawBooster({
+    pool,
+    pity: pityBefore,
+    random: createSeededRandom(seed),
+    isPremium,
+  })
   assertLeagueCards(pool, draws, ctx.m.leagueId)
 
   const cardIds = [...new Set(draws.map((draw) => draw.cardId))]
@@ -233,6 +241,7 @@ async function openNewBooster(
     pityBefore,
     poolDigest: sha256Hex(boosterPoolDigestInput(pool)),
     dustGained: 0,
+    isPremium,
   })
   await mintCopies(ctx, settlements, opening.id)
   await addToStack(
@@ -280,6 +289,7 @@ async function openNewBooster(
     boosterStockAt: consumed.anchor,
     pitySinceEpic: pityAfter.sinceEpic,
     pitySinceLegendary: pityAfter.sinceLegendary,
+    boostersOpened: wallet.boostersOpened + 1,
     boosterFullNotifiedAt: null,
   }
   await updateWallet(ctx.tx, { leagueId: ctx.m.leagueId, userId: ctx.m.userId }, patch)

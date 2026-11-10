@@ -107,7 +107,7 @@ function filterCondition(filter: AdminCardFilter, eligibleBefore: Date): SQL | u
     case 'provisional':
       return gt(cards.createdAt, eligibleBefore)
     case 'mythic':
-      return eq(cards.pinnedTier, 'mythic')
+      return eq(cards.tier, 'mythic')
     case 'all':
       return undefined
   }

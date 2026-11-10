@@ -1,4 +1,4 @@
-import type { CardTier, ComputedTier } from './cards'
+import type { BoundTier, CardTier, ComputedTier } from './cards'
 import {
   photoAgeSignals,
   rarityScore,
@@ -11,9 +11,11 @@ import {
   capColdStartTier,
   COLD_START_CARD_COUNT,
   COLD_START_LOWER_BOUNDS,
+  mythicQuota,
   positionPercentiles,
   QUOTA_LOWER_BOUNDS,
   resolveEffectiveTier,
+  selectComputedMythics,
   type TierSource,
 } from './rarity-tiers'
 
@@ -26,8 +28,8 @@ export interface RarityCardInput {
   reactionSum: number
   previousComputedTier: ComputedTier | null
   pinnedTier: CardTier | null
-  minTier: ComputedTier | null
-  maxTier: ComputedTier | null
+  minTier: BoundTier | null
+  maxTier: BoundTier | null
 }
 
 export interface RarityResult {
@@ -38,6 +40,9 @@ export interface RarityResult {
   tier: CardTier
   tierSource: TierSource
 }
+
+const toBandTier = (tier: ComputedTier | null): BoundTier | null =>
+  tier === 'mythic' ? 'legendary' : tier
 
 /** Computes every active card's rarity in a league, preserving input order. */
 export function computeLeagueRarity(input: {
@@ -68,23 +73,28 @@ export function computeLeagueRarity(input: {
   )
   const percentiles = positionPercentiles(scores)
   const isColdStart = n < COLD_START_CARD_COUNT
+  const mythicIds = selectComputedMythics(
+    cards.map((card, i) => ({
+      cardId: card.cardId,
+      number: i,
+      score: scores[i] ?? 0,
+      percentile: percentiles[i] ?? 0,
+      isEligible: card.pinnedTier === null && card.maxTier === null,
+      wasMythic: card.previousComputedTier === 'mythic',
+    })),
+    isColdStart ? 0 : mythicQuota(n),
+  )
   return cards.map((card, i) => {
     const score = scores[i] ?? 0
     const percentile = percentiles[i] ?? 0
-    const computedTier = isColdStart
+    const previous = toBandTier(card.previousComputedTier)
+    const bandTier = isColdStart
       ? capColdStartTier(
-          applyHysteresis({
-            value: score,
-            previous: card.previousComputedTier,
-            bounds: COLD_START_LOWER_BOUNDS,
-          }),
+          applyHysteresis({ value: score, previous, bounds: COLD_START_LOWER_BOUNDS }),
           n,
         )
-      : applyHysteresis({
-          value: percentile,
-          previous: card.previousComputedTier,
-          bounds: QUOTA_LOWER_BOUNDS,
-        })
+      : applyHysteresis({ value: percentile, previous, bounds: QUOTA_LOWER_BOUNDS })
+    const computedTier: ComputedTier = mythicIds.has(card.cardId) ? 'mythic' : bandTier
     const { tier, source } = resolveEffectiveTier({
       computed: computedTier,
       pinned: card.pinnedTier,

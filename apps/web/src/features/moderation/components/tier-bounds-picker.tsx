@@ -1,25 +1,25 @@
-import { COMPUTED_TIERS, type ComputedTier } from '@storix/shared'
+import { BOUND_TIERS, type BoundTier } from '@storix/shared'
 import { Chip } from '@/components/ui/chip'
 import { TIER_COLOR_VAR, TIER_LABELS } from '@/features/cards/tier-labels'
 
-function rank(tier: ComputedTier): number {
-  return COMPUTED_TIERS.indexOf(tier)
+function rank(tier: BoundTier): number {
+  return BOUND_TIERS.indexOf(tier)
 }
 
 interface TierBoundsPickerProps {
-  min: ComputedTier | null
-  max: ComputedTier | null
+  min: BoundTier | null
+  max: BoundTier | null
   isPinned: boolean
   isBusy: boolean
-  onChange: (bounds: { min: ComputedTier | null; max: ComputedTier | null }) => void
+  onChange: (bounds: { min: BoundTier | null; max: BoundTier | null }) => void
 }
 
 interface BoundRowProps {
   label: string
-  value: ComputedTier | null
+  value: BoundTier | null
   isDisabled: boolean
-  isTierDisabled: (tier: ComputedTier) => boolean
-  onSelect: (tier: ComputedTier | null) => void
+  isTierDisabled: (tier: BoundTier) => boolean
+  onSelect: (tier: BoundTier | null) => void
 }
 
 function BoundRow({ label, value, isDisabled, isTierDisabled, onSelect }: BoundRowProps) {
@@ -33,7 +33,7 @@ function BoundRow({ label, value, isDisabled, isTierDisabled, onSelect }: BoundR
           isDisabled={isDisabled}
           onToggle={() => onSelect(null)}
         />
-        {COMPUTED_TIERS.map((tier) => (
+        {BOUND_TIERS.map((tier) => (
           <Chip
             key={tier}
             label={TIER_LABELS[tier]}

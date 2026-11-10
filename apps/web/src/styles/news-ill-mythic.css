@@ -1,0 +1,103 @@
+@layer components {
+  .ni-myth .my-row {
+    position: absolute;
+    left: 40px;
+    right: 40px;
+    top: 26px;
+    display: flex;
+    justify-content: space-between;
+    opacity: 0.55;
+  }
+  .ni-myth .my-row .ni-mc {
+    width: 48px;
+    height: 67px;
+  }
+  .ni-myth .my-card {
+    position: absolute;
+    left: 80px;
+    top: 30px;
+    width: 100px;
+    height: 140px;
+  }
+  .ni-myth .my-card .ni-mc {
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    box-shadow:
+      0 0 0 2px var(--tc),
+      0 16px 30px rgba(0, 0, 0, 0.5),
+      0 0 34px color-mix(in srgb, var(--tc) 50%, transparent);
+  }
+  .ni-myth .my-odds {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 196px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+  .ni-myth .my-pill {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 55%, transparent);
+    font: 600 10px var(--font-display);
+  }
+  .ni-myth .my-pill i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--tc);
+  }
+  .ni-myth .my-pill b {
+    color: var(--tc);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .ni-myth.is-live .my-card {
+      animation: ni-my-rise 7s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+    }
+    .ni-myth.is-live .my-pill.t-M {
+      animation: ni-my-glow 7s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes ni-my-rise {
+  0%,
+  6% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.6);
+  }
+  24%,
+  84% {
+    opacity: 1;
+    transform: none;
+  }
+  96%,
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+@keyframes ni-my-glow {
+  0%,
+  30% {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 55%, transparent);
+  }
+  45%,
+  70% {
+    box-shadow:
+      inset 0 0 0 1px var(--tc),
+      0 0 14px color-mix(in srgb, var(--tc) 55%, transparent);
+  }
+  85%,
+  100% {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tc) 55%, transparent);
+  }
+}

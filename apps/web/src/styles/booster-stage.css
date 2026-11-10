@@ -314,4 +314,9 @@
     font-size: 13px;
     color: var(--color-ink-2);
   }
+  .ar-hint.is-premium {
+    font: 600 13px var(--font-display);
+    letter-spacing: 0.04em;
+    color: var(--color-tier-legendary);
+  }
 }

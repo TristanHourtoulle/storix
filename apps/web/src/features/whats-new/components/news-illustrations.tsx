@@ -1,9 +1,12 @@
 import type { NewsCard } from '../news-deck'
 import { CameraIllustration } from './illustrations/camera-illustration'
+import { MythicIllustration } from './illustrations/mythic-illustration'
+import { PremiumIllustration } from './illustrations/premium-illustration'
 import { ShareIllustration } from './illustrations/share-illustration'
 import { ShowcaseIllustration } from './illustrations/showcase-illustration'
 import { SortIllustration } from './illustrations/sort-illustration'
 import { StacksIllustration } from './illustrations/stacks-illustration'
+import { UpgradeIllustration } from './illustrations/upgrade-illustration'
 
 interface NewsIllustrationProps {
   name: NewsCard['illustration']
@@ -26,6 +29,9 @@ const SCENES = {
   showcase: ShowcaseIllustration,
   share: ShareIllustration,
   sort: SortIllustration,
+  premium: PremiumIllustration,
+  mythic: MythicIllustration,
+  upgrade: UpgradeIllustration,
 } as const
 
 /** Decorative animated art of a feature card; it only moves while the card is the live one. */

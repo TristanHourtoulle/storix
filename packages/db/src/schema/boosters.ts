@@ -35,6 +35,7 @@ export const boosterOpenings = pgTable(
     pityBefore: jsonb('pity_before').$type<PityState>().notNull(),
     poolDigest: text('pool_digest').notNull(),
     dustGained: integer('dust_gained').notNull().default(0),
+    isPremium: boolean('is_premium').notNull().default(false),
     openedAt: timestamp('opened_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

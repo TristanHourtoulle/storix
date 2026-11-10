@@ -10,8 +10,8 @@ import {
   type AdminCard,
   type AdminCardPage,
   type AdminCardsQuery,
+  type BoundTier,
   type CardTier,
-  type ComputedTier,
 } from '@storix/shared'
 import type { JobQueue } from '../../jobs/job-queue'
 import type { ErrorLogger } from '../../lib/error-logger'
@@ -22,7 +22,7 @@ import { insertAuditEntry, type AuditEntry } from '../audit/audit.repository'
 import type { CardRemoval } from '../card-removal/card-removal.service'
 import { findLeagueSettings } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
-import { asComputedTier, toAdminCard } from './admin-card-view'
+import { asBoundTier, asComputedTier, toAdminCard } from './admin-card-view'
 import {
   countMythicPins,
   findAdminCard,
@@ -39,8 +39,8 @@ import {
 } from './moderation.repository'
 
 export interface TierBounds {
-  min: ComputedTier | null
-  max: ComputedTier | null
+  min: BoundTier | null
+  max: BoundTier | null
 }
 
 export interface ModerationService {
@@ -72,8 +72,8 @@ type AuditChange = Pick<AuditEntry, 'action' | 'metadata'>
 
 interface TierRules {
   pinnedTier: CardTier | null
-  minTier: ComputedTier | null
-  maxTier: ComputedTier | null
+  minTier: BoundTier | null
+  maxTier: BoundTier | null
 }
 
 async function delayMinutesOf(tx: DbExecutor, leagueId: string): Promise<number> {
@@ -126,8 +126,8 @@ async function applyTierRules(ctx: ModerationContext, rules: TierRules) {
 function currentRules(card: ModerationCardRow): TierRules {
   return {
     pinnedTier: card.pinnedTier,
-    minTier: asComputedTier(card.minTier),
-    maxTier: asComputedTier(card.maxTier),
+    minTier: asBoundTier(card.minTier),
+    maxTier: asBoundTier(card.maxTier),
   }
 }
 

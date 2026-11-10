@@ -4,7 +4,7 @@ import {
   type InfiniteData,
   type UseMutationResult,
 } from '@tanstack/react-query'
-import type { AdminCard, AdminCardPage, CardTier, ComputedTier } from '@storix/shared'
+import type { AdminCard, AdminCardPage, BoundTier, CardTier } from '@storix/shared'
 import { ApiError } from '@/lib/http'
 import { logger } from '@/lib/logger'
 import {
@@ -17,7 +17,7 @@ import {
 import { adminCardsRootKey } from './moderation.queries'
 
 type Pages = InfiniteData<AdminCardPage, number | undefined>
-type Bounds = { min: ComputedTier | null; max: ComputedTier | null }
+type Bounds = { min: BoundTier | null; max: BoundTier | null }
 
 export interface CardModeration {
   setVisibility: UseMutationResult<

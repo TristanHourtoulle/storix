@@ -7,11 +7,12 @@ interface ArcadePackProps {
   count: number
   subtitle?: string
   isChargeHidden?: boolean
+  isPremium?: boolean
 }
 
-function PackArt({ label }: { label: string }) {
+function PackArt({ label, isPremium }: { label: string; isPremium: boolean }) {
   return (
-    <div className="ar-pack-art">
+    <div className={`ar-pack-art${isPremium ? ' is-premium' : ''}`}>
       <div className="ar-pa-orb" />
       <div className="ar-pa-foil" />
       <div className="ar-pa-crimp is-top" />
@@ -31,13 +32,20 @@ function PackArt({ label }: { label: string }) {
   )
 }
 
-export function ArcadePack({ count, subtitle, isChargeHidden = false }: ArcadePackProps) {
-  const label = subtitle ?? (count > 1 ? `${count} cartes` : '1 carte')
+export function ArcadePack({
+  count,
+  subtitle,
+  isChargeHidden = false,
+  isPremium = false,
+}: ArcadePackProps) {
+  const cardsLabel = count > 1 ? `${count} cartes` : '1 carte'
+  const label = subtitle ?? (isPremium ? `Premium · ${cardsLabel}` : cardsLabel)
+  const premiumClass = isPremium ? ' is-premium' : ''
   return (
     <>
-      <div className="ar-pack-halo" style={{ top: PACK_TOP + 145 }} />
-      <div className="ar-pack-pos ar-pack-wrap" style={PACK_STYLE}>
-        <PackArt label={label} />
+      <div className={`ar-pack-halo${premiumClass}`} style={{ top: PACK_TOP + 145 }} />
+      <div className={`ar-pack-pos ar-pack-wrap${premiumClass}`} style={PACK_STYLE}>
+        <PackArt label={label} isPremium={isPremium} />
         <svg className="ar-cracks" viewBox="0 0 200 290" aria-hidden="true">
           {CRACK_PATHS.map((group, index) => (
             <g key={index}>
@@ -63,7 +71,7 @@ export function ArcadePack({ count, subtitle, isChargeHidden = false }: ArcadePa
       {SHARDS.map((poly) => (
         <div key={poly.join()} className="ar-pack-pos ar-shard" style={PACK_STYLE}>
           <div className="ar-shard-clip" style={{ clipPath: `polygon(${poly.join(', ')})` }}>
-            <PackArt label={label} />
+            <PackArt label={label} isPremium={isPremium} />
           </div>
         </div>
       ))}

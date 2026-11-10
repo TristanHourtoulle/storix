@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { canOpenBooster, type WalletState } from '@storix/shared'
 import { Button } from '@/components/ui/button'
 import { formatCountdown } from '../format-countdown'
 import { useBoosterReadySound } from '../use-booster-ready-sound'
 import { useCountdown } from '../use-countdown'
+import { BoosterOddsSheet } from './booster-odds-sheet'
 import { BoosterPack } from './booster-pack'
+import { PremiumGauge } from './premium-gauge'
 import { StockPips } from './stock-pips'
 
 interface BoosterWidgetProps {
@@ -75,10 +78,11 @@ export function BoosterWidget({ wallet, isFresh, onOpen, onElapsed }: BoosterWid
   const remainingMs = useCountdown(nextAt, onElapsed)
   const nextCardMs = useCountdown(isPoolTooSmall ? pool.nextEligibleAt : null, onElapsed)
   useBoosterReadySound(stock, remainingMs, isFresh)
+  const [isOddsOpen, setIsOddsOpen] = useState(false)
 
   return (
     <section className="hero" aria-label="Boosters">
-      <BoosterPack size="lg" />
+      <BoosterPack size="lg" isPremium={wallet.premium.boostersUntil === 1} />
       <div className="hero-body">
         <p className="eyebrow">{stock > 0 ? 'Booster prêt' : 'Prochain booster'}</p>
         <p className="hero-title">{titleFor(stock)}</p>
@@ -93,6 +97,10 @@ export function BoosterWidget({ wallet, isFresh, onOpen, onElapsed }: BoosterWid
           <StockMeta remainingMs={remainingMs} />
         )}
         <EpicGuarantee pity={wallet.pity} />
+        <PremiumGauge premium={wallet.premium} />
+        <button type="button" className="hero-odds" onClick={() => setIsOddsOpen(true)}>
+          Probabilités
+        </button>
         <Button
           variant="primary"
           sound="none"
@@ -102,6 +110,7 @@ export function BoosterWidget({ wallet, isFresh, onOpen, onElapsed }: BoosterWid
           Ouvrir
         </Button>
       </div>
+      <BoosterOddsSheet isOpen={isOddsOpen} onClose={() => setIsOddsOpen(false)} />
     </section>
   )
 }

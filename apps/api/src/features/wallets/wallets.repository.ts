@@ -12,6 +12,7 @@ export interface WalletRow {
   boosterStockAt: Date
   pitySinceEpic: number
   pitySinceLegendary: number
+  boostersOpened: number
 }
 
 export interface WalletKey {
@@ -33,6 +34,7 @@ const walletColumns = {
   boosterStockAt: memberWallets.boosterStockAt,
   pitySinceEpic: memberWallets.pitySinceEpic,
   pitySinceLegendary: memberWallets.pitySinceLegendary,
+  boostersOpened: memberWallets.boostersOpened,
 }
 
 function keyCondition(leagueId: string, userId: string) {
