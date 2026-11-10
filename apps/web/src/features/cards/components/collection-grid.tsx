@@ -39,6 +39,7 @@ function cardLabel(card: CollectionCard, isNew: boolean): string {
     return `${card.title}, ${TIER_LABELS[card.displayTier]}${star}${stack}${suffix}`
   }
   if (card.kind === 'hidden') return `Carte masquée${suffix}`
+  if (card.kind === 'unpulled') return `${card.title}, pas encore tirée${suffix}`
   return `Carte à découvrir, ${TIER_LABELS[card.tier]}${suffix}`
 }
 
@@ -48,7 +49,7 @@ function playLocked(): void {
 
 function groupAt(now: number): (card: CollectionCard) => DiscoveryGroup {
   return (card) =>
-    card.kind === 'locked' || card.discoveredAt === null
+    card.kind === 'locked' || card.kind === 'unpulled' || card.discoveredAt === null
       ? 'undiscovered'
       : discoveryGroupOf(Date.parse(card.discoveredAt), now)
 }

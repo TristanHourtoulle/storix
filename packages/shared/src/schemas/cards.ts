@@ -57,6 +57,8 @@ export const listCardsQuerySchema = z
     authorId: idSchema.optional(),
     tier: cardTierSchema.optional(),
     upgradable: z.stringbool().optional(),
+    taggedUserId: idSchema.optional(),
+    revealOwn: z.stringbool().optional(),
     sort: collectionSortSchema.default(DEFAULT_COLLECTION_SORT),
     cursor: z.union([legacyCollectionCursorSchema, collectionCursorSchema]).optional(),
     limit: z.coerce.number().int().min(1).max(200).default(120),
@@ -128,10 +130,26 @@ export const hiddenCardSummarySchema = z.strictObject({
   discoveredAt: isoDateSchema.nullable(),
 })
 
+export const unpulledCardSummarySchema = z.strictObject({
+  kind: z.literal('unpulled'),
+  id: z.uuid(),
+  number: z.int().positive(),
+  title: cardTitleSchema,
+  tier: cardTierSchema,
+  isProvisional: z.boolean(),
+  author: cardAuthorSchema,
+  thumbhash: z.string(),
+  dominantColor: z.string().regex(/^#[0-9a-f]{6}$/),
+  width: z.int().positive(),
+  height: z.int().positive(),
+  image: imageSetSchema,
+})
+
 export const collectionCardSchema = z.discriminatedUnion('kind', [
   ownedCardSummarySchema,
   lockedCardSummarySchema,
   hiddenCardSummarySchema,
+  unpulledCardSummarySchema,
 ])
 
 export const collectionPageSchema = z.object({
@@ -208,9 +226,12 @@ export const taggedCardSchema = z.object({
   height: z.int().positive(),
   image: imageSetSchema,
   canWithdraw: z.literal(true),
+  taggedAt: isoDateSchema,
 })
 
 export const cardParamsSchema = z.object({ leagueId: z.uuid(), cardId: z.uuid() })
+
+export const cardTagParamsSchema = cardParamsSchema.extend({ userId: idSchema })
 
 export type CardPerson = z.infer<typeof cardPersonSchema>
 export type CardAuthor = z.infer<typeof cardAuthorSchema>
@@ -219,6 +240,7 @@ export type ListCardsQuery = z.infer<typeof listCardsQuerySchema>
 export type OwnedCardSummary = z.infer<typeof ownedCardSummarySchema>
 export type HiddenCardSummary = z.infer<typeof hiddenCardSummarySchema>
 export type LockedCardSummary = z.infer<typeof lockedCardSummarySchema>
+export type UnpulledCardSummary = z.infer<typeof unpulledCardSummarySchema>
 export type CollectionCard = z.infer<typeof collectionCardSchema>
 export type CollectionPage = z.infer<typeof collectionPageSchema>
 export type OwnedCardDetail = z.infer<typeof ownedCardDetailSchema>

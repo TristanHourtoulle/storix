@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { REACTION_TYPES, type OwnedCardDetail } from '@storix/shared'
+import { REACTION_TYPES, hasRoleAtLeast, type OwnedCardDetail } from '@storix/shared'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
@@ -11,6 +11,7 @@ import { leagueDetailQueryOptions } from '@/features/leagues/leagues.queries'
 import { ShareSheet } from '@/features/share/components/share-sheet'
 import { subjectFromCardDetail, type ShareSubject } from '@/features/share/share-subject'
 import { useCardMutations } from '../use-card-mutations'
+import { useCardTag } from '../use-card-tag'
 import { useHoloTilt } from '../use-holo-tilt'
 import { useReactions } from '../use-reactions'
 import { TIER_LABELS } from '../tier-labels'
@@ -20,6 +21,7 @@ import { OwnedCardFace } from './owned-card-face'
 import { authorLabel } from '../author-label'
 import { MotionPrompt } from './motion-prompt'
 import { useMemberAvatars } from '@/features/portraits/use-member-avatars'
+import { AuthorLink } from './author-link'
 import { MetaCell, discovererLabel, formatDate } from './meta-cell'
 import { PromotedHolders } from './promoted-holders'
 import { RarityJourney } from './rarity-journey'
@@ -41,7 +43,8 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
   const { ref, needsMotionPermission, isMotionDenied, requestMotionPermission } = useHoloTilt()
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [shareSubject, setShareSubject] = useState<ShareSubject | null>(null)
-  const leagueName = useQuery(leagueDetailQueryOptions(leagueId)).data?.name ?? ''
+  const league = useQuery(leagueDetailQueryOptions(leagueId)).data
+  const leagueName = league?.name ?? ''
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
   const reactions = useReactions(leagueId, card.id)
   const avatars = useMemberAvatars(leagueId)
@@ -61,6 +64,18 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
     .flatMap((person) => (person.displayUsername ? [person.displayUsername] : []))
     .join(', ')
   const copies = card.copiesInLeague
+  const tag = useCardTag(leagueId, card.id)
+  const isTagged = card.tagged.some((person) => person.userId === meId)
+  const canRemoveOthersTags =
+    card.author.userId === meId || (league !== undefined && hasRoleAtLeast(league.myRole, 'admin'))
+  const removableTags = canRemoveOthersTags
+    ? card.tagged.flatMap((person) =>
+        person.userId === null || person.userId === meId
+          ? []
+          : [{ userId: person.userId, name: person.displayUsername ?? 'Ancien membre' }],
+      )
+    : []
+  const tagError = tag.add.error ?? tag.remove.error
   const actionError = recycle.error
   const isBusy =
     recycle.isPending || upgradeToFoil.isPending || promote.isPending || convertStack.isPending
@@ -113,16 +128,18 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
       </div>
       <h2 className="detail-name">{card.title}</h2>
       <div className="meta">
-        <MetaCell
-          label="Photo de"
-          value={authorLabel(card.author)}
-          leading={
-            <Avatar
-              label={authorLabel(card.author)}
-              portrait={card.author.userId ? (avatars.get(card.author.userId) ?? null) : null}
-            />
-          }
-        />
+        <AuthorLink leagueId={leagueId} author={card.author}>
+          <MetaCell
+            label="Photo de"
+            value={authorLabel(card.author)}
+            leading={
+              <Avatar
+                label={authorLabel(card.author)}
+                portrait={card.author.userId ? (avatars.get(card.author.userId) ?? null) : null}
+              />
+            }
+          />
+        </AuthorLink>
         <MetaCell label="Prise le" value={formatDate(card.capturedAt, 'Inconnue')} />
         <MetaCell label="Découverte par" value={discovererLabel(card.discoveredBy)} />
         <MetaCell
@@ -147,6 +164,7 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
       ) : null}
       <ReactionsSheet
         open={isReactionsOpen}
+        leagueId={leagueId}
         tab={reactionTab}
         onTabChange={setReactionTab}
         counts={card.reactions}
@@ -171,6 +189,7 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
         </Button>
       ) : null}
       {actionError ? <Notice tone="error">{userMessage(actionError)}</Notice> : null}
+      {tagError ? <Notice tone="error">{userMessage(tagError)}</Notice> : null}
       {!actionError && reactions.isError ? (
         <Notice tone="error">Action impossible pour le moment. Réessaie.</Notice>
       ) : null}
@@ -185,6 +204,19 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
         onUpgrade={(callbacks) => upgradeToFoil.mutate(undefined, callbacks)}
         onPromote={(from, callbacks) => promote.mutate(from, callbacks)}
         onConvert={(body, callbacks) => convertStack.mutate(body, callbacks)}
+        tagState={{ isTagged, isBusy: tag.add.isPending || tag.remove.isPending }}
+        onToggleTag={() => {
+          tag.add.reset()
+          tag.remove.reset()
+          if (isTagged) tag.remove.mutate(meId)
+          else tag.add.mutate()
+        }}
+        removableTags={removableTags}
+        onRemoveTag={(userId) => {
+          tag.add.reset()
+          tag.remove.reset()
+          tag.remove.mutate(userId)
+        }}
         onSheetOpen={() => {
           promote.reset()
           convertStack.reset()

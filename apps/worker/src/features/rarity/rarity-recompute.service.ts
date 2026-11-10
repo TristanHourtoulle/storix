@@ -1,6 +1,7 @@
 import type { Database } from '@storix/db'
 import { resolveLeagueSettings } from '@storix/shared'
 import { computeLeagueRarity } from '@storix/shared/domain'
+import type { EmblemsQueue } from '../../jobs/emblems-queue'
 import type { RarityQueue } from '../../jobs/rarity-queue'
 import type { WorkerLogger } from '../../lib/logger'
 import { runInTransaction } from '../../lib/transaction'
@@ -14,13 +15,14 @@ export interface RarityRecomputeService {
 interface Deps {
   db: Database
   queue: RarityQueue
+  emblems: EmblemsQueue
   clock: () => Date
   logger: WorkerLogger
 }
 
 /** Creates the use case recomputing the rarity of every active card of a league. */
 export function createRarityRecomputeService(deps: Deps): RarityRecomputeService {
-  const { db, queue, clock, logger } = deps
+  const { db, queue, emblems, clock, logger } = deps
 
   return {
     async recomputeLeague(leagueId) {
@@ -60,6 +62,7 @@ export function createRarityRecomputeService(deps: Deps): RarityRecomputeService
         return { cards: results.length, changed: history.length }
       })
       logger.info({ leagueId, ...outcome }, 'Rarity recomputed')
+      await emblems.enqueueEvaluate({ leagueId })
       return outcome
     },
 

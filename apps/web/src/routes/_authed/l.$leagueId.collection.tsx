@@ -42,6 +42,7 @@ export const Route = createFileRoute('/_authed/l/$leagueId/collection')({
     tier: z.enum(CARD_TIERS).optional(),
     hideLocked: z.boolean().optional(),
     upgradable: z.boolean().optional(),
+    tagged: z.string().optional(),
     sort: collectionSortSchema.optional(),
     notice: z.literal('withdrawn').optional(),
   }),
@@ -70,7 +71,7 @@ const LOADING = <p className="m-0 text-sm text-muted">Chargement…</p>
 
 function Collection() {
   const { leagueId } = Route.useParams()
-  const { author, tier, hideLocked, upgradable, sort: urlSort, notice } = Route.useSearch()
+  const { author, tier, hideLocked, upgradable, tagged, sort: urlSort, notice } = Route.useSearch()
   const { me } = Route.useRouteContext()
   const members = useQuery(membersQueryOptions(leagueId)).data ?? NO_MEMBERS
   const { data: wallet } = useWallet(leagueId)
@@ -78,29 +79,32 @@ function Collection() {
   const authorId = author ?? null
   const selectedTier = tier ?? null
   const isUpgradable = upgradable ?? false
+  const taggedUserId = tagged ?? null
   const filterState: CollectionFilterState = {
     authorId,
     tier: selectedTier,
     hideLocked: hideLocked ?? false,
     upgradable: isUpgradable,
+    taggedUserId,
   }
   const filters: CollectionFilters = {
     authorId,
     tier: selectedTier,
     upgradable: isUpgradable,
+    taggedUserId,
     sort,
   }
   const news = useCollectionNews(me.user.id, leagueId)
   const visibleNew = useMemo(
     () =>
-      isUpgradable
+      isUpgradable || taggedUserId !== null
         ? []
         : news.newCards.filter(
             (card) =>
               (authorId === null || card.author.userId === authorId) &&
               (selectedTier === null || card.displayTier === selectedTier),
           ),
-    [news.newCards, authorId, selectedTier, isUpgradable],
+    [news.newCards, authorId, selectedTier, isUpgradable, taggedUserId],
   )
 
   const applyFilters = usePersistedCollectionFilters(me.user.id, leagueId, filterState, members)
@@ -175,12 +179,14 @@ function CollectionBody({
     ...cardsInfiniteQueryOptions(leagueId, filters),
     placeholderData: keepPreviousData,
   })
-  const { authorId, tier, upgradable, sort } = filters
+  const { authorId, tier, upgradable, taggedUserId, sort } = filters
   const [settledSort, setSettledSort] = useState(sort)
   if (data && !isPlaceholderData && settledSort !== sort) setSettledSort(sort)
   const isOtherSortShown = isPlaceholderData && settledSort !== sort
   const canReorderNew = canPutNewFirst(sort)
-  useScrollTopOnChange(`${authorId}|${tier}|${upgradable}|${sort}|${filterState.hideLocked}`)
+  useScrollTopOnChange(
+    `${authorId}|${tier}|${upgradable}|${taggedUserId}|${sort}|${filterState.hideLocked}`,
+  )
   const cards = useMemo(
     () => [
       ...new Map(
@@ -259,7 +265,10 @@ function CollectionBody({
   const total = firstPage?.total ?? 0
   const owned = firstPage?.ownedCount ?? 0
   const isFiltered =
-    filterState.authorId !== null || filterState.tier !== null || filterState.upgradable
+    filterState.authorId !== null ||
+    filterState.tier !== null ||
+    filterState.upgradable ||
+    filterState.taggedUserId !== null
   const isOwnedEmpty = hideLocked && gridCards.length === 0 && !hasNextPage
 
   if (total === 0) {

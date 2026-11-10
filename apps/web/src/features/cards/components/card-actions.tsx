@@ -12,7 +12,7 @@ import { foilBlockReason } from '../progression-copy'
 import { CardProgressBar, isMainActionDisabled } from './card-progress-bar'
 import { ConvertStackSheet } from './convert-stack-sheet'
 import { FoilUpgradeSheet } from './foil-upgrade-sheet'
-import { MoreActionsSheet } from './more-actions-sheet'
+import { MoreActionsSheet, type RemovableTag, type TagState } from './more-actions-sheet'
 import { PromotionSheet } from './promotion-sheet'
 import { RecycleSheet } from './recycle-sheet'
 
@@ -27,6 +27,10 @@ interface CardActionsProps {
   onUpgrade: (callbacks: SubmitCallbacks) => void
   onPromote: (from: CardTier, callbacks: SubmitCallbacks) => void
   onConvert: (body: ConvertStackBody, callbacks: SubmitCallbacks) => void
+  tagState: TagState
+  onToggleTag: () => void
+  removableTags: readonly RemovableTag[]
+  onRemoveTag: (userId: string) => void
   onSheetOpen: () => void
 }
 
@@ -50,6 +54,10 @@ export function CardActions({
   onUpgrade,
   onPromote,
   onConvert,
+  tagState,
+  onToggleTag,
+  removableTags,
+  onRemoveTag,
   onSheetOpen,
 }: CardActionsProps) {
   const { actions } = card
@@ -145,6 +153,10 @@ export function CardActions({
           setPending(option)
           openSheet('recycle')
         }}
+        tagState={tagState}
+        onToggleTag={onToggleTag}
+        removableTags={removableTags}
+        onRemoveTag={onRemoveTag}
         onClose={closeSheet('more')}
       />
       <FoilUpgradeSheet

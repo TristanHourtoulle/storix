@@ -10,6 +10,7 @@ const storedFiltersSchema = z.object({
   tier: z.enum(CARD_TIERS).nullable(),
   hideLocked: z.boolean(),
   upgradable: z.boolean(),
+  taggedUserId: z.string().min(1).nullable().default(null),
 })
 
 export interface CollectionFilterSearch {
@@ -17,6 +18,7 @@ export interface CollectionFilterSearch {
   tier?: CardTier
   hideLocked?: boolean
   upgradable?: boolean
+  tagged?: string
 }
 
 /** Maps a filter state to the collection URL search params, omitting inactive filters. */
@@ -26,6 +28,7 @@ export function toFilterSearch(state: CollectionFilterState): CollectionFilterSe
     tier: state.tier ?? undefined,
     hideLocked: state.hideLocked || undefined,
     upgradable: state.upgradable || undefined,
+    tagged: state.taggedUserId ?? undefined,
   }
 }
 
@@ -35,7 +38,8 @@ export function hasFilterSearch(search: CollectionFilterSearch): boolean {
     search.author !== undefined ||
     search.tier !== undefined ||
     search.hideLocked !== undefined ||
-    search.upgradable !== undefined
+    search.upgradable !== undefined ||
+    search.tagged !== undefined
   )
 }
 
@@ -95,18 +99,35 @@ export function usePersistedCollectionFilters(
     [userId, leagueId, navigate],
   )
 
-  const { authorId, tier, hideLocked, upgradable } = filterState
-  const isStaleAuthor =
-    authorId !== null && members.length > 0 && !members.some((m) => m.userId === authorId)
+  const { authorId, tier, hideLocked, upgradable, taggedUserId } = filterState
+  const isGone = (userId: string | null): boolean =>
+    userId !== null && members.length > 0 && !members.some((m) => m.userId === userId)
+  const isStaleAuthor = isGone(authorId)
+  const isStaleTagged = isGone(taggedUserId)
 
   useEffect(() => {
-    const current = { authorId, tier, hideLocked, upgradable }
-    if (isStaleAuthor) {
-      applyFilters({ ...current, authorId: null })
+    const current = { authorId, tier, hideLocked, upgradable, taggedUserId }
+    if (isStaleAuthor || isStaleTagged) {
+      applyFilters({
+        ...current,
+        authorId: isStaleAuthor ? null : authorId,
+        taggedUserId: isStaleTagged ? null : taggedUserId,
+      })
       return
     }
     if (activeFilterCount(current) > 0) saveCollectionFilters(userId, leagueId, current)
-  }, [userId, leagueId, authorId, tier, hideLocked, upgradable, isStaleAuthor, applyFilters])
+  }, [
+    userId,
+    leagueId,
+    authorId,
+    tier,
+    hideLocked,
+    upgradable,
+    taggedUserId,
+    isStaleAuthor,
+    isStaleTagged,
+    applyFilters,
+  ])
 
   return applyFilters
 }

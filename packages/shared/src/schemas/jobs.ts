@@ -63,3 +63,32 @@ export const STORAGE_DELETE_SEND_OPTIONS = {
 } as const
 
 export type StorageDeletePayload = z.infer<typeof storageDeletePayloadSchema>
+
+export const EMBLEMS_EVALUATE_JOB = 'emblems.evaluate-league'
+
+/** Evaluates one member when `userId` is set, else every member of the league. */
+export const emblemsEvaluatePayloadSchema = z.object({
+  leagueId: z.uuid(),
+  userId: z.string().min(1).optional(),
+})
+
+export type EmblemsEvaluatePayload = z.infer<typeof emblemsEvaluatePayloadSchema>
+
+export const EMBLEMS_EVALUATE_QUEUE_OPTIONS = { policy: 'stately' } as const
+
+export const EMBLEMS_EVALUATE_SEND_OPTIONS = {
+  retryLimit: 3,
+  retryDelay: 30,
+  retryBackoff: true,
+} as const
+
+/** Returns the send options coalescing emblem evaluations per member, or per league without a member. */
+export function emblemsEvaluateSendOptions(payload: EmblemsEvaluatePayload) {
+  return {
+    ...EMBLEMS_EVALUATE_SEND_OPTIONS,
+    singletonKey:
+      payload.userId === undefined
+        ? `league:${payload.leagueId}`
+        : `member:${payload.leagueId}:${payload.userId}`,
+  }
+}

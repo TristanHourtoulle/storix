@@ -80,7 +80,7 @@ function LeagueHome() {
           Inviter
         </Link>
       ) : null}
-      {reveals ? <RecentReveals reveals={reveals} /> : null}
+      {reveals ? <RecentReveals leagueId={leagueId} reveals={reveals} /> : null}
     </main>
   )
 }

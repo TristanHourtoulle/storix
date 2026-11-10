@@ -14,6 +14,7 @@ import { accountRoutes } from './features/account/account.routes'
 import { boostersRoutes } from './features/boosters/boosters.routes'
 import { cardsRoutes } from './features/cards/cards.routes'
 import { copiesRoutes } from './features/copies/copies.routes'
+import { emblemsRoutes } from './features/emblems/emblems.routes'
 import { healthRoutes } from './features/health/health.routes'
 import { invitationsRoutes } from './features/invitations/invitations.routes'
 import { leagueSettingsRoutes } from './features/league-settings/league-settings.routes'
@@ -25,6 +26,8 @@ import { moderationRoutes } from './features/moderation/moderation.routes'
 import { portraitsRoutes } from './features/portraits/portraits.routes'
 import { pushRoutes } from './features/push/push.routes'
 import { reactionsRoutes } from './features/reactions/reactions.routes'
+import { tagsRoutes } from './features/tags/tags.routes'
+import { showcaseRoutes } from './features/showcase/showcase.routes'
 import { removalsRoutes } from './features/removals/removals.routes'
 import { resetCodesRoutes } from './features/reset-codes/reset-codes.routes'
 import { uploadDraftsRoutes } from './features/uploads/upload-drafts.routes'
@@ -88,7 +91,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(accountRoutes(services.account), { prefix: '/api' })
   await app.register(leaguesRoutes(services.leagues), { prefix: '/api' })
   await app.register(invitationsRoutes(services.invitations), { prefix: '/api' })
-  await app.register(membersRoutes(services.members), { prefix: '/api' })
+  await app.register(membersRoutes(services.members, services.memberProfiles), { prefix: '/api' })
   await app.register(resetCodesRoutes(services.resetCodes), { prefix: '/api' })
   await app.register(uploadDraftsRoutes(services.uploadDrafts), { prefix: '/api' })
   await app.register(uploadsRoutes(services.uploads), { prefix: '/api' })
@@ -97,6 +100,9 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(boostersRoutes(services.boosters, services.boosterHistory), { prefix: '/api' })
   await app.register(copiesRoutes(services.copies, services.stacks), { prefix: '/api' })
   await app.register(reactionsRoutes(services.reactions), { prefix: '/api' })
+  await app.register(emblemsRoutes(services.emblems), { prefix: '/api' })
+  await app.register(tagsRoutes(services.tags), { prefix: '/api' })
+  await app.register(showcaseRoutes(services.showcase), { prefix: '/api' })
   await app.register(removalsRoutes(services.removals), { prefix: '/api' })
   await app.register(leagueSettingsRoutes(services.leagueSettings), { prefix: '/api' })
   await app.register(moderationRoutes(services.moderation), { prefix: '/api' })

@@ -2,6 +2,7 @@ import {
   leaveLeagueBodySchema,
   leagueParamsSchema,
   memberParamsSchema,
+  memberProfileSchema,
   memberSummarySchema,
   removeMemberBodySchema,
   transferOwnershipBodySchema,
@@ -12,12 +13,24 @@ import { z } from 'zod'
 import { authenticate } from '../../http/authenticate'
 import { requireLeagueRole } from '../../http/league-guard'
 import { rateLimits } from '../../http/rate-limit'
+import type { MemberProfileService } from './member-profile.service'
 import type { MembersService } from './members.service'
 
-/** Registers the league member listing, role change, removal, leave and ownership transfer routes. */
-export function membersRoutes(service: MembersService): FastifyPluginAsyncZod {
+/** Registers the league member listing, member profile, role change, removal, leave and ownership transfer routes. */
+export function membersRoutes(
+  service: MembersService,
+  profiles: MemberProfileService,
+): FastifyPluginAsyncZod {
   return async (app) => {
     const limited = { rateLimit: rateLimits.adminAction }
+    app.get(
+      '/leagues/:leagueId/members/:userId/profile',
+      {
+        preHandler: [authenticate, requireLeagueRole('member')],
+        schema: { params: memberParamsSchema, response: { 200: memberProfileSchema } },
+      },
+      (request) => profiles.getProfile(request.membership, request.params.userId),
+    )
     app.get(
       '/leagues/:leagueId/members',
       {

@@ -6,8 +6,20 @@ import { runInTransaction } from '../../lib/transaction'
 import { isOwned } from '../cards/card-views'
 import { findCardForViewer } from '../cards/cards.repository'
 import { lockOwnedVariants } from '../copies/copies.repository'
+import type { EmblemAwards } from '../emblems/emblems.service'
 import type { Membership } from '../leagues/leagues.service'
 import { addReaction, countReactions, listReactors, removeReaction } from './reactions.repository'
+
+function reactionMembers(
+  leagueId: string,
+  reactorId: string,
+  authorId: string | null,
+): { leagueId: string; userId: string }[] {
+  const reactor = { leagueId, userId: reactorId }
+  return authorId === null || authorId === reactorId
+    ? [reactor]
+    : [reactor, { leagueId, userId: authorId }]
+}
 
 export interface ReactionsService {
   setReaction(
@@ -21,13 +33,14 @@ export interface ReactionsService {
 
 export interface ReactionsServiceDeps {
   db: Database
+  emblems: EmblemAwards
 }
 
 /** Builds the service letting owners react to cards they did not author, and anyone withdraw their own reaction. */
-export function createReactionsService({ db }: ReactionsServiceDeps): ReactionsService {
+export function createReactionsService({ db, emblems }: ReactionsServiceDeps): ReactionsService {
   return {
-    setReaction: (m, cardId, type, isOn) =>
-      runInTransaction(db, async (tx) => {
+    async setReaction(m, cardId, type, isOn) {
+      const { counts, authorId } = await runInTransaction(db, async (tx) => {
         await lockLeagueEconomyShared(tx, m.leagueId)
         const card = await findCardForViewer(tx, {
           leagueId: m.leagueId,
@@ -49,8 +62,14 @@ export function createReactionsService({ db }: ReactionsServiceDeps): ReactionsS
         } else {
           await removeReaction(tx, key)
         }
-        return countReactions(tx, { cardId, viewerId: m.userId })
-      }),
+        return {
+          counts: await countReactions(tx, { cardId, viewerId: m.userId }),
+          authorId: card.authorId,
+        }
+      })
+      if (isOn) await emblems.request(reactionMembers(m.leagueId, m.userId, authorId))
+      return counts
+    },
 
     async listReactors(m, cardId) {
       const card = await findCardForViewer(db, {

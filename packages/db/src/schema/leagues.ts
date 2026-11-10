@@ -33,6 +33,7 @@ export const leagueMembers = pgTable(
       .references(() => user.id, { onDelete: 'cascade' }),
     role: leagueRole('role').notNull(),
     joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
+    emblemsEvaluatedAt: timestamp('emblems_evaluated_at', { withTimezone: true }),
   },
   (t) => [
     primaryKey({ columns: [t.leagueId, t.userId] }),

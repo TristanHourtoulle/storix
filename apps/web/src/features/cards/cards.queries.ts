@@ -6,6 +6,8 @@ export interface CollectionFilters {
   authorId: string | null
   tier: CardTier | null
   upgradable: boolean
+  taggedUserId: string | null
+  revealOwn?: boolean
   sort: CollectionSort
 }
 
@@ -28,6 +30,7 @@ export function newsHeadQueryOptions(leagueId: string) {
       fetchCardPage(leagueId, {
         authorId: null,
         tier: null,
+        taggedUserId: null,
         sort: 'discovery',
         cursor: undefined,
         limit: NEWS_HEAD_LIMIT,
@@ -40,7 +43,7 @@ const COUNT_STALE_MS = 30_000
 /** The total and owned counts of a filtered collection, read from a one-card first page. */
 export function collectionCountQueryOptions(
   leagueId: string,
-  filters: Pick<CollectionFilters, 'authorId' | 'tier' | 'upgradable'>,
+  filters: Pick<CollectionFilters, 'authorId' | 'tier' | 'upgradable' | 'taggedUserId'>,
 ) {
   return queryOptions({
     queryKey: ['leagues', leagueId, 'cards', 'count', filters] as const,

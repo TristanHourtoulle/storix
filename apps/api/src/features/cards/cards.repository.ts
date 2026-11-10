@@ -77,6 +77,7 @@ export interface CollectionFilters {
   authorId?: string
   tier?: CardTier
   upgradable?: boolean
+  taggedUserId?: string
 }
 
 const discoverer = alias(user, 'discoverer')
@@ -207,6 +208,10 @@ function upgradableNow(
   )
 }
 
+function taggedWith(userId: string): SQL {
+  return sql`exists (select 1 from ${cardTags} where ${cardTags.cardId} = ${cards.id} and ${cardTags.userId} = ${userId})`
+}
+
 function collectionWhere(
   input: CollectionFilters,
   owned: ReturnType<typeof viewerCopies>,
@@ -219,6 +224,7 @@ function collectionWhere(
     input.authorId === undefined ? undefined : eq(cards.authorId, input.authorId),
     input.tier === undefined ? undefined : eq(displayTierOf(owned), input.tier),
     input.upgradable === true ? upgradableNow(input, owned, stacked) : undefined,
+    input.taggedUserId === undefined ? undefined : taggedWith(input.taggedUserId),
   )
 }
 

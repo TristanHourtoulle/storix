@@ -8,6 +8,7 @@ import {
 } from '@storix/shared'
 import { AppError } from '../../lib/errors'
 import { insertAuditEntry } from '../audit/audit.repository'
+import { awardAfter, type EmblemAwards } from '../emblems/emblems.service'
 import { craftDecisionFor, foilUpgradeDecisionFor } from '../cards/card-views'
 import type { Membership } from '../leagues/leagues.service'
 import { deleteCopy, insertCopy, lockOwnedCopies, updateCopyVariant } from './copies.repository'
@@ -23,10 +24,11 @@ export interface CopiesService {
 export interface CopiesServiceDeps {
   db: Database
   clock: () => Date
+  emblems: EmblemAwards
 }
 
 /** Builds the service spending and earning dust on copies, serialized by the member wallet lock. */
-export function createCopiesService({ db, clock }: CopiesServiceDeps): CopiesService {
+export function createCopiesService({ db, clock, emblems }: CopiesServiceDeps): CopiesService {
   const locked = <T>(m: Membership, cardId: string, fn: (ctx: LockedContext) => Promise<T>) =>
     withLockedCard({ db, clock }, m, cardId, fn)
 
@@ -97,45 +99,49 @@ export function createCopiesService({ db, clock }: CopiesServiceDeps): CopiesSer
       }),
 
     upgradeToFoil: (m, cardId) =>
-      locked(m, cardId, async (ctx) => {
-        const decision = foilUpgradeDecisionFor(ctx.card, ctx.wallet.dust)
-        if (decision.reason === 'insufficient_dust') {
-          throw new AppError('INSUFFICIENT_DUST', 409, 'Not enough dust for a foil upgrade', {
-            cost: decision.cost,
-            dust: ctx.wallet.dust,
-          })
-        }
-        if (!decision.allowed) {
-          throw new AppError('FOIL_NOT_ALLOWED', 409, 'This copy cannot be upgraded to foil', {
-            reason: decision.reason,
-          })
-        }
-        const updated = await updateCopyVariant(ctx.tx, {
-          cardId,
-          ownerId: m.userId,
-          from: 'normal',
-          to: 'foil',
-        })
-        if (!updated) throw copyNotOwned()
-        await insertAuditEntry(ctx.tx, {
-          leagueId: m.leagueId,
-          actorId: m.userId,
-          targetUserId: null,
-          action: 'copy.foil_upgraded',
-          metadata: {
+      awardAfter(
+        emblems,
+        [m],
+        locked(m, cardId, async (ctx) => {
+          const decision = foilUpgradeDecisionFor(ctx.card, ctx.wallet.dust)
+          if (decision.reason === 'insufficient_dust') {
+            throw new AppError('INSUFFICIENT_DUST', 409, 'Not enough dust for a foil upgrade', {
+              cost: decision.cost,
+              dust: ctx.wallet.dust,
+            })
+          }
+          if (!decision.allowed) {
+            throw new AppError('FOIL_NOT_ALLOWED', 409, 'This copy cannot be upgraded to foil', {
+              reason: decision.reason,
+            })
+          }
+          const updated = await updateCopyVariant(ctx.tx, {
             cardId,
-            tierAtMint: ctx.card.normalTier,
-            valueTier:
-              ctx.card.normalTier === null
-                ? null
-                : copyValueTier({
-                    tierAtMint: ctx.card.normalTier,
-                    promotedTier: ctx.card.normalPromotedTier,
-                  }),
-            cost: decision.cost,
-          },
-        })
-        return setDust(ctx, ctx.wallet.dust - decision.cost)
-      }),
+            ownerId: m.userId,
+            from: 'normal',
+            to: 'foil',
+          })
+          if (!updated) throw copyNotOwned()
+          await insertAuditEntry(ctx.tx, {
+            leagueId: m.leagueId,
+            actorId: m.userId,
+            targetUserId: null,
+            action: 'copy.foil_upgraded',
+            metadata: {
+              cardId,
+              tierAtMint: ctx.card.normalTier,
+              valueTier:
+                ctx.card.normalTier === null
+                  ? null
+                  : copyValueTier({
+                      tierAtMint: ctx.card.normalTier,
+                      promotedTier: ctx.card.normalPromotedTier,
+                    }),
+              cost: decision.cost,
+            },
+          })
+          return setDust(ctx, ctx.wallet.dust - decision.cost)
+        }),
+      ),
   }
 }

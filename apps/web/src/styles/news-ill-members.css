@@ -1,0 +1,109 @@
+@layer components {
+  .ni-mbr .mb-head {
+    position: absolute;
+    left: 22px;
+    right: 22px;
+    top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font: 700 13px var(--font-display);
+  }
+  .ni-mbr .mb-avatar {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--color-surface-2);
+    box-shadow: inset 0 0 0 1.5px var(--color-tier-mythic);
+    font: 700 13px var(--font-display);
+    font-style: normal;
+  }
+  .ni-mbr .mb-emblems {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+  }
+  .ni-mbr .mb-emblems i {
+    position: relative;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--tc) 30%, var(--color-surface));
+    box-shadow: inset 0 0 0 1.5px var(--tc);
+  }
+  .ni-mbr .mb-stats {
+    position: absolute;
+    left: 22px;
+    right: 22px;
+    top: 48px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .ni-mbr .mb-stats span {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 4px;
+    border-radius: 12px;
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 1px var(--color-line);
+    font: 500 8.5px var(--font-sans);
+    color: var(--color-ink-3);
+  }
+  .ni-mbr .mb-stats b {
+    font: 700 15px var(--font-display);
+    color: var(--color-ink);
+  }
+  .ni-mbr .mb-vit {
+    position: absolute;
+    left: 40px;
+    right: 40px;
+    top: 104px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+  }
+  .ni-mbr .mb-vit .ni-mc {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 63 / 88;
+    height: auto;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .ni-mbr.is-live .mb-vit .ni-mc {
+      animation: ni-mb-pop 7s ease-out infinite;
+    }
+    .ni-mbr.is-live .mb-vit .ni-mc:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+    .ni-mbr.is-live .mb-vit .ni-mc:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+    .ni-mbr.is-live .mb-vit .ni-mc:nth-child(4) {
+      animation-delay: 0.45s;
+    }
+    .ni-mbr.is-live .mb-vit .ni-mc:nth-child(5) {
+      animation-delay: 0.6s;
+    }
+    .ni-mbr.is-live .mb-vit .ni-mc:nth-child(6) {
+      animation-delay: 0.75s;
+    }
+  }
+}
+
+@keyframes ni-mb-pop {
+  0%,
+  6% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  16%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}

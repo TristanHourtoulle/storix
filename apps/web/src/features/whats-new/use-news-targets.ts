@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { NewsTryTarget, WhatsNewTargets } from '@storix/shared'
 import { useCallback } from 'react'
+import { useRouteContext } from '@tanstack/react-router'
 import { whatsNewTargetsQueryOptions } from './whats-new.queries'
 
 export type NewsTryLink =
@@ -22,6 +23,13 @@ export type NewsTryLink =
       search: { sort: 'reactions' }
     }
   | { to: '/l/$leagueId/profile/boosters'; params: { leagueId: string } }
+  | { to: '/l/$leagueId/members'; params: { leagueId: string } }
+  | { to: '/l/$leagueId/tagged'; params: { leagueId: string } }
+  | {
+      to: '/l/$leagueId/members/$userId'
+      params: { leagueId: string; userId: string }
+      search: { tab: 'emblems' }
+    }
   | { to: '/l/$leagueId/cards/$cardId'; params: { leagueId: string; cardId: string } }
 
 interface NewsTargets {
@@ -34,6 +42,7 @@ function cardLink(leagueId: string, cardId: string | null): NewsTryLink | null {
 
 function linkFor(
   leagueId: string,
+  viewerId: string,
   target: NewsTryTarget,
   targets: WhatsNewTargets,
 ): NewsTryLink | null {
@@ -56,6 +65,16 @@ function linkFor(
         : { to: '/l/$leagueId/collection', params: { leagueId }, search: { sort: 'reactions' } }
     case 'booster-history':
       return { to: '/l/$leagueId/profile/boosters', params: { leagueId } }
+    case 'members':
+      return { to: '/l/$leagueId/members', params: { leagueId } }
+    case 'tagged':
+      return { to: '/l/$leagueId/tagged', params: { leagueId } }
+    case 'emblems':
+      return {
+        to: '/l/$leagueId/members/$userId',
+        params: { leagueId, userId: viewerId },
+        search: { tab: 'emblems' },
+      }
     case 'showcase-card':
       return cardLink(leagueId, targets.showcaseCardId)
     case 'stack-card':
@@ -67,10 +86,12 @@ function linkFor(
 
 /** Resolves each "Essayer" target to link props, or null while loading, failed or empty. */
 export function useNewsTargets(leagueId: string, isEnabled: boolean): NewsTargets {
+  const { me } = useRouteContext({ from: '/_authed' })
+  const viewerId = me.user.id
   const { data } = useQuery({ ...whatsNewTargetsQueryOptions(leagueId), enabled: isEnabled })
   const hrefFor = useCallback(
-    (target: NewsTryTarget) => (data ? linkFor(leagueId, target, data) : null),
-    [data, leagueId],
+    (target: NewsTryTarget) => (data ? linkFor(leagueId, viewerId, target, data) : null),
+    [data, leagueId, viewerId],
   )
   return { hrefFor }
 }

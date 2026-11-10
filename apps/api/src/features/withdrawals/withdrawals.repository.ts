@@ -23,6 +23,7 @@ export interface TaggedCardRow {
   width: number
   height: number
   variants: MediaVariant[]
+  taggedAt: Date
 }
 
 export interface WithdrawableCardRow {
@@ -55,6 +56,7 @@ export async function listTaggedCards(
       width: media.width,
       height: media.height,
       variants: media.variants,
+      taggedAt: cardTags.createdAt,
     })
     .from(cardTags)
     .innerJoin(cards, eq(cards.id, cardTags.cardId))

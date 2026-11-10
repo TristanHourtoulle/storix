@@ -11,6 +11,8 @@ interface ActiveFilterTokensProps {
 
 export function ActiveFilterTokens({ filters, members, onChange }: ActiveFilterTokensProps) {
   const authorName = members.find((member) => member.userId === filters.authorId)?.displayUsername
+  const tagged = members.find((member) => member.userId === filters.taggedUserId)
+  const taggedName = tagged ? (tagged.isSelf ? 'moi' : tagged.displayUsername) : 'un membre'
 
   return (
     <>
@@ -18,6 +20,12 @@ export function ActiveFilterTokens({ filters, members, onChange }: ActiveFilterT
         <FilterToken
           label={authorName ?? 'Membre'}
           onRemove={() => onChange({ ...filters, authorId: null })}
+        />
+      ) : null}
+      {filters.taggedUserId !== null ? (
+        <FilterToken
+          label={`Sur la photo : ${taggedName}`}
+          onRemove={() => onChange({ ...filters, taggedUserId: null })}
         />
       ) : null}
       {filters.tier !== null ? (

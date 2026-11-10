@@ -26,6 +26,32 @@ export function CollectionCardView({
   if (card.kind === 'hidden') {
     return <HiddenCardFace size={size} tier={tier ?? card.tier} thumbhash={card.thumbhash} />
   }
+  if (card.kind === 'unpulled') {
+    return (
+      <CardFace
+        size={size}
+        title={card.title}
+        tier={tier ?? card.tier}
+        isProvisional={card.isProvisional}
+        band={
+          <div className="card-band">
+            <span className="card-name">{card.title}</span>
+            <span className="card-unpulled">Pas encore tirée</span>
+          </div>
+        }
+      >
+        <CardImage
+          image={card.image}
+          thumbhash={card.thumbhash}
+          width={card.width}
+          height={card.height}
+          sizes={sizes}
+          isEager={isEager}
+          isHighPriority={isEager}
+        />
+      </CardFace>
+    )
+  }
   const isFoilOnly = card.copies.foil !== null && card.copies.normal === null
 
   return (

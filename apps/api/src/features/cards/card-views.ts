@@ -21,6 +21,7 @@ import {
   type HiddenCardDetail,
   type HiddenCardSummary,
   type LockedCardSummary,
+  type UnpulledCardSummary,
   type MediaVariantSize,
   type OwnedCardDetail,
   type OwnedCardSummary,
@@ -313,9 +314,36 @@ export function canReactTo(row: CollectionRow, viewerId: string): boolean {
  * Projects a collection row to what the viewer may see: a hidden face without title or image for a
  * hidden card, the full card if owned, a silhouette otherwise.
  */
-export function toCollectionCard(row: CollectionRow, signer: MediaSigner): CollectionCard {
+function toUnpulledSummary(row: CollectionRow, signer: MediaSigner): UnpulledCardSummary {
+  return {
+    kind: 'unpulled',
+    id: row.id,
+    number: row.number,
+    title: row.title,
+    tier: row.tier,
+    isProvisional: row.isProvisional,
+    author: toCardAuthor(row),
+    thumbhash: row.thumbhash,
+    dominantColor: row.dominantColor,
+    width: row.width,
+    height: row.height,
+    image: toImageSet(row.variants, SUMMARY_SIZES, signer),
+  }
+}
+
+/**
+ * Projects a collection row to what the viewer may see. `revealOwnOf` is the viewer's id when they asked
+ * for their own photos: an active card they authored but never pulled is then shown unblurred as `unpulled`.
+ */
+export function toCollectionCard(
+  row: CollectionRow,
+  signer: MediaSigner,
+  revealOwnOf: string | null = null,
+): CollectionCard {
   if (row.status === 'hidden') return toHiddenSummary(row)
-  return isOwned(row) ? toOwnedSummary(row, SUMMARY_SIZES, signer) : toLockedSummary(row)
+  if (isOwned(row)) return toOwnedSummary(row, SUMMARY_SIZES, signer)
+  if (revealOwnOf !== null && row.authorId === revealOwnOf) return toUnpulledSummary(row, signer)
+  return toLockedSummary(row)
 }
 
 function toHiddenDetail(row: CardViewerRow, canWithdraw: boolean): HiddenCardDetail {

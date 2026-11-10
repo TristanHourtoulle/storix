@@ -49,6 +49,7 @@ export function createWithdrawalsService(deps: WithdrawalsServiceDeps): Withdraw
         height: row.height,
         image: toImageSet(row.variants, TAGGED_SIZES, signer),
         canWithdraw: true,
+        taggedAt: row.taggedAt.toISOString(),
       }))
     },
 

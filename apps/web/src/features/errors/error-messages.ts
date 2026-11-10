@@ -39,6 +39,9 @@ const MESSAGES: Record<ErrorCode, string> = {
   ACCOUNT_DELETION_CONFLICT: 'Tes ligues ont changé pendant la suppression, réessaie.',
   BOOSTER_CONTENT_REMOVED: 'Une carte de ce booster a été retirée de la ligue.',
   DISPLAY_NAME_RESERVED: 'Ce nom est l’identifiant de connexion d’un autre membre.',
+  EMBLEM_NOT_EARNED: 'Tu ne peux mettre en avant que des emblèmes débloqués.',
+  SHOWCASE_INVALID: 'Ta vitrine ne peut contenir que des cartes que tu possèdes.',
+  TAG_NOT_ALLOWED: 'Tu ne peux pas modifier cette identification.',
   INTERNAL_ERROR: 'Une erreur est survenue.',
 }
 

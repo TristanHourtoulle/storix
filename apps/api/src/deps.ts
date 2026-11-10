@@ -12,6 +12,11 @@ import {
 import { createBoostersService, type BoostersService } from './features/boosters/boosters.service'
 import { createCardsService, type CardsService } from './features/cards/cards.service'
 import { createCopiesService, type CopiesService } from './features/copies/copies.service'
+import {
+  createEmblemAwards,
+  createEmblemsService,
+  type EmblemsService,
+} from './features/emblems/emblems.service'
 import { createStacksService, type StacksService } from './features/copies/stacks.service'
 import { createHealthService, type HealthService } from './features/health/health.service'
 import {
@@ -31,6 +36,11 @@ import {
 } from './features/moderation/moderation.service'
 import { createMembersService, type MembersService } from './features/members/members.service'
 import {
+  createMemberProfileService,
+  type MemberProfileService,
+} from './features/members/member-profile.service'
+import { createShowcaseService, type ShowcaseService } from './features/showcase/showcase.service'
+import {
   createPortraitsService,
   type PortraitsService,
 } from './features/portraits/portraits.service'
@@ -49,6 +59,7 @@ import {
   type UploadDraftsService,
 } from './features/uploads/upload-drafts.service'
 import { createUploadsService, type UploadsService } from './features/uploads/uploads.service'
+import { createTagsService, type TagsService } from './features/tags/tags.service'
 import { createWalletsService, type WalletsService } from './features/wallets/wallets.service'
 import { createWhatsNewService, type WhatsNewService } from './features/whats-new/whats-new.service'
 import {
@@ -81,6 +92,7 @@ export interface Services {
   cards: CardsService
   copies: CopiesService
   stacks: StacksService
+  emblems: EmblemsService
   health: HealthService
   invitations: InvitationsService
   leagues: LeaguesService
@@ -88,12 +100,15 @@ export interface Services {
   me: MeService
   media: MediaService
   members: MembersService
+  memberProfiles: MemberProfileService
+  showcase: ShowcaseService
   moderation: ModerationService
   portraits: PortraitsService
   push: PushService
   reactions: ReactionsService
   removals: RemovalsService
   resetCodes: ResetCodesService
+  tags: TagsService
   uploads: UploadsService
   uploadDrafts: UploadDraftsService
   wallets: WalletsService
@@ -119,6 +134,7 @@ export function createAppDeps(env: Env, db: Database, jobs: JobQueue): AppDeps {
 /** Builds every feature service from the app dependencies. */
 export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
   const cardRemoval = createCardRemoval({ jobs: deps.jobs, logger })
+  const emblemAwards = createEmblemAwards({ jobs: deps.jobs, logger })
   return {
     account: createAccountService({
       db: deps.db,
@@ -133,12 +149,14 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       db: deps.db,
       signer: deps.mediaSigner,
       clock: deps.clock,
+      emblems: emblemAwards,
     }),
     boosterHistory: createBoosterHistoryService({ db: deps.db, signer: deps.mediaSigner }),
     cardRemoval,
     cards: createCardsService({ db: deps.db, signer: deps.mediaSigner, clock: deps.clock }),
-    copies: createCopiesService({ db: deps.db, clock: deps.clock }),
-    stacks: createStacksService({ db: deps.db, clock: deps.clock }),
+    copies: createCopiesService({ db: deps.db, clock: deps.clock, emblems: emblemAwards }),
+    stacks: createStacksService({ db: deps.db, clock: deps.clock, emblems: emblemAwards }),
+    emblems: createEmblemsService({ db: deps.db, clock: deps.clock }),
     health: createHealthService(deps.db),
     invitations: createInvitationsService({
       db: deps.db,
@@ -166,6 +184,8 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       jobs: deps.jobs,
       logger,
     }),
+    memberProfiles: createMemberProfileService({ db: deps.db, signer: deps.mediaSigner }),
+    showcase: createShowcaseService({ db: deps.db }),
     moderation: createModerationService({
       db: deps.db,
       signer: deps.mediaSigner,
@@ -186,8 +206,9 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       clock: deps.clock,
       publicKey: deps.env.VAPID_PUBLIC_KEY ?? null,
     }),
-    reactions: createReactionsService({ db: deps.db }),
+    reactions: createReactionsService({ db: deps.db, emblems: emblemAwards }),
     removals: createRemovalsService({ db: deps.db, clock: deps.clock }),
+    tags: createTagsService({ db: deps.db, clock: deps.clock }),
     resetCodes: createResetCodesService({
       db: deps.db,
       auth: deps.auth,

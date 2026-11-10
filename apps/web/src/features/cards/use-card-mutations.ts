@@ -11,6 +11,7 @@ import { ApiError } from '@/lib/http'
 import { logger } from '@/lib/logger'
 import { recentRevealsQueryOptions, walletQueryOptions } from '@/features/game/game.queries'
 import { convertStack, promoteCard, recycleCopy, upgradeToFoil } from './cards.api'
+import { refreshEmblems } from '@/features/emblems/emblems.queries'
 
 interface CardMutations {
   recycle: UseMutationResult<DustBalance, Error, CopyVariant>
@@ -54,6 +55,7 @@ export function useCardMutations(leagueId: string, cardId: string): CardMutation
       wallet ? { ...wallet, dust } : wallet,
     )
     refreshCards()
+    refreshEmblems(queryClient, leagueId)
     void queryClient.invalidateQueries({ queryKey: walletKey }).catch(logRefreshFailure)
   }
 

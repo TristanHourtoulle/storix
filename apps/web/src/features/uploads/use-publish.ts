@@ -11,6 +11,7 @@ import type { UploadSession } from './session/use-upload-session'
 import { fetchUploadStates, publishUploads } from './uploads.api'
 import { draftsQueryKey } from './use-drafts'
 import { uploadQuotaQueryKey } from './use-upload-quota'
+import { emblemsQueryKey } from '@/features/emblems/emblems.queries'
 
 const POLL_INTERVAL_MS = 1500
 const POLL_TIMEOUT_MS = 180_000
@@ -152,6 +153,7 @@ export function usePublish(leagueId: string, session: UploadSession) {
       if (count >= 1) playSound({ name: 'cardCreated' })
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'cards'] }),
+        queryClient.invalidateQueries({ queryKey: emblemsQueryKey(leagueId) }),
         queryClient.invalidateQueries({ queryKey: uploadQuotaQueryKey(leagueId) }),
         queryClient.invalidateQueries({ queryKey: draftsQueryKey(leagueId) }),
       ])

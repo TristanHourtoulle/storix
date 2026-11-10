@@ -3,6 +3,36 @@ import type { ReleaseNote } from '../schemas/whats-new'
 /** Every feature release shown in the "Nouveautés" booster, newest first. */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    id: '2026-11-10-c',
+    publishedAt: '2026-11-10T21:00:00+01:00',
+    cards: [
+      {
+        key: 'members',
+        title: 'Pages membres',
+        body: 'Touche un pseudo ou va dans Profil › Membres : stats, vitrine de 6 cartes et emblèmes de chacun.',
+        tier: 'legendary',
+        illustration: 'members',
+        tryTarget: 'members',
+      },
+      {
+        key: 'tagged',
+        title: 'Sur la photo',
+        body: 'Dans Filtres, retrouve les cartes où un ami apparaît. Tu y es ? « Je suis sur la photo » depuis le menu ⋯.',
+        tier: 'epic',
+        illustration: 'tagged',
+        tryTarget: 'tagged',
+      },
+      {
+        key: 'emblems',
+        title: 'Emblèmes',
+        body: '15 emblèmes à débloquer en jouant. Mets tes 3 préférés en avant sur ta page.',
+        tier: 'mythic',
+        illustration: 'emblems',
+        tryTarget: 'emblems',
+      },
+    ],
+  },
+  {
     id: '2026-11-10-b',
     publishedAt: '2026-11-10T20:00:00+01:00',
     cards: [

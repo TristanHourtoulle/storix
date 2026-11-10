@@ -1,7 +1,9 @@
+import { Link } from '@tanstack/react-router'
 import type { RecentReveal } from '@storix/shared'
 import { CollectionCardView } from '@/features/cards/components/collection-card-view'
 
 interface RecentRevealsProps {
+  leagueId: string
   reveals: RecentReveal[]
 }
 
@@ -18,7 +20,7 @@ function RevealCard({ reveal }: { reveal: RecentReveal }) {
   )
 }
 
-export function RecentReveals({ reveals }: RecentRevealsProps) {
+export function RecentReveals({ leagueId, reveals }: RecentRevealsProps) {
   if (reveals.length === 0) return null
 
   return (
@@ -31,7 +33,18 @@ export function RecentReveals({ reveals }: RecentRevealsProps) {
           <li key={`${reveal.card.id}-${reveal.variant}-${reveal.pulledAt}`} className="mini">
             <RevealCard reveal={reveal} />
             <p className="mini-by">
-              tirée par {reveal.pulledBy.displayUsername ?? 'un ancien membre'}
+              tirée par{' '}
+              {reveal.pulledBy.userId && reveal.pulledBy.displayUsername ? (
+                <Link
+                  to="/l/$leagueId/members/$userId"
+                  params={{ leagueId, userId: reveal.pulledBy.userId }}
+                  className="mini-by-link"
+                >
+                  {reveal.pulledBy.displayUsername}
+                </Link>
+              ) : (
+                'un ancien membre'
+              )}
             </p>
           </li>
         ))}

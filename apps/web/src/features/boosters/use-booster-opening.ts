@@ -3,6 +3,7 @@ import { useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-q
 import type { BoosterOpening, ErrorCode } from '@storix/shared'
 import { ApiError } from '@/lib/http'
 import { boosterOpeningQueryOptions, walletQueryOptions } from '../game/game.queries'
+import { refreshEmblems } from '@/features/emblems/emblems.queries'
 
 /** Extracts the API error code of a failed opening, if any. */
 export function getOpeningErrorCode(error: unknown): ErrorCode | null {
@@ -29,6 +30,7 @@ export function useBoosterOpening(
     void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'cards'] })
     void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'reveals'] })
     void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'booster-history'] })
+    refreshEmblems(queryClient, leagueId)
   }, [queryClient, leagueId, openingId, wallet])
 
   useEffect(() => {

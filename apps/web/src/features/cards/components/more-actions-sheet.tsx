@@ -7,6 +7,16 @@ import { TIER_LABELS } from '../tier-labels'
 
 type RecycleOption = OwnedCardDetail['actions']['recycle'][number]
 
+export interface TagState {
+  isTagged: boolean
+  isBusy: boolean
+}
+
+export interface RemovableTag {
+  userId: string
+  name: string
+}
+
 interface MoreActionsSheetProps {
   open: boolean
   actions: OwnedCardDetail['actions']
@@ -16,6 +26,10 @@ interface MoreActionsSheetProps {
   onConvert: () => void
   onFoil: () => void
   onRecycle: (option: RecycleOption) => void
+  tagState: TagState
+  onToggleTag: () => void
+  removableTags: readonly RemovableTag[]
+  onRemoveTag: (userId: string) => void
   onClose: () => void
 }
 
@@ -70,6 +84,10 @@ export function MoreActionsSheet({
   onConvert,
   onFoil,
   onRecycle,
+  tagState,
+  onToggleTag,
+  removableTags,
+  onRemoveTag,
   onClose,
 }: MoreActionsSheetProps) {
   const stackCount = stackSize(actions.stack)
@@ -99,6 +117,27 @@ export function MoreActionsSheet({
           isBlocked={isBusy || foilReason !== null}
           onSelect={onFoil}
         />
+        <ActionRow
+          icon="profile"
+          title="Je suis sur la photo"
+          sub={
+            tagState.isTagged ? 'Identifié(e) · Retirer' : 'Ajoute-toi aux personnes sur la photo'
+          }
+          value={tagState.isTagged ? '✓' : null}
+          isBlocked={tagState.isBusy}
+          onSelect={onToggleTag}
+        />
+        {removableTags.map((person) => (
+          <ActionRow
+            key={person.userId}
+            icon="profile"
+            title={`Retirer ${person.name}`}
+            sub="Identifié(e) sur la photo"
+            value={null}
+            isBlocked={tagState.isBusy}
+            onSelect={() => onRemoveTag(person.userId)}
+          />
+        ))}
         {actions.recycle.map((option) => (
           <ActionRow
             key={option.variant}
