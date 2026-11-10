@@ -1,10 +1,12 @@
 import {
+  cardReactorsSchema,
   collectionPageSchema,
   dustBalanceSchema,
   rarityHistorySchema,
   reactionCountsSchema,
   stackActionResultSchema,
   viewerCardDetailSchema,
+  type CardReactors,
   type CardTier,
   type CollectionPage,
   type CollectionSort,
@@ -122,4 +124,9 @@ export function fetchRarityHistory(leagueId: string, cardId: string): Promise<Ra
   return apiRequest(`${cardPath(leagueId, cardId)}/rarity-history`, {
     schema: rarityHistorySchema,
   })
+}
+
+/** Fetches who reacted to a card the viewer owns, one row per person, newest first. */
+export function fetchCardReactors(leagueId: string, cardId: string): Promise<CardReactors> {
+  return apiRequest(`${cardPath(leagueId, cardId)}/reactions`, { schema: cardReactorsSchema })
 }

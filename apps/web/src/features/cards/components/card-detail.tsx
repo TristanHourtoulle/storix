@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { OwnedCardDetail } from '@storix/shared'
+import { REACTION_TYPES, type OwnedCardDetail } from '@storix/shared'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
@@ -24,6 +24,9 @@ import { MetaCell, discovererLabel, formatDate } from './meta-cell'
 import { PromotedHolders } from './promoted-holders'
 import { RarityJourney } from './rarity-journey'
 import { ReactionBar } from './reaction-bar'
+import { ReactionsSheet, type ReactionTab } from './reactions-sheet'
+import { ReactorsSummary } from './reactors-summary'
+import { useCardReactors } from '../use-card-reactors'
 
 const TAP_SLOP_PX = 10
 
@@ -42,6 +45,14 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
   const reactions = useReactions(leagueId, card.id)
   const avatars = useMemberAvatars(leagueId)
+  const reactionTotal = REACTION_TYPES.reduce((sum, type) => sum + card.reactions[type].count, 0)
+  const reactors = useCardReactors(leagueId, card.id, reactionTotal > 0)
+  const [isReactionsOpen, setIsReactionsOpen] = useState(false)
+  const [reactionTab, setReactionTab] = useState<ReactionTab>('all')
+  const openReactions = (tab: ReactionTab) => {
+    setReactionTab(tab)
+    setIsReactionsOpen(true)
+  }
   const { recycle, upgradeToFoil, promote, convertStack } = useCardMutations(leagueId, card.id)
   const { data: wallet } = useWallet(leagueId)
   const isGold = card.displayTier === 'legendary' || card.displayTier === 'mythic'
@@ -125,6 +136,24 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
         reactions={card.reactions}
         canReact={card.canReact}
         onToggle={reactions.toggle}
+        onOpenReactors={openReactions}
+      />
+      {reactionTotal > 0 ? (
+        <ReactorsSummary
+          reactors={reactors.data?.reactors ?? []}
+          avatars={avatars}
+          onOpen={() => openReactions('all')}
+        />
+      ) : null}
+      <ReactionsSheet
+        open={isReactionsOpen}
+        tab={reactionTab}
+        onTabChange={setReactionTab}
+        counts={card.reactions}
+        reactors={reactors.data?.reactors}
+        isLoading={reactionTotal > 0 && reactors.isPending}
+        avatars={avatars}
+        onClose={() => setIsReactionsOpen(false)}
       />
       <Button
         variant="ghost"

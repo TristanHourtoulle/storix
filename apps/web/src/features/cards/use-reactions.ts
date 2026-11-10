@@ -3,6 +3,7 @@ import type { ReactionCounts, ReactionType, ViewerCardDetail } from '@storix/sha
 import { logger } from '@/lib/logger'
 import { setReaction } from './cards.api'
 import { cardDetailQueryOptions } from './cards.queries'
+import { cardReactorsQueryKey } from './use-card-reactors'
 
 interface ToggleVariables {
   type: ReactionType
@@ -57,6 +58,13 @@ export function useReactions(leagueId: string, cardId: string) {
       } else if (context?.previous) {
         queryClient.setQueryData(queryKey, context.previous)
       }
+    },
+    onSettled: () => {
+      void queryClient
+        .invalidateQueries({ queryKey: cardReactorsQueryKey(leagueId, cardId) })
+        .catch((cause: unknown) => {
+          logger.warn('Reactors refresh failed', { error: cause })
+        })
     },
     onSuccess: (reactions) => {
       if (hasOtherPending()) return

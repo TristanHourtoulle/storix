@@ -31,7 +31,10 @@ export function SortSheet({ open, value, onPick, onClose }: SortSheetProps) {
           >
             <span aria-hidden="true" className="sort-radio-dot" />
             <span className="sort-radio-text">
-              <b>{option.label}</b>
+              <b>
+                {option.label}
+                {option.isNew ? <span className="newtag">Nouveau</span> : null}
+              </b>
               <span>{option.hint}</span>
             </span>
           </button>
