@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { REACTION_TYPES, type OwnedCardDetail } from '@storix/shared'
+import { REACTION_TYPES, hasRoleAtLeast, type OwnedCardDetail } from '@storix/shared'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
@@ -43,7 +43,8 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
   const { ref, needsMotionPermission, isMotionDenied, requestMotionPermission } = useHoloTilt()
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [shareSubject, setShareSubject] = useState<ShareSubject | null>(null)
-  const leagueName = useQuery(leagueDetailQueryOptions(leagueId)).data?.name ?? ''
+  const league = useQuery(leagueDetailQueryOptions(leagueId)).data
+  const leagueName = league?.name ?? ''
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
   const reactions = useReactions(leagueId, card.id)
   const avatars = useMemberAvatars(leagueId)
@@ -65,6 +66,15 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
   const copies = card.copiesInLeague
   const tag = useCardTag(leagueId, card.id)
   const isTagged = card.tagged.some((person) => person.userId === meId)
+  const canRemoveOthersTags =
+    card.author.userId === meId || (league !== undefined && hasRoleAtLeast(league.myRole, 'admin'))
+  const removableTags = canRemoveOthersTags
+    ? card.tagged.flatMap((person) =>
+        person.userId === null || person.userId === meId
+          ? []
+          : [{ userId: person.userId, name: person.displayUsername ?? 'Ancien membre' }],
+      )
+    : []
   const tagError = tag.add.error ?? tag.remove.error
   const actionError = recycle.error
   const isBusy =
@@ -200,6 +210,12 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
           tag.remove.reset()
           if (isTagged) tag.remove.mutate(meId)
           else tag.add.mutate()
+        }}
+        removableTags={removableTags}
+        onRemoveTag={(userId) => {
+          tag.add.reset()
+          tag.remove.reset()
+          tag.remove.mutate(userId)
         }}
         onSheetOpen={() => {
           promote.reset()

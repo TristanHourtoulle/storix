@@ -12,6 +12,11 @@ export interface TagState {
   isBusy: boolean
 }
 
+export interface RemovableTag {
+  userId: string
+  name: string
+}
+
 interface MoreActionsSheetProps {
   open: boolean
   actions: OwnedCardDetail['actions']
@@ -23,6 +28,8 @@ interface MoreActionsSheetProps {
   onRecycle: (option: RecycleOption) => void
   tagState: TagState
   onToggleTag: () => void
+  removableTags: readonly RemovableTag[]
+  onRemoveTag: (userId: string) => void
   onClose: () => void
 }
 
@@ -79,6 +86,8 @@ export function MoreActionsSheet({
   onRecycle,
   tagState,
   onToggleTag,
+  removableTags,
+  onRemoveTag,
   onClose,
 }: MoreActionsSheetProps) {
   const stackCount = stackSize(actions.stack)
@@ -118,6 +127,17 @@ export function MoreActionsSheet({
           isBlocked={tagState.isBusy}
           onSelect={onToggleTag}
         />
+        {removableTags.map((person) => (
+          <ActionRow
+            key={person.userId}
+            icon="profile"
+            title={`Retirer ${person.name}`}
+            sub="Identifié(e) sur la photo"
+            value={null}
+            isBlocked={tagState.isBusy}
+            onSelect={() => onRemoveTag(person.userId)}
+          />
+        ))}
         {actions.recycle.map((option) => (
           <ActionRow
             key={option.variant}
