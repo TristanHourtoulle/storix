@@ -65,6 +65,8 @@ export const cardTags = pgTable(
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
+    taggedById: text('tagged_by_id').references(() => user.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     primaryKey({ columns: [t.cardId, t.userId] }),

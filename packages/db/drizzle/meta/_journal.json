@@ -113,6 +113,13 @@
       "when": 1794312464996,
       "tag": "0015_booster_history_index",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794314142842,
+      "tag": "0016_members_emblems",
+      "breakpoints": true
     }
   ]
 }
