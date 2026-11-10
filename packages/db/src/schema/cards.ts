@@ -71,5 +71,6 @@ export const cardTags = pgTable(
   (t) => [
     primaryKey({ columns: [t.cardId, t.userId] }),
     index('card_tags_user_id_idx').on(t.userId),
+    index('card_tags_tagged_by_created_idx').on(t.taggedById, t.createdAt),
   ],
 )

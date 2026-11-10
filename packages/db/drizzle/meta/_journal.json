@@ -127,6 +127,13 @@
       "when": 1794316825959,
       "tag": "0017_league_feed",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794327716026,
+      "tag": "0018_wave4_missions_goal",
+      "breakpoints": true
     }
   ]
 }

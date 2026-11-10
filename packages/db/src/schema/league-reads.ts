@@ -9,6 +9,7 @@ export const leagueReads = pgTable(
     feedSeenAt: timestamp('feed_seen_at', { withTimezone: true }),
     mythicBannerSeenAt: timestamp('mythic_banner_seen_at', { withTimezone: true }),
     journalSeenAt: timestamp('journal_seen_at', { withTimezone: true }),
+    goalBannerSeenWeek: text('goal_banner_seen_week'),
   },
   (t) => [
     primaryKey({ columns: [t.leagueId, t.userId] }),

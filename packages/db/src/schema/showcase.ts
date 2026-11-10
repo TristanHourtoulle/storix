@@ -6,6 +6,7 @@ import {
   primaryKey,
   smallint,
   text,
+  timestamp,
   unique,
   uuid,
 } from 'drizzle-orm/pg-core'
@@ -23,6 +24,7 @@ export const memberShowcase = pgTable(
     cardId: uuid('card_id')
       .notNull()
       .references(() => cards.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     primaryKey({ columns: [t.leagueId, t.userId, t.slot] }),
