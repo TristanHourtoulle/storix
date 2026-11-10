@@ -259,4 +259,53 @@ describe('booster draw', () => {
     })
     expect(draws.map((d) => d.cardId)).toEqual(['c1', 'c1', 'c1', 'c1', 'c1'])
   })
+
+  it('ignores the premium flag before version 4', () => {
+    const pool = [...commons(4), card('r1', 'rare', 'b', 5), card('l1', 'legendary', 'c', 6)]
+    const draw = (isPremium?: boolean) =>
+      drawBooster({
+        pool,
+        pity: NO_PITY,
+        random: createSeededRandom(SEED),
+        tableVersion: 3,
+        isPremium,
+      })
+    expect(draw(true)).toEqual(draw())
+  })
+
+  it('draws a legendary or better and a rare or better on a premium booster', () => {
+    const pool = [
+      ...commons(3),
+      card('r1', 'rare', 'b', 4),
+      card('e1', 'epic', 'b', 5),
+      card('l1', 'legendary', 'c', 6),
+      card('m1', 'mythic', 'd', 7),
+    ]
+    for (let i = 1; i <= 50; i++) {
+      const draws = drawBooster({
+        pool,
+        pity: NO_PITY,
+        random: createSeededRandom(seedAt(i)),
+        isPremium: true,
+      })
+      expect(['legendary', 'mythic']).toContain(draws[4]?.tier)
+      expect(['rare', 'epic', 'legendary', 'mythic']).toContain(draws[3]?.tier)
+    }
+  })
+
+  it('falls back to the best available tier on a premium booster', () => {
+    const pool = [
+      ...commons(3),
+      card('r1', 'rare', 'b', 4),
+      card('e1', 'epic', 'c', 5),
+      card('e2', 'epic', 'c', 6),
+    ]
+    const draws = drawBooster({
+      pool,
+      pity: NO_PITY,
+      random: createSeededRandom(SEED),
+      isPremium: true,
+    })
+    expect(draws[4]?.tier).toBe('epic')
+  })
 })

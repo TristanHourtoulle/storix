@@ -3,10 +3,11 @@ import type { CopyVariant } from './dust'
 import { isEpicGuaranteed, legendaryBonusPercent, type PityState } from './pity'
 import type { RandomSource } from './random'
 
-export const DROP_TABLE_VERSION = 3
+export const DROP_TABLE_VERSION = 4
 
 const EPIC_FLOOR_SINCE_VERSION = 2
 const NO_DUPLICATE_SINCE_VERSION = 3
+export const PREMIUM_SINCE_VERSION = 4
 export const FOIL_ODDS = 15
 
 export type TierWeights = Readonly<Partial<Record<CardTier, number>>>
@@ -15,7 +16,26 @@ const CU: TierWeights = { common: 80, uncommon: 20 }
 const UPLUS: TierWeights = { uncommon: 70, rare: 30 }
 const RPLUS: TierWeights = { rare: 72, epic: 20, legendary: 7, mythic: 1 }
 
+const RARE_PLUS_PREMIUM: TierWeights = { rare: 75, epic: 25 }
+const LEGENDARY_PLUS: TierWeights = { legendary: 85, mythic: 15 }
+
 export const BOOSTER_SLOTS: readonly TierWeights[] = [CU, CU, CU, UPLUS, RPLUS]
+
+export const PREMIUM_BOOSTER_SLOTS: readonly TierWeights[] = [
+  CU,
+  CU,
+  CU,
+  RARE_PLUS_PREMIUM,
+  LEGENDARY_PLUS,
+]
+
+export const PREMIUM_SLOT_FLOORS: readonly (CardTier | undefined)[] = [
+  undefined,
+  undefined,
+  undefined,
+  'rare',
+  'legendary',
+]
 
 const RARE_PLUS_SLOT = BOOSTER_SLOTS.length - 1
 
@@ -74,6 +94,17 @@ export function rarePlusWeights(p: PityState): TierWeights {
   }
 }
 
+/** Returns each tier's chance in percent, rounded to one decimal, for tiers with a positive weight. */
+export function slotOddsPercent(weights: TierWeights): Partial<Record<CardTier, number>> {
+  const entries = CARD_TIERS.map((tier) => [tier, weights[tier] ?? 0] as const).filter(
+    ([, weight]) => weight > 0,
+  )
+  const total = entries.reduce((sum, [, weight]) => sum + weight, 0)
+  return Object.fromEntries(
+    entries.map(([tier, weight]) => [tier, Math.round((weight / total) * 1000) / 10]),
+  )
+}
+
 /** Rolls a tier from integer weights with a single draw, cumulative over tiers ascending. */
 export function rollTier(weights: TierWeights, random: RandomSource): CardTier {
   const entries = CARD_TIERS.map((tier) => [tier, weights[tier] ?? 0] as const).filter(
@@ -125,12 +156,14 @@ export function pickFromTier(cards: readonly PoolCard[], random: RandomSource): 
  * Draws the five slots of a booster; RNG order per slot is tier, author, card, foil.
  * From version 3 the draw is without replacement and needs at least five distinct cards.
  * `tableVersion` defaults to the current table; version 1 replays the fallback without the Epic floor.
+ * From version 4 `isPremium` switches to the premium table and slot floors, ignoring pity.
  */
 export function drawBooster(input: {
   pool: readonly PoolCard[]
   pity: PityState
   random: RandomSource
   tableVersion?: number
+  isPremium?: boolean
 }): BoosterDraw[] {
   if (input.pool.length === 0) throw new EmptyBoosterPoolError()
   const tableVersion = input.tableVersion ?? DROP_TABLE_VERSION
@@ -138,14 +171,20 @@ export function drawBooster(input: {
   const distinctCount = new Set(input.pool.map((c) => c.cardId)).size
   if (isUnique && !canOpenBooster(distinctCount)) throw new BoosterPoolTooSmallError(distinctCount)
   const hasEpicFloor = tableVersion >= EPIC_FLOOR_SINCE_VERSION && isEpicGuaranteed(input.pity)
-  return BOOSTER_SLOTS.reduce<BoosterDraw[]>((draws, slotWeights, slot) => {
+  const isPremium = tableVersion >= PREMIUM_SINCE_VERSION && input.isPremium === true
+  const slotTable = isPremium ? PREMIUM_BOOSTER_SLOTS : BOOSTER_SLOTS
+  return slotTable.reduce<BoosterDraw[]>((draws, slotWeights, slot) => {
     const drawn = new Set(isUnique ? draws.map((d) => d.cardId) : [])
     const remaining = input.pool.filter((c) => !drawn.has(c.cardId))
     const available = new Set(remaining.map((c) => c.tier))
     const isRarePlus = slot === RARE_PLUS_SLOT
-    const weights = isRarePlus ? rarePlusWeights(input.pity) : slotWeights
+    const weights = !isPremium && isRarePlus ? rarePlusWeights(input.pity) : slotWeights
     const rolledTier = rollTier(weights, input.random)
-    const floor: CardTier | undefined = isRarePlus && hasEpicFloor ? 'epic' : undefined
+    const floor: CardTier | undefined = isPremium
+      ? PREMIUM_SLOT_FLOORS[slot]
+      : isRarePlus && hasEpicFloor
+        ? 'epic'
+        : undefined
     const tier = resolveTierWithFallback(rolledTier, available, floor)
     if (tier === null) throw new EmptyBoosterPoolError()
     const picked = pickFromTier(
