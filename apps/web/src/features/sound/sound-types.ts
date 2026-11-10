@@ -14,6 +14,8 @@ export type SoundRequest =
   | { name: 'revealAll' }
   | { name: 'summary' }
   | { name: 'pity' }
+  | { name: 'newsTear' }
+  | { name: 'newsFlip' }
   | { name: 'boosterReady' }
   | { name: 'countdownEnd' }
   | { name: 'locked' }
@@ -42,6 +44,8 @@ export const SOUND_CATEGORY: Readonly<Record<SoundName, SoundCategory>> = {
   revealAll: 'booster',
   summary: 'booster',
   pity: 'booster',
+  newsTear: 'interface',
+  newsFlip: 'interface',
   boosterReady: 'interface',
   countdownEnd: 'interface',
   locked: 'interface',

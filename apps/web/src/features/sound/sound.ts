@@ -41,7 +41,7 @@ function readyEngine(): SoundEngine | null {
 
 function hapticPattern(request: SoundRequest): readonly number[] | null {
   if (request.name === 'packTap') return [12]
-  if (request.name === 'burst') return [30, 40, 60]
+  if (request.name === 'burst' || request.name === 'newsTear') return [30, 40, 60]
   if (request.name === 'stamp' && request.level >= 4) return [20, 30, 20, 30, 80]
   return null
 }
