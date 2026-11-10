@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Notice } from '@/components/ui/notice'
@@ -7,10 +7,16 @@ import { usePasskeyPrompt } from '../use-passkey-prompt'
 interface PasskeyPromptProps {
   userId: string
   displayUsername: string
+  onOpenChange?: (isOpen: boolean) => void
 }
 
-export function PasskeyPrompt({ userId, displayUsername }: PasskeyPromptProps) {
+export function PasskeyPrompt({ userId, displayUsername, onOpenChange }: PasskeyPromptProps) {
   const { isOpen, dismiss, addPasskey } = usePasskeyPrompt(userId)
+
+  useEffect(() => {
+    onOpenChange?.(isOpen)
+    return () => onOpenChange?.(false)
+  }, [isOpen, onOpenChange])
   const [error, setError] = useState<string | null>(null)
   const [isPending, setIsPending] = useState(false)
 

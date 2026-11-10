@@ -13,7 +13,7 @@ export function getOpeningErrorCode(error: unknown): ErrorCode | null {
 
 /**
  * Opens a booster for a request id. The id lives in the URL so a reload or retry returns the same cards.
- * On success the wallet cache is replaced and the collection and reveals are invalidated.
+ * On success the wallet cache is replaced and the collection and league feed are invalidated.
  */
 export function useBoosterOpening(
   leagueId: string,

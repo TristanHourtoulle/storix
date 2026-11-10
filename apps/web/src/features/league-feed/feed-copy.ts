@@ -1,4 +1,5 @@
 import {
+  emblemDefinition,
   isTierAtLeast,
   type CardTier,
   type CollectionCard,
@@ -39,8 +40,12 @@ export function cardMention(card: CollectionCard | null): string {
   return 'une carte'
 }
 
-/** The tier a row is tinted with: the reached tier for promotions, the best tier otherwise. */
+/** The tier a row is tinted with: the reached tier for promotions, the emblem's tier, the best tier otherwise. */
 export function rowTier(row: FeedRow): CardTier | null {
+  const [emblemId] = row.emblemIds
+  if (row.kind === 'emblem_unlocked' && emblemId !== undefined) {
+    return emblemDefinition(emblemId).tier
+  }
   return row.toTier ?? row.tier
 }
 

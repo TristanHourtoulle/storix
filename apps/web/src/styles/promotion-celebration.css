@@ -48,6 +48,7 @@
       color-mix(in srgb, var(--tc) 35%, transparent),
       rgba(5, 5, 7, 0.94) 70%
     );
+    background-color: var(--color-board);
     opacity: 0;
     transition: opacity 0.3s;
     outline: none;

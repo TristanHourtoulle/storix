@@ -45,6 +45,9 @@ function LeagueLayout() {
   useCollectionVisitTracker(me.user.id, leagueId)
   const { hasUnseen } = useWhatsNew()
   const [isNewsOpen, setIsNewsOpen] = useState(false)
+  const [isPasskeyOpen, setIsPasskeyOpen] = useState(false)
+  const [isEmblemOpen, setIsEmblemOpen] = useState(false)
+  const [isMythicOpen, setIsMythicOpen] = useState(false)
   const isNewsPending = hasUnseen && !wasAutoShown(me.user.id)
   const onboarding = useOnboarding()
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
@@ -87,15 +90,27 @@ function LeagueLayout() {
         isSuspended={
           isBoosterStage || isAddScreen || isOnboardingBlocking || isNewsOpen || isNewsPending
         }
+        onOpenChange={setIsEmblemOpen}
       />
       <MythicBannerGate
         leagueId={leagueId}
         isSuspended={
-          isBoosterStage || isAddScreen || isOnboardingBlocking || isNewsOpen || isNewsPending
+          isBoosterStage ||
+          isAddScreen ||
+          isOnboardingBlocking ||
+          isNewsOpen ||
+          isNewsPending ||
+          isPasskeyOpen ||
+          isEmblemOpen
         }
+        onOpenChange={setIsMythicOpen}
       />
-      {isNewsOpen || isNewsPending || isOnboardingBlocking ? null : (
-        <PasskeyPrompt userId={me.user.id} displayUsername={me.user.displayUsername} />
+      {isNewsOpen || isNewsPending || isOnboardingBlocking || isMythicOpen ? null : (
+        <PasskeyPrompt
+          userId={me.user.id}
+          displayUsername={me.user.displayUsername}
+          onOpenChange={setIsPasskeyOpen}
+        />
       )}
       {isBoosterStage ? null : (
         <div ref={navStackRef} className="sticky bottom-0 z-40 mt-auto">

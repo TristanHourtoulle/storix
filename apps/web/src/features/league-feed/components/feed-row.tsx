@@ -1,6 +1,11 @@
 import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
-import { emblemDefinition, type FeedRow as FeedRowData, type Portrait } from '@storix/shared'
+import {
+  emblemDefinition,
+  type EmblemId,
+  type FeedRow as FeedRowData,
+  type Portrait,
+} from '@storix/shared'
 import { Avatar } from '@/components/ui/avatar'
 import { Icon } from '@/components/ui/icon'
 import { EmblemIcon } from '@/features/emblems/components/emblem-icon'
@@ -10,7 +15,9 @@ import { countOf, tierColorStyle } from '@/features/members/member-copy'
 import { timeAgo } from '@/lib/paris-dates'
 import { actorName, actorsLabel, cardMention, isBigRow, rowIcon, rowTier } from '../feed-copy'
 
-const MINI_SIZES = '40px'
+const MINI_SIZES = '48px'
+const THUMB_SIZES = '26px'
+const NAMED_EMBLEMS = 2
 
 interface FeedRowProps {
   leagueId: string
@@ -35,6 +42,31 @@ function Aggregate({ count }: { count: number }) {
   return count > 1 ? <span className="feed-aggr">×{count}</span> : null
 }
 
+function EmblemName({ id }: { id: EmblemId }) {
+  const definition = emblemDefinition(id)
+  return (
+    <b className="tc" style={tierColorStyle(definition.tier)}>
+      {definition.name}
+    </b>
+  )
+}
+
+function EmblemNames({ ids }: { ids: readonly EmblemId[] }) {
+  const named = ids.slice(0, NAMED_EMBLEMS)
+  const rest = ids.length - named.length
+  return (
+    <>
+      {named.map((id, index) => (
+        <span key={id}>
+          {index === 0 ? '' : rest === 0 && index === named.length - 1 ? ' et ' : ', '}
+          <EmblemName id={id} />
+        </span>
+      ))}
+      {rest > 0 ? ` et ${countOf(rest, 'autre', 'autres')}` : ''}
+    </>
+  )
+}
+
 function sentence(row: FeedRowData): ReactNode {
   const who = <b>{actorsLabel(row.actors)}</b>
   const isPlural = row.actors.length > 1
@@ -49,8 +81,7 @@ function sentence(row: FeedRowData): ReactNode {
     case 'card_pulled':
       return row.count > 1 ? (
         <>
-          {who} a tiré {row.count} cartes, dont une <Tier row={row} />
-          <Aggregate count={row.count} />
+          {who} a tiré {row.count} cartes
         </>
       ) : (
         <>
@@ -75,7 +106,6 @@ function sentence(row: FeedRowData): ReactNode {
       return row.count > 1 ? (
         <>
           {who} a passé {row.count} cartes en <b className="tc">foil</b>
-          <Aggregate count={row.count} />
         </>
       ) : (
         <>
@@ -83,15 +113,17 @@ function sentence(row: FeedRowData): ReactNode {
         </>
       )
     case 'emblem_unlocked':
-      return row.count > 1 || row.emblemId === null ? (
+      return row.emblemIds.length > 1 ? (
+        <>
+          {who} a débloqué les emblèmes <EmblemNames ids={row.emblemIds} />
+        </>
+      ) : row.emblemIds[0] === undefined ? (
         <>
           {who} a débloqué {countOf(row.count, 'emblème', 'emblèmes')}
-          <Aggregate count={row.count} />
         </>
       ) : (
         <>
-          {who} a débloqué l&apos;emblème{' '}
-          <b className="tc">{emblemDefinition(row.emblemId).name}</b>
+          {who} a débloqué l&apos;emblème <EmblemName id={row.emblemIds[0]} />
         </>
       )
     case 'member_joined':
@@ -107,8 +139,10 @@ function sentence(row: FeedRowData): ReactNode {
 
 function details(row: FeedRowData): string {
   const parts = [timeAgo(row.at)]
-  if (row.kind === 'card_pulled' && row.isDiscovery) parts.push('découverte')
-  if (row.kind === 'booster_opened' && row.tier !== null) {
+  if (row.kind === 'card_pulled' && row.count === 1 && row.isDiscovery) parts.push('découverte')
+  if ((row.kind === 'booster_opened' || row.kind === 'card_pulled') && row.count > 1) {
+    if (row.tier !== null) parts.push(`meilleure carte : ${TIER_LABELS[row.tier]}`)
+  } else if (row.kind === 'booster_opened' && row.tier !== null) {
     parts.push(`meilleure carte : ${TIER_LABELS[row.tier]}`)
   }
   if (row.kind === 'card_promoted' && row.fromTier !== null) {
@@ -127,14 +161,16 @@ function RowIcon({ row, avatars }: Pick<FeedRowProps, 'row' | 'avatars'>) {
           label={actor ? actorName(actor) : 'Ancien membre'}
           portrait={userId === null ? null : (avatars.get(userId) ?? null)}
           size="compact"
+          isTinted
         />
       </span>
     )
   }
-  if (row.kind === 'emblem_unlocked' && row.emblemId !== null) {
+  const [emblemId] = row.emblemIds
+  if (row.kind === 'emblem_unlocked' && emblemId !== undefined) {
     return (
       <span className="feed-ic">
-        <EmblemIcon id={row.emblemId} className="feed-glyph" />
+        <EmblemIcon id={emblemId} className="feed-glyph" />
       </span>
     )
   }
@@ -176,6 +212,29 @@ function RowLink({
   )
 }
 
+function RowTail({ row, tier }: { row: FeedRowData; tier: ReturnType<typeof rowTier> }) {
+  if (row.kind === 'card_published' && row.thumbs.length > 1) {
+    return (
+      <span className="feed-thumbs">
+        {row.thumbs.map((card) => (
+          <MiniCard key={card.id} card={card} tier={card.tier} sizes={THUMB_SIZES} />
+        ))}
+      </span>
+    )
+  }
+  if (row.card === null) return <span />
+  return (
+    <span className="feed-tail">
+      <MiniCard
+        card={row.card}
+        tier={tier ?? row.card.tier}
+        sizes={MINI_SIZES}
+        isFoil={row.kind === 'card_foiled'}
+      />
+    </span>
+  )
+}
+
 /** One feed sentence: who did what, when, with the card in miniature and a Bravo on promotions. */
 export function FeedRow({ leagueId, row, meId, avatars, onBravo }: FeedRowProps) {
   const tier = rowTier(row)
@@ -209,16 +268,7 @@ export function FeedRow({ leagueId, row, meId, avatars, onBravo }: FeedRowProps)
           </button>
         ) : null}
       </span>
-      <span className="feed-tail">
-        {row.card !== null ? (
-          <MiniCard
-            card={row.card}
-            tier={tier ?? row.card.tier}
-            sizes={MINI_SIZES}
-            isFoil={row.kind === 'card_foiled'}
-          />
-        ) : null}
-      </span>
+      <RowTail row={row} tier={tier} />
     </div>
   )
 }

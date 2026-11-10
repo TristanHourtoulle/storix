@@ -9,6 +9,7 @@ interface EmblemGateProps {
   leagueId: string
   userId: string
   isSuspended: boolean
+  onOpenChange?: (isOpen: boolean) => void
 }
 
 const SHOW_MS = 4000
@@ -18,7 +19,7 @@ const EXIT_MS = 450
  * Announces newly earned emblems with a top banner and the "stamp" sound, then marks them seen.
  * Waits while the booster stage, onboarding or the whats-new booster is open.
  */
-export function EmblemGate({ leagueId, userId, isSuspended }: EmblemGateProps) {
+export function EmblemGate({ leagueId, userId, isSuspended, onOpenChange }: EmblemGateProps) {
   const navigate = useNavigate()
   const { unseen, markSeen } = useUnseenEmblems(leagueId)
   const [batch, setBatch] = useState<readonly EmblemId[] | null>(null)
@@ -27,6 +28,12 @@ export function EmblemGate({ leagueId, userId, isSuspended }: EmblemGateProps) {
   if (batch === null && !isSuspended && unseen.length > 0) {
     setBatch(unseen.map((emblem) => emblem.id))
   }
+
+  const isOpen = batch !== null
+  useEffect(() => {
+    onOpenChange?.(isOpen)
+    return () => onOpenChange?.(false)
+  }, [isOpen, onOpenChange])
 
   useEffect(() => {
     if (batch === null) return undefined
