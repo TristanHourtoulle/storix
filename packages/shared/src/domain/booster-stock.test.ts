@@ -4,6 +4,7 @@ import {
   consumeBooster,
   DEFAULT_BOOSTER_CADENCE,
   InvalidBoosterCadenceError,
+  pickBoosterSource,
 } from './booster-stock'
 
 const t0 = new Date('2026-11-07T00:00:00Z')
@@ -88,4 +89,13 @@ describe('booster stock', () => {
       anchor: at(480),
       nextAt: null,
     }))
+})
+
+describe('booster source', () => {
+  it('uses a premium gift first, then the timed stock, then the bonus reserve', () => {
+    expect(pickBoosterSource({ premiumGifts: 1, availableStock: 3, bonus: 2 })).toBe('premium_gift')
+    expect(pickBoosterSource({ premiumGifts: 0, availableStock: 3, bonus: 2 })).toBe('timer')
+    expect(pickBoosterSource({ premiumGifts: 0, availableStock: 0, bonus: 2 })).toBe('bonus')
+    expect(pickBoosterSource({ premiumGifts: 0, availableStock: 0, bonus: 0 })).toBeNull()
+  })
 })

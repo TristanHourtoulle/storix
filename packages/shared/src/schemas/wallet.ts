@@ -10,6 +10,8 @@ export const walletStateSchema = z.object({
     nextAt: isoDateSchema.nullable(),
     intervalSeconds: z.int().min(60),
     joinGift: z.int().min(0),
+    bonus: z.int().min(0),
+    premiumGifts: z.int().min(0),
   }),
   pool: z.object({
     drawableCount: z.int().min(0),
