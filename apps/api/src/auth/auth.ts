@@ -6,6 +6,9 @@ import { username } from 'better-auth/plugins'
 import { clientIpPolicy } from '../config/client-ip'
 import type { Env } from '../config/env'
 
+const SESSION_LIFETIME_SECONDS = 60 * 60 * 24 * 60
+const SESSION_RENEWAL_AGE_SECONDS = 60 * 60 * 24
+
 /** Builds the Better Auth instance for the given database and environment. */
 export function createAuth(input: { db: Database; env: Env }) {
   const { db, env } = input
@@ -26,7 +29,11 @@ export function createAuth(input: { db: Database; env: Env }) {
         homeLeagueId: { type: 'string', required: false, input: false },
       },
     },
-    session: { cookieCache: { enabled: false } },
+    session: {
+      expiresIn: SESSION_LIFETIME_SECONDS,
+      updateAge: SESSION_RENEWAL_AGE_SECONDS,
+      cookieCache: { enabled: false },
+    },
     plugins: [
       username({ minUsernameLength: 3, maxUsernameLength: 24, immutableUsername: true }),
       passkey({ rpID: env.PASSKEY_RP_ID, rpName: 'Storix', origin: env.APP_ORIGIN }),
