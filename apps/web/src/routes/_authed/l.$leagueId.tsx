@@ -11,6 +11,7 @@ import { useRemovedCardsSync } from '@/features/privacy/use-removed-cards-sync'
 import { loadLeagueDetail } from '@/features/leagues/leagues.queries'
 import { usePortraitCachePruning } from '@/features/portraits/use-portrait-cache-pruning'
 import { WhatsNewGate } from '@/features/whats-new/components/whats-new-gate'
+import { wasAutoShown } from '@/features/whats-new/news-session'
 import { useWhatsNew } from '@/features/whats-new/use-whats-new'
 import { useHeightVar } from '@/lib/use-height-var'
 
@@ -39,6 +40,7 @@ function LeagueLayout() {
   useCollectionVisitTracker(me.user.id, leagueId)
   const { hasUnseen } = useWhatsNew()
   const [isNewsOpen, setIsNewsOpen] = useState(false)
+  const isNewsPending = hasUnseen && !wasAutoShown(me.user.id)
   const isBoosterStage = Boolean(matchRoute({ to: '/l/$leagueId/booster', params: { leagueId } }))
   const isAddScreen = Boolean(matchRoute({ to: '/l/$leagueId/add', params: { leagueId } }))
   const active = matchRoute({ to: '/l/$leagueId/collection', params: { leagueId } })
@@ -61,7 +63,7 @@ function LeagueLayout() {
         isSuspended={isBoosterStage || isAddScreen}
         onOpenChange={setIsNewsOpen}
       />
-      {isNewsOpen ? null : (
+      {isNewsOpen || isNewsPending ? null : (
         <PasskeyPrompt userId={me.user.id} displayUsername={me.user.displayUsername} />
       )}
       {isBoosterStage ? null : (

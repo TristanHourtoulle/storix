@@ -60,8 +60,13 @@ export function NewsStage({ leagueId, deck, mode, onClose }: NewsStageProps) {
   const { phase } = state
 
   useEffect(() => {
+    const focusPack = (): void => {
+      if (!layerRef.current?.contains(document.activeElement)) tapRef.current?.focus()
+    }
     tapRef.current?.focus()
-  }, [])
+    const frame = requestAnimationFrame(focusPack)
+    return () => cancelAnimationFrame(frame)
+  }, [layerRef])
 
   useEffect(() => {
     if (phase === 'recap') doneRef.current?.focus()
