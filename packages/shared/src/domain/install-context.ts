@@ -25,7 +25,7 @@ const IN_APP_PATTERNS: readonly (readonly [InAppBrowser, RegExp])[] = [
   ['snapchat', /Snapchat/],
   ['tiktok', /musical_ly|BytedanceWebview|TikTok/],
   ['linkedin', /LinkedInApp/],
-  ['line', /Line\//],
+  ['line', /\bLine\//],
 ]
 
 const IOS_DEVICE = /iPad|iPhone|iPod/

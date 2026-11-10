@@ -13,7 +13,7 @@ import { buildGameStories, installStoryCopy, type Story } from '../onboarding-st
 import { InstallStory } from './install-story'
 import { StoryVisual } from './story-visuals'
 
-export type OnboardingCloseReason = 'skip' | 'later' | 'photo'
+export type OnboardingCloseReason = 'skip' | 'later' | 'photo' | 'done'
 
 interface OnboardingStoriesProps {
   leagueId: string
@@ -121,18 +121,30 @@ export function OnboardingStories({ leagueId, mode, onClose }: OnboardingStories
             family={install.family}
             onInstalled={install.markInstalled}
             footer={
-              <div className="ob-hit mt-2 grid gap-1">
-                <button
-                  type="button"
-                  className={buttonClassName({ variant: 'primary', block: true })}
-                  onClick={addPhoto}
-                >
-                  Ajouter ma première photo
-                </button>
-                <button type="button" className="ob-text-button" onClick={() => onClose('later')}>
-                  Plus tard
-                </button>
-              </div>
+              mode === 'replay' ? (
+                <div className="ob-hit mt-2 grid gap-1">
+                  <button
+                    type="button"
+                    className={buttonClassName({ variant: 'primary', block: true })}
+                    onClick={() => onClose('done')}
+                  >
+                    Terminer
+                  </button>
+                </div>
+              ) : (
+                <div className="ob-hit mt-2 grid gap-1">
+                  <button
+                    type="button"
+                    className={buttonClassName({ variant: 'primary', block: true })}
+                    onClick={addPhoto}
+                  >
+                    Ajouter ma première photo
+                  </button>
+                  <button type="button" className="ob-text-button" onClick={() => onClose('later')}>
+                    Plus tard
+                  </button>
+                </div>
+              )
             }
           />
         ) : (

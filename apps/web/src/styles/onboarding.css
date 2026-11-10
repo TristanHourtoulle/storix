@@ -159,7 +159,7 @@
     inset: 40px 0 0;
     z-index: 3;
     display: grid;
-    grid-template-columns: 1fr 2fr;
+    grid-template-columns: 1fr 1fr;
   }
   .ob-tapzones button {
     border: 0;
@@ -198,6 +198,11 @@
     border-radius: 12px;
     background: var(--color-surface-2);
     box-shadow: var(--shadow-hairline-strong);
+  }
+  .ob-copy-hint {
+    margin-top: 6px;
+    color: var(--color-ink-2);
+    font-size: 12px;
   }
   .ob-copy-url {
     flex: 1;

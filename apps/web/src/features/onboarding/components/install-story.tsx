@@ -21,26 +21,33 @@ interface CopyLinkBoxProps {
 }
 
 function CopyLinkBox({ url, isPrimary }: CopyLinkBoxProps) {
-  const { isCopied, copy, fallbackRef } = useCopyLink(url)
+  const { isCopied, needsManualCopy, copy, fallbackRef } = useCopyLink(url)
   return (
-    <div className="ob-copy">
-      <input
-        ref={fallbackRef}
-        className="ob-copy-url"
-        value={url}
-        readOnly
-        aria-label="Lien de Storix"
-      />
-      <button
-        type="button"
-        className={`inline-flex h-9 flex-none cursor-pointer items-center rounded-control border-0 px-3 font-display text-[12.5px] font-semibold ${isPrimary ? 'bg-ink text-bg' : 'bg-transparent text-ink shadow-hairline-strong'}`}
-        onClick={copy}
-      >
-        {isCopied ? 'Lien copié ✓' : 'Copier le lien'}
-      </button>
-      <span className="sr-only" aria-live="polite">
-        {isCopied ? 'Lien copié' : ''}
-      </span>
+    <div>
+      <div className="ob-copy">
+        <input
+          ref={fallbackRef}
+          className="ob-copy-url"
+          value={url}
+          readOnly
+          aria-label="Lien de Storix"
+        />
+        <button
+          type="button"
+          className={`inline-flex h-9 flex-none cursor-pointer items-center rounded-control border-0 px-3 font-display text-[12.5px] font-semibold ${isPrimary ? 'bg-ink text-bg' : 'bg-transparent text-ink shadow-hairline-strong'}`}
+          onClick={copy}
+        >
+          {isCopied ? 'Lien copié ✓' : 'Copier le lien'}
+        </button>
+        <span className="sr-only" aria-live="polite">
+          {isCopied ? 'Lien copié' : ''}
+        </span>
+      </div>
+      {needsManualCopy && !isCopied ? (
+        <p className="ob-copy-hint" role="status">
+          Appuie longuement sur le lien pour le copier
+        </p>
+      ) : null}
     </div>
   )
 }

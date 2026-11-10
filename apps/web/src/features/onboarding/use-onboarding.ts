@@ -8,17 +8,18 @@ import { onboardingQueryOptions } from './onboarding.queries'
 
 interface Onboarding {
   isPending: boolean
+  isError: boolean
   isSeen: boolean
   markSeen: () => void
 }
 
 const SEEN: OnboardingState = { isSeen: true }
 
-/** The account's onboarding seen flag, and an optimistic mark-seen action. */
+/** The account's onboarding seen flag (treated as seen when it cannot be loaded), and an optimistic mark-seen action. */
 export function useOnboarding(): Onboarding {
   const queryClient = useQueryClient()
   const { queryKey } = onboardingQueryOptions()
-  const { data, isPending } = useQuery(onboardingQueryOptions())
+  const { data, isPending, isError } = useQuery(onboardingQueryOptions())
 
   const { mutate } = useMutation({
     mutationFn: markOnboardingSeen,
@@ -43,5 +44,5 @@ export function useOnboarding(): Onboarding {
 
   const markSeen = useCallback(() => mutate(), [mutate])
 
-  return { isPending, isSeen: data?.isSeen ?? false, markSeen }
+  return { isPending, isError, isSeen: data === undefined ? isError : data.isSeen, markSeen }
 }
