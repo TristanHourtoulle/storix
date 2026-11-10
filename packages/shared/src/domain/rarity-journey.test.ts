@@ -37,6 +37,11 @@ describe('rarityJourney', () => {
     expect(steps.map((s) => s.cause)).toEqual(['admin', 'admin', 'arrival'])
   })
 
+  it('labels the computed tier right after a pin as the pin being removed', () => {
+    const steps = rarityJourney([row('rare', 1), row('mythic', 2, 'pinned'), row('rare', 3)])
+    expect(steps.map((s) => s.cause)).toEqual(['unpinned', 'admin', 'arrival'])
+  })
+
   it('inserts the viewer upgrade at its date', () => {
     const steps = rarityJourney([row('common', 1), row('rare', 5)], {
       tier: 'uncommon',
