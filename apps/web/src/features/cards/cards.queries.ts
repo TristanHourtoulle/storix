@@ -34,6 +34,22 @@ export function newsHeadQueryOptions(leagueId: string) {
   })
 }
 
+const COUNT_STALE_MS = 30_000
+
+/** The total and owned counts of a filtered collection, read from a one-card first page. */
+export function collectionCountQueryOptions(
+  leagueId: string,
+  filters: Pick<CollectionFilters, 'authorId' | 'tier'>,
+) {
+  return queryOptions({
+    queryKey: ['leagues', leagueId, 'cards', 'count', filters] as const,
+    queryFn: () =>
+      fetchCardPage(leagueId, { ...filters, sort: 'number', cursor: undefined, limit: 1 }),
+    select: (page) => ({ total: page.total, owned: page.ownedCount }),
+    staleTime: COUNT_STALE_MS,
+  })
+}
+
 export function cardDetailQueryOptions(leagueId: string, cardId: string) {
   return queryOptions({
     queryKey: ['leagues', leagueId, 'cards', 'detail', cardId],

@@ -60,7 +60,7 @@ export function CollectionToolbar({
           aria-label={`Trier la collection, ordre actuel : ${label}`}
           onClick={onOpenSort}
         >
-          <span>Trier ·</span> {label}
+          Trier · {label}
           <Icon name="chevron-down" className="size-[15px]" />
         </button>
         {hasNew && canReorderNew ? (

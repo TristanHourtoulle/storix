@@ -1,5 +1,5 @@
 import type { CollectionSort } from '@storix/shared'
-import { Dialog } from '@/components/ui/dialog'
+import { BottomSheet } from '@/components/ui/bottom-sheet'
 import { SORT_OPTIONS } from '../collection-sort-labels'
 
 interface SortSheetProps {
@@ -11,7 +11,7 @@ interface SortSheetProps {
 
 export function SortSheet({ open, value, onPick, onClose }: SortSheetProps) {
   return (
-    <Dialog open={open} title="Trier" onClose={onClose}>
+    <BottomSheet open={open} title="Trier" onClose={onClose}>
       <div
         role="radiogroup"
         aria-label="Trier la collection"
@@ -40,6 +40,6 @@ export function SortSheet({ open, value, onPick, onClose }: SortSheetProps) {
       <p className="m-0 text-sm text-faint">
         Les cartes à découvrir restent à la fin en tri Découverte.
       </p>
-    </Dialog>
+    </BottomSheet>
   )
 }

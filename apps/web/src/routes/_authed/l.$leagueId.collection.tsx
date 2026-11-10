@@ -216,6 +216,7 @@ function CollectionBody({
       />
       <FilterSheet
         open={isFilterOpen}
+        leagueId={leagueId}
         value={filterState}
         members={members}
         onApply={onApplyFilters}

@@ -1,0 +1,78 @@
+@layer components {
+  .bsheet-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    outline: none;
+  }
+  .bsheet-scrim {
+    position: absolute;
+    inset: 0;
+    appearance: none;
+    padding: 0;
+    border: 0;
+    background: rgba(5, 5, 8, 0.72);
+    cursor: default;
+    animation: bsheet-fade 0.2s ease;
+  }
+  .bsheet {
+    position: fixed;
+    inset: auto 0 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 480px;
+    max-height: 82dvh;
+    margin: 0 auto;
+    padding-bottom: max(18px, env(safe-area-inset-bottom));
+    border-radius: 22px 22px 0 0;
+    background: var(--color-surface);
+    box-shadow: inset 0 1px 0 var(--color-line-strong);
+    color: var(--color-ink);
+    animation: bsheet-rise 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .bsheet-grab {
+    flex: none;
+    width: 38px;
+    height: 4px;
+    margin: 10px auto 4px;
+    border-radius: 999px;
+    background: var(--color-line-strong);
+  }
+  .bsheet-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+    padding: 6px 16px 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+  .bsheet-body > * {
+    flex-shrink: 0;
+  }
+  .bsheet-title {
+    margin: 0;
+    font: 700 19px var(--font-display);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bsheet,
+  .bsheet-scrim {
+    animation: none;
+  }
+}
+
+@keyframes bsheet-rise {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes bsheet-fade {
+  from {
+    opacity: 0;
+  }
+}

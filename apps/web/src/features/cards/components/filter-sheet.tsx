@@ -1,33 +1,40 @@
 import type { MemberSummary } from '@storix/shared'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Dialog } from '@/components/ui/dialog'
+import { BottomSheet } from '@/components/ui/bottom-sheet'
 import { NO_FILTERS, type CollectionFilterState } from '../collection-filters'
+import { useCollectionCount } from '../use-collection-count'
 import { MemberFilter } from './member-filter'
 import { RarityFilter } from './rarity-filter'
 
 interface FilterSheetProps {
   open: boolean
+  leagueId: string
   value: CollectionFilterState
   members: readonly MemberSummary[]
   onApply: (filters: CollectionFilterState) => void
   onClose: () => void
 }
 
-export function FilterSheet({ open, value, members, onApply, onClose }: FilterSheetProps) {
+export function FilterSheet({ open, ...rest }: FilterSheetProps) {
   return (
-    <Dialog open={open} title="Filtres" onClose={onClose}>
-      {open ? (
-        <FilterSheetForm value={value} members={members} onApply={onApply} onClose={onClose} />
-      ) : null}
-    </Dialog>
+    <BottomSheet open={open} title="Filtres" onClose={rest.onClose}>
+      <FilterSheetForm {...rest} />
+    </BottomSheet>
   )
+}
+
+function applyLabel(count: number | null): string {
+  if (count === null) return 'Voir les cartes'
+  if (count === 0) return 'Aucune carte'
+  return `Voir ${count} ${count > 1 ? 'cartes' : 'carte'}`
 }
 
 type FilterSheetFormProps = Omit<FilterSheetProps, 'open'>
 
-function FilterSheetForm({ value, members, onApply, onClose }: FilterSheetFormProps) {
+function FilterSheetForm({ leagueId, value, members, onApply, onClose }: FilterSheetFormProps) {
   const [draft, setDraft] = useState(value)
+  const count = useCollectionCount(leagueId, draft)
 
   return (
     <>
@@ -68,12 +75,13 @@ function FilterSheetForm({ value, members, onApply, onClose }: FilterSheetFormPr
         <Button
           variant="primary"
           className="flex-1"
+          disabled={count === 0}
           onClick={() => {
             onApply(draft)
             onClose()
           }}
         >
-          Appliquer
+          {applyLabel(count)}
         </Button>
       </div>
     </>
