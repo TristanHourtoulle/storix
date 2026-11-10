@@ -1,4 +1,5 @@
 import { useId, useRef, type KeyboardEvent } from 'react'
+import { Link } from '@tanstack/react-router'
 import type { CardReactor, Portrait, ReactionCounts, ReactionType } from '@storix/shared'
 import { REACTION_TYPES } from '@storix/shared'
 import { Avatar } from '@/components/ui/avatar'
@@ -34,6 +35,7 @@ function tabAfterKey(key: string, current: ReactionTab): ReactionTab | null {
 
 interface ReactionsSheetProps {
   open: boolean
+  leagueId: string
   tab: ReactionTab
   onTabChange: (tab: ReactionTab) => void
   counts: ReactionCounts
@@ -46,6 +48,7 @@ interface ReactionsSheetProps {
 /** Bottom sheet listing who reacted to a card, one row per person, filterable by reaction type. */
 export function ReactionsSheet({
   open,
+  leagueId,
   tab,
   onTabChange,
   counts,
@@ -118,19 +121,33 @@ export function ReactionsSheet({
           <ul className="rx-people">
             {rows.map((reactor, index) => {
               const name = reactorName(reactor.person)
-              return (
-                <li key={reactor.person.userId ?? `former-${index}`} className="rx-person">
+              const { userId } = reactor.person
+              const identity = (
+                <>
                   <Avatar
                     size="compact"
                     label={name}
-                    portrait={
-                      reactor.person.userId ? (avatars.get(reactor.person.userId) ?? null) : null
-                    }
+                    portrait={userId ? (avatars.get(userId) ?? null) : null}
                   />
                   <div className="min-w-0">
                     <b>{name}</b>
                     <small>{reactedAgo(reactor.lastReactedAt)}</small>
                   </div>
+                </>
+              )
+              return (
+                <li key={userId ?? `former-${index}`} className="rx-person">
+                  {userId ? (
+                    <Link
+                      to="/l/$leagueId/members/$userId"
+                      params={{ leagueId, userId }}
+                      className="rx-person-link"
+                    >
+                      {identity}
+                    </Link>
+                  ) : (
+                    <span className="rx-person-link">{identity}</span>
+                  )}
                   <span className="rx-chips">
                     {reactor.types.map((type) => (
                       <span key={type} className="rx-chip" title={REACTION_LABELS[type]}>

@@ -33,6 +33,12 @@ export function CollectionCardView({
         title={card.title}
         tier={tier ?? card.tier}
         isProvisional={card.isProvisional}
+        band={
+          <div className="card-band">
+            <span className="card-name">{card.title}</span>
+            <span className="card-unpulled">Pas encore tirée</span>
+          </div>
+        }
       >
         <CardImage
           image={card.image}

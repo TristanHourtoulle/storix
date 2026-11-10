@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Avatar } from '@/components/ui/avatar'
@@ -11,11 +11,13 @@ import {
   settingsRowClassName,
 } from '@/components/ui/settings-list'
 import { DeleteAccountRow } from '@/features/account/components/delete-account-row'
+import { memberEmblemsQueryOptions } from '@/features/emblems/emblems.queries'
 import { meQueryOptions } from '@/features/auth/session.queries'
 import { useLogout } from '@/features/auth/use-logout'
 import { usePasskeys } from '@/features/auth/use-passkeys'
 import { useMyLeagues } from '@/features/leagues/use-my-leagues'
 import { LeaveLeagueRow, OwnerLeaveHint } from '@/features/members/components/leave-league-row'
+import { membersQueryOptions } from '@/features/members/members.queries'
 import {
   OnboardingStories,
   type OnboardingCloseReason,
@@ -48,6 +50,12 @@ function Profile() {
   const whatsNew = useWhatsNew()
   const navigate = useNavigate()
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
+  const myId = me?.user.id ?? ''
+  const memberCount = useQuery(membersQueryOptions(leagueId)).data?.length
+  const emblems = useQuery({
+    ...memberEmblemsQueryOptions(leagueId, myId),
+    enabled: myId !== '',
+  }).data
 
   if (!me) return null
   const currentLeague = leagues.find((league) => league.id === leagueId)
@@ -79,6 +87,33 @@ function Profile() {
       </Link>
       {currentLeague ? <LeagueScopeCard league={currentLeague} leagues={leagues} /> : null}
       <SettingsGroup title="Dans cette ligue">
+        <li>
+          <Link to="/l/$leagueId/members" params={params} className={settingsRowClassName()}>
+            <SettingsRowContent
+              icon="profile"
+              label="Membres"
+              hint="Pages, vitrines et photos"
+              value={memberCount === undefined ? undefined : String(memberCount)}
+              hasChevron
+            />
+          </Link>
+        </li>
+        <li>
+          <Link
+            to="/l/$leagueId/members/$userId"
+            params={{ leagueId, userId: me.user.id }}
+            search={{ tab: 'emblems' }}
+            className={settingsRowClassName()}
+          >
+            <SettingsRowContent
+              icon="crown"
+              label="Emblèmes"
+              hint="Tes accomplissements dans la ligue"
+              value={emblems ? `${emblems.earnedCount}/${emblems.emblems.length}` : undefined}
+              hasChevron
+            />
+          </Link>
+        </li>
         <li>
           <Link
             to="/l/$leagueId/profile/boosters"

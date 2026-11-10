@@ -39,6 +39,7 @@ function cardLabel(card: CollectionCard, isNew: boolean): string {
     return `${card.title}, ${TIER_LABELS[card.displayTier]}${star}${stack}${suffix}`
   }
   if (card.kind === 'hidden') return `Carte masquée${suffix}`
+  if (card.kind === 'unpulled') return `${card.title}, pas encore tirée${suffix}`
   return `Carte à découvrir, ${TIER_LABELS[card.tier]}${suffix}`
 }
 

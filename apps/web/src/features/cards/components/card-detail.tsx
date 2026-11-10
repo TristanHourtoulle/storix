@@ -20,6 +20,7 @@ import { OwnedCardFace } from './owned-card-face'
 import { authorLabel } from '../author-label'
 import { MotionPrompt } from './motion-prompt'
 import { useMemberAvatars } from '@/features/portraits/use-member-avatars'
+import { AuthorLink } from './author-link'
 import { MetaCell, discovererLabel, formatDate } from './meta-cell'
 import { PromotedHolders } from './promoted-holders'
 import { RarityJourney } from './rarity-journey'
@@ -113,16 +114,18 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
       </div>
       <h2 className="detail-name">{card.title}</h2>
       <div className="meta">
-        <MetaCell
-          label="Photo de"
-          value={authorLabel(card.author)}
-          leading={
-            <Avatar
-              label={authorLabel(card.author)}
-              portrait={card.author.userId ? (avatars.get(card.author.userId) ?? null) : null}
-            />
-          }
-        />
+        <AuthorLink leagueId={leagueId} author={card.author}>
+          <MetaCell
+            label="Photo de"
+            value={authorLabel(card.author)}
+            leading={
+              <Avatar
+                label={authorLabel(card.author)}
+                portrait={card.author.userId ? (avatars.get(card.author.userId) ?? null) : null}
+              />
+            }
+          />
+        </AuthorLink>
         <MetaCell label="Prise le" value={formatDate(card.capturedAt, 'Inconnue')} />
         <MetaCell label="Découverte par" value={discovererLabel(card.discoveredBy)} />
         <MetaCell
@@ -147,6 +150,7 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
       ) : null}
       <ReactionsSheet
         open={isReactionsOpen}
+        leagueId={leagueId}
         tab={reactionTab}
         onTabChange={setReactionTab}
         counts={card.reactions}
