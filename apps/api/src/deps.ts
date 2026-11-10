@@ -50,6 +50,7 @@ import {
   type UploadDraftsService,
 } from './features/uploads/upload-drafts.service'
 import { createUploadsService, type UploadsService } from './features/uploads/uploads.service'
+import { createTagsService, type TagsService } from './features/tags/tags.service'
 import { createWalletsService, type WalletsService } from './features/wallets/wallets.service'
 import { createWhatsNewService, type WhatsNewService } from './features/whats-new/whats-new.service'
 import {
@@ -96,6 +97,7 @@ export interface Services {
   reactions: ReactionsService
   removals: RemovalsService
   resetCodes: ResetCodesService
+  tags: TagsService
   uploads: UploadsService
   uploadDrafts: UploadDraftsService
   wallets: WalletsService
@@ -191,6 +193,7 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
     }),
     reactions: createReactionsService({ db: deps.db, clock: deps.clock }),
     removals: createRemovalsService({ db: deps.db, clock: deps.clock }),
+    tags: createTagsService({ db: deps.db, clock: deps.clock }),
     resetCodes: createResetCodesService({
       db: deps.db,
       auth: deps.auth,

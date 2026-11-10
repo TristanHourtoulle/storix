@@ -231,6 +231,8 @@ export const taggedCardSchema = z.object({
 
 export const cardParamsSchema = z.object({ leagueId: z.uuid(), cardId: z.uuid() })
 
+export const cardTagParamsSchema = cardParamsSchema.extend({ userId: idSchema })
+
 export type CardPerson = z.infer<typeof cardPersonSchema>
 export type CardAuthor = z.infer<typeof cardAuthorSchema>
 export type CardSummary = z.infer<typeof cardSummarySchema>

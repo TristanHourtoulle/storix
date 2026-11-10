@@ -61,7 +61,9 @@ export function createCardsService({ db, signer, clock }: CardsServiceDeps): Car
         authorId: query.authorId,
         tier: query.tier,
         upgradable: query.upgradable,
+        taggedUserId: query.taggedUserId,
       }
+      const revealOwnOf = query.revealOwn === true && query.authorId === m.userId ? m.userId : null
       if (query.cursor === LEGACY_COLLECTION_CURSOR) {
         const counts = await countCollection(db, filters)
         return { cards: [], nextCursor: null, total: counts.total, ownedCount: counts.owned }
@@ -78,7 +80,7 @@ export function createCardsService({ db, signer, clock }: CardsServiceDeps): Car
       const page = rows.slice(0, query.limit)
       const last = page.at(-1)
       return {
-        cards: page.map((row) => toCollectionCard(row, signer)),
+        cards: page.map((row) => toCollectionCard(row, signer, revealOwnOf)),
         nextCursor:
           rows.length > query.limit && last !== undefined
             ? encodeCollectionCursor(nextCollectionCursor(query.sort, last))

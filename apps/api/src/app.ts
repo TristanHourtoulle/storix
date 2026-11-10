@@ -26,6 +26,7 @@ import { moderationRoutes } from './features/moderation/moderation.routes'
 import { portraitsRoutes } from './features/portraits/portraits.routes'
 import { pushRoutes } from './features/push/push.routes'
 import { reactionsRoutes } from './features/reactions/reactions.routes'
+import { tagsRoutes } from './features/tags/tags.routes'
 import { removalsRoutes } from './features/removals/removals.routes'
 import { resetCodesRoutes } from './features/reset-codes/reset-codes.routes'
 import { uploadDraftsRoutes } from './features/uploads/upload-drafts.routes'
@@ -99,6 +100,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(copiesRoutes(services.copies, services.stacks), { prefix: '/api' })
   await app.register(reactionsRoutes(services.reactions), { prefix: '/api' })
   await app.register(emblemsRoutes(services.emblems), { prefix: '/api' })
+  await app.register(tagsRoutes(services.tags), { prefix: '/api' })
   await app.register(removalsRoutes(services.removals), { prefix: '/api' })
   await app.register(leagueSettingsRoutes(services.leagueSettings), { prefix: '/api' })
   await app.register(moderationRoutes(services.moderation), { prefix: '/api' })
