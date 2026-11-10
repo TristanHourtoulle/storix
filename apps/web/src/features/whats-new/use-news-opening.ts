@@ -13,7 +13,7 @@ import { STAGE_HEIGHT } from '@/features/boosters/arcade/geometry'
 import { burstPack } from '@/features/boosters/arcade/pack-choreography'
 import { tierFx } from '@/features/boosters/arcade/tiers'
 import { TIER_LABELS } from '@/features/cards/tier-labels'
-import { preloadSound, stopSounds } from '@/features/sound/sound'
+import { preloadSound } from '@/features/sound/sound'
 import { logger } from '@/lib/logger'
 import { revealNewsCard } from './news-choreography'
 import type { NewsCard } from './news-deck'
@@ -95,7 +95,7 @@ function hintFor({ phase, current }: NewsOpeningState, count: number): string {
     case 'shown':
       return current >= count - 1
         ? 'Touche pour voir le récap'
-        : `Touche ou glisse pour la suivante · ${current + 2}/${count}`
+        : `Touche ou glisse pour la suivante · ${current + 1}/${count}`
     case 'recap':
       return ''
   }
@@ -126,7 +126,8 @@ interface NewsOpening {
 
 /**
  * Drives the what's new booster: one tap tears the pack, then each feature card flips out
- * with its tier aura. Tap or swipe left for the next card, swipe right for the previous one.
+ * with its tier aura. Tap, swipe left or ArrowRight for the next card; swipe right or ArrowLeft
+ * for the previous one.
  */
 export function useNewsOpening(
   cards: readonly NewsCard[],
@@ -148,7 +149,6 @@ export function useNewsOpening(
 
   useEffect(() => {
     preloadSound()
-    return stopSounds
   }, [])
 
   useEffect(() => {
@@ -288,6 +288,21 @@ export function useNewsOpening(
   const onPointerCancel = useCallback(() => {
     swipeRef.current = null
   }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (stateRef.current.phase !== 'shown') return
+      if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        void next()
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        void previous()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown, true)
+    return () => document.removeEventListener('keydown', handleKeyDown, true)
+  }, [next, previous])
 
   return {
     state,

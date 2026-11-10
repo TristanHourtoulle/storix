@@ -347,3 +347,20 @@
       0 0 34px color-mix(in srgb, var(--tc) 45%, transparent);
   }
 }
+
+@layer components {
+  .news-layer .card.lg .card-name,
+  .news-recap .ar-summary-name {
+    display: -webkit-box;
+    white-space: normal;
+    text-wrap: balance;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .news-recap .ar-summary-name {
+    min-height: 2.5em;
+  }
+  .news-screen .ar-stage.is-recap .ar-scaler {
+    visibility: hidden;
+  }
+}

@@ -1,11 +1,11 @@
-let isAutoShown = false
+let autoShownUserId: string | null = null
 
-/** Tells whether the what's new booster was already auto-shown in this app session. */
-export function wasAutoShown(): boolean {
-  return isAutoShown
+/** Tells whether the what's new booster was already auto-shown to this member in this app session. */
+export function wasAutoShown(userId: string): boolean {
+  return autoShownUserId === userId
 }
 
-/** Records that the what's new booster was auto-shown, so it never loops in this session. */
-export function markAutoShown(): void {
-  isAutoShown = true
+/** Records that the booster was auto-shown to this member, so it never loops in this session. */
+export function markAutoShown(userId: string): void {
+  autoShownUserId = userId
 }

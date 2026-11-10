@@ -57,6 +57,7 @@ function LeagueLayout() {
       </div>
       <WhatsNewGate
         leagueId={leagueId}
+        userId={me.user.id}
         isSuspended={isBoosterStage || isAddScreen}
         onOpenChange={setIsNewsOpen}
       />

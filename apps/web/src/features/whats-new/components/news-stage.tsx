@@ -1,7 +1,7 @@
-import { useCallback, useRef, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from '@tanstack/react-router'
-import { Button, buttonClassName } from '@/components/ui/button'
+import { buttonClassName } from '@/components/ui/button'
 import { useModalLayer } from '@/components/crop/use-modal-layer'
 import { CENTER_Y, STAGE_HEIGHT, STAMP_TOP } from '@/features/boosters/arcade/geometry'
 import { ArcadeCardShell } from '@/features/boosters/components/arcade-card'
@@ -52,10 +52,20 @@ export function NewsStage({ leagueId, deck, mode, onClose }: NewsStageProps) {
   const { container, layerRef } = useModalLayer(skip)
   const stageRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const tapRef = useRef<HTMLButtonElement>(null)
+  const doneRef = useRef<HTMLButtonElement>(null)
   const { state, hint, isReduced, onTap, onPointerDown, onPointerUp, onPointerCancel } =
     useNewsOpening(cards, stageRef, canvasRef)
   const { hrefFor } = useNewsTargets(leagueId, true)
   const { phase } = state
+
+  useEffect(() => {
+    tapRef.current?.focus()
+  }, [])
+
+  useEffect(() => {
+    if (phase === 'recap') doneRef.current?.focus()
+  }, [phase])
   const shownCard = phase === 'shown' ? cards[state.current] : undefined
   const slots = cards.map((card) => ({
     key: card.key,
@@ -89,7 +99,10 @@ export function NewsStage({ leagueId, deck, mode, onClose }: NewsStageProps) {
             Passer
           </button>
         </header>
-        <div ref={stageRef} className={`ar-stage${isReduced ? ' rm' : ''}`}>
+        <div
+          ref={stageRef}
+          className={`ar-stage${isReduced ? ' rm' : ''}${phase === 'recap' ? ' is-recap' : ''}`}
+        >
           <div className="ar-scaler" style={WORLD_STYLE} aria-hidden="true">
             <div className="ar-world">
               <div className="ar-tint" />
@@ -120,6 +133,7 @@ export function NewsStage({ leagueId, deck, mode, onClose }: NewsStageProps) {
             />
           ) : (
             <button
+              ref={tapRef}
               type="button"
               className="ar-tap news-tap"
               aria-label={hint}
@@ -145,9 +159,14 @@ export function NewsStage({ leagueId, deck, mode, onClose }: NewsStageProps) {
             </>
           ) : null}
           {phase === 'recap' ? (
-            <Button variant="primary" block sound="none" onClick={finish}>
+            <button
+              ref={doneRef}
+              type="button"
+              className={buttonClassName({ variant: 'primary', block: true })}
+              onClick={finish}
+            >
               C'est parti
-            </Button>
+            </button>
           ) : (
             <p className="ar-hint" aria-hidden="true">
               {hint}

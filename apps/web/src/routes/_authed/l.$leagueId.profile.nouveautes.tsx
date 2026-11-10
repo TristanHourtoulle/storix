@@ -1,6 +1,6 @@
 import type { ReleaseNote } from '@storix/shared'
 import { createFileRoute } from '@tanstack/react-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { ProfileSubPage } from '@/features/profile/components/profile-sub-page'
 import { NewsPackList } from '@/features/whats-new/components/news-pack-list'
 import { NewsStage } from '@/features/whats-new/components/news-stage'
@@ -15,7 +15,7 @@ function WhatsNewScreen() {
   const { leagueId } = Route.useParams()
   const { releases, isUnseen, markSeen } = useWhatsNew()
   const [openRelease, setOpenRelease] = useState<ReleaseNote | null>(null)
-  const deck = openRelease ? newsDeckOf([openRelease]) : null
+  const deck = useMemo(() => (openRelease ? newsDeckOf([openRelease]) : null), [openRelease])
 
   const close = useCallback(() => {
     if (openRelease !== null && isUnseen(openRelease.id)) markSeen(openRelease.id)

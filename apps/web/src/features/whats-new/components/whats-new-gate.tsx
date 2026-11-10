@@ -6,18 +6,19 @@ import { NewsStage } from './news-stage'
 
 interface WhatsNewGateProps {
   leagueId: string
+  userId: string
   isSuspended: boolean
   onOpenChange: (isOpen: boolean) => void
 }
 
 /** Opens the "Nouveautés" booster once per app session while a known release is unseen. */
-export function WhatsNewGate({ leagueId, isSuspended, onOpenChange }: WhatsNewGateProps) {
+export function WhatsNewGate({ leagueId, userId, isSuspended, onOpenChange }: WhatsNewGateProps) {
   const { knownUnseen, markSeen } = useWhatsNew()
   const deck = useMemo(() => newsDeckOf(knownUnseen), [knownUnseen])
   const [shownDeck, setShownDeck] = useState<NewsDeck | null>(null)
   const [hasOpened, setHasOpened] = useState(false)
 
-  if (!hasOpened && !isSuspended && deck !== null && !wasAutoShown()) {
+  if (!hasOpened && !isSuspended && deck !== null && !wasAutoShown(userId)) {
     setHasOpened(true)
     setShownDeck(deck)
   }
@@ -25,9 +26,9 @@ export function WhatsNewGate({ leagueId, isSuspended, onOpenChange }: WhatsNewGa
   const isOpen = shownDeck !== null
 
   useEffect(() => {
-    if (isOpen) markAutoShown()
+    if (isOpen) markAutoShown(userId)
     onOpenChange(isOpen)
-  }, [isOpen, onOpenChange])
+  }, [isOpen, onOpenChange, userId])
 
   const close = useCallback(() => {
     if (shownDeck !== null) markSeen(shownDeck.releaseId)
