@@ -243,6 +243,7 @@
   }
   .odds-pill {
     --tc: var(--color-tier-common);
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: 6px;
