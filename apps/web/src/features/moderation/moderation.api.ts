@@ -3,8 +3,8 @@ import {
   adminCardSchema,
   type AdminCard,
   type AdminCardPage,
+  type BoundTier,
   type CardTier,
-  type ComputedTier,
 } from '@storix/shared'
 import { apiRequest, apiRequestVoid } from '@/lib/http'
 import type { AdminFilter } from './moderation.types'
@@ -60,7 +60,7 @@ export function putTierPin(
 export function putTierBounds(
   leagueId: string,
   cardId: string,
-  bounds: { min: ComputedTier | null; max: ComputedTier | null },
+  bounds: { min: BoundTier | null; max: BoundTier | null },
 ): Promise<AdminCard> {
   return apiRequest(`${adminCardPath(leagueId, cardId)}/tier-bounds`, {
     method: 'PUT',
