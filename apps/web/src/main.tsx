@@ -6,6 +6,7 @@ import { RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { startSessionRefresh } from './features/auth/session-refresh'
+import { startInstallPromptCapture } from './features/pwa/install-prompt'
 import { lockPortraitOrientation } from './features/pwa/lock-orientation'
 import { requestPersistentStorage } from './features/pwa/persist-storage'
 import { registerServiceWorker } from './features/pwa/register-sw'
@@ -14,6 +15,8 @@ import { queryClient, router } from './router'
 
 const container = document.getElementById('root')
 if (!container) throw new Error('Root element not found')
+
+startInstallPromptCapture()
 
 createRoot(container).render(
   <StrictMode>
