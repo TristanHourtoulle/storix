@@ -35,3 +35,8 @@ export function readInstallEnv(hasInstallPrompt: boolean): InstallEnv {
 export function isIosSafari(): boolean {
   return installContextOf(readInstallEnv(false)) === 'ios-safari'
 }
+
+/** The mobile platform family, used to word install steps; anything that is not Android reads as iOS. */
+export function platformFamily(): 'ios' | 'android' {
+  return /Android/.test(navigator.userAgent) ? 'android' : 'ios'
+}

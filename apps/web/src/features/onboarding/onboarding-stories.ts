@@ -1,4 +1,6 @@
 import {
+  type InAppBrowser,
+  type InstallContext,
   MYTHIC_MIN_CARDS,
   PITY_EPIC_AFTER,
   QUOTA_LOWER_BOUNDS,
@@ -96,4 +98,102 @@ export function buildGameStories(wallet: WalletState | undefined): readonly Stor
       text: "À ×10, ta copie peut monter d'une rareté. Ou convertis tes doublons en paillettes.",
     },
   ]
+}
+
+export type PlatformFamily = 'ios' | 'android'
+
+export interface InstallCopy {
+  title: string
+  text: string
+  rows: readonly string[]
+  pill: string | null
+  hasCopyLink: boolean
+}
+
+const IN_APP_NAMES: Readonly<Record<InAppBrowser, string>> = {
+  messenger: 'Messenger',
+  facebook: 'Facebook',
+  instagram: 'Instagram',
+  whatsapp: 'WhatsApp',
+  snapchat: 'Snapchat',
+  tiktok: 'TikTok',
+  linkedin: 'LinkedIn',
+  line: 'LINE',
+}
+
+const INSTALL_TITLE = 'Installe Storix'
+const APP_LIKE_TEXT = "Storix s'ouvrira comme une vraie app, en plein écran."
+const ANDROID_TEXT = "Storix s'ajoute à ton écran d'accueil comme une app."
+const PUSH_TEXT = 'On te prévient quand ton stock de boosters est plein.'
+
+function inAppCopy(inAppBrowser: InAppBrowser | null, family: PlatformFamily): InstallCopy {
+  const app = inAppBrowser === null ? 'une app' : IN_APP_NAMES[inAppBrowser]
+  const isAndroid = family === 'android'
+  return {
+    title: 'Ouvre Storix dans ton navigateur',
+    text: `Tu es dans ${app} : impossible d'installer Storix d'ici. Copie le lien et colle-le dans Safari (iPhone) ou Chrome (Android). Tu devras te reconnecter une fois.`,
+    rows: [
+      `Touche ${isAndroid ? '⋮' : '⋯'} ou le bouton du navigateur`,
+      '« Ouvrir dans le navigateur »',
+      `Sinon, colle le lien dans ${isAndroid ? 'Chrome' : 'Safari'}`,
+    ],
+    pill: `Ouvert dans ${app}`,
+    hasCopyLink: true,
+  }
+}
+
+/** Builds the install story copy for the detected install context. */
+export function installStoryCopy(input: {
+  context: InstallContext
+  inAppBrowser: InAppBrowser | null
+  family: PlatformFamily
+  canEnablePush: boolean
+}): InstallCopy {
+  const base = { title: INSTALL_TITLE, pill: null, hasCopyLink: false }
+  const withPush = (text: string): string => (input.canEnablePush ? `${text} ${PUSH_TEXT}` : text)
+  switch (input.context) {
+    case 'installed':
+      return {
+        ...base,
+        text: withPush("Tu es dans l'app, rien à faire."),
+        rows: ["✓ Storix est déjà sur ton écran d'accueil"],
+      }
+    case 'ios-safari':
+      return {
+        ...base,
+        text: APP_LIKE_TEXT,
+        rows: ['Ouvre Storix dans Safari', 'Touche Partager', "« Sur l'écran d'accueil »"],
+      }
+    case 'ios-other':
+      return {
+        ...base,
+        text: APP_LIKE_TEXT,
+        rows: [
+          "Touche Partager dans la barre d'adresse",
+          "« Sur l'écran d'accueil »",
+          'Si tu ne le vois pas, ouvre le lien dans Safari',
+        ],
+        hasCopyLink: true,
+      }
+    case 'android-prompt':
+      return { ...base, text: withPush(ANDROID_TEXT), rows: [] }
+    case 'android-manual':
+      return {
+        ...base,
+        text: withPush(ANDROID_TEXT),
+        rows: [
+          'Ouvre le menu ⋮ de Chrome',
+          "« Installer l'application » ou « Ajouter à l'écran d'accueil »",
+        ],
+      }
+    case 'in-app':
+      return inAppCopy(input.inAppBrowser, input.family)
+    case 'desktop':
+      return {
+        ...base,
+        text: withPush('Storix se joue sur ton téléphone, comme une vraie app.'),
+        rows: ['Ouvre ce lien sur ton téléphone', "Ajoute Storix à ton écran d'accueil"],
+        hasCopyLink: true,
+      }
+  }
 }
