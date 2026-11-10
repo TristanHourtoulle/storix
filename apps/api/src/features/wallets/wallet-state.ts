@@ -2,6 +2,7 @@ import {
   computeBoosterStock,
   MIN_DRAWABLE_CARDS_FOR_BOOSTER,
   pitySummary,
+  premiumSummary,
   type BoosterCadence,
   type WalletState,
 } from '@storix/shared'
@@ -38,5 +39,6 @@ export function toWalletState(
       epicAvailable: pool.hasEpicOrBetter,
       legendaryAvailable: pool.hasLegendaryOrBetter,
     },
+    premium: premiumSummary(row.boostersOpened),
   }
 }

@@ -23,6 +23,7 @@ export const memberWallets = pgTable(
     boosterStockAt: timestamp('booster_stock_at', { withTimezone: true }).notNull(),
     pitySinceEpic: integer('pity_since_epic').notNull().default(0),
     pitySinceLegendary: integer('pity_since_legendary').notNull().default(0),
+    boostersOpened: integer('boosters_opened').notNull().default(0),
     boosterFullNotifiedAt: timestamp('booster_full_notified_at', { withTimezone: true }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -34,6 +35,7 @@ export const memberWallets = pgTable(
       'member_wallets_pity_non_negative',
       sql`${t.pitySinceEpic} >= 0 AND ${t.pitySinceLegendary} >= 0`,
     ),
+    check('member_wallets_boosters_opened_non_negative', sql`${t.boostersOpened} >= 0`),
     foreignKey({
       name: 'member_wallets_member_fk',
       columns: [t.leagueId, t.userId],

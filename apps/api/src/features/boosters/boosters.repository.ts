@@ -39,6 +39,7 @@ export interface OpeningRecord {
   id: string
   openedAt: Date
   dustGained: number
+  isPremium: boolean
 }
 
 export interface InsertOpeningRow {
@@ -50,6 +51,7 @@ export interface InsertOpeningRow {
   pityBefore: PityState
   poolDigest: string
   dustGained: number
+  isPremium: boolean
 }
 
 export interface InsertPullRow {
@@ -196,6 +198,7 @@ export async function findOpeningByRequest(
       id: boosterOpenings.id,
       openedAt: boosterOpenings.openedAt,
       dustGained: boosterOpenings.dustGained,
+      isPremium: boosterOpenings.isPremium,
     })
     .from(boosterOpenings)
     .where(
@@ -213,11 +216,15 @@ export async function findOpeningByRequest(
 export async function insertOpening(
   db: DbExecutor,
   row: InsertOpeningRow,
-): Promise<{ id: string; openedAt: Date }> {
+): Promise<{ id: string; openedAt: Date; isPremium: boolean }> {
   const rows = await db
     .insert(boosterOpenings)
     .values(row)
-    .returning({ id: boosterOpenings.id, openedAt: boosterOpenings.openedAt })
+    .returning({
+      id: boosterOpenings.id,
+      openedAt: boosterOpenings.openedAt,
+      isPremium: boosterOpenings.isPremium,
+    })
   const inserted = rows[0]
   if (inserted === undefined) throw new Error('Booster opening insert returned no row')
   return inserted
