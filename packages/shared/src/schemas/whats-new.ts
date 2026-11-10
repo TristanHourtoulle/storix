@@ -17,6 +17,8 @@ export const NEWS_ILLUSTRATIONS = [
   'members',
   'tagged',
   'emblems',
+  'feed',
+  'celebration',
 ] as const
 export const newsIllustrationSchema = z.enum(NEWS_ILLUSTRATIONS)
 

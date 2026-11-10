@@ -1,6 +1,8 @@
 import type { NewsCard } from '../news-deck'
 import { CameraIllustration } from './illustrations/camera-illustration'
+import { CelebrationIllustration } from './illustrations/celebration-illustration'
 import { EmblemsIllustration } from './illustrations/emblems-illustration'
+import { FeedIllustration } from './illustrations/feed-illustration'
 import { HistoryIllustration } from './illustrations/history-illustration'
 import { JourneyIllustration } from './illustrations/journey-illustration'
 import { MembersIllustration } from './illustrations/members-illustration'
@@ -44,6 +46,8 @@ const SCENES = {
   members: MembersIllustration,
   tagged: TaggedIllustration,
   emblems: EmblemsIllustration,
+  feed: FeedIllustration,
+  celebration: CelebrationIllustration,
 } as const
 
 /** Decorative animated art of a feature card; it only moves while the card is the live one. */
