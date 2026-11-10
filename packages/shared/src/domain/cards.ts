@@ -4,9 +4,13 @@ export type CardTier = (typeof CARD_TIERS)[number]
 
 export const CARD_TITLE_MAX_LENGTH = 40
 
-export const COMPUTED_TIERS = ['common', 'uncommon', 'rare', 'epic', 'legendary'] as const
+export const COMPUTED_TIERS = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic'] as const
 
 export type ComputedTier = (typeof COMPUTED_TIERS)[number]
+
+export const BOUND_TIERS = ['common', 'uncommon', 'rare', 'epic', 'legendary'] as const
+
+export type BoundTier = (typeof BOUND_TIERS)[number]
 
 export const PROVISIONAL_TIER: ComputedTier = 'common'
 

@@ -3,9 +3,11 @@ import {
   applyHysteresis,
   capColdStartTier,
   COLD_START_LOWER_BOUNDS,
+  mythicQuota,
   positionPercentiles,
   QUOTA_LOWER_BOUNDS,
   resolveEffectiveTier,
+  selectComputedMythics,
   tierForValue,
 } from './rarity-tiers'
 
@@ -73,5 +75,26 @@ describe('rarity tiers', () => {
       tier: 'rare',
       source: 'computed',
     })
+  })
+  it('grants one mythic from 50 cards, then one per 100', () => {
+    expect([49, 50, 199, 200].map(mythicQuota)).toEqual([0, 1, 1, 2])
+  })
+  it('keeps a previous mythic still in the legendary band and skips ineligible cards', () => {
+    const card = (cardId: string, score: number, extra = {}) => ({
+      cardId,
+      number: 0,
+      score,
+      percentile: 0.97,
+      isEligible: true,
+      wasMythic: false,
+      ...extra,
+    })
+    const candidates = [
+      card('pinned', 0.99, { isEligible: false }),
+      card('newcomer', 0.9),
+      card('incumbent', 0.89, { wasMythic: true }),
+    ]
+    expect([...selectComputedMythics(candidates, 1)]).toEqual(['incumbent'])
+    expect([...selectComputedMythics(candidates.slice(0, 2), 1)]).toEqual(['newcomer'])
   })
 })

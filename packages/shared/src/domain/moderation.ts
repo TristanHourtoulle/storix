@@ -1,4 +1,4 @@
-import { tierRank, type CardTier, type ComputedTier } from './cards'
+import { tierRank, type BoundTier, type CardTier } from './cards'
 import type { LeagueRole } from './roles'
 
 export const MYTHIC_CAP = 3
@@ -35,7 +35,7 @@ export function canPinTier(input: {
 }
 
 /** Returns false only when both bounds are set and the minimum outranks the maximum. */
-export function areTierBoundsValid(min: ComputedTier | null, max: ComputedTier | null): boolean {
+export function areTierBoundsValid(min: BoundTier | null, max: BoundTier | null): boolean {
   if (min === null || max === null) return true
   return tierRank(min) <= tierRank(max)
 }

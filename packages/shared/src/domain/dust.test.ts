@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COMPUTED_TIERS, type CardTier } from './cards'
+import { BOUND_TIERS, type CardTier } from './cards'
 import {
   copyKey,
   craftCost,
@@ -23,7 +23,7 @@ describe('dust', () => {
     expect(dustValue('mythic', 'normal')).toBe(1000)
   })
   it('prices craft at 4x and refuses mythic', () => {
-    expect(COMPUTED_TIERS.map(craftCost)).toEqual([20, 40, 100, 400, 1600])
+    expect(BOUND_TIERS.map(craftCost)).toEqual([20, 40, 100, 400, 1600])
     expect(craftCost('mythic')).toBeNull()
   })
   it('prices the foil upgrade at 2x', () => expect(foilUpgradeCost('rare')).toBe(50))

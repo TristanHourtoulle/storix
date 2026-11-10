@@ -1,5 +1,6 @@
 import {
-  COMPUTED_TIERS,
+  BOUND_TIERS,
+  type BoundTier,
   type CardTier,
   type ComputedTier,
   maxTier,
@@ -7,7 +8,7 @@ import {
   tierRank,
 } from './cards'
 
-export type TierBounds = Readonly<Record<ComputedTier, number>>
+export type TierBounds = Readonly<Record<BoundTier, number>>
 
 export type TierSource = 'computed' | 'bounded' | 'pinned'
 
@@ -33,6 +34,12 @@ export const COLD_START_LOWER_BOUNDS: TierBounds = {
 
 export const HYSTERESIS_MARGIN = 0.02
 
+export const MYTHIC_MIN_CARDS = 50
+
+export const MYTHIC_CARDS_PER_QUOTA = 100
+
+export const MYTHIC_RETAIN_PERCENTILE = 0.95
+
 /** Returns `(zero-based mid-rank + 0.5) / n` for each score. */
 export function positionPercentiles(scores: readonly number[]): number[] {
   const n = scores.length
@@ -44,8 +51,8 @@ export function positionPercentiles(scores: readonly number[]): number[] {
 }
 
 /** Returns the highest tier whose lower bound is at most `value`. */
-export function tierForValue(value: number, bounds: TierBounds): ComputedTier {
-  return COMPUTED_TIERS.reduce<ComputedTier>(
+export function tierForValue(value: number, bounds: TierBounds): BoundTier {
+  return BOUND_TIERS.reduce<BoundTier>(
     (found, tier) => (bounds[tier] <= value ? tier : found),
     'common',
   )
@@ -59,8 +66,8 @@ function tierForBasisPoints(
   basisPoints: number,
   bounds: TierBounds,
   isStrict = false,
-): ComputedTier {
-  return COMPUTED_TIERS.reduce<ComputedTier>((found, tier) => {
+): BoundTier {
+  return BOUND_TIERS.reduce<BoundTier>((found, tier) => {
     const bound = toBasisPoints(bounds[tier])
     return (isStrict ? bound < basisPoints : bound <= basisPoints) ? tier : found
   }, 'common')
@@ -69,9 +76,9 @@ function tierForBasisPoints(
 /** Moves away from the previous tier only once the value is at least the hysteresis margin past a boundary. */
 export function applyHysteresis(input: {
   value: number
-  previous: ComputedTier | null
+  previous: BoundTier | null
   bounds: TierBounds
-}): ComputedTier {
+}): BoundTier {
   const basisPoints = toBasisPoints(input.value)
   const margin = toBasisPoints(HYSTERESIS_MARGIN)
   const candidate = tierForBasisPoints(basisPoints, input.bounds)
@@ -87,7 +94,7 @@ export function applyHysteresis(input: {
 }
 
 /** Downgrades a cold start legendary to epic while the league has fewer than 15 active cards. */
-export function capColdStartTier(tier: ComputedTier, activeCardCount: number): ComputedTier {
+export function capColdStartTier(tier: BoundTier, activeCardCount: number): BoundTier {
   return tier === 'legendary' && activeCardCount < COLD_START_MIN_CARDS_FOR_LEGENDARY
     ? 'epic'
     : tier
@@ -97,11 +104,47 @@ export function capColdStartTier(tier: ComputedTier, activeCardCount: number): C
 export function resolveEffectiveTier(input: {
   computed: ComputedTier
   pinned: CardTier | null
-  min: ComputedTier | null
-  max: ComputedTier | null
+  min: BoundTier | null
+  max: BoundTier | null
 }): { tier: CardTier; source: TierSource } {
   if (input.pinned !== null) return { tier: input.pinned, source: 'pinned' }
   const raised = input.min === null ? input.computed : maxTier(input.computed, input.min)
   const clamped = input.max === null ? raised : minTier(raised, input.max)
   return { tier: clamped, source: clamped === input.computed ? 'computed' : 'bounded' }
+}
+
+/** Returns how many cards the league may hold as computed Mythics: none under 50 active cards, then one per 100. */
+export function mythicQuota(activeCardCount: number): number {
+  return activeCardCount < MYTHIC_MIN_CARDS
+    ? 0
+    : Math.max(1, Math.floor(activeCardCount / MYTHIC_CARDS_PER_QUOTA))
+}
+
+export interface MythicCandidate {
+  cardId: string
+  number: number
+  score: number
+  percentile: number
+  isEligible: boolean
+  wasMythic: boolean
+}
+
+const byScoreThenNumberThenId = (a: MythicCandidate, b: MythicCandidate): number =>
+  b.score - a.score || a.number - b.number || a.cardId.localeCompare(b.cardId)
+
+/** Keeps eligible previous Mythics still in the Legendary band, then fills the quota with the best eligible cards. */
+export function selectComputedMythics(
+  candidates: readonly MythicCandidate[],
+  quota: number,
+): ReadonlySet<string> {
+  if (quota <= 0) return new Set()
+  const eligible = candidates.filter((card) => card.isEligible).toSorted(byScoreThenNumberThenId)
+  const retained = eligible
+    .filter((card) => card.wasMythic && card.percentile >= MYTHIC_RETAIN_PERCENTILE)
+    .slice(0, quota)
+  const retainedIds = new Set(retained.map((card) => card.cardId))
+  const newcomers = eligible
+    .filter((card) => !retainedIds.has(card.cardId))
+    .slice(0, quota - retained.length)
+  return new Set([...retained, ...newcomers].map((card) => card.cardId))
 }
