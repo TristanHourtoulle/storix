@@ -112,7 +112,7 @@ export function useRemovedCardsSync(
             queryKey: ['leagues', leagueId, 'cards', 'detail', card.cardId],
           })
         }
-        for (const segment of ['cards', 'wallet', 'reveals', 'booster-history', 'admin']) {
+        for (const segment of ['cards', 'wallet', 'feed', 'booster-history', 'admin']) {
           void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, segment] })
         }
         if (!isPurged) {

@@ -1,9 +1,7 @@
 import {
   boosterOpeningSchema,
-  recentRevealsSchema,
   walletStateSchema,
   type BoosterOpening,
-  type RecentReveal,
   type WalletState,
 } from '@storix/shared'
 import { apiRequest } from '@/lib/http'
@@ -24,9 +22,4 @@ export function openBooster(leagueId: string, requestId: string): Promise<Booste
     body: { requestId },
     schema: boosterOpeningSchema,
   })
-}
-
-/** Fetches the latest cards pulled in the league. */
-export function fetchRecentReveals(leagueId: string): Promise<RecentReveal[]> {
-  return apiRequest(`${leaguePath(leagueId)}/reveals`, { schema: recentRevealsSchema })
 }

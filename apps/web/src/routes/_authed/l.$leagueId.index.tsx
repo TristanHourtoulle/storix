@@ -1,12 +1,12 @@
-import { useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Button, buttonClassName } from '@/components/ui/button'
 import { newBoosterRequestId } from '@/features/game/booster-request'
 import { BoosterWidget } from '@/features/game/components/booster-widget'
 import { DustBalance } from '@/features/game/components/dust-balance'
-import { RecentReveals } from '@/features/game/components/recent-reveals'
-import { recentRevealsQueryOptions, walletQueryOptions } from '@/features/game/game.queries'
+import { walletQueryOptions } from '@/features/game/game.queries'
 import { useWallet } from '@/features/game/use-wallet'
+import { FeedSection } from '@/features/league-feed/components/feed-section'
 import { RemovalNotice } from '@/features/privacy/components/removal-notice'
 import { useRemovedCardsSync } from '@/features/privacy/use-removed-cards-sync'
 import { LeagueHeader } from '@/features/leagues/components/league-header'
@@ -23,7 +23,6 @@ function LeagueHome() {
   const { data: league } = useSuspenseQuery(leagueDetailQueryOptions(leagueId))
   const queryClient = useQueryClient()
   const { data: wallet, isError, refetch, isFetchedAfterMount } = useWallet(leagueId)
-  const { data: reveals } = useQuery(recentRevealsQueryOptions(leagueId))
   const leagues = useMyLeagues()
   const { me } = Route.useRouteContext()
   const { notice, acknowledge } = useRemovedCardsSync(me.user.id, leagueId)
@@ -80,7 +79,7 @@ function LeagueHome() {
           Inviter
         </Link>
       ) : null}
-      {reveals ? <RecentReveals leagueId={leagueId} reveals={reveals} /> : null}
+      <FeedSection leagueId={leagueId} meId={me.user.id} />
     </main>
   )
 }

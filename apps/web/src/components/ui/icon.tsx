@@ -42,6 +42,13 @@ export type IconName =
   | 'arrow'
   | 'copy'
   | 'download'
+  | 'pack'
+  | 'shot'
+  | 'gem'
+  | 'user'
+  | 'pin'
+  | 'door'
+  | 'search'
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -54,6 +61,13 @@ const PATHS: Record<IconName, string> = {
   forward: 'M9 5l7 7-7 7',
   copy: 'M9 9h10v11H9zM5 15V4h10',
   download: 'M12 4v11M8 11l4 4 4-4M5 19h14',
+  pack: 'M8 3h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM6 7h12M6 17h12',
+  shot: 'M6 5h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM4 16l5-5 4 4 2-2 5 5',
+  gem: 'M6 4h12l3 5-9 11L3 9zM3 9h18',
+  user: 'M8 8a4 4 0 1 0 8 0 4 4 0 1 0-8 0M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6',
+  pin: 'M9 3h6l-1 6 4 4H6l4-4zM12 13v8',
+  door: 'M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10',
+  search: 'M5 11a6 6 0 1 0 12 0 6 6 0 1 0-12 0M20 20l-4.5-4.5',
   share: 'M12 3v12M8 7l4-4 4 4M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6',
   'chevron-down': 'M6 9l6 6 6-6',
   'chevron-right': 'M9 6l6 6-6 6',

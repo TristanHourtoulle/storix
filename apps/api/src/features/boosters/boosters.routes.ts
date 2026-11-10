@@ -4,7 +4,6 @@ import {
   boosterOpeningSchema,
   leagueParamsSchema,
   openBoosterBodySchema,
-  recentRevealsSchema,
 } from '@storix/shared'
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { authenticate } from '../../http/authenticate'
@@ -13,7 +12,7 @@ import { rateLimits } from '../../http/rate-limit'
 import type { BoosterHistoryService } from './booster-history.service'
 import type { BoostersService } from './boosters.service'
 
-/** Registers the booster opening, recent reveals and booster history routes. */
+/** Registers the booster opening and booster history routes. */
 export function boostersRoutes(
   service: BoostersService,
   history: BoosterHistoryService,
@@ -31,14 +30,6 @@ export function boostersRoutes(
         },
       },
       (request) => service.openBooster(request.membership, request.body.requestId),
-    )
-    app.get(
-      '/leagues/:leagueId/reveals',
-      {
-        preHandler: [authenticate, requireLeagueRole('member')],
-        schema: { params: leagueParamsSchema, response: { 200: recentRevealsSchema } },
-      },
-      (request) => service.listRecentReveals(request.membership),
     )
     app.get(
       '/leagues/:leagueId/boosters/history',

@@ -8,15 +8,17 @@ interface ProfileSubPageProps {
   title: string
   subtitle?: string | undefined
   backLabel?: string
+  fallback?: 'profile' | 'home'
   children: ReactNode
 }
 
-/** Profile sub-page whose back button returns to the previous screen, or the profile; moves focus to its title on open. */
+/** Sub-page whose back button returns to the previous screen, or the fallback screen; moves focus to its title on open. */
 export function ProfileSubPage({
   leagueId,
   title,
   subtitle,
   backLabel = 'Retour au profil',
+  fallback = 'profile',
   children,
 }: ProfileSubPageProps) {
   const titleRef = useRef<HTMLHeadingElement>(null)
@@ -28,8 +30,12 @@ export function ProfileSubPage({
       router.history.back()
       return
     }
-    void router.navigate({ to: '/l/$leagueId/profile', params: { leagueId }, replace: true })
-  }, [router, leagueId])
+    void router.navigate({
+      to: fallback === 'home' ? '/l/$leagueId' : '/l/$leagueId/profile',
+      params: { leagueId },
+      replace: true,
+    })
+  }, [router, leagueId, fallback])
 
   useEffect(() => {
     titleRef.current?.focus({ preventScroll: true })

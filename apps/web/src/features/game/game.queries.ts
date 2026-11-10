@@ -1,19 +1,12 @@
 import { queryOptions } from '@tanstack/react-query'
 import { ApiError } from '@/lib/http'
-import { fetchRecentReveals, fetchWallet, openBooster } from './game.api'
+import { fetchWallet, openBooster } from './game.api'
 
 export function walletQueryOptions(leagueId: string) {
   return queryOptions({
     queryKey: ['leagues', leagueId, 'wallet'],
     queryFn: () => fetchWallet(leagueId),
     staleTime: 30_000,
-  })
-}
-
-export function recentRevealsQueryOptions(leagueId: string) {
-  return queryOptions({
-    queryKey: ['leagues', leagueId, 'reveals'],
-    queryFn: () => fetchRecentReveals(leagueId),
   })
 }
 
