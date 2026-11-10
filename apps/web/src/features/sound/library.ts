@@ -131,6 +131,10 @@ export function renderSound(v: Voice, request: SoundRequest): number {
       return booster.summary(v)
     case 'pity':
       return booster.pity(v)
+    case 'newsTear':
+      return booster.burst(v)
+    case 'newsFlip':
+      return booster.flip(v, 0.45)
     case 'boosterReady':
       return boosterReady(v)
     case 'countdownEnd':

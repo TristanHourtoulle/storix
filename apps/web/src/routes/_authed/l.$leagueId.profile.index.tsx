@@ -19,6 +19,8 @@ import { LeagueScopeCard } from '@/features/profile/components/league-scope-card
 import { pushStatusSummary } from '@/features/push/push-status'
 import { usePushNotifications } from '@/features/push/use-push-notifications'
 import { useSoundSettings, type SoundSettings } from '@/features/sound/sound-settings'
+import { formatReleaseDay } from '@/features/whats-new/release-dates'
+import { useWhatsNew } from '@/features/whats-new/use-whats-new'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/profile/')({
   component: Profile,
@@ -38,10 +40,12 @@ function Profile() {
   const { logout, isPending, errorMessage } = useLogout()
   const soundSettings = useSoundSettings()
   const push = usePushNotifications()
+  const whatsNew = useWhatsNew()
 
   if (!me) return null
   const currentLeague = leagues.find((league) => league.id === leagueId)
   const params = { leagueId }
+  const newestRelease = whatsNew.releases[0]
 
   return (
     <main className="screen gap-5">
@@ -122,6 +126,23 @@ function Profile() {
               label="Notifications"
               hint="Boosters pleins, par ligue"
               value={push.isReady ? pushStatusSummary(push.status) : undefined}
+              hasChevron
+            />
+          </Link>
+        </li>
+      </SettingsGroup>
+      <SettingsGroup title="Storix">
+        <li>
+          <Link
+            to="/l/$leagueId/profile/nouveautes"
+            params={params}
+            className={settingsRowClassName()}
+          >
+            <SettingsRowContent
+              icon="star"
+              label="Quoi de neuf"
+              value={newestRelease ? formatReleaseDay(newestRelease.publishedAt) : undefined}
+              hasDot={whatsNew.hasUnseen}
               hasChevron
             />
           </Link>

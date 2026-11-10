@@ -80,3 +80,13 @@ export async function updateUserDisplayName(
     .set({ displayUsername: input.displayName, updatedAt: input.now })
     .where(eq(user.id, input.userId))
 }
+
+/** Finds when a user signed up; null when the user does not exist. */
+export async function findMemberSince(db: DbExecutor, userId: string): Promise<Date | null> {
+  const rows = await db
+    .select({ createdAt: user.createdAt })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1)
+  return rows[0]?.createdAt ?? null
+}

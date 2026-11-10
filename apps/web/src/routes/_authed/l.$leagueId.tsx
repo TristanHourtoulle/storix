@@ -1,4 +1,5 @@
 import { Outlet, createFileRoute, redirect, useMatchRoute } from '@tanstack/react-router'
+import { useState } from 'react'
 import { BottomNav } from '@/components/ui/bottom-nav'
 import { PasskeyPrompt } from '@/features/auth/components/passkey-prompt'
 import { IosInstallHint } from '@/features/pwa/components/ios-install-hint'
@@ -9,6 +10,9 @@ import { purgeLeagueCaches } from '@/features/privacy/purge-cache'
 import { useRemovedCardsSync } from '@/features/privacy/use-removed-cards-sync'
 import { loadLeagueDetail } from '@/features/leagues/leagues.queries'
 import { usePortraitCachePruning } from '@/features/portraits/use-portrait-cache-pruning'
+import { WhatsNewGate } from '@/features/whats-new/components/whats-new-gate'
+import { wasAutoShown } from '@/features/whats-new/news-session'
+import { useWhatsNew } from '@/features/whats-new/use-whats-new'
 import { useHeightVar } from '@/lib/use-height-var'
 
 export const Route = createFileRoute('/_authed/l/$leagueId')({
@@ -34,7 +38,11 @@ function LeagueLayout() {
   usePortraitCachePruning(leagueId)
   const navStackRef = useHeightVar('--nav-stack-h')
   useCollectionVisitTracker(me.user.id, leagueId)
+  const { hasUnseen } = useWhatsNew()
+  const [isNewsOpen, setIsNewsOpen] = useState(false)
+  const isNewsPending = hasUnseen && !wasAutoShown(me.user.id)
   const isBoosterStage = Boolean(matchRoute({ to: '/l/$leagueId/booster', params: { leagueId } }))
+  const isAddScreen = Boolean(matchRoute({ to: '/l/$leagueId/add', params: { leagueId } }))
   const active = matchRoute({ to: '/l/$leagueId/collection', params: { leagueId } })
     ? 'collection'
     : matchRoute({ to: '/l/$leagueId/add', params: { leagueId } })
@@ -49,11 +57,19 @@ function LeagueLayout() {
       <div className="isolate flex flex-1 flex-col">
         <Outlet />
       </div>
-      <PasskeyPrompt userId={me.user.id} displayUsername={me.user.displayUsername} />
+      <WhatsNewGate
+        leagueId={leagueId}
+        userId={me.user.id}
+        isSuspended={isBoosterStage || isAddScreen}
+        onOpenChange={setIsNewsOpen}
+      />
+      {isNewsOpen || isNewsPending ? null : (
+        <PasskeyPrompt userId={me.user.id} displayUsername={me.user.displayUsername} />
+      )}
       {isBoosterStage ? null : (
         <div ref={navStackRef} className="sticky bottom-0 z-40 mt-auto">
           <IosInstallHint />
-          <BottomNav leagueId={leagueId} active={active} />
+          <BottomNav leagueId={leagueId} active={active} hasProfileBadge={hasUnseen} />
         </div>
       )}
     </div>

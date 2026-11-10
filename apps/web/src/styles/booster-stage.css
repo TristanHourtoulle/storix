@@ -157,6 +157,7 @@
     );
   }
   .ar-hand {
+    --slot-w: 40;
     position: absolute;
     top: 14px;
     left: 0;
@@ -167,10 +168,14 @@
     gap: 8px;
     pointer-events: none;
   }
+  .ar-hand.is-dense {
+    --slot-w: 32;
+    gap: 6px;
+  }
   .ar-slot {
     position: relative;
-    width: 40px;
-    height: 56px;
+    width: calc(var(--slot-w) * 1px);
+    height: calc(var(--slot-w) * 1.4px);
     overflow: hidden;
     border-radius: 7px;
     background: rgba(255, 255, 255, 0.025);
@@ -195,6 +200,9 @@
     height: calc(308px * var(--k));
     overflow: hidden;
     border-radius: 7px;
+  }
+  .ar-hand .ar-mini {
+    --k: calc(var(--slot-w) / 220);
   }
   .ar-screen .ar-stage .ar-mini .card.lg::before,
   .ar-screen .ar-stage .ar-mini .card.lg .card-holo,

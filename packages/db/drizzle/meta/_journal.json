@@ -85,6 +85,13 @@
       "when": 1794214378493,
       "tag": "0011_duplicate_stacks",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794302622857,
+      "tag": "0012_whats_new_reads",
+      "breakpoints": true
     }
   ]
 }

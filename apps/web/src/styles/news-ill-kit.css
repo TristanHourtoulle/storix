@@ -1,0 +1,207 @@
+@layer components {
+  .ni-fit {
+    --s: 0.8;
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    width: calc(260px * var(--s));
+    height: calc(260px * var(--s));
+    transform: translateX(-50%);
+  }
+  .ni-ill {
+    --ni-art:
+      radial-gradient(
+        circle at 68% 36%,
+        #ffe1b0 0 6%,
+        rgba(255, 210, 150, 0.45) 6.5% 11%,
+        transparent 18%
+      ),
+      linear-gradient(168deg, transparent 60%, #140f26 60.4%),
+      linear-gradient(200deg, transparent 50%, #2a1f4f 50.4%),
+      linear-gradient(150deg, transparent 56%, #3b2b66 56.4%),
+      linear-gradient(180deg, #ffb48a 0%, #e8799b 26%, #8f5cf0 52%, #2a1f60 80%);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 260px;
+    height: 260px;
+    transform: scale(var(--s));
+    transform-origin: 0 0;
+    font-family: var(--font-sans);
+    line-height: 1.55;
+    color: var(--color-ink);
+    text-align: left;
+  }
+  .ni-ill i {
+    font-style: normal;
+  }
+  .ni-ill .ni-i {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .ni-mc {
+    --tc: var(--color-tier-common);
+    position: relative;
+    flex: none;
+    overflow: hidden;
+    border-radius: 10px;
+    background: var(--color-surface-2);
+    box-shadow: 0 0 0 1.5px var(--tc);
+  }
+  .ni-ill .t-C {
+    --tc: var(--color-tier-common);
+  }
+  .ni-ill .t-U {
+    --tc: var(--color-tier-uncommon);
+  }
+  .ni-ill .t-R {
+    --tc: var(--color-tier-rare);
+  }
+  .ni-ill .t-E {
+    --tc: var(--color-tier-epic);
+  }
+  .ni-ill .t-L {
+    --tc: var(--color-tier-legendary);
+  }
+  .ni-ill .t-M {
+    --tc: var(--color-tier-mythic);
+  }
+  .ni-art {
+    position: absolute;
+    inset: 0;
+    background: var(--ni-art);
+  }
+  .ni-art::after {
+    content: '';
+    position: absolute;
+    left: 44%;
+    top: 49%;
+    width: 4%;
+    height: 9%;
+    border-radius: 40% 40% 10% 10%;
+    background: #0d0a1a;
+    box-shadow: 4px 1px 0 -1px #0d0a1a;
+  }
+  .ni-art.h1 {
+    filter: hue-rotate(40deg) saturate(1.1);
+  }
+  .ni-art.h2 {
+    filter: hue-rotate(150deg);
+  }
+  .ni-art.h3 {
+    filter: hue-rotate(205deg) saturate(1.2);
+  }
+  .ni-art.h4 {
+    filter: hue-rotate(285deg);
+  }
+  .ni-holo {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .ni-mc.t-E .ni-holo {
+    background: linear-gradient(
+      125deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.2) 45%,
+      transparent 60%
+    );
+  }
+  .ni-mc.t-L .ni-holo {
+    background: linear-gradient(
+      115deg,
+      transparent 20%,
+      rgba(255, 255, 255, 0.45) 33%,
+      rgba(251, 191, 36, 0.4) 42%,
+      rgba(34, 211, 238, 0.35) 52%,
+      rgba(192, 132, 252, 0.35) 60%,
+      transparent 74%
+    );
+    background-size: 260% 260%;
+    mix-blend-mode: overlay;
+  }
+  .ni-gem {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    z-index: 3;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--tc);
+    box-shadow: 0 0 6px var(--tc);
+  }
+  .ni-band {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    padding: 4px 6px;
+    background: rgba(10, 10, 16, 0.8);
+  }
+  .ni-band b {
+    overflow: hidden;
+    font: 600 9px/1.25 var(--font-display);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ni-band > span {
+    font-size: 7px;
+    line-height: 1.55;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--tc);
+  }
+  .ni-mc.is-big .ni-band {
+    padding: 7px 9px;
+  }
+  .ni-mc.is-big .ni-band b {
+    font-size: 12.5px;
+  }
+  .ni-mc.is-big .ni-band > span {
+    font-size: 8.5px;
+  }
+  .ni-new {
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    z-index: 6;
+    padding: 3px 6px;
+    border-radius: 999px;
+    background: var(--color-tier-uncommon);
+    color: var(--color-bg);
+    font: 700 8px/1 var(--font-display);
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    box-shadow: 0 0 10px rgba(74, 222, 128, 0.6);
+    transform: translateX(-50%);
+  }
+  .ni-av {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--color-accent-hover);
+    color: var(--color-bg);
+    font: 700 10px var(--font-display);
+  }
+  .ni-ill .lab {
+    display: grid;
+  }
+  .ni-ill .lab > span {
+    grid-area: 1 / 1;
+  }
+}

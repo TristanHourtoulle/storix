@@ -1,4 +1,3 @@
-import { playSound } from '@/features/sound/sound'
 import { toTransform as T, type CardLayer, type Director } from './director'
 import { CENTER_Y as CY, DIM_OPACITY, SLOT_SCALE, deckPose } from './geometry'
 import type { TierFx } from './tiers'
@@ -41,7 +40,7 @@ function auraSeconds(level: number, isReduced: boolean): number {
 
 function showStamp(d: Director, tier: TierFx, name: string): void {
   const { stamp } = d.layers
-  playSound({ name: 'stamp', level: tier.level })
+  d.sound({ name: 'stamp', level: tier.level })
   stamp.dataset.t = tier.key
   stamp.classList.toggle('is-small', tier.level < 3)
   stamp.textContent = tier.level >= 3 ? `${name} !` : name
@@ -115,7 +114,7 @@ async function charge(d: Director, index: number, tier: TierFx): Promise<void> {
   const { root, aura, rings } = cardAt(d, index)
   const L = tier.level
   root.classList.add('is-lit')
-  playSound({ name: 'aura', level: L, duration: auraSeconds(L, d.isReduced) })
+  d.sound({ name: 'aura', level: L, duration: auraSeconds(L, d.isReduced) })
   if (d.isReduced) {
     await d.tween(aura, { opacity: 0.35 + L * 0.08, transform: 'scale(1)' }, { duration: 320 })
     await d.wait(REDUCED_CHARGE_MS - 320)
@@ -168,7 +167,7 @@ async function flip(d: Director, index: number, tier: TierFx, name: string): Pro
   const card = cardAt(d, index)
   const { root, aura, flipper } = card
   const L = tier.level
-  playSound({ name: 'flip' })
+  d.sound({ name: 'flip' })
   if (d.isReduced) {
     await crossfadeToFace(d, card, 280)
     showStamp(d, tier, name)
@@ -218,7 +217,7 @@ export async function revealLong(
 
 async function flipQuick(d: Director, index: number): Promise<void> {
   const { root, flipper } = cardAt(d, index)
-  playSound({ name: 'flip' })
+  d.sound({ name: 'flip' })
   d.fire(
     d.tween(
       root,
@@ -244,7 +243,7 @@ export async function revealQuick(d: Director, index: number): Promise<void> {
     root.style.transform = T({ y: CY })
     card.front.style.opacity = '1'
     card.back.style.opacity = '0'
-    playSound({ name: 'flip' })
+    d.sound({ name: 'flip' })
     await d.tween(root, [{ opacity: 0 }, { opacity: 1 }], { duration: 200 })
     return
   }

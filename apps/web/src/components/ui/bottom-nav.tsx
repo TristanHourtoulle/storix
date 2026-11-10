@@ -6,12 +6,13 @@ type NavSection = 'home' | 'collection' | 'add' | 'profile'
 interface BottomNavProps {
   leagueId: string
   active: NavSection
+  hasProfileBadge?: boolean
 }
 
 const ITEM =
   'flex min-h-11 w-16 flex-col items-center gap-1 p-0 font-sans text-[11px] font-medium no-underline'
 
-export function BottomNav({ leagueId, active }: BottomNavProps) {
+export function BottomNav({ leagueId, active, hasProfileBadge = false }: BottomNavProps) {
   const current = (section: NavSection) => (active === section ? 'page' : undefined)
   const tone = (section: NavSection): string => (active === section ? 'text-ink' : 'text-faint')
 
@@ -59,9 +60,18 @@ export function BottomNav({ leagueId, active }: BottomNavProps) {
         to="/l/$leagueId/profile"
         params={{ leagueId }}
         aria-current={current('profile')}
+        aria-label={hasProfileBadge ? 'Profil, nouveautés à voir' : undefined}
         className={`${ITEM} ${tone('profile')}`}
       >
-        <Icon name="profile" />
+        <span className="relative grid place-items-center">
+          <Icon name="profile" />
+          {hasProfileBadge ? (
+            <span
+              aria-hidden="true"
+              className="absolute -top-0.5 -right-1 size-2 rounded-full bg-tier-uncommon ring-2 ring-nav"
+            />
+          ) : null}
+        </span>
         <span>Profil</span>
       </Link>
     </nav>
