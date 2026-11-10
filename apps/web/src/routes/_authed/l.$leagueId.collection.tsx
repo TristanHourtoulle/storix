@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
 import {
   CARD_TIERS,
@@ -24,6 +24,12 @@ import { cardsInfiniteQueryOptions, type CollectionFilters } from '@/features/ca
 import { collectionLabel, type CollectionFilterState } from '@/features/cards/collection-filters'
 import { useCollectionNews } from '@/features/cards/news/use-collection-news'
 import { useCollectionSort } from '@/features/cards/use-collection-sort'
+import {
+  hasFilterSearch,
+  readCollectionFilters,
+  toFilterSearch,
+  usePersistedCollectionFilters,
+} from '@/features/cards/use-persisted-collection-filters'
 import { DustBalance } from '@/features/game/components/dust-balance'
 import { useWallet } from '@/features/game/use-wallet'
 import { membersQueryOptions } from '@/features/members/members.queries'
@@ -38,6 +44,18 @@ export const Route = createFileRoute('/_authed/l/$leagueId/collection')({
     sort: collectionSortSchema.optional(),
     notice: z.literal('withdrawn').optional(),
   }),
+  beforeLoad: ({ context, params, search }) => {
+    if (hasFilterSearch(search)) return
+    const stored = readCollectionFilters(context.me.user.id, params.leagueId)
+    if (stored) {
+      throw redirect({
+        to: '/l/$leagueId/collection',
+        params,
+        search: { ...search, ...toFilterSearch(stored) },
+        replace: true,
+      })
+    }
+  },
   loader: ({ context, params }) =>
     context.queryClient
       .ensureQueryData(membersQueryOptions(params.leagueId))
@@ -53,7 +71,6 @@ function Collection() {
   const { leagueId } = Route.useParams()
   const { author, tier, hideLocked, upgradable, sort: urlSort, notice } = Route.useSearch()
   const { me } = Route.useRouteContext()
-  const navigate = useNavigate({ from: Route.fullPath })
   const members = useQuery(membersQueryOptions(leagueId)).data ?? NO_MEMBERS
   const { data: wallet } = useWallet(leagueId)
   const { sort, pickSort } = useCollectionSort(me.user.id, leagueId, urlSort)
@@ -85,21 +102,7 @@ function Collection() {
     [news.newCards, authorId, selectedTier, isUpgradable],
   )
 
-  const applyFilters = useCallback(
-    (next: CollectionFilterState) => {
-      void navigate({
-        search: (prev) => ({
-          ...prev,
-          author: next.authorId ?? undefined,
-          tier: next.tier ?? undefined,
-          hideLocked: next.hideLocked || undefined,
-          upgradable: next.upgradable || undefined,
-        }),
-        replace: true,
-      })
-    },
-    [navigate],
-  )
+  const applyFilters = usePersistedCollectionFilters(me.user.id, leagueId, filterState, members)
 
   return (
     <main className="screen">
