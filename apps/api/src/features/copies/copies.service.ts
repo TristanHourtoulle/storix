@@ -8,6 +8,7 @@ import {
 } from '@storix/shared'
 import { AppError } from '../../lib/errors'
 import { insertAuditEntry } from '../audit/audit.repository'
+import { awardEmblems } from '../emblems/emblems.service'
 import { craftDecisionFor, foilUpgradeDecisionFor } from '../cards/card-views'
 import type { Membership } from '../leagues/leagues.service'
 import { deleteCopy, insertCopy, lockOwnedCopies, updateCopyVariant } from './copies.repository'
@@ -135,7 +136,9 @@ export function createCopiesService({ db, clock }: CopiesServiceDeps): CopiesSer
             cost: decision.cost,
           },
         })
-        return setDust(ctx, ctx.wallet.dust - decision.cost)
+        const result = await setDust(ctx, ctx.wallet.dust - decision.cost)
+        await awardEmblems(ctx.tx, { leagueId: m.leagueId, userId: m.userId, now: ctx.now })
+        return result
       }),
   }
 }

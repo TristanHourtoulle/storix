@@ -28,6 +28,7 @@ import { generateBoosterSeed, sha256Hex } from '../../lib/crypto'
 import { AppError, isUniqueViolation } from '../../lib/errors'
 import type { MediaSigner } from '../../lib/media-signer'
 import { runInTransaction } from '../../lib/transaction'
+import { awardEmblems } from '../emblems/emblems.service'
 import { toCollectionCard, withViewerCopies, type CollectionCardBase } from '../cards/card-views'
 import { insertCopy, listOwnedCopies, updateCopyTier } from '../copies/copies.repository'
 import { addToStack, listStackEntries } from '../copies/stacks.repository'
@@ -293,6 +294,7 @@ async function openNewBooster(
     boosterFullNotifiedAt: null,
   }
   await updateWallet(ctx.tx, { leagueId: ctx.m.leagueId, userId: ctx.m.userId }, patch)
+  await awardEmblems(ctx.tx, { leagueId: ctx.m.leagueId, userId: ctx.m.userId, now: ctx.now })
   const walletState = await walletStateFor(ctx, { ...wallet, ...patch })
   return present(ctx, { ...opening, dustGained: 0 }, walletState, signer)
 }

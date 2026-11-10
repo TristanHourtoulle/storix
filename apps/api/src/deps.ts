@@ -12,6 +12,7 @@ import {
 import { createBoostersService, type BoostersService } from './features/boosters/boosters.service'
 import { createCardsService, type CardsService } from './features/cards/cards.service'
 import { createCopiesService, type CopiesService } from './features/copies/copies.service'
+import { createEmblemsService, type EmblemsService } from './features/emblems/emblems.service'
 import { createStacksService, type StacksService } from './features/copies/stacks.service'
 import { createHealthService, type HealthService } from './features/health/health.service'
 import {
@@ -81,6 +82,7 @@ export interface Services {
   cards: CardsService
   copies: CopiesService
   stacks: StacksService
+  emblems: EmblemsService
   health: HealthService
   invitations: InvitationsService
   leagues: LeaguesService
@@ -139,6 +141,7 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
     cards: createCardsService({ db: deps.db, signer: deps.mediaSigner, clock: deps.clock }),
     copies: createCopiesService({ db: deps.db, clock: deps.clock }),
     stacks: createStacksService({ db: deps.db, clock: deps.clock }),
+    emblems: createEmblemsService({ db: deps.db, clock: deps.clock }),
     health: createHealthService(deps.db),
     invitations: createInvitationsService({
       db: deps.db,
@@ -186,7 +189,7 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       clock: deps.clock,
       publicKey: deps.env.VAPID_PUBLIC_KEY ?? null,
     }),
-    reactions: createReactionsService({ db: deps.db }),
+    reactions: createReactionsService({ db: deps.db, clock: deps.clock }),
     removals: createRemovalsService({ db: deps.db, clock: deps.clock }),
     resetCodes: createResetCodesService({
       db: deps.db,

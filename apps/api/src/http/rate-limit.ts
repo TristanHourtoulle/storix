@@ -24,6 +24,8 @@ export const rateLimits = {
   whatsNewSeenIp: { max: 60, timeWindow: '1 minute' },
   onboardingSeen: { max: 30, timeWindow: '1 minute' },
   onboardingSeenIp: { max: 60, timeWindow: '1 minute' },
+  emblemsSeen: { max: 30, timeWindow: '1 minute' },
+  profileEdit: { max: 30, timeWindow: '1 minute' },
 } as const
 
 export interface RateLimit {

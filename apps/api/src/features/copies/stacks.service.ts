@@ -11,6 +11,7 @@ import {
 } from '@storix/shared'
 import { AppError, notFound } from '../../lib/errors'
 import { insertAuditEntry } from '../audit/audit.repository'
+import { awardEmblems } from '../emblems/emblems.service'
 import type { Membership } from '../leagues/leagues.service'
 import { lockCardTier, lockOwnedCopies, setPromotedTier } from './copies.repository'
 import { copyNotOwned, setDust, withLockedCard, type LockedContext } from './locked-card'
@@ -91,6 +92,7 @@ export function createStacksService({ db, clock }: StacksServiceDeps): StacksSer
           metadata: { cardId, variant, from: decision.from, to, cost, taken: take.taken },
         })
         const { dust } = await setDust(ctx, ctx.wallet.dust - cost)
+        await awardEmblems(ctx.tx, { leagueId: m.leagueId, userId: m.userId, now: ctx.now })
         return { dust, stackCount: stackSize(take.remaining) }
       }),
 
