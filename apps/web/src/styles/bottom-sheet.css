@@ -52,6 +52,12 @@
   .bsheet-body > * {
     flex-shrink: 0;
   }
+  .is-closing .bsheet {
+    animation: bsheet-sink 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  }
+  .is-closing .bsheet-scrim {
+    animation: bsheet-fade-out 0.24s ease forwards;
+  }
   .bsheet-title {
     margin: 0;
     font: 700 19px var(--font-display);
@@ -60,7 +66,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .bsheet,
-  .bsheet-scrim {
+  .bsheet-scrim,
+  .is-closing .bsheet,
+  .is-closing .bsheet-scrim {
     animation: none;
   }
 }
@@ -73,6 +81,18 @@
 
 @keyframes bsheet-fade {
   from {
+    opacity: 0;
+  }
+}
+
+@keyframes bsheet-sink {
+  to {
+    transform: translateY(105%);
+  }
+}
+
+@keyframes bsheet-fade-out {
+  to {
     opacity: 0;
   }
 }
