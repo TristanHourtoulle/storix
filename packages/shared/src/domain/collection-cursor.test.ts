@@ -38,6 +38,8 @@ describe('collection cursor', () => {
       ]),
       { kind: 'undiscovered', number: 42 },
       { kind: 'number', number: 42 },
+      { kind: 'reactions', total: 12, lastReactedAt: 1794200000123, number: 42 },
+      { kind: 'reactions', total: 0, lastReactedAt: 0, number: 1 },
     ]
     for (const cursor of cursors) {
       expect(parseCollectionCursor(encodeCollectionCursor(cursor))).toEqual(cursor)

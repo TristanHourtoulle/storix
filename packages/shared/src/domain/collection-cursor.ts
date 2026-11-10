@@ -1,6 +1,6 @@
 import { CARD_TIERS, type CardTier } from './cards'
 
-export const COLLECTION_SORTS = ['rarity', 'discovery', 'number'] as const
+export const COLLECTION_SORTS = ['rarity', 'discovery', 'number', 'reactions'] as const
 
 export type CollectionSort = (typeof COLLECTION_SORTS)[number]
 
@@ -9,23 +9,28 @@ export const DEFAULT_COLLECTION_SORT: CollectionSort = 'rarity'
 /**
  * Position after which the next collection page starts. Each sort has its own kinds: `rarity` for
  * rarest-first, `discovered` then `undiscovered` for newest discovery first, `number` for newest
- * number first. `discoveredAt` is epoch milliseconds.
+ * number first, `reactions` for most reacted first. `discoveredAt` and `lastReactedAt` are epoch
+ * milliseconds, `lastReactedAt` is 0 for a card nobody reacted to.
  */
 export type CollectionCursor =
   | { kind: 'rarity'; tier: CardTier; number: number }
   | { kind: 'discovered'; discoveredAt: number; tier: CardTier; number: number }
   | { kind: 'undiscovered'; number: number }
   | { kind: 'number'; number: number }
+  | { kind: 'reactions'; total: number; lastReactedAt: number; number: number }
 
 const CURSOR_SEPARATOR = '.'
 
 const DISCOVERED_PREFIX = 'd'
 const UNDISCOVERED_PREFIX = 'dl'
 const NUMBER_PREFIX = 'n'
+const REACTIONS_PREFIX = 'r'
 
 const MAX_CARD_NUMBER = 2_147_483_647
 
 const MAX_EPOCH_MS = 253_402_300_799_999
+
+const MAX_REACTION_TOTAL = 1_000_000
 
 /**
  * Stands for a numeric cursor sent by a client built before the rarest-first order. It ends the
@@ -45,6 +50,12 @@ function parseCardNumber(digits: string): number | null {
   return number <= MAX_CARD_NUMBER ? number : null
 }
 
+function parseReactionTotal(digits: string): number | null {
+  if (!/^(0|[1-9]\d{0,6})$/.test(digits)) return null
+  const total = Number(digits)
+  return total <= MAX_REACTION_TOTAL ? total : null
+}
+
 function parseEpochMs(digits: string): number | null {
   if (!/^(0|[1-9]\d{0,14})$/.test(digits)) return null
   const ms = Number(digits)
@@ -61,10 +72,15 @@ export function cursorSort(cursor: CollectionCursor): CollectionSort {
       return 'discovery'
     case 'number':
       return 'number'
+    case 'reactions':
+      return 'reactions'
   }
 }
 
-/** Encodes the last card of a collection page as an opaque `tier.n`, `d.<ms>.<tier>.<n>`, `dl.<n>` or `n.<n>` cursor. */
+/**
+ * Encodes the last card of a collection page as an opaque `tier.n`, `d.<ms>.<tier>.<n>`, `dl.<n>`,
+ * `n.<n>` or `r.<total>.<ms>.<n>` cursor.
+ */
 export function encodeCollectionCursor(cursor: CollectionCursor): string {
   const parts = ((): readonly (string | number)[] => {
     switch (cursor.kind) {
@@ -76,6 +92,8 @@ export function encodeCollectionCursor(cursor: CollectionCursor): string {
         return [UNDISCOVERED_PREFIX, cursor.number]
       case 'number':
         return [NUMBER_PREFIX, cursor.number]
+      case 'reactions':
+        return [REACTIONS_PREFIX, cursor.total, cursor.lastReactedAt, cursor.number]
     }
   })()
   return parts.map(String).join(CURSOR_SEPARATOR)
@@ -87,6 +105,15 @@ function parseDiscovered(parts: readonly string[]): CollectionCursor | null {
   const number = parseCardNumber(numberDigits)
   if (discoveredAt === null || number === null || !isCardTier(tier)) return null
   return { kind: 'discovered', discoveredAt, tier, number }
+}
+
+function parseReactions(parts: readonly string[]): CollectionCursor | null {
+  const [, totalDigits = '', msDigits = '', numberDigits = ''] = parts
+  const total = parseReactionTotal(totalDigits)
+  const lastReactedAt = parseEpochMs(msDigits)
+  const number = parseCardNumber(numberDigits)
+  if (total === null || lastReactedAt === null || number === null) return null
+  return { kind: 'reactions', total, lastReactedAt, number }
 }
 
 function parseRarity(parts: readonly string[]): CollectionCursor | null {
@@ -101,6 +128,7 @@ export function parseCollectionCursor(raw: string): CollectionCursor | null {
   const parts = raw.split(CURSOR_SEPARATOR)
   const [head = '', second = ''] = parts
   if (head === DISCOVERED_PREFIX) return parts.length === 4 ? parseDiscovered(parts) : null
+  if (head === REACTIONS_PREFIX) return parts.length === 4 ? parseReactions(parts) : null
   if (parts.length !== 2) return null
   if (head === UNDISCOVERED_PREFIX) {
     const number = parseCardNumber(second)

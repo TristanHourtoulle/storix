@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { flipTransform, flipTransformCss, isBoxInViewport, loupeGesture, wrapIndex } from './loupe-motion'
+import {
+  flipTransform,
+  flipTransformCss,
+  isBoxInViewport,
+  loupeGesture,
+  wrapIndex,
+} from './loupe-motion'
 
 describe('loupe motion', () => {
   it('reads a horizontal swipe past 40 px', () => {
@@ -28,7 +34,9 @@ describe('loupe motion', () => {
     const from = { left: 40, top: 500, width: 72, height: 100.8 }
     const to = { left: 20, top: 100, width: 360, height: 504 }
     expect(flipTransform(from, to)).toEqual({ x: 20, y: 400, scale: 0.2 })
-    expect(flipTransformCss({ x: 20, y: 400, scale: 0.2 })).toBe('translate(20px, 400px) scale(0.2)')
+    expect(flipTransformCss({ x: 20, y: 400, scale: 0.2 })).toBe(
+      'translate(20px, 400px) scale(0.2)',
+    )
     expect(flipTransformCss({ x: 1 / 3, y: -2.005, scale: 0.123456 })).toBe(
       'translate(0.33px, -2.01px) scale(0.1235)',
     )
