@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
@@ -34,6 +34,7 @@ import { DustBalance } from '@/features/game/components/dust-balance'
 import { useWallet } from '@/features/game/use-wallet'
 import { membersQueryOptions } from '@/features/members/members.queries'
 import { DraftBanner } from '@/features/uploads/components/draft-banner'
+import { useScrollTopOnChange } from '@/lib/use-scroll-top-on-change'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/collection')({
   validateSearch: z.object({
@@ -179,9 +180,7 @@ function CollectionBody({
   if (data && !isPlaceholderData && settledSort !== sort) setSettledSort(sort)
   const isOtherSortShown = isPlaceholderData && settledSort !== sort
   const canReorderNew = canPutNewFirst(sort)
-  useEffect(() => {
-    window.scrollTo({ top: 0 })
-  }, [authorId, tier, upgradable, sort, filterState.hideLocked])
+  useScrollTopOnChange(`${authorId}|${tier}|${upgradable}|${sort}|${filterState.hideLocked}`)
   const cards = useMemo(
     () => [
       ...new Map(
