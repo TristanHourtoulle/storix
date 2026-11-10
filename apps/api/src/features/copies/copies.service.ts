@@ -10,6 +10,7 @@ import { AppError } from '../../lib/errors'
 import { insertAuditEntry } from '../audit/audit.repository'
 import { awardAfter, type EmblemAwards } from '../emblems/emblems.service'
 import { craftDecisionFor, foilUpgradeDecisionFor } from '../cards/card-views'
+import { insertLeagueEvents } from '../league-feed/league-events.repository'
 import type { Membership } from '../leagues/leagues.service'
 import { deleteCopy, insertCopy, lockOwnedCopies, updateCopyVariant } from './copies.repository'
 import { copyNotOwned, setDust, withLockedCard, type LockedContext } from './locked-card'
@@ -115,13 +116,32 @@ export function createCopiesService({ db, clock, emblems }: CopiesServiceDeps): 
               reason: decision.reason,
             })
           }
-          const updated = await updateCopyVariant(ctx.tx, {
+          const copyId = await updateCopyVariant(ctx.tx, {
             cardId,
             ownerId: m.userId,
             from: 'normal',
             to: 'foil',
           })
-          if (!updated) throw copyNotOwned()
+          if (copyId === null) throw copyNotOwned()
+          const foilTier =
+            ctx.card.normalTier === null
+              ? null
+              : copyValueTier({
+                  tierAtMint: ctx.card.normalTier,
+                  promotedTier: ctx.card.normalPromotedTier,
+                })
+          await insertLeagueEvents(ctx.tx, [
+            {
+              leagueId: m.leagueId,
+              actorId: m.userId,
+              type: 'card_foiled',
+              cardId,
+              tier: foilTier,
+              payload: foilTier === null ? {} : { tier: foilTier },
+              dedupeKey: `foil:${copyId}`,
+              visibleAt: ctx.now,
+            },
+          ])
           await insertAuditEntry(ctx.tx, {
             leagueId: m.leagueId,
             actorId: m.userId,
@@ -130,13 +150,7 @@ export function createCopiesService({ db, clock, emblems }: CopiesServiceDeps): 
             metadata: {
               cardId,
               tierAtMint: ctx.card.normalTier,
-              valueTier:
-                ctx.card.normalTier === null
-                  ? null
-                  : copyValueTier({
-                      tierAtMint: ctx.card.normalTier,
-                      promotedTier: ctx.card.normalPromotedTier,
-                    }),
+              valueTier: foilTier,
               cost: decision.cost,
             },
           })

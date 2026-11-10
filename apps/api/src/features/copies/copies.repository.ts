@@ -131,14 +131,14 @@ export async function lockCardTier(
 export async function setPromotedTier(
   db: DbExecutor,
   input: CopyKeyInput & { promotedTier: CardTier; now: Date },
-): Promise<boolean> {
+): Promise<string | null> {
   const { now } = input
   const rows = await db
     .update(cardCopies)
     .set({ promotedTier: input.promotedTier, promotedAt: now, updatedAt: now })
     .where(copyCondition(input))
     .returning({ id: cardCopies.id })
-  return rows.length > 0
+  return rows[0]?.id ?? null
 }
 
 /** Inserts a new owned copy. */
@@ -176,13 +176,13 @@ export async function deleteCopy(db: DbExecutor, input: CopyKeyInput): Promise<D
 export async function updateCopyVariant(
   db: DbExecutor,
   input: { cardId: string; ownerId: string; from: CopyVariant; to: CopyVariant },
-): Promise<boolean> {
+): Promise<string | null> {
   const rows = await db
     .update(cardCopies)
     .set({ variant: input.to, updatedAt: new Date() })
     .where(copyCondition({ cardId: input.cardId, ownerId: input.ownerId, variant: input.from }))
     .returning({ id: cardCopies.id })
-  return rows.length > 0
+  return rows[0]?.id ?? null
 }
 
 /** Counts every copy of a card across the league. */

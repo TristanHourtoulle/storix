@@ -34,17 +34,17 @@ export interface MemberLock {
   role: LeagueRole
 }
 
-/** Inserts a league membership; false when the user is already a member. */
+/** Inserts a league membership and returns its join time, or null when the user is already a member. */
 export async function insertMember(
   db: DbExecutor,
   input: { leagueId: string; userId: string; role: LeagueRole },
-): Promise<boolean> {
+): Promise<Date | null> {
   const rows = await db
     .insert(leagueMembers)
     .values(input)
     .onConflictDoNothing()
-    .returning({ userId: leagueMembers.userId })
-  return rows.length > 0
+    .returning({ joinedAt: leagueMembers.joinedAt })
+  return rows[0]?.joinedAt ?? null
 }
 
 /** Finds a user's membership in a league. */

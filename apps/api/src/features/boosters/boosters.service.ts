@@ -11,12 +11,15 @@ import {
   drawBooster,
   DROP_TABLE_VERSION,
   isPremiumBooster,
+  isTierAtLeast,
   MIN_DRAWABLE_CARDS_FOR_BOOSTER,
   nextPityState,
   resolveLeagueSettings,
   settleBoosterCopies,
   stackCountsByCard,
+  tierRank,
   type BoosterCadence,
+  type CardTier,
   type BoosterDraw,
   type BoosterOpening,
   type OwnedPullTarget,
@@ -32,6 +35,7 @@ import { awardAfter, type EmblemAwards } from '../emblems/emblems.service'
 import { toCollectionCard, withViewerCopies, type CollectionCardBase } from '../cards/card-views'
 import { insertCopy, listOwnedCopies, updateCopyTier } from '../copies/copies.repository'
 import { addToStack, listStackEntries } from '../copies/stacks.repository'
+import { insertLeagueEvents, type NewLeagueEvent } from '../league-feed/league-events.repository'
 import { findLeagueSettings } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
 import { toWalletState } from '../wallets/wallet-state'
@@ -281,6 +285,7 @@ async function openNewBooster(
     }
   })
   await insertPulls(ctx.tx, opening.id, pullRows)
+  await insertLeagueEvents(ctx.tx, openingEvents(ctx.m, opening, pullRows))
 
   const pityAfter = nextPityState(
     pityBefore,
@@ -297,6 +302,40 @@ async function openNewBooster(
   await updateWallet(ctx.tx, { leagueId: ctx.m.leagueId, userId: ctx.m.userId }, patch)
   const walletState = await walletStateFor(ctx, { ...wallet, ...patch })
   return present(ctx, { ...opening, dustGained: 0 }, walletState, signer)
+}
+
+function openingEvents(
+  m: Membership,
+  opening: { id: string; openedAt: Date; isPremium: boolean },
+  pulls: readonly InsertPullRow[],
+): NewLeagueEvent[] {
+  const bestTier = pulls.reduce<CardTier | null>(
+    (best, pull) =>
+      best === null || tierRank(pull.tierAtMint) > tierRank(best) ? pull.tierAtMint : best,
+    null,
+  )
+  const base = { leagueId: m.leagueId, actorId: m.userId, visibleAt: opening.openedAt }
+  const notable = pulls.filter((pull) => isTierAtLeast(pull.tierAtMint, 'epic') || pull.isDiscovery)
+  return [
+    {
+      ...base,
+      type: 'booster_opened',
+      payload: {
+        openingId: opening.id,
+        isPremium: opening.isPremium,
+        ...(bestTier === null ? {} : { tier: bestTier }),
+      },
+      dedupeKey: `opening:${opening.id}`,
+    },
+    ...notable.map((pull): NewLeagueEvent => ({
+      ...base,
+      type: 'card_pulled',
+      cardId: pull.cardId,
+      tier: pull.tierAtMint,
+      payload: { openingId: opening.id, tier: pull.tierAtMint, isDiscovery: pull.isDiscovery },
+      dedupeKey: `pull:${opening.id}:${pull.slot}`,
+    })),
+  ]
 }
 
 function toRevealCard(row: RevealRow): CollectionCardBase {

@@ -18,6 +18,7 @@ import { runInTransaction } from '../../lib/transaction'
 import { insertAuditEntry } from '../audit/audit.repository'
 import type { Membership } from '../leagues/leagues.service'
 import { countMembers } from '../leagues/leagues.repository'
+import { insertLeagueEvents, type NewLeagueEvent } from '../league-feed/league-events.repository'
 import { findMembership, insertMember } from '../members/members.repository'
 import { findUserByUsername, setHomeLeagueIfUnset } from '../users/users.repository'
 import {
@@ -58,6 +59,16 @@ function toSummary(row: InvitationRow, now: Date): InvitationSummary {
     maxUses: row.maxUses,
     uses: row.uses,
     status: evaluateInvitation(row, now),
+  }
+}
+
+function joinEvent(leagueId: string, userId: string, joinedAt: Date): NewLeagueEvent {
+  return {
+    leagueId,
+    actorId: userId,
+    type: 'member_joined',
+    dedupeKey: `join:${leagueId}:${userId}:${joinedAt.getTime()}`,
+    visibleAt: joinedAt,
   }
 }
 
@@ -176,11 +187,13 @@ export function createInvitationsService(deps: InvitationsServiceDeps): Invitati
       try {
         await runInTransaction(db, async (tx) => {
           await consumeOrThrow(tx, invitation.id, clock())
-          if (
-            !(await insertMember(tx, { leagueId: invitation.leagueId, userId, role: 'member' }))
-          ) {
-            throw alreadyMember()
-          }
+          const joinedAt = await insertMember(tx, {
+            leagueId: invitation.leagueId,
+            userId,
+            role: 'member',
+          })
+          if (joinedAt === null) throw alreadyMember()
+          await insertLeagueEvents(tx, [joinEvent(invitation.leagueId, userId, joinedAt)])
           await setHomeLeagueIfUnset(tx, userId, invitation.leagueId)
           await insertAuditEntry(tx, {
             leagueId: invitation.leagueId,
@@ -210,9 +223,13 @@ export function createInvitationsService(deps: InvitationsServiceDeps): Invitati
       }
       await runInTransaction(db, async (tx) => {
         await consumeOrThrow(tx, invitation.id, clock())
-        if (!(await insertMember(tx, { leagueId: invitation.leagueId, userId, role: 'member' }))) {
-          throw alreadyMember()
-        }
+        const joinedAt = await insertMember(tx, {
+          leagueId: invitation.leagueId,
+          userId,
+          role: 'member',
+        })
+        if (joinedAt === null) throw alreadyMember()
+        await insertLeagueEvents(tx, [joinEvent(invitation.leagueId, userId, joinedAt)])
         await insertAuditEntry(tx, {
           leagueId: invitation.leagueId,
           actorId: userId,
