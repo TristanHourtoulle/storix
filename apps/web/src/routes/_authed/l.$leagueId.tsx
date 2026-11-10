@@ -46,9 +46,10 @@ function LeagueLayout() {
   const isNewsPending = hasUnseen && !wasAutoShown(me.user.id)
   const onboarding = useOnboarding()
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
-  const isOnboardingPending =
-    !onboarding.isPending && !onboarding.isSeen && !wasOnboardingShown(me.user.id)
-  const isOnboardingActive = isOnboardingOpen || isOnboardingPending
+  const isOnboardingBlocking =
+    isOnboardingOpen ||
+    onboarding.isPending ||
+    (!onboarding.isSeen && !wasOnboardingShown(me.user.id))
   const isBoosterStage = Boolean(matchRoute({ to: '/l/$leagueId/booster', params: { leagueId } }))
   const isAddScreen = Boolean(matchRoute({ to: '/l/$leagueId/add', params: { leagueId } }))
   const active = matchRoute({ to: '/l/$leagueId/collection', params: { leagueId } })
@@ -74,15 +75,15 @@ function LeagueLayout() {
       <WhatsNewGate
         leagueId={leagueId}
         userId={me.user.id}
-        isSuspended={isBoosterStage || isAddScreen || isOnboardingActive}
+        isSuspended={isBoosterStage || isAddScreen || isOnboardingBlocking}
         onOpenChange={setIsNewsOpen}
       />
-      {isNewsOpen || isNewsPending || isOnboardingActive ? null : (
+      {isNewsOpen || isNewsPending || isOnboardingBlocking ? null : (
         <PasskeyPrompt userId={me.user.id} displayUsername={me.user.displayUsername} />
       )}
       {isBoosterStage ? null : (
         <div ref={navStackRef} className="sticky bottom-0 z-40 mt-auto">
-          {isOnboardingActive ? null : <IosInstallHint />}
+          {isOnboardingBlocking ? null : <IosInstallHint />}
           <BottomNav leagueId={leagueId} active={active} hasProfileBadge={hasUnseen} />
         </div>
       )}
