@@ -3,9 +3,11 @@ import { CameraIllustration } from './illustrations/camera-illustration'
 import { CelebrationIllustration } from './illustrations/celebration-illustration'
 import { EmblemsIllustration } from './illustrations/emblems-illustration'
 import { FeedIllustration } from './illustrations/feed-illustration'
+import { GoalIllustration } from './illustrations/goal-illustration'
 import { HistoryIllustration } from './illustrations/history-illustration'
 import { JourneyIllustration } from './illustrations/journey-illustration'
 import { MembersIllustration } from './illustrations/members-illustration'
+import { MissionsIllustration } from './illustrations/missions-illustration'
 import { MythicIllustration } from './illustrations/mythic-illustration'
 import { PremiumIllustration } from './illustrations/premium-illustration'
 import { ReactionsIllustration } from './illustrations/reactions-illustration'
@@ -48,6 +50,8 @@ const SCENES = {
   emblems: EmblemsIllustration,
   feed: FeedIllustration,
   celebration: CelebrationIllustration,
+  missions: MissionsIllustration,
+  goal: GoalIllustration,
 } as const
 
 /** Decorative animated art of a feature card; it only moves while the card is the live one. */
