@@ -11,6 +11,7 @@ import { authRoutes } from './auth/auth.routes'
 import { clientIpPolicy, rateLimitKeyGenerator } from './config/client-ip'
 import { buildServices, type AppDeps } from './deps'
 import { accountRoutes } from './features/account/account.routes'
+import { auditRoutes } from './features/audit/audit.routes'
 import { boostersRoutes } from './features/boosters/boosters.routes'
 import { cardsRoutes } from './features/cards/cards.routes'
 import { copiesRoutes } from './features/copies/copies.routes'
@@ -108,6 +109,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(removalsRoutes(services.removals), { prefix: '/api' })
   await app.register(leagueSettingsRoutes(services.leagueSettings), { prefix: '/api' })
   await app.register(moderationRoutes(services.moderation), { prefix: '/api' })
+  await app.register(auditRoutes(services.audit), { prefix: '/api' })
   await app.register(withdrawalsRoutes(services.withdrawals), { prefix: '/api' })
   await app.register(portraitsRoutes(services.portraits), { prefix: '/api' })
   await app.register(pushRoutes(services.push), { prefix: '/api' })

@@ -9,6 +9,7 @@ import {
   createBoosterHistoryService,
   type BoosterHistoryService,
 } from './features/boosters/booster-history.service'
+import { createAuditService, type AuditService } from './features/audit/audit.service'
 import {
   createLeagueFeedService,
   type LeagueFeedService,
@@ -90,6 +91,7 @@ export interface AppDeps {
 
 export interface Services {
   account: AccountService
+  audit: AuditService
   boosters: BoostersService
   boosterHistory: BoosterHistoryService
   cardRemoval: CardRemoval
@@ -150,6 +152,7 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       logger,
       clock: deps.clock,
     }),
+    audit: createAuditService({ db: deps.db, clock: deps.clock }),
     boosters: createBoostersService({
       db: deps.db,
       signer: deps.mediaSigner,
