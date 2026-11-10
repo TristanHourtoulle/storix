@@ -9,11 +9,7 @@ interface RarityFilterProps {
 
 export function RarityFilter({ selected, onSelect }: RarityFilterProps) {
   return (
-    <div
-      role="group"
-      aria-label="Filtrer par rareté"
-      className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]"
-    >
+    <div role="group" aria-label="Filtrer par rareté" className="flex flex-wrap gap-2">
       <Chip label="Toutes" isOn={selected === null} onToggle={() => onSelect(null)} />
       {CARD_TIERS.map((tier) => (
         <Chip
