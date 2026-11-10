@@ -71,6 +71,7 @@ INSERT INTO "league_events" ("league_id", "actor_id", "type", "payload", "dedupe
 SELECT e."league_id", e."user_id", 'emblem_unlocked', jsonb_build_object('emblemId', e."emblem_id"),
   'emblem:' || e."league_id" || ':' || e."user_id" || ':' || e."emblem_id", e."earned_at", e."earned_at"
 FROM "member_emblems" e
+WHERE e."earned_at" > now() - interval '30 days'
 ON CONFLICT ("dedupe_key") DO NOTHING;--> statement-breakpoint
 INSERT INTO "league_reads" ("league_id", "user_id", "feed_seen_at", "mythic_banner_seen_at", "journal_seen_at")
 SELECT m."league_id", m."user_id", now(), now(), now()
