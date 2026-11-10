@@ -1,6 +1,7 @@
 import { boosterOpenings, boosterPulls, cards, media, user, type DbExecutor } from '@storix/db'
 import {
   mediaVariantsSchema,
+  type BoosterHistoryCursor,
   type CardTier,
   type CopyVariant,
   type MediaVariant,
@@ -13,11 +14,6 @@ import {
   authorMembership,
   authorMembershipOn,
 } from '../cards/card-author.repository'
-
-export interface HistoryCursor {
-  openedAtMs: number
-  id: string
-}
 
 export interface HistoryOpeningRow {
   id: string
@@ -140,7 +136,7 @@ function memberOpenings(input: { leagueId: string; userId: string }): SQL | unde
 /** Lists a member's openings in a league newest first, fetching `limit + 1` rows after the cursor. */
 export async function listOpeningsPage(
   db: DbExecutor,
-  input: { leagueId: string; userId: string; after?: HistoryCursor; limit: number },
+  input: { leagueId: string; userId: string; after?: BoosterHistoryCursor; limit: number },
 ): Promise<HistoryOpeningRow[]> {
   const after =
     input.after === undefined

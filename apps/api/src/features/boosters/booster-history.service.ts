@@ -1,5 +1,10 @@
 import type { Database } from '@storix/db'
-import type { BoosterHistoryPage, BoosterHistoryQuery, CollectionCard } from '@storix/shared'
+import {
+  encodeBoosterHistoryCursor,
+  type BoosterHistoryPage,
+  type BoosterHistoryQuery,
+  type CollectionCard,
+} from '@storix/shared'
 import type { MediaSigner } from '../../lib/media-signer'
 import { toCollectionCard, withViewerCopies } from '../cards/card-views'
 import { listOwnedCopies, type OwnedCopyRow } from '../copies/copies.repository'
@@ -10,7 +15,6 @@ import {
   listOpeningsPage,
   listPullsWithCards,
   type HistoryCardRow,
-  type HistoryCursor,
   type HistoryOpeningRow,
 } from './booster-history.repository'
 
@@ -23,16 +27,8 @@ export interface BoosterHistoryServiceDeps {
   signer: MediaSigner
 }
 
-const CURSOR_SEPARATOR = '.'
-
-function parseCursor(raw: string | undefined): HistoryCursor | undefined {
-  if (raw === undefined) return undefined
-  const [ms = '', id = ''] = raw.split(CURSOR_SEPARATOR)
-  return { openedAtMs: Number(ms), id }
-}
-
-function encodeCursor(row: HistoryOpeningRow): string {
-  return [row.openedAt.getTime(), row.id].join(CURSOR_SEPARATOR)
+function cursorAfter(row: HistoryOpeningRow): string {
+  return encodeBoosterHistoryCursor({ openedAtMs: row.openedAt.getTime(), id: row.id })
 }
 
 /** Builds the service listing a member's past booster openings with their pulls and stats. */
@@ -45,7 +41,7 @@ export function createBoosterHistoryService({
       const member = { leagueId: m.leagueId, userId: m.userId }
       const isFirstPage = query.cursor === undefined
       const [rows, stats] = await Promise.all([
-        listOpeningsPage(db, { ...member, after: parseCursor(query.cursor), limit: query.limit }),
+        listOpeningsPage(db, { ...member, after: query.cursor, limit: query.limit }),
         isFirstPage ? historyStats(db, member) : null,
       ])
       const page = rows.slice(0, query.limit)
@@ -101,7 +97,7 @@ export function createBoosterHistoryService({
               card: toCard(pull.card),
             })),
         })),
-        nextCursor: rows.length > query.limit && last !== undefined ? encodeCursor(last) : null,
+        nextCursor: rows.length > query.limit && last !== undefined ? cursorAfter(last) : null,
       }
     },
   }

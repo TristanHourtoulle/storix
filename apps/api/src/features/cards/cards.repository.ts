@@ -20,7 +20,7 @@ import {
   type CollectionCursor,
   type CollectionSort,
 } from '@storix/shared'
-import { and, desc, eq, isNotNull, isNull, lt, or, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, isNotNull, isNull, lt, or, sql, type SQL } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import {
   authorIsFormerMember,
@@ -232,17 +232,26 @@ function tierParam(tier: CardTier): SQL {
   return sql`${tier}::${sql.identifier(cardTier.enumName)}`
 }
 
-function reactionTotalOf(stats: ReturnType<typeof cardReactionStats>): SQL<number> {
-  return sql<number>`coalesce(${stats.total}, 0)::int`
+interface ReactionRanking {
+  total: SQL<number>
+  lastMs: SQL<number>
 }
 
-function lastReactedMsOf(stats: ReturnType<typeof cardReactionStats>): SQL<number> {
-  return sql<number>`coalesce(${stats.lastMs}, 0)::double precision`
+const NO_REACTION_RANKING: ReactionRanking = {
+  total: sql<number>`0`,
+  lastMs: sql<number>`0`,
+}
+
+function reactionRankingOf(stats: ReturnType<typeof cardReactionStats>): ReactionRanking {
+  return {
+    total: sql<number>`coalesce(${stats.total}, 0)::int`,
+    lastMs: sql<number>`coalesce(${stats.lastMs}, 0)::double precision`,
+  }
 }
 
 function afterCursor(
   owned: ReturnType<typeof viewerCopies>,
-  stats: ReturnType<typeof cardReactionStats>,
+  ranking: ReactionRanking,
   cursor: CollectionCursor | undefined,
 ): SQL | undefined {
   if (cursor === undefined) return undefined
@@ -261,14 +270,14 @@ function afterCursor(
     case 'number':
       return lt(cards.number, cursor.number)
     case 'reactions':
-      return sql`(${reactionTotalOf(stats)}, ${lastReactedMsOf(stats)}, ${cards.number}) < (${cursor.total}::int, ${cursor.lastReactedAt}::double precision, ${cursor.number})`
+      return sql`((${ranking.total}, ${ranking.lastMs}) < (${cursor.total}::int, ${cursor.lastReactedAt}::double precision) OR ((${ranking.total}, ${ranking.lastMs}) = (${cursor.total}::int, ${cursor.lastReactedAt}::double precision) AND ${cards.number} > ${cursor.number}))`
   }
 }
 
 function orderFor(
   sort: CollectionSort,
   owned: ReturnType<typeof viewerCopies>,
-  stats: ReturnType<typeof cardReactionStats>,
+  ranking: ReactionRanking,
 ): SQL[] {
   switch (sort) {
     case 'rarity':
@@ -282,7 +291,7 @@ function orderFor(
     case 'number':
       return [desc(cards.number)]
     case 'reactions':
-      return [desc(reactionTotalOf(stats)), desc(lastReactedMsOf(stats)), desc(cards.number)]
+      return [desc(ranking.total), desc(ranking.lastMs), asc(cards.number)]
   }
 }
 
@@ -295,7 +304,8 @@ function activeOrOwnedHidden(owned: ReturnType<typeof viewerCopies>): SQL | unde
  * `limit + 1` rows after the cursor. `rarity` orders by displayed tier then number, `discovery` by
  * the viewer's first copy (millisecond precision) then displayed tier then number with unowned
  * cards last by number, `number` by number, and `reactions` by reaction total then latest reaction
- * (millisecond precision, none last) then number, each newest, rarest or most reacted first.
+ * (millisecond precision, none last) then lowest number, each newest, rarest or most reacted first.
+ * Reaction stats are only joined for the `reactions` sort.
  */
 export async function listCollection(
   db: DbExecutor,
@@ -303,12 +313,13 @@ export async function listCollection(
 ): Promise<CollectionListRow[]> {
   const owned = viewerCopies(db, input)
   const stacked = viewerStacks(db, input)
-  const stats = cardReactionStats(db, input)
-  const rows = await db
+  const stats = input.sort === 'reactions' ? cardReactionStats(db, input) : null
+  const ranking = stats === null ? NO_REACTION_RANKING : reactionRankingOf(stats)
+  const query = db
     .select({
       ...collectionColumns(owned, stacked),
-      reactionTotal: reactionTotalOf(stats),
-      lastReactedAtMs: lastReactedMsOf(stats),
+      reactionTotal: ranking.total,
+      lastReactedAtMs: ranking.lastMs,
     })
     .from(cards)
     .innerJoin(media, eq(media.id, cards.mediaId))
@@ -316,14 +327,16 @@ export async function listCollection(
     .leftJoin(authorMembership, authorMembershipOn)
     .leftJoin(owned, eq(owned.cardId, cards.id))
     .leftJoin(stacked, eq(stacked.cardId, cards.id))
-    .leftJoin(stats, eq(stats.cardId, cards.id))
+    .$dynamic()
+  const joined = stats === null ? query : query.leftJoin(stats, eq(stats.cardId, cards.id))
+  const rows = await joined
     .where(
       and(
         collectionWhere(input, owned, stacked, activeOrOwnedHidden(owned)),
-        afterCursor(owned, stats, input.after),
+        afterCursor(owned, ranking, input.after),
       ),
     )
-    .orderBy(...orderFor(input.sort, owned, stats))
+    .orderBy(...orderFor(input.sort, owned, ranking))
     .limit(input.limit + 1)
   return rows.map(parseVariants)
 }
