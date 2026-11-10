@@ -13,7 +13,7 @@ import {
 } from '@storix/shared/domain'
 import type { DbExecutor } from '../client'
 import { lockLeagueEconomyShared } from '../locks/league-locks'
-import { auditLog, leagueGoals, memberWallets } from '../schema/index'
+import { auditLog, leagueGoals, leagues, memberWallets } from '../schema/index'
 import { insertLeagueEvents } from './league-events'
 
 export type LeagueGoalRecord = typeof leagueGoals.$inferSelect
@@ -251,4 +251,10 @@ export async function listOpenGoals(db: DbExecutor, weekKey: string): Promise<Le
 export async function goalProgress(db: DbExecutor, goal: LeagueGoalRecord): Promise<number> {
   const rows = await listGoalContributions(db, goal)
   return rows.reduce((sum, row) => sum + row.count, 0)
+}
+
+/** Lists the ids of every league, for creating each week's goals. */
+export async function listLeagueIds(db: DbExecutor): Promise<string[]> {
+  const rows = await db.select({ id: leagues.id }).from(leagues)
+  return rows.map((row) => row.id)
 }

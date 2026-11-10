@@ -92,3 +92,7 @@ export function emblemsEvaluateSendOptions(payload: EmblemsEvaluatePayload) {
         : `member:${payload.leagueId}:${payload.userId}`,
   }
 }
+
+export const MISSIONS_SETTLE_JOB = 'missions.settle'
+export const LEAGUE_GOALS_TICK_JOB = 'league-goals.tick'
+export const LEAGUE_GOALS_CLOSE_JOB = 'league-goals.close'
