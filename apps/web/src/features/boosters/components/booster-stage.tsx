@@ -26,6 +26,7 @@ interface BoosterStageProps {
 
 const WORLD_STYLE = { height: STAGE_HEIGHT, '--cy': `${CENTER_Y}px` } as CSSProperties
 const STAMP_STYLE = { top: STAMP_TOP }
+const PREMIUM_PACK_HINT = 'Booster premium : Légendaire garantie'
 
 export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
   const navigate = useNavigate()
@@ -50,6 +51,7 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
   const shownPull = state.phase === 'shown' ? pulls[state.current] : undefined
   const hasStock = opening.wallet.booster.stock > 0
   const leagueName = useQuery(leagueDetailQueryOptions(leagueId)).data?.name ?? ''
+  const premiumHint = opening.isPremium && state.phase === 'pack' ? PREMIUM_PACK_HINT : null
 
   function openAnother() {
     if (isOpeningNext) return
@@ -77,7 +79,7 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
           <div className="ar-world">
             <div className="ar-tint" />
             <div className="ar-rays" />
-            <ArcadePack count={pullCount} />
+            <ArcadePack count={pullCount} isPremium={opening.isPremium} />
             {pulls.map((pull, index) => (
               <ArcadeCard key={pull.slot} pull={pull} registerImage={register(index)} />
             ))}
@@ -91,7 +93,7 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
         <button
           type="button"
           className="ar-tap"
-          aria-label={hint}
+          aria-label={premiumHint === null ? hint : `${premiumHint}. ${hint}`}
           aria-disabled={state.phase === 'opening' || state.phase === 'revealing'}
           onClick={onTap}
         />
@@ -107,6 +109,11 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
       <p className="sr-only" aria-live="polite">
         {state.announcement}
       </p>
+      {premiumHint === null ? null : (
+        <p className="ar-hint is-premium" aria-hidden="true">
+          {premiumHint}
+        </p>
+      )}
       {state.phase === 'summary' ? null : (
         <p className="ar-hint" aria-hidden="true">
           {hint}
