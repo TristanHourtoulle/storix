@@ -1,5 +1,6 @@
 import type { ReactNode, Ref } from 'react'
 import type { CardTier } from '@storix/shared'
+import { countLabel } from '../progression-copy'
 import { TIER_CLASS, TIER_LABELS } from '../tier-labels'
 
 export interface CardFaceProps {
@@ -42,7 +43,7 @@ export function CardFace({
       {stackCount > 0 ? (
         <span className="card-stack-badge">
           <span aria-hidden="true">×{stackCount}</span>
-          <span className="sr-only">{`${stackCount} doublons en pile`}</span>
+          <span className="sr-only">{`${countLabel(stackCount, 'doublon', 'doublons')} en pile`}</span>
         </span>
       ) : null}
       {hasFoilPip ? <span className="card-foil-pip" aria-hidden="true" /> : null}
