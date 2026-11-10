@@ -10,6 +10,7 @@ const VISIBLE_STEPS = 5
 const CAUSE_LABELS: Record<JourneyCause, string> = {
   arrival: 'arrivée dans la pioche',
   admin: "choix de l'admin",
+  unpinned: "épingle retirée par l'admin",
   up: 'montée au recalcul de la ligue',
   down: 'descendue au recalcul de la ligue',
 }
@@ -50,7 +51,9 @@ function JourneyStep({ step, isOnly }: JourneyStepProps) {
       <div className="min-w-0">
         <b className="trail-tier">
           {isMine ? `Toi · ${label} ★` : label}
-          {step.cause === 'admin' ? <span className="trail-src">admin</span> : null}
+          {step.cause === 'admin' || step.cause === 'unpinned' ? (
+            <span className="trail-src">admin</span>
+          ) : null}
         </b>
         <small className="trail-line">{stepLine(step, isOnly)}</small>
       </div>

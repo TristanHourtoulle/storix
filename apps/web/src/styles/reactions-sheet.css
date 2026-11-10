@@ -42,7 +42,7 @@
     box-shadow: var(--shadow-hairline);
     cursor: pointer;
   }
-  .rx-tabs button[aria-pressed='true'] {
+  .rx-tabs button[aria-selected='true'] {
     background: var(--color-ink);
     color: var(--color-bg);
     box-shadow: none;
