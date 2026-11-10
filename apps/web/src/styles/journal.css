@@ -1,0 +1,103 @@
+@layer components {
+  .journal {
+    display: grid;
+    gap: 10px;
+  }
+  .jday-block {
+    display: grid;
+  }
+  .jday {
+    margin: 0;
+    padding-top: 4px;
+    font: 600 11.5px var(--font-display);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-faint);
+  }
+  .jrow {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    gap: 11px;
+    align-items: start;
+    width: 100%;
+    padding: 10px 2px;
+    border: 0;
+    border-bottom: 1px solid var(--color-line);
+    background: none;
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--color-ink-2);
+    text-align: left;
+    cursor: pointer;
+  }
+  .jrow:disabled {
+    cursor: default;
+  }
+  .jrow:last-child {
+    border-bottom: 0;
+  }
+  .jrow b {
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+  .jrow time {
+    padding-top: 1px;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--color-faint);
+  }
+  .jtext {
+    min-width: 0;
+  }
+  .ji {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    color: var(--jc);
+    background: color-mix(in srgb, var(--jc) 16%, var(--color-surface-2));
+  }
+  .jglyph {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+  }
+  .jdet {
+    display: grid;
+    gap: 2px;
+    margin-top: 7px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-hairline);
+    font-size: 12.5px;
+    color: var(--color-muted);
+  }
+  .jrow.warn {
+    --jc: var(--color-danger);
+  }
+  .jrow.warn b.w {
+    color: var(--color-danger);
+  }
+  .j-mem {
+    --jc: var(--color-tier-uncommon);
+  }
+  .j-card {
+    --jc: var(--color-tier-rare);
+  }
+  .j-set {
+    --jc: var(--color-tier-legendary);
+  }
+  .j-acc {
+    --jc: var(--color-tier-epic);
+  }
+  .j-sec {
+    --jc: var(--color-danger);
+  }
+  .j-eco {
+    --jc: var(--color-cyan);
+  }
+}

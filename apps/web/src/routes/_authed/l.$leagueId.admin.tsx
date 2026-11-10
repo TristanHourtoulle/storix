@@ -5,6 +5,8 @@ import { z } from 'zod'
 import { Icon } from '@/components/ui/icon'
 import { Segmented } from '@/components/ui/segmented'
 import { TopBar } from '@/components/ui/top-bar'
+import { JournalPanel } from '@/features/audit/components/journal-panel'
+import { useJournalAlert } from '@/features/audit/use-journal'
 import { AdminCardsPanel } from '@/features/moderation/components/admin-cards-panel'
 import { InvitationsPanel } from '@/features/invitations/components/invitations-panel'
 import { leagueDetailQueryOptions, loadLeagueDetail } from '@/features/leagues/leagues.queries'
@@ -14,7 +16,7 @@ import { RenameLeagueForm } from '@/features/leagues/components/rename-league-fo
 import { MemberList } from '@/features/members/components/member-list'
 import { membersQueryOptions } from '@/features/members/members.queries'
 
-const TAB_IDS = ['members', 'invitations', 'cards', 'settings'] as const
+const TAB_IDS = ['members', 'invitations', 'cards', 'settings', 'journal'] as const
 
 type Tab = (typeof TAB_IDS)[number]
 
@@ -44,6 +46,7 @@ const TABS: readonly {
   },
   { id: 'cards', label: 'Cartes', isVisible: () => true },
   { id: 'settings', label: 'Réglages', isVisible: () => true },
+  { id: 'journal', label: 'Journal', isVisible: () => true },
 ]
 
 function Admin() {
@@ -53,7 +56,13 @@ function Admin() {
   const navigate = Route.useNavigate()
   const setTab = (next: Tab) => void navigate({ search: { tab: next }, replace: true })
   const { canManageInvitations } = league.permissions
-  const visibleTabs = TABS.filter(({ isVisible }) => isVisible(canManageInvitations))
+  const hasJournalAlert = useJournalAlert(leagueId, tab !== 'journal')
+  const visibleTabs = TABS.filter(({ isVisible }) => isVisible(canManageInvitations)).map(
+    (option) => ({
+      ...option,
+      hasDot: option.id === 'journal' && hasJournalAlert && tab !== 'journal',
+    }),
+  )
 
   return (
     <main className="screen">
@@ -71,7 +80,9 @@ function Admin() {
         }
       />
       <Segmented options={visibleTabs} value={tab} onChange={setTab} />
-      {tab === 'invitations' && canManageInvitations ? (
+      {tab === 'journal' ? (
+        <JournalPanel leagueId={leagueId} />
+      ) : tab === 'invitations' && canManageInvitations ? (
         <InvitationsPanel leagueId={leagueId} />
       ) : tab === 'cards' ? (
         <AdminCardsPanel leagueId={leagueId} />
