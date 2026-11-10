@@ -164,6 +164,9 @@
     gap: 8px;
     pointer-events: none;
   }
+  .ar-pips.is-hidden {
+    visibility: hidden;
+  }
   .ar-pips-row {
     display: flex;
     gap: 8px;

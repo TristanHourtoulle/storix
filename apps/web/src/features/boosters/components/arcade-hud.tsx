@@ -1,7 +1,41 @@
-import type { BoosterPull } from '@storix/shared'
+import type { BoosterPull, CardTier } from '@storix/shared'
+import type { ReactNode } from 'react'
 import { tierKey } from '../arcade/tiers'
 import { pullCredit, pullLabel } from '../pull-label'
 import { PulledFace } from './arcade-card'
+
+interface ArcadeSlotItem {
+  key: string
+  tier: CardTier
+  mini: ReactNode
+}
+
+interface ArcadeSlotsProps {
+  items: readonly ArcadeSlotItem[]
+  filled: readonly boolean[]
+}
+
+const DENSE_SLOT_COUNT = 6
+
+/** Row of hand slots; each slot shows its mini once filled. */
+export function ArcadeSlots({ items, filled }: ArcadeSlotsProps) {
+  return (
+    <div className={`ar-hand${items.length > DENSE_SLOT_COUNT ? ' is-dense' : ''}`}>
+      {items.map((item, index) => {
+        const isFilled = filled[index] === true
+        return (
+          <div
+            key={item.key}
+            className={`ar-slot${isFilled ? ' is-filled' : ''}`}
+            data-t={tierKey(item.tier)}
+          >
+            {isFilled ? <div className="ar-mini">{item.mini}</div> : null}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 interface ArcadeHandProps {
   pulls: readonly BoosterPull[]
@@ -9,26 +43,12 @@ interface ArcadeHandProps {
 }
 
 export function ArcadeHand({ pulls, stashed }: ArcadeHandProps) {
-  return (
-    <div className="ar-hand">
-      {pulls.map((pull, index) => {
-        const isFilled = stashed[index] === true
-        return (
-          <div
-            key={pull.slot}
-            className={`ar-slot${isFilled ? ' is-filled' : ''}`}
-            data-t={tierKey(pull.card.tier)}
-          >
-            {isFilled ? (
-              <div className="ar-mini">
-                <PulledFace pull={pull} />
-              </div>
-            ) : null}
-          </div>
-        )
-      })}
-    </div>
-  )
+  const items = pulls.map((pull) => ({
+    key: String(pull.slot),
+    tier: pull.card.tier,
+    mini: <PulledFace pull={pull} />,
+  }))
+  return <ArcadeSlots items={items} filled={stashed} />
 }
 
 interface ArcadeMetaProps {

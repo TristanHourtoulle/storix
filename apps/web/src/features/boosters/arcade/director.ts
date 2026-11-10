@@ -1,3 +1,5 @@
+import { playSound } from '@/features/sound/sound'
+import type { SoundRequest } from '@/features/sound/sound-types'
 import { logger } from '@/lib/logger'
 import { createParticles, type Particles } from './particles'
 import type { TierFx } from './tiers'
@@ -41,6 +43,9 @@ export interface Pose {
   s?: number
   r?: number
 }
+
+/** Plays a sound request, optionally after `delay` seconds. */
+export type SoundSink = (request: SoundRequest, delay?: number) => void
 
 const STALE = Symbol('stale')
 
@@ -123,6 +128,7 @@ export class Director {
     readonly layers: ArcadeLayers,
     readonly isReduced: boolean,
     canvas: HTMLCanvasElement | null,
+    readonly sound: SoundSink = playSound,
   ) {
     this.fx = isReduced || !canvas ? null : createParticles(canvas)
     this.worldWidth = layers.world.offsetWidth

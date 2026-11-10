@@ -3,7 +3,13 @@ import { CRACK_PATHS, PACK_TOP, PIPS_TOP, SHARDS } from '../arcade/geometry'
 const SPARKLE = 'M50 35Q52.25 47.75 65 50Q52.25 52.25 50 65Q47.75 52.25 35 50Q47.75 47.75 50 35Z'
 const PACK_STYLE = { top: PACK_TOP }
 
-function PackArt({ count }: { count: number }) {
+interface ArcadePackProps {
+  count: number
+  subtitle?: string
+  isChargeHidden?: boolean
+}
+
+function PackArt({ label }: { label: string }) {
   return (
     <div className="ar-pack-art">
       <div className="ar-pa-orb" />
@@ -19,18 +25,19 @@ function PackArt({ count }: { count: number }) {
           </svg>
         </div>
         <div className="ar-pa-word">STORIX</div>
-        <div className="ar-pa-sub">{count > 1 ? `${count} cartes` : '1 carte'}</div>
+        <div className="ar-pa-sub">{label}</div>
       </div>
     </div>
   )
 }
 
-export function ArcadePack({ count }: { count: number }) {
+export function ArcadePack({ count, subtitle, isChargeHidden = false }: ArcadePackProps) {
+  const label = subtitle ?? (count > 1 ? `${count} cartes` : '1 carte')
   return (
     <>
       <div className="ar-pack-halo" style={{ top: PACK_TOP + 145 }} />
       <div className="ar-pack-pos ar-pack-wrap" style={PACK_STYLE}>
-        <PackArt count={count} />
+        <PackArt label={label} />
         <svg className="ar-cracks" viewBox="0 0 200 290" aria-hidden="true">
           {CRACK_PATHS.map((group, index) => (
             <g key={index}>
@@ -41,7 +48,11 @@ export function ArcadePack({ count }: { count: number }) {
           ))}
         </svg>
       </div>
-      <div className="ar-pips" style={{ top: PIPS_TOP }}>
+      <div
+        className={`ar-pips${isChargeHidden ? ' is-hidden' : ''}`}
+        style={{ top: PIPS_TOP }}
+        aria-hidden={isChargeHidden || undefined}
+      >
         <div className="ar-pips-row">
           <span className="ar-pip" />
           <span className="ar-pip" />
@@ -52,7 +63,7 @@ export function ArcadePack({ count }: { count: number }) {
       {SHARDS.map((poly) => (
         <div key={poly.join()} className="ar-pack-pos ar-shard" style={PACK_STYLE}>
           <div className="ar-shard-clip" style={{ clipPath: `polygon(${poly.join(', ')})` }}>
-            <PackArt count={count} />
+            <PackArt label={label} />
           </div>
         </div>
       ))}

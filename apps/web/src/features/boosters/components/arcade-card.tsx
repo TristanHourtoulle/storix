@@ -1,4 +1,5 @@
-import type { BoosterPull } from '@storix/shared'
+import type { BoosterPull, CardTier } from '@storix/shared'
+import type { ReactNode } from 'react'
 import { CardFace, type CardFaceProps } from '@/features/cards/components/card-face'
 import { CardImage } from '@/features/cards/components/card-image'
 import { tierKey } from '../arcade/tiers'
@@ -63,9 +64,15 @@ interface ArcadeCardProps {
   registerImage: (img: HTMLImageElement | null) => void
 }
 
-export function ArcadeCard({ pull, registerImage }: ArcadeCardProps) {
+interface ArcadeCardShellProps {
+  tier: CardTier
+  front: ReactNode
+}
+
+/** Arcade card markup (aura, rings, flipper, back and dim) around any front face. */
+export function ArcadeCardShell({ tier, front }: ArcadeCardShellProps) {
   return (
-    <div className="ar-card" data-t={tierKey(pull.card.tier)}>
+    <div className="ar-card" data-t={tierKey(tier)}>
       <div className="ar-aura">
         <div className="ar-aura-spin" />
       </div>
@@ -74,11 +81,18 @@ export function ArcadeCard({ pull, registerImage }: ArcadeCardProps) {
         <div className="ar-face ar-back">
           <CardBackArt />
         </div>
-        <div className="ar-face ar-front">
-          <PulledFace pull={pull} isHighPriority registerImage={registerImage} />
-        </div>
+        <div className="ar-face ar-front">{front}</div>
       </div>
       <div className="ar-dim" />
     </div>
+  )
+}
+
+export function ArcadeCard({ pull, registerImage }: ArcadeCardProps) {
+  return (
+    <ArcadeCardShell
+      tier={pull.card.tier}
+      front={<PulledFace pull={pull} isHighPriority registerImage={registerImage} />}
+    />
   )
 }
