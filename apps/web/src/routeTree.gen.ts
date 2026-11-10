@@ -24,6 +24,7 @@ import { Route as AuthedLLeagueIdCollectionRouteImport } from './routes/_authed/
 import { Route as AuthedLLeagueIdTaggedRouteImport } from './routes/_authed/l.$leagueId.tagged'
 import { Route as AuthedLLeagueIdCardsCardIdRouteImport } from './routes/_authed/l.$leagueId.cards.$cardId'
 import { Route as AuthedLLeagueIdProfileIndexRouteImport } from './routes/_authed/l.$leagueId.profile.index'
+import { Route as AuthedLLeagueIdProfileBoostersRouteImport } from './routes/_authed/l.$leagueId.profile.boosters'
 import { Route as AuthedLLeagueIdProfileConnexionRouteImport } from './routes/_authed/l.$leagueId.profile.connexion'
 import { Route as AuthedLLeagueIdProfileLiguesRouteImport } from './routes/_authed/l.$leagueId.profile.ligues'
 import { Route as AuthedLLeagueIdProfileNotificationsRouteImport } from './routes/_authed/l.$leagueId.profile.notifications'
@@ -109,6 +110,12 @@ const AuthedLLeagueIdProfileIndexRoute =
     path: '/profile/',
     getParentRoute: () => AuthedLLeagueIdRoute,
   } as any)
+const AuthedLLeagueIdProfileBoostersRoute =
+  AuthedLLeagueIdProfileBoostersRouteImport.update({
+    id: '/profile/boosters',
+    path: '/profile/boosters',
+    getParentRoute: () => AuthedLLeagueIdRoute,
+  } as any)
 const AuthedLLeagueIdProfileConnexionRoute =
   AuthedLLeagueIdProfileConnexionRouteImport.update({
     id: '/profile/connexion',
@@ -166,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/l/$leagueId/tagged': typeof AuthedLLeagueIdTaggedRoute
   '/l/$leagueId/': typeof AuthedLLeagueIdIndexRoute
   '/l/$leagueId/cards/$cardId': typeof AuthedLLeagueIdCardsCardIdRoute
+  '/l/$leagueId/profile/boosters': typeof AuthedLLeagueIdProfileBoostersRoute
   '/l/$leagueId/profile/connexion': typeof AuthedLLeagueIdProfileConnexionRoute
   '/l/$leagueId/profile/ligues': typeof AuthedLLeagueIdProfileLiguesRoute
   '/l/$leagueId/profile/notifications': typeof AuthedLLeagueIdProfileNotificationsRoute
@@ -188,6 +196,7 @@ export interface FileRoutesByTo {
   '/l/$leagueId/tagged': typeof AuthedLLeagueIdTaggedRoute
   '/l/$leagueId': typeof AuthedLLeagueIdIndexRoute
   '/l/$leagueId/cards/$cardId': typeof AuthedLLeagueIdCardsCardIdRoute
+  '/l/$leagueId/profile/boosters': typeof AuthedLLeagueIdProfileBoostersRoute
   '/l/$leagueId/profile/connexion': typeof AuthedLLeagueIdProfileConnexionRoute
   '/l/$leagueId/profile/ligues': typeof AuthedLLeagueIdProfileLiguesRoute
   '/l/$leagueId/profile/notifications': typeof AuthedLLeagueIdProfileNotificationsRoute
@@ -213,6 +222,7 @@ export interface FileRoutesById {
   '/_authed/l/$leagueId/tagged': typeof AuthedLLeagueIdTaggedRoute
   '/_authed/l/$leagueId/': typeof AuthedLLeagueIdIndexRoute
   '/_authed/l/$leagueId/cards/$cardId': typeof AuthedLLeagueIdCardsCardIdRoute
+  '/_authed/l/$leagueId/profile/boosters': typeof AuthedLLeagueIdProfileBoostersRoute
   '/_authed/l/$leagueId/profile/connexion': typeof AuthedLLeagueIdProfileConnexionRoute
   '/_authed/l/$leagueId/profile/ligues': typeof AuthedLLeagueIdProfileLiguesRoute
   '/_authed/l/$leagueId/profile/notifications': typeof AuthedLLeagueIdProfileNotificationsRoute
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
     | '/l/$leagueId/tagged'
     | '/l/$leagueId/'
     | '/l/$leagueId/cards/$cardId'
+    | '/l/$leagueId/profile/boosters'
     | '/l/$leagueId/profile/connexion'
     | '/l/$leagueId/profile/ligues'
     | '/l/$leagueId/profile/notifications'
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/l/$leagueId/tagged'
     | '/l/$leagueId'
     | '/l/$leagueId/cards/$cardId'
+    | '/l/$leagueId/profile/boosters'
     | '/l/$leagueId/profile/connexion'
     | '/l/$leagueId/profile/ligues'
     | '/l/$leagueId/profile/notifications'
@@ -284,6 +296,7 @@ export interface FileRouteTypes {
     | '/_authed/l/$leagueId/tagged'
     | '/_authed/l/$leagueId/'
     | '/_authed/l/$leagueId/cards/$cardId'
+    | '/_authed/l/$leagueId/profile/boosters'
     | '/_authed/l/$leagueId/profile/connexion'
     | '/_authed/l/$leagueId/profile/ligues'
     | '/_authed/l/$leagueId/profile/notifications'
@@ -408,6 +421,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedLLeagueIdProfileIndexRouteImport
       parentRoute: typeof AuthedLLeagueIdRoute
     }
+    '/_authed/l/$leagueId/profile/boosters': {
+      id: '/_authed/l/$leagueId/profile/boosters'
+      path: '/profile/boosters'
+      fullPath: '/l/$leagueId/profile/boosters'
+      preLoaderRoute: typeof AuthedLLeagueIdProfileBoostersRouteImport
+      parentRoute: typeof AuthedLLeagueIdRoute
+    }
     '/_authed/l/$leagueId/profile/connexion': {
       id: '/_authed/l/$leagueId/profile/connexion'
       path: '/profile/connexion'
@@ -468,6 +488,7 @@ interface AuthedLLeagueIdRouteChildren {
   AuthedLLeagueIdTaggedRoute: typeof AuthedLLeagueIdTaggedRoute
   AuthedLLeagueIdIndexRoute: typeof AuthedLLeagueIdIndexRoute
   AuthedLLeagueIdCardsCardIdRoute: typeof AuthedLLeagueIdCardsCardIdRoute
+  AuthedLLeagueIdProfileBoostersRoute: typeof AuthedLLeagueIdProfileBoostersRoute
   AuthedLLeagueIdProfileConnexionRoute: typeof AuthedLLeagueIdProfileConnexionRoute
   AuthedLLeagueIdProfileLiguesRoute: typeof AuthedLLeagueIdProfileLiguesRoute
   AuthedLLeagueIdProfileNotificationsRoute: typeof AuthedLLeagueIdProfileNotificationsRoute
@@ -486,6 +507,7 @@ const AuthedLLeagueIdRouteChildren: AuthedLLeagueIdRouteChildren = {
   AuthedLLeagueIdTaggedRoute: AuthedLLeagueIdTaggedRoute,
   AuthedLLeagueIdIndexRoute: AuthedLLeagueIdIndexRoute,
   AuthedLLeagueIdCardsCardIdRoute: AuthedLLeagueIdCardsCardIdRoute,
+  AuthedLLeagueIdProfileBoostersRoute: AuthedLLeagueIdProfileBoostersRoute,
   AuthedLLeagueIdProfileConnexionRoute: AuthedLLeagueIdProfileConnexionRoute,
   AuthedLLeagueIdProfileLiguesRoute: AuthedLLeagueIdProfileLiguesRoute,
   AuthedLLeagueIdProfileNotificationsRoute:

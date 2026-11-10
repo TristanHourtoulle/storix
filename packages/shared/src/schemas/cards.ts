@@ -4,6 +4,7 @@ import {
   COLLECTION_SORTS,
   COPY_VARIANTS,
   DEFAULT_COLLECTION_SORT,
+  JOURNEY_CAUSES,
   LEGACY_COLLECTION_CURSOR,
   cursorSort,
   parseCollectionCursor,
@@ -229,3 +230,18 @@ export type TaggedCard = z.infer<typeof taggedCardSchema>
 export type StackEntryView = z.infer<typeof stackEntrySchema>
 export type PromotionAction = z.infer<typeof promotionActionSchema>
 export type PromotedHolder = z.infer<typeof promotedHolderSchema>
+
+export const MAX_JOURNEY_STEPS = 60
+
+export const journeyStepSchema = z.object({
+  kind: z.enum(['league', 'mine']),
+  tier: cardTierSchema,
+  at: isoDateSchema,
+  cause: z.enum(JOURNEY_CAUSES).nullable(),
+})
+
+export const rarityHistorySchema = z.object({
+  steps: z.array(journeyStepSchema).max(MAX_JOURNEY_STEPS),
+})
+
+export type RarityHistory = z.infer<typeof rarityHistorySchema>

@@ -1,0 +1,199 @@
+@layer components {
+  .hero-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .hlist {
+    display: grid;
+    gap: 10px;
+  }
+  .hstats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .hstats.is-loading {
+    height: 120px;
+    border-radius: 12px;
+    background: var(--color-surface);
+  }
+  .hstat {
+    min-width: 0;
+    padding: 8px 9px;
+    border-radius: 12px;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-hairline);
+  }
+  .hstat b {
+    display: block;
+    font: 600 17px var(--font-display);
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink);
+  }
+  .hstat b.is-gold {
+    color: #fcd34d;
+  }
+  .hstat small {
+    display: block;
+    font-size: 9.5px;
+    line-height: 1.2;
+    color: var(--color-faint);
+    overflow-wrap: anywhere;
+  }
+  .hday {
+    display: grid;
+    gap: 8px;
+  }
+  .hday-h {
+    margin: 0;
+    padding-top: 4px;
+    font: 600 10.5px var(--font-display);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-faint);
+  }
+  .hopen {
+    display: grid;
+    border-radius: 14px;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-hairline);
+  }
+  .hopen.is-premium {
+    background:
+      linear-gradient(160deg, rgba(251, 191, 36, 0.08), transparent 60%), var(--color-surface);
+    box-shadow:
+      inset 0 0 0 1px rgba(251, 191, 36, 0.45),
+      0 0 18px -8px rgba(251, 191, 36, 0.6);
+  }
+  .hopen-toggle {
+    appearance: none;
+    display: grid;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 10px;
+    border: 0;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+  }
+  .hopen-h {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--color-muted);
+  }
+  .hopen-h b {
+    font: 600 11.5px var(--font-display);
+    color: var(--color-ink-2);
+  }
+  .hopen.is-premium .hopen-h b {
+    color: #fcd34d;
+  }
+  .hopen-five {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+  }
+  .hmc {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 63 / 88;
+    border-radius: 6px;
+    background: linear-gradient(170deg, #2e2550, #1a2c44 60%, #10161f);
+    box-shadow:
+      0 0 0 1.5px var(--tc),
+      0 0 10px -4px var(--tc);
+  }
+  .hmc.is-foil::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(
+      115deg,
+      transparent 25%,
+      rgba(255, 255, 255, 0.28) 40%,
+      rgba(34, 211, 238, 0.25) 50%,
+      rgba(192, 132, 252, 0.25) 58%,
+      transparent 72%
+    );
+    background-size: 250% 250%;
+    mix-blend-mode: screen;
+    animation: shine 5s linear infinite;
+    pointer-events: none;
+  }
+  .hmc.is-foil::before {
+    content: '';
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    z-index: 2;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--color-cyan);
+    box-shadow: 0 0 6px var(--color-cyan);
+  }
+  .hmc-fill {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+  }
+  .hmc-fill.is-blurred {
+    filter: blur(6px);
+    transform: scale(1.2);
+  }
+  .hmc.is-removed {
+    background: var(--color-surface-2);
+  }
+  .hmc-removed {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 2px;
+    font: 600 7px var(--font-display);
+    text-align: center;
+    color: var(--color-faint);
+  }
+  .hmc-new {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    z-index: 1;
+    padding: 0 2px;
+    border-radius: 3px;
+    background: var(--color-cyan);
+    color: var(--color-bg);
+    font: 700 6.5px var(--font-display);
+    font-style: normal;
+    line-height: 9px;
+  }
+  .hopen-rows {
+    display: grid;
+    gap: 5px;
+    margin: 0;
+    padding: 0 10px 10px;
+    list-style: none;
+    font-size: 10.5px;
+    color: var(--color-ink-2);
+  }
+  .hopen-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .hopen-row a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .hopen-outcome {
+    flex: none;
+    color: var(--color-faint);
+  }
+}

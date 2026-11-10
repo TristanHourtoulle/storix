@@ -41,6 +41,12 @@ export const boosterOpenings = pgTable(
   (t) => [
     unique('booster_openings_request_unique').on(t.leagueId, t.userId, t.requestId),
     index('booster_openings_league_opened_idx').on(t.leagueId, t.openedAt.desc()),
+    index('booster_openings_member_opened_idx').on(
+      t.leagueId,
+      t.userId,
+      t.openedAt.desc(),
+      t.id.desc(),
+    ),
     foreignKey({
       name: 'booster_openings_member_fk',
       columns: [t.leagueId, t.userId],

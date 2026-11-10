@@ -6,11 +6,12 @@ import { TopBar } from '@/components/ui/top-bar'
 interface ProfileSubPageProps {
   leagueId: string
   title: string
+  subtitle?: string | undefined
   children: ReactNode
 }
 
 /** Profile sub-page with a back link to the profile; moves focus to its title on open. */
-export function ProfileSubPage({ leagueId, title, children }: ProfileSubPageProps) {
+export function ProfileSubPage({ leagueId, title, subtitle, children }: ProfileSubPageProps) {
   const titleRef = useRef<HTMLHeadingElement>(null)
   const router = useRouter()
 
@@ -33,16 +34,12 @@ export function ProfileSubPage({ leagueId, title, children }: ProfileSubPageProp
         title={title}
         titleRef={titleRef}
         start={
-          <button
-            type="button"
-            onClick={goBack}
-            aria-label="Retour au profil"
-            className="icon-btn"
-          >
+          <button type="button" onClick={goBack} aria-label="Retour au profil" className="icon-btn">
             <Icon name="back" className="size-5" />
           </button>
         }
       />
+      {subtitle ? <p className="-mt-3 mb-0 text-center text-xs text-faint">{subtitle}</p> : null}
       {children}
     </main>
   )

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import { canOpenBooster, type WalletState } from '@storix/shared'
 import { Button } from '@/components/ui/button'
 import { formatCountdown } from '../format-countdown'
@@ -10,6 +11,7 @@ import { PremiumGauge } from './premium-gauge'
 import { StockPips } from './stock-pips'
 
 interface BoosterWidgetProps {
+  leagueId: string
   wallet: WalletState
   isFresh: boolean
   onOpen: () => void
@@ -71,7 +73,13 @@ function EpicGuarantee({ pity }: { pity: WalletState['pity'] }) {
   )
 }
 
-export function BoosterWidget({ wallet, isFresh, onOpen, onElapsed }: BoosterWidgetProps) {
+export function BoosterWidget({
+  leagueId,
+  wallet,
+  isFresh,
+  onOpen,
+  onElapsed,
+}: BoosterWidgetProps) {
   const { stock, maxStock, nextAt } = wallet.booster
   const { pool } = wallet
   const isPoolTooSmall = !canOpenBooster(pool.drawableCount)
@@ -98,9 +106,14 @@ export function BoosterWidget({ wallet, isFresh, onOpen, onElapsed }: BoosterWid
         )}
         <EpicGuarantee pity={wallet.pity} />
         <PremiumGauge premium={wallet.premium} />
-        <button type="button" className="hero-odds" onClick={() => setIsOddsOpen(true)}>
-          Probabilités
-        </button>
+        <div className="hero-links">
+          <button type="button" className="hero-odds" onClick={() => setIsOddsOpen(true)}>
+            Probabilités
+          </button>
+          <Link to="/l/$leagueId/profile/boosters" params={{ leagueId }} className="hero-odds">
+            Historique
+          </Link>
+        </div>
         <Button
           variant="primary"
           sound="none"

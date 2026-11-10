@@ -5,6 +5,10 @@ import { createAuthGateway, type AuthGateway } from './auth/auth.gateway'
 import type { Env } from './config/env'
 import { createAccountService, type AccountService } from './features/account/account.service'
 import { createCardRemoval, type CardRemoval } from './features/card-removal/card-removal.service'
+import {
+  createBoosterHistoryService,
+  type BoosterHistoryService,
+} from './features/boosters/booster-history.service'
 import { createBoostersService, type BoostersService } from './features/boosters/boosters.service'
 import { createCardsService, type CardsService } from './features/cards/cards.service'
 import { createCopiesService, type CopiesService } from './features/copies/copies.service'
@@ -72,6 +76,7 @@ export interface AppDeps {
 export interface Services {
   account: AccountService
   boosters: BoostersService
+  boosterHistory: BoosterHistoryService
   cardRemoval: CardRemoval
   cards: CardsService
   copies: CopiesService
@@ -129,6 +134,7 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       signer: deps.mediaSigner,
       clock: deps.clock,
     }),
+    boosterHistory: createBoosterHistoryService({ db: deps.db, signer: deps.mediaSigner }),
     cardRemoval,
     cards: createCardsService({ db: deps.db, signer: deps.mediaSigner, clock: deps.clock }),
     copies: createCopiesService({ db: deps.db, clock: deps.clock }),

@@ -78,6 +78,22 @@ function Profile() {
         <Icon name="chevron-right" className="size-5 flex-none text-faint" />
       </Link>
       {currentLeague ? <LeagueScopeCard league={currentLeague} leagues={leagues} /> : null}
+      <SettingsGroup title="Dans cette ligue">
+        <li>
+          <Link
+            to="/l/$leagueId/profile/boosters"
+            params={params}
+            className={settingsRowClassName()}
+          >
+            <SettingsRowContent
+              icon="stack"
+              label="Mes boosters"
+              hint="Historique et statistiques"
+              hasChevron
+            />
+          </Link>
+        </li>
+      </SettingsGroup>
       <SettingsGroup title="Mon compte">
         <li>
           <Link to="/l/$leagueId/profile/photo" params={params} className={settingsRowClassName()}>

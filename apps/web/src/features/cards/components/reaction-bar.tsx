@@ -7,6 +7,7 @@ interface ReactionBarProps {
   reactions: ReactionCounts
   canReact: boolean
   onToggle: (type: ReactionType, isOn: boolean) => void
+  onOpenReactors?: (type: ReactionType) => void
 }
 
 const REACTIONS: readonly { type: ReactionType; label: string; sound: ReactionSound }[] = [
@@ -15,7 +16,12 @@ const REACTIONS: readonly { type: ReactionType; label: string; sound: ReactionSo
   { type: 'star', label: 'Étoile', sound: 'reactStar' },
 ]
 
-export function ReactionBar({ reactions, canReact, onToggle }: ReactionBarProps) {
+/**
+ * The three reaction counters. Members who can react toggle their reaction; the author, who can't,
+ * opens the list of who reacted instead when `onOpenReactors` is given.
+ */
+export function ReactionBar({ reactions, canReact, onToggle, onOpenReactors }: ReactionBarProps) {
+  const opensReactors = !canReact && onOpenReactors !== undefined
   return (
     <div className="reacts">
       {REACTIONS.map(({ type, label, sound }) => {
@@ -25,11 +31,18 @@ export function ReactionBar({ reactions, canReact, onToggle }: ReactionBarProps)
             key={type}
             type="button"
             className={isMine ? 'react on' : 'react'}
-            aria-pressed={isMine}
+            aria-pressed={opensReactors ? undefined : isMine}
+            aria-haspopup={opensReactors ? 'dialog' : undefined}
             aria-label={`${label}, ${count} ${count > 1 ? 'réactions' : 'réaction'}`}
-            disabled={!canReact}
-            title={canReact ? undefined : 'Tu ne peux pas réagir à ta propre carte'}
+            disabled={!canReact && !opensReactors}
+            title={
+              canReact || opensReactors ? undefined : 'Tu ne peux pas réagir à ta propre carte'
+            }
             onClick={() => {
+              if (opensReactors) {
+                onOpenReactors(type)
+                return
+              }
               if (!isMine) playSound({ name: sound })
               onToggle(type, !isMine)
             }}

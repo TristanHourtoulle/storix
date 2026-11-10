@@ -1,8 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import type { Query } from '@tanstack/react-query'
 import type { ReactionCounts, ReactionType, ViewerCardDetail } from '@storix/shared'
 import { logger } from '@/lib/logger'
 import { setReaction } from './cards.api'
 import { cardDetailQueryOptions } from './cards.queries'
+import { cardReactorsQueryKey } from './use-card-reactors'
 
 interface ToggleVariables {
   type: ReactionType
@@ -15,6 +17,21 @@ interface ToggleContext {
 
 function withReactions(card: ViewerCardDetail, reactions: ReactionCounts): ViewerCardDetail {
   return card.kind === 'owned' ? { ...card, reactions } : card
+}
+
+function isReactionSortedPage(leagueId: string) {
+  return (query: Query): boolean => {
+    const [scope, id, kind, filters] = query.queryKey
+    return (
+      scope === 'leagues' &&
+      id === leagueId &&
+      kind === 'cards' &&
+      typeof filters === 'object' &&
+      filters !== null &&
+      'sort' in filters &&
+      filters.sort === 'reactions'
+    )
+  }
 }
 
 function applyToggle(reactions: ReactionCounts, { type, isOn }: ToggleVariables): ReactionCounts {
@@ -57,6 +74,14 @@ export function useReactions(leagueId: string, cardId: string) {
       } else if (context?.previous) {
         queryClient.setQueryData(queryKey, context.previous)
       }
+    },
+    onSettled: () => {
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: cardReactorsQueryKey(leagueId, cardId) }),
+        queryClient.invalidateQueries({ predicate: isReactionSortedPage(leagueId) }),
+      ]).catch((cause: unknown) => {
+        logger.warn('Reactors refresh failed', { error: cause })
+      })
     },
     onSuccess: (reactions) => {
       if (hasOtherPending()) return

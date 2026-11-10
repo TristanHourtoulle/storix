@@ -55,6 +55,7 @@ function LeagueHome() {
       ) : null}
       {wallet ? (
         <BoosterWidget
+          leagueId={leagueId}
           wallet={wallet}
           isFresh={isFetchedAfterMount}
           onOpen={openBooster}
