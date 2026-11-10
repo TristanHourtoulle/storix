@@ -1,13 +1,14 @@
 import type { Database } from '@storix/db'
-import { missionWeekKey, previousWeekKey } from '@storix/shared'
+import { missionWeekKey } from '@storix/shared'
 import type { WorkerLogger } from '../../lib/logger'
 import {
   advanceGoal,
-  closeGoal,
   ensureWeekGoal,
   goalProgress,
   listLeagueIds,
   listOpenGoals,
+  listUnclosedPastGoals,
+  settleFinishedGoal,
   type LeagueGoalRecord,
 } from './league-goals.repository'
 
@@ -22,7 +23,7 @@ interface Deps {
   logger: WorkerLogger
 }
 
-/** Creates the use cases rewarding reached league goals and rolling the weekly goals over; idempotent. */
+/** Creates the use cases rewarding reached league goals and rolling the weekly goals over, catching up any missed week; idempotent. */
 export function createLeagueGoalsService({ db, clock, logger }: Deps): LeagueGoalsService {
   async function eachGoal(
     goals: readonly LeagueGoalRecord[],
@@ -43,6 +44,10 @@ export function createLeagueGoalsService({ db, clock, logger }: Deps): LeagueGoa
   return {
     async tick() {
       const now = clock()
+      const finished = await listUnclosedPastGoals(db, { beforeWeekKey: missionWeekKey(now) })
+      await eachGoal(finished, (goal) =>
+        db.transaction((tx) => settleFinishedGoal(tx, { goal, now })),
+      )
       const goals = await listOpenGoals(db, missionWeekKey(now))
       const advanced = await eachGoal(goals, (goal) =>
         db.transaction(async (tx) => {
@@ -56,13 +61,9 @@ export function createLeagueGoalsService({ db, clock, logger }: Deps): LeagueGoa
     async closeAndOpenWeek() {
       const now = clock()
       const weekKey = missionWeekKey(now)
-      const previous = await listOpenGoals(db, previousWeekKey(weekKey))
-      const closed = await eachGoal(previous, (goal) =>
-        db.transaction(async (tx) => {
-          const progress = await goalProgress(tx, goal)
-          const current = await advanceGoal(tx, { goal, progress, now })
-          await closeGoal(tx, { goal: current, progress, now })
-        }),
+      const finished = await listUnclosedPastGoals(db, { beforeWeekKey: weekKey })
+      const closed = await eachGoal(finished, (goal) =>
+        db.transaction((tx) => settleFinishedGoal(tx, { goal, now })),
       )
       const leagueIds = await listLeagueIds(db)
       const opened = await leagueIds.reduce<Promise<number>>(async (pending, leagueId) => {

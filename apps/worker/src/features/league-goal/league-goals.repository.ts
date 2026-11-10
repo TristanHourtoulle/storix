@@ -1,9 +1,10 @@
 export {
   advanceGoal,
-  closeGoal,
   ensureWeekGoal,
   goalProgress,
   listLeagueIds,
   listOpenGoals,
+  listUnclosedPastGoals,
+  settleFinishedGoal,
   type LeagueGoalRecord,
 } from '@storix/db'
