@@ -11,7 +11,7 @@ import {
 } from '@storix/shared'
 import { AppError, notFound } from '../../lib/errors'
 import { insertAuditEntry } from '../audit/audit.repository'
-import { awardEmblems } from '../emblems/emblems.service'
+import { awardAfter, type EmblemAwards } from '../emblems/emblems.service'
 import type { Membership } from '../leagues/leagues.service'
 import { lockCardTier, lockOwnedCopies, setPromotedTier } from './copies.repository'
 import { copyNotOwned, setDust, withLockedCard, type LockedContext } from './locked-card'
@@ -25,6 +25,7 @@ export interface StacksService {
 export interface StacksServiceDeps {
   db: Database
   clock: () => Date
+  emblems: EmblemAwards
 }
 
 function stackChanged(count: number): AppError {
@@ -40,61 +41,64 @@ async function consume(
 }
 
 /** Builds the service promoting a copy's personal tier and converting stacked copies to dust, serialized by the member wallet lock. */
-export function createStacksService({ db, clock }: StacksServiceDeps): StacksService {
+export function createStacksService({ db, clock, emblems }: StacksServiceDeps): StacksService {
   return {
     promote: (m, cardId, from) =>
-      withLockedCard({ db, clock }, m, cardId, async (ctx) => {
-        const key = { leagueId: m.leagueId, cardId, ownerId: m.userId }
-        const leagueTier = await lockCardTier(ctx.tx, { leagueId: m.leagueId, cardId })
-        if (leagueTier === null) throw notFound('Card not found')
-        const copies = await lockOwnedCopies(ctx.tx, key)
-        if (copies.length === 0) throw copyNotOwned()
-        const stack = await lockStackEntries(ctx.tx, key)
-        const decision = promotionDecision({ copies, leagueTier, stack, dust: ctx.wallet.dust })
-        if (decision.from !== from) {
-          throw new AppError('PROMOTION_STALE', 409, 'The promotion step changed', {
-            from: decision.from,
+      awardAfter(
+        emblems,
+        [m],
+        withLockedCard({ db, clock }, m, cardId, async (ctx) => {
+          const key = { leagueId: m.leagueId, cardId, ownerId: m.userId }
+          const leagueTier = await lockCardTier(ctx.tx, { leagueId: m.leagueId, cardId })
+          if (leagueTier === null) throw notFound('Card not found')
+          const copies = await lockOwnedCopies(ctx.tx, key)
+          if (copies.length === 0) throw copyNotOwned()
+          const stack = await lockStackEntries(ctx.tx, key)
+          const decision = promotionDecision({ copies, leagueTier, stack, dust: ctx.wallet.dust })
+          if (decision.from !== from) {
+            throw new AppError('PROMOTION_STALE', 409, 'The promotion step changed', {
+              from: decision.from,
+            })
+          }
+          if (decision.reason === 'insufficient_dust') {
+            throw new AppError('INSUFFICIENT_DUST', 409, 'Not enough dust for this promotion', {
+              cost: decision.cost,
+              dust: ctx.wallet.dust,
+            })
+          }
+          const take = planStackTake(stack, PROMOTION_COPIES, 'cheapest')
+          const { variant, to, cost } = decision
+          if (
+            !decision.allowed ||
+            variant === null ||
+            to === null ||
+            cost === null ||
+            take === null
+          ) {
+            throw new AppError('PROMOTION_NOT_ALLOWED', 409, 'This copy cannot be promoted', {
+              reason: decision.reason,
+            })
+          }
+          await consume(ctx, key, take.taken)
+          const promoted = await setPromotedTier(ctx.tx, {
+            cardId,
+            ownerId: m.userId,
+            variant,
+            promotedTier: to,
+            now: ctx.now,
           })
-        }
-        if (decision.reason === 'insufficient_dust') {
-          throw new AppError('INSUFFICIENT_DUST', 409, 'Not enough dust for this promotion', {
-            cost: decision.cost,
-            dust: ctx.wallet.dust,
+          if (!promoted) throw copyNotOwned()
+          await insertAuditEntry(ctx.tx, {
+            leagueId: m.leagueId,
+            actorId: m.userId,
+            targetUserId: null,
+            action: 'copy.promoted',
+            metadata: { cardId, variant, from: decision.from, to, cost, taken: take.taken },
           })
-        }
-        const take = planStackTake(stack, PROMOTION_COPIES, 'cheapest')
-        const { variant, to, cost } = decision
-        if (
-          !decision.allowed ||
-          variant === null ||
-          to === null ||
-          cost === null ||
-          take === null
-        ) {
-          throw new AppError('PROMOTION_NOT_ALLOWED', 409, 'This copy cannot be promoted', {
-            reason: decision.reason,
-          })
-        }
-        await consume(ctx, key, take.taken)
-        const promoted = await setPromotedTier(ctx.tx, {
-          cardId,
-          ownerId: m.userId,
-          variant,
-          promotedTier: to,
-          now: ctx.now,
-        })
-        if (!promoted) throw copyNotOwned()
-        await insertAuditEntry(ctx.tx, {
-          leagueId: m.leagueId,
-          actorId: m.userId,
-          targetUserId: null,
-          action: 'copy.promoted',
-          metadata: { cardId, variant, from: decision.from, to, cost, taken: take.taken },
-        })
-        const { dust } = await setDust(ctx, ctx.wallet.dust - cost)
-        await awardEmblems(ctx.tx, { leagueId: m.leagueId, userId: m.userId, now: ctx.now })
-        return { dust, stackCount: stackSize(take.remaining) }
-      }),
+          const { dust } = await setDust(ctx, ctx.wallet.dust - cost)
+          return { dust, stackCount: stackSize(take.remaining) }
+        }),
+      ),
 
     convert: (m, cardId, body) =>
       withLockedCard({ db, clock }, m, cardId, async (ctx) => {

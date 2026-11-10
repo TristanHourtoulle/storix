@@ -1,4 +1,4 @@
-import { awardEarnedEmblems, loadEmblemStats, memberEmblems, type DbExecutor } from '@storix/db'
+import { loadEmblemStats, memberEmblems, type DbExecutor } from '@storix/db'
 import { isEmblemId, type EmblemId, type EmblemStats } from '@storix/shared'
 import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 
@@ -72,12 +72,4 @@ export async function replaceFeaturedEmblems(
 /** Reads the counters behind a member's emblem progress. */
 export function readEmblemStats(db: DbExecutor, m: EmblemMember): Promise<EmblemStats> {
   return loadEmblemStats(db, m)
-}
-
-/** Inserts a member's newly earned emblems and returns their ids. */
-export function insertEarnedEmblems(
-  db: DbExecutor,
-  m: EmblemMember & { now: Date },
-): Promise<EmblemId[]> {
-  return awardEarnedEmblems(db, m)
 }

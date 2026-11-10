@@ -24,11 +24,21 @@ export function unseenEmblemsQueryOptions(leagueId: string) {
   })
 }
 
-/** Refreshes the emblem queries of a league after an action that may unlock one. */
+const AWARD_REFRESH_DELAYS_MS = [0, 3_000, 8_000] as const
+
+/**
+ * Refreshes the emblem queries of a league after an action that may unlock one.
+ * Emblems are awarded by a worker job after the action commits, so the queries are refetched
+ * a few times over the next seconds for the unlock banner to show without a reload.
+ */
 export function refreshEmblems(queryClient: QueryClient, leagueId: string): void {
-  void queryClient
-    .invalidateQueries({ queryKey: emblemsQueryKey(leagueId) })
-    .catch((error: unknown) => {
-      logger.warn('Emblems refresh failed', { error })
-    })
+  for (const delay of AWARD_REFRESH_DELAYS_MS) {
+    setTimeout(() => {
+      void queryClient
+        .invalidateQueries({ queryKey: emblemsQueryKey(leagueId) })
+        .catch((error: unknown) => {
+          logger.warn('Emblems refresh failed', { error })
+        })
+    }, delay)
+  }
 }

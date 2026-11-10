@@ -1,4 +1,4 @@
-import type { Database, DbExecutor } from '@storix/db'
+import type { Database } from '@storix/db'
 import { lockLeagueEconomyShared } from '../wallets/wallets.repository'
 import { canReact, type CardReactors, type ReactionCounts, type ReactionType } from '@storix/shared'
 import { AppError, notFound } from '../../lib/errors'
@@ -6,19 +6,19 @@ import { runInTransaction } from '../../lib/transaction'
 import { isOwned } from '../cards/card-views'
 import { findCardForViewer } from '../cards/cards.repository'
 import { lockOwnedVariants } from '../copies/copies.repository'
-import { awardEmblems } from '../emblems/emblems.service'
-import { findMembership } from '../members/members.repository'
+import type { EmblemAwards } from '../emblems/emblems.service'
 import type { Membership } from '../leagues/leagues.service'
 import { addReaction, countReactions, listReactors, removeReaction } from './reactions.repository'
 
-async function awardReactionEmblems(
-  tx: DbExecutor,
-  input: { leagueId: string; reactorId: string; authorId: string | null; now: Date },
-): Promise<void> {
-  await awardEmblems(tx, { leagueId: input.leagueId, userId: input.reactorId, now: input.now })
-  if (input.authorId === null || input.authorId === input.reactorId) return
-  if ((await findMembership(tx, input.leagueId, input.authorId)) === null) return
-  await awardEmblems(tx, { leagueId: input.leagueId, userId: input.authorId, now: input.now })
+function reactionMembers(
+  leagueId: string,
+  reactorId: string,
+  authorId: string | null,
+): { leagueId: string; userId: string }[] {
+  const reactor = { leagueId, userId: reactorId }
+  return authorId === null || authorId === reactorId
+    ? [reactor]
+    : [reactor, { leagueId, userId: authorId }]
 }
 
 export interface ReactionsService {
@@ -33,14 +33,14 @@ export interface ReactionsService {
 
 export interface ReactionsServiceDeps {
   db: Database
-  clock: () => Date
+  emblems: EmblemAwards
 }
 
 /** Builds the service letting owners react to cards they did not author, and anyone withdraw their own reaction. */
-export function createReactionsService({ db, clock }: ReactionsServiceDeps): ReactionsService {
+export function createReactionsService({ db, emblems }: ReactionsServiceDeps): ReactionsService {
   return {
-    setReaction: (m, cardId, type, isOn) =>
-      runInTransaction(db, async (tx) => {
+    async setReaction(m, cardId, type, isOn) {
+      const { counts, authorId } = await runInTransaction(db, async (tx) => {
         await lockLeagueEconomyShared(tx, m.leagueId)
         const card = await findCardForViewer(tx, {
           leagueId: m.leagueId,
@@ -59,17 +59,17 @@ export function createReactionsService({ db, clock }: ReactionsServiceDeps): Rea
             throw new AppError('REACTION_NOT_ALLOWED', 403, 'You cannot react to this card')
           }
           await addReaction(tx, key)
-          await awardReactionEmblems(tx, {
-            leagueId: m.leagueId,
-            reactorId: m.userId,
-            authorId: card.authorId,
-            now: clock(),
-          })
         } else {
           await removeReaction(tx, key)
         }
-        return countReactions(tx, { cardId, viewerId: m.userId })
-      }),
+        return {
+          counts: await countReactions(tx, { cardId, viewerId: m.userId }),
+          authorId: card.authorId,
+        }
+      })
+      if (isOn) await emblems.request(reactionMembers(m.leagueId, m.userId, authorId))
+      return counts
+    },
 
     async listReactors(m, cardId) {
       const card = await findCardForViewer(db, {

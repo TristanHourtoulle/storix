@@ -12,7 +12,11 @@ import {
 import { createBoostersService, type BoostersService } from './features/boosters/boosters.service'
 import { createCardsService, type CardsService } from './features/cards/cards.service'
 import { createCopiesService, type CopiesService } from './features/copies/copies.service'
-import { createEmblemsService, type EmblemsService } from './features/emblems/emblems.service'
+import {
+  createEmblemAwards,
+  createEmblemsService,
+  type EmblemsService,
+} from './features/emblems/emblems.service'
 import { createStacksService, type StacksService } from './features/copies/stacks.service'
 import { createHealthService, type HealthService } from './features/health/health.service'
 import {
@@ -130,6 +134,7 @@ export function createAppDeps(env: Env, db: Database, jobs: JobQueue): AppDeps {
 /** Builds every feature service from the app dependencies. */
 export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
   const cardRemoval = createCardRemoval({ jobs: deps.jobs, logger })
+  const emblemAwards = createEmblemAwards({ jobs: deps.jobs, logger })
   return {
     account: createAccountService({
       db: deps.db,
@@ -144,12 +149,13 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       db: deps.db,
       signer: deps.mediaSigner,
       clock: deps.clock,
+      emblems: emblemAwards,
     }),
     boosterHistory: createBoosterHistoryService({ db: deps.db, signer: deps.mediaSigner }),
     cardRemoval,
     cards: createCardsService({ db: deps.db, signer: deps.mediaSigner, clock: deps.clock }),
-    copies: createCopiesService({ db: deps.db, clock: deps.clock }),
-    stacks: createStacksService({ db: deps.db, clock: deps.clock }),
+    copies: createCopiesService({ db: deps.db, clock: deps.clock, emblems: emblemAwards }),
+    stacks: createStacksService({ db: deps.db, clock: deps.clock, emblems: emblemAwards }),
     emblems: createEmblemsService({ db: deps.db, clock: deps.clock }),
     health: createHealthService(deps.db),
     invitations: createInvitationsService({
@@ -200,7 +206,7 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       clock: deps.clock,
       publicKey: deps.env.VAPID_PUBLIC_KEY ?? null,
     }),
-    reactions: createReactionsService({ db: deps.db, clock: deps.clock }),
+    reactions: createReactionsService({ db: deps.db, emblems: emblemAwards }),
     removals: createRemovalsService({ db: deps.db, clock: deps.clock }),
     tags: createTagsService({ db: deps.db, clock: deps.clock }),
     resetCodes: createResetCodesService({

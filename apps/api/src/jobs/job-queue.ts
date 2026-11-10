@@ -1,4 +1,6 @@
 import {
+  EMBLEMS_EVALUATE_JOB,
+  EMBLEMS_EVALUATE_QUEUE_OPTIONS,
   MEDIA_PROCESS_JOB,
   MEDIA_PUBLISH_JOB,
   MEDIA_PUBLISH_QUEUE_OPTIONS,
@@ -7,10 +9,13 @@ import {
   RARITY_RECOMPUTE_SEND_OPTIONS,
   STORAGE_DELETE_JOB,
   STORAGE_DELETE_SEND_OPTIONS,
+  emblemsEvaluatePayloadSchema,
+  emblemsEvaluateSendOptions,
   mediaPublishPayloadSchema,
   mediaPublishSendOptions,
   rarityRecomputePayloadSchema,
   storageDeletePayloadSchema,
+  type EmblemsEvaluatePayload,
   type MediaProcessPayload,
   type MediaPublishPayload,
   type RarityRecomputePayload,
@@ -22,6 +27,7 @@ const MEDIA_PROCESS_SEND_OPTIONS = { retryLimit: 3, retryDelay: 15, retryBackoff
 const STORAGE_DELETE_CHUNK_SIZE = 1000
 
 export interface JobQueue {
+  enqueueEmblemsEvaluate(payload: EmblemsEvaluatePayload): Promise<void>
   enqueueMediaProcess(payload: MediaProcessPayload): Promise<void>
   enqueueMediaPublish(payload: MediaPublishPayload): Promise<void>
   enqueueRarityRecompute(payload: RarityRecomputePayload): Promise<void>
@@ -54,12 +60,17 @@ export async function startJobQueue(input: {
     await boss.createQueue(MEDIA_PUBLISH_JOB, MEDIA_PUBLISH_QUEUE_OPTIONS)
     await boss.createQueue(RARITY_RECOMPUTE_JOB, RARITY_RECOMPUTE_QUEUE_OPTIONS)
     await boss.createQueue(STORAGE_DELETE_JOB, STORAGE_DELETE_SEND_OPTIONS)
+    await boss.createQueue(EMBLEMS_EVALUATE_JOB, EMBLEMS_EVALUATE_QUEUE_OPTIONS)
   } catch (error) {
     await boss.stop({ graceful: false })
     throw error
   }
 
   return {
+    async enqueueEmblemsEvaluate(payload) {
+      const data = emblemsEvaluatePayloadSchema.parse(payload)
+      await boss.send(EMBLEMS_EVALUATE_JOB, data, emblemsEvaluateSendOptions(data))
+    },
     async enqueueMediaProcess(payload) {
       await boss.send(MEDIA_PROCESS_JOB, payload, MEDIA_PROCESS_SEND_OPTIONS)
     },

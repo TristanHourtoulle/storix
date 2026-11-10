@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Query } from '@tanstack/react-query'
 import type { ReactionCounts, ReactionType, ViewerCardDetail } from '@storix/shared'
 import { logger } from '@/lib/logger'
-import { emblemsQueryKey } from '@/features/emblems/emblems.queries'
+import { refreshEmblems } from '@/features/emblems/emblems.queries'
 import { setReaction } from './cards.api'
 import { cardDetailQueryOptions } from './cards.queries'
 import { cardReactorsQueryKey } from './use-card-reactors'
@@ -80,10 +80,10 @@ export function useReactions(leagueId: string, cardId: string) {
       void Promise.all([
         queryClient.invalidateQueries({ queryKey: cardReactorsQueryKey(leagueId, cardId) }),
         queryClient.invalidateQueries({ predicate: isReactionSortedPage(leagueId) }),
-        queryClient.invalidateQueries({ queryKey: emblemsQueryKey(leagueId) }),
       ]).catch((cause: unknown) => {
         logger.warn('Reactors refresh failed', { error: cause })
       })
+      refreshEmblems(queryClient, leagueId)
     },
     onSuccess: (reactions) => {
       if (hasOtherPending()) return

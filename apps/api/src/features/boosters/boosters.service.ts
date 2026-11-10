@@ -28,7 +28,7 @@ import { generateBoosterSeed, sha256Hex } from '../../lib/crypto'
 import { AppError, isUniqueViolation } from '../../lib/errors'
 import type { MediaSigner } from '../../lib/media-signer'
 import { runInTransaction } from '../../lib/transaction'
-import { awardEmblems } from '../emblems/emblems.service'
+import { awardAfter, type EmblemAwards } from '../emblems/emblems.service'
 import { toCollectionCard, withViewerCopies, type CollectionCardBase } from '../cards/card-views'
 import { insertCopy, listOwnedCopies, updateCopyTier } from '../copies/copies.repository'
 import { addToStack, listStackEntries } from '../copies/stacks.repository'
@@ -69,6 +69,7 @@ export interface BoostersServiceDeps {
   db: Database
   signer: MediaSigner
   clock: () => Date
+  emblems: EmblemAwards
 }
 
 interface OpeningContext {
@@ -294,7 +295,6 @@ async function openNewBooster(
     boosterFullNotifiedAt: null,
   }
   await updateWallet(ctx.tx, { leagueId: ctx.m.leagueId, userId: ctx.m.userId }, patch)
-  await awardEmblems(ctx.tx, { leagueId: ctx.m.leagueId, userId: ctx.m.userId, now: ctx.now })
   const walletState = await walletStateFor(ctx, { ...wallet, ...patch })
   return present(ctx, { ...opening, dustGained: 0 }, walletState, signer)
 }
@@ -319,7 +319,12 @@ function toRevealCard(row: RevealRow): CollectionCardBase {
 }
 
 /** Builds the service opening boosters in one idempotent, member-serialized transaction. */
-export function createBoostersService({ db, signer, clock }: BoostersServiceDeps): BoostersService {
+export function createBoostersService({
+  db,
+  signer,
+  clock,
+  emblems,
+}: BoostersServiceDeps): BoostersService {
   const withContext = <T>(
     m: Membership,
     requestId: string,
@@ -354,6 +359,22 @@ export function createBoostersService({ db, signer, clock }: BoostersServiceDeps
     return present(ctx, existing, await walletStateFor(ctx, wallet), signer)
   }
 
+  async function openOrReplay(m: Membership, requestId: string): Promise<BoosterOpening> {
+    try {
+      return await withContext(
+        m,
+        requestId,
+        async (ctx, wallet) =>
+          (await presentStored(ctx, wallet)) ?? openNewBooster(ctx, wallet, signer),
+      )
+    } catch (error) {
+      if (!isUniqueViolation(error)) throw error
+      const stored = await withContext(m, requestId, presentStored)
+      if (stored === null) throw error
+      return stored
+    }
+  }
+
   return {
     async listRecentReveals(m) {
       const rows = await listRecentReveals(db, {
@@ -375,20 +396,6 @@ export function createBoostersService({ db, signer, clock }: BoostersServiceDeps
       }))
     },
 
-    async openBooster(m, requestId) {
-      try {
-        return await withContext(
-          m,
-          requestId,
-          async (ctx, wallet) =>
-            (await presentStored(ctx, wallet)) ?? openNewBooster(ctx, wallet, signer),
-        )
-      } catch (error) {
-        if (!isUniqueViolation(error)) throw error
-        const stored = await withContext(m, requestId, presentStored)
-        if (stored === null) throw error
-        return stored
-      }
-    },
+    openBooster: (m, requestId) => awardAfter(emblems, [m], openOrReplay(m, requestId)),
   }
 }

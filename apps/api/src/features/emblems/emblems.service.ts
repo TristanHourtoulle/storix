@@ -6,12 +6,13 @@ import {
   type MemberEmblems,
   type UnseenEmblems,
 } from '@storix/shared'
+import type { JobQueue } from '../../jobs/job-queue'
+import type { ErrorLogger } from '../../lib/error-logger'
 import { AppError, notFound } from '../../lib/errors'
 import { runInTransaction } from '../../lib/transaction'
 import type { Membership } from '../leagues/leagues.service'
 import { findMembership } from '../members/members.repository'
 import {
-  insertEarnedEmblems,
   listEarnedEmblems,
   markEmblemsSeen,
   readEmblemStats,
@@ -61,12 +62,35 @@ async function buildMemberEmblems(db: DbExecutor, member: EmblemMember): Promise
   return { emblems, featured: featuredEmblemIds(earned), earnedCount: earned.length }
 }
 
-/** Awards a member's newly earned emblems; call it inside the transaction of the triggering action. */
-export function awardEmblems(
-  tx: DbExecutor,
-  member: EmblemMember & { now: Date },
-): Promise<EmblemId[]> {
-  return insertEarnedEmblems(tx, member)
+export interface EmblemAwards {
+  /** Schedules the emblem evaluation of members after their action committed; failures are logged, never thrown. */
+  request(members: readonly EmblemMember[]): Promise<void>
+}
+
+/** Builds the emblem award trigger: evaluation runs in the worker so actions never pay for the stats query. */
+export function createEmblemAwards(deps: { jobs: JobQueue; logger: ErrorLogger }): EmblemAwards {
+  return {
+    async request(members) {
+      for (const { leagueId, userId } of members) {
+        try {
+          await deps.jobs.enqueueEmblemsEvaluate({ leagueId, userId })
+        } catch (error) {
+          deps.logger.error({ err: error, leagueId, userId }, 'Failed to enqueue emblem evaluation')
+        }
+      }
+    },
+  }
+}
+
+/** Awaits a committed action, then schedules the emblem evaluation of the given members. */
+export async function awardAfter<T>(
+  awards: EmblemAwards,
+  members: readonly EmblemMember[],
+  action: Promise<T>,
+): Promise<T> {
+  const result = await action
+  await awards.request(members)
+  return result
 }
 
 /** Builds the service exposing members' emblem progress, the unlock queue and featured choices. */
