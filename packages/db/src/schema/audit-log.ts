@@ -2,45 +2,9 @@ import { sql } from 'drizzle-orm'
 import { index, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { user } from './auth'
 import { leagues } from './leagues'
+import type { AuditAction } from '@storix/shared'
 
-export const AUDIT_ACTIONS = [
-  'league.created',
-  'invitation.created',
-  'invitation.revoked',
-  'member.joined',
-  'member.role_changed',
-  'member.removed',
-  'reset_code.issued',
-  'reset_code.redeemed',
-  'reset_code.failed',
-  'card.created',
-  'copy.recycled',
-  'copy.crafted',
-  'copy.foil_upgraded',
-  'copy.promoted',
-  'stack.converted',
-  'league.settings_updated',
-  'league.ownership_transferred',
-  'league.deleted',
-  'member.left',
-  'card.hidden',
-  'card.unhidden',
-  'card.deleted',
-  'card.withdrawn',
-  'card.tier_pinned',
-  'card.bounds_set',
-  'card.capture_date_validated',
-  'card.removed',
-  'account.deleted',
-  'league.renamed',
-  'account.display_name_changed',
-  'account.avatar_changed',
-  'account.avatar_removed',
-  'league.photo_changed',
-  'league.photo_removed',
-] as const
-
-export type AuditAction = (typeof AUDIT_ACTIONS)[number]
+export { AUDIT_ACTIONS, type AuditAction } from '@storix/shared'
 
 export const auditLog = pgTable(
   'audit_log',
