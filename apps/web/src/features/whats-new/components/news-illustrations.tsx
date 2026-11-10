@@ -1,7 +1,9 @@
 import type { NewsCard } from '../news-deck'
 import { CameraIllustration } from './illustrations/camera-illustration'
+import { EmblemsIllustration } from './illustrations/emblems-illustration'
 import { HistoryIllustration } from './illustrations/history-illustration'
 import { JourneyIllustration } from './illustrations/journey-illustration'
+import { MembersIllustration } from './illustrations/members-illustration'
 import { MythicIllustration } from './illustrations/mythic-illustration'
 import { PremiumIllustration } from './illustrations/premium-illustration'
 import { ReactionsIllustration } from './illustrations/reactions-illustration'
@@ -9,6 +11,7 @@ import { ShareIllustration } from './illustrations/share-illustration'
 import { ShowcaseIllustration } from './illustrations/showcase-illustration'
 import { SortIllustration } from './illustrations/sort-illustration'
 import { StacksIllustration } from './illustrations/stacks-illustration'
+import { TaggedIllustration } from './illustrations/tagged-illustration'
 import { UpgradeIllustration } from './illustrations/upgrade-illustration'
 
 interface NewsIllustrationProps {
@@ -38,6 +41,9 @@ const SCENES = {
   journey: JourneyIllustration,
   history: HistoryIllustration,
   reactions: ReactionsIllustration,
+  members: MembersIllustration,
+  tagged: TaggedIllustration,
+  emblems: EmblemsIllustration,
 } as const
 
 /** Decorative animated art of a feature card; it only moves while the card is the live one. */
