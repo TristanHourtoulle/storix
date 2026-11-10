@@ -23,9 +23,11 @@ export function createEmblemsEvaluateService(deps: Deps): EmblemsEvaluateService
   async function evaluateMember(leagueId: string, userId: string): Promise<number> {
     if (!(await repository.isMember(db, { leagueId, userId }))) return 0
     const now = clock()
-    const earned = await repository.awardEarnedEmblems(db, { leagueId, userId, now })
-    await repository.markEmblemsEvaluated(db, { leagueId, userId, now })
-    return earned.length
+    return db.transaction(async (tx) => {
+      const earned = await repository.awardEarnedEmblems(tx, { leagueId, userId, now })
+      await repository.markEmblemsEvaluated(tx, { leagueId, userId, now })
+      return earned.length
+    })
   }
 
   return {

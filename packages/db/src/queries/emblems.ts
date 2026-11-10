@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 import { evaluateEmblems, type EmblemId, type EmblemStats } from '@storix/shared/domain'
 import type { DbExecutor } from '../client'
 import { memberEmblems } from '../schema/index'
+import { insertLeagueEvents } from './league-events'
 
 export interface EmblemMember {
   leagueId: string
@@ -75,7 +76,7 @@ export async function loadEmblemStats(db: DbExecutor, m: EmblemMember): Promise<
 }
 
 /**
- * Evaluates a member's emblems and inserts the newly earned ones. Emblems are never removed.
+ * Evaluates a member's emblems, inserts the newly earned ones with their feed events. Emblems are never removed.
  * Returns the ids earned by this call, in catalogue order.
  */
 export async function awardEarnedEmblems(
@@ -98,5 +99,17 @@ export async function awardEarnedEmblems(
     .onConflictDoNothing()
     .returning({ emblemId: memberEmblems.emblemId })
   const insertedIds = new Set(inserted.map((row) => row.emblemId))
-  return earned.map((emblem) => emblem.id).filter((id) => insertedIds.has(id))
+  const newIds = earned.map((emblem) => emblem.id).filter((id) => insertedIds.has(id))
+  await insertLeagueEvents(
+    db,
+    newIds.map((emblemId) => ({
+      leagueId: m.leagueId,
+      actorId: m.userId,
+      type: 'emblem_unlocked',
+      payload: { emblemId },
+      dedupeKey: `emblem:${m.leagueId}:${m.userId}:${emblemId}`,
+      visibleAt: m.now,
+    })),
+  )
+  return newIds
 }
