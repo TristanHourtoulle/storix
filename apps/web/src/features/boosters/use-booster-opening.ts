@@ -28,6 +28,7 @@ export function useBoosterOpening(
     queryClient.setQueryData(walletQueryOptions(leagueId).queryKey, wallet)
     void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'cards'] })
     void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'reveals'] })
+    void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'booster-history'] })
   }, [queryClient, leagueId, openingId, wallet])
 
   useEffect(() => {
