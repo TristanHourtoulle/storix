@@ -7,7 +7,6 @@ import {
   canPutNewFirst,
   collectionSortSchema,
   orderNewFirst,
-  type CardTier,
   type CollectionCard,
   type CollectionSort,
   type MemberSummary,
@@ -16,14 +15,13 @@ import {
 import { Button, buttonClassName } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Notice } from '@/components/ui/notice'
-import { Segmented } from '@/components/ui/segmented'
 import { CollectionGrid } from '@/features/cards/components/collection-grid'
 import { CollectionProgress } from '@/features/cards/components/collection-progress'
 import { CollectionToolbar } from '@/features/cards/components/collection-toolbar'
-import { MemberFilter } from '@/features/cards/components/member-filter'
-import { RarityFilter } from '@/features/cards/components/rarity-filter'
+import { FilterSheet } from '@/features/cards/components/filter-sheet'
 import { SortSheet } from '@/features/cards/components/sort-sheet'
 import { cardsInfiniteQueryOptions, type CollectionFilters } from '@/features/cards/cards.queries'
+import { collectionLabel, type CollectionFilterState } from '@/features/cards/collection-filters'
 import { useCollectionNews } from '@/features/cards/news/use-collection-news'
 import { useCollectionSort } from '@/features/cards/use-collection-sort'
 import { DustBalance } from '@/features/game/components/dust-balance'
@@ -31,18 +29,11 @@ import { useWallet } from '@/features/game/use-wallet'
 import { membersQueryOptions } from '@/features/members/members.queries'
 import { DraftBanner } from '@/features/uploads/components/draft-banner'
 
-type FilterMode = 'member' | 'rarity'
-
-const FILTER_MODES = [
-  { id: 'member', label: 'Par membre' },
-  { id: 'rarity', label: 'Par rareté' },
-] as const
-
 export const Route = createFileRoute('/_authed/l/$leagueId/collection')({
   validateSearch: z.object({
     author: z.string().optional(),
     tier: z.enum(CARD_TIERS).optional(),
-    by: z.enum(['member', 'rarity']).optional(),
+    hideLocked: z.boolean().optional(),
     sort: collectionSortSchema.optional(),
     notice: z.literal('withdrawn').optional(),
   }),
@@ -59,37 +50,45 @@ const LOADING = <p className="m-0 text-sm text-muted">Chargement…</p>
 
 function Collection() {
   const { leagueId } = Route.useParams()
-  const { author, tier, by, sort: urlSort, notice } = Route.useSearch()
+  const { author, tier, hideLocked, sort: urlSort, notice } = Route.useSearch()
   const { me } = Route.useRouteContext()
   const navigate = useNavigate({ from: Route.fullPath })
   const members = useQuery(membersQueryOptions(leagueId)).data ?? NO_MEMBERS
   const { data: wallet } = useWallet(leagueId)
   const { sort, pickSort } = useCollectionSort(me.user.id, leagueId, urlSort)
-  const mode: FilterMode = by ?? 'member'
-  const filters: CollectionFilters = { authorId: author ?? null, tier: tier ?? null, sort }
+  const authorId = author ?? null
+  const selectedTier = tier ?? null
+  const filterState: CollectionFilterState = {
+    authorId,
+    tier: selectedTier,
+    hideLocked: hideLocked ?? false,
+  }
+  const filters: CollectionFilters = { authorId, tier: selectedTier, sort }
   const news = useCollectionNews(me.user.id, leagueId)
   const visibleNew = useMemo(
     () =>
       news.newCards.filter(
         (card) =>
-          (filters.authorId === null || card.author.userId === filters.authorId) &&
-          (filters.tier === null || card.displayTier === filters.tier),
+          (authorId === null || card.author.userId === authorId) &&
+          (selectedTier === null || card.displayTier === selectedTier),
       ),
-    [news.newCards, filters.authorId, filters.tier],
+    [news.newCards, authorId, selectedTier],
   )
-  const authorName = members.find((member) => member.userId === filters.authorId)?.displayUsername
 
-  function selectAuthor(id: string | null) {
-    void navigate({ search: (prev) => ({ ...prev, author: id ?? undefined }), replace: true })
-  }
-
-  function selectTier(next: CardTier | null) {
-    void navigate({ search: (prev) => ({ ...prev, tier: next ?? undefined }), replace: true })
-  }
-
-  function selectMode(next: FilterMode) {
-    void navigate({ search: (prev) => ({ ...prev, by: next }), replace: true })
-  }
+  const applyFilters = useCallback(
+    (next: CollectionFilterState) => {
+      void navigate({
+        search: (prev) => ({
+          ...prev,
+          author: next.authorId ?? undefined,
+          tier: next.tier ?? undefined,
+          hideLocked: next.hideLocked || undefined,
+        }),
+        replace: true,
+      })
+    },
+    [navigate],
+  )
 
   return (
     <main className="screen">
@@ -99,18 +98,13 @@ function Collection() {
       </div>
       {notice ? <Notice tone="error">Cette carte a déjà été retirée.</Notice> : null}
       <DraftBanner leagueId={leagueId} />
-      <Segmented options={FILTER_MODES} value={mode} onChange={selectMode} />
-      {mode === 'rarity' ? (
-        <RarityFilter selected={filters.tier} onSelect={selectTier} />
-      ) : (
-        members.length > 0 && (
-          <MemberFilter members={members} selectedId={filters.authorId} onSelect={selectAuthor} />
-        )
-      )}
       <CollectionBody
         leagueId={leagueId}
         filters={filters}
-        label={authorName ? `Cartes de ${authorName}` : 'Toutes les cartes'}
+        filterState={filterState}
+        members={members}
+        onApplyFilters={applyFilters}
+        label={collectionLabel(filterState, members)}
         onPickSort={pickSort}
         visibleNew={visibleNew}
         newIds={news.newIds}
@@ -124,6 +118,9 @@ function Collection() {
 interface CollectionBodyProps {
   leagueId: string
   filters: CollectionFilters
+  filterState: CollectionFilterState
+  members: readonly MemberSummary[]
+  onApplyFilters: (filters: CollectionFilterState) => void
   label: string
   onPickSort: (sort: CollectionSort) => void
   visibleNew: OwnedCardSummary[]
@@ -135,6 +132,9 @@ interface CollectionBodyProps {
 function CollectionBody({
   leagueId,
   filters,
+  filterState,
+  members,
+  onApplyFilters,
   label,
   onPickSort,
   visibleNew,
@@ -143,6 +143,8 @@ function CollectionBody({
   onMarkAllSeen,
 }: CollectionBodyProps) {
   const [isSortOpen, setIsSortOpen] = useState(false)
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const openFilters = useCallback(() => setIsFilterOpen(true), [])
   const [isNewFirst, setIsNewFirst] = useState(false)
   if (isNewFirst && visibleNew.length === 0) setIsNewFirst(false)
   const {
@@ -165,7 +167,7 @@ function CollectionBody({
   const canReorderNew = canPutNewFirst(sort)
   useEffect(() => {
     window.scrollTo({ top: 0 })
-  }, [authorId, tier, sort])
+  }, [authorId, tier, sort, filterState.hideLocked])
   const cards = useMemo(
     () => [
       ...new Map(
@@ -174,10 +176,11 @@ function CollectionBody({
     ],
     [data],
   )
-  const gridCards = useMemo<readonly CollectionCard[]>(
-    () => (isNewFirst ? orderNewFirst(cards, visibleNew, sort) : cards),
-    [isNewFirst, visibleNew, cards, sort],
-  )
+  const { hideLocked } = filterState
+  const gridCards = useMemo<readonly CollectionCard[]>(() => {
+    const shown = hideLocked ? cards.filter((card) => card.kind !== 'locked') : cards
+    return isNewFirst ? orderNewFirst(shown, visibleNew, sort) : shown
+  }, [hideLocked, isNewFirst, visibleNew, cards, sort])
   const openCard = useCallback(
     (card: CollectionCard) => {
       if (newIds.has(card.id)) onMarkSeen(card.id)
@@ -193,6 +196,10 @@ function CollectionBody({
   const sortControls = (
     <>
       <CollectionToolbar
+        filters={filterState}
+        members={members}
+        onOpenFilters={openFilters}
+        onChangeFilters={onApplyFilters}
         sort={sort}
         onOpenSort={() => setIsSortOpen(true)}
         newCount={visibleNew.length}
@@ -206,6 +213,14 @@ function CollectionBody({
         value={sort}
         onPick={onPickSort}
         onClose={() => setIsSortOpen(false)}
+      />
+      <FilterSheet
+        open={isFilterOpen}
+        leagueId={leagueId}
+        value={filterState}
+        members={members}
+        onApply={onApplyFilters}
+        onClose={() => setIsFilterOpen(false)}
       />
     </>
   )
@@ -230,11 +245,15 @@ function CollectionBody({
   const firstPage = data.pages[0]
   const total = firstPage?.total ?? 0
   const owned = firstPage?.ownedCount ?? 0
-  const isFiltered = filters.authorId !== null || filters.tier !== null
+  const isFiltered = filterState.authorId !== null || filterState.tier !== null
+  const isOwnedEmpty = hideLocked && gridCards.length === 0 && !hasNextPage
 
   if (total === 0) {
     return isFiltered ? (
-      <p className="m-0 text-sm text-muted">Aucune carte ne correspond à ce filtre.</p>
+      <>
+        {sortControls}
+        <p className="m-0 text-sm text-muted">Aucune carte ne correspond à ce filtre.</p>
+      </>
     ) : (
       <EmptyState
         icon="collection"
@@ -257,13 +276,15 @@ function CollectionBody({
     <>
       <CollectionProgress owned={owned} total={total} label={label} />
       {sortControls}
-      {owned === 0 && (
+      {owned === 0 && !isOwnedEmpty && (
         <p className="m-0 text-sm text-muted">
           Ouvre un booster pour découvrir tes premières cartes.
         </p>
       )}
       {isOtherSortShown ? (
         LOADING
+      ) : isOwnedEmpty ? (
+        <p className="m-0 text-sm text-muted">Aucune carte possédée dans ce filtre.</p>
       ) : (
         <CollectionGrid
           leagueId={leagueId}
