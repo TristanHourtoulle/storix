@@ -34,7 +34,7 @@ import {
 import type { MediaSigner } from '../../lib/media-signer'
 import type { OwnedCopyRow } from '../copies/copies.repository'
 import type { CardStackEntry, PromotedHolderRow } from '../copies/stacks.repository'
-import type { CardViewerRow, CollectionRow } from './cards.repository'
+import type { CardViewerRow, CollectionListRow, CollectionRow } from './cards.repository'
 import { toImageSet } from './image-set'
 
 const MAX_PROMOTED_HOLDERS = 50
@@ -119,7 +119,10 @@ export function withViewerCopies(
 }
 
 /** Returns the cursor of the sort that starts the next page after the given row. */
-export function nextCollectionCursor(sort: CollectionSort, row: CollectionRow): CollectionCursor {
+export function nextCollectionCursor(
+  sort: CollectionSort,
+  row: CollectionListRow,
+): CollectionCursor {
   switch (sort) {
     case 'rarity':
       return { kind: 'rarity', tier: displayTier(row), number: row.number }
@@ -134,6 +137,13 @@ export function nextCollectionCursor(sort: CollectionSort, row: CollectionRow): 
           }
     case 'number':
       return { kind: 'number', number: row.number }
+    case 'reactions':
+      return {
+        kind: 'reactions',
+        total: row.reactionTotal,
+        lastReactedAt: row.lastReactedAtMs,
+        number: row.number,
+      }
   }
 }
 
