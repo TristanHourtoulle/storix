@@ -13,7 +13,15 @@ import { MiniCard } from '@/features/cards/components/mini-card'
 import { TIER_CLASS, TIER_LABELS } from '@/features/cards/tier-labels'
 import { countOf, tierColorStyle } from '@/features/members/member-copy'
 import { timeAgo } from '@/lib/paris-dates'
-import { actorName, actorsLabel, cardMention, isBigRow, rowIcon, rowTier } from '../feed-copy'
+import {
+  actorName,
+  actorsLabel,
+  cardMention,
+  goalAmount,
+  isBigRow,
+  rowIcon,
+  rowTier,
+} from '../feed-copy'
 
 const MINI_SIZES = '48px'
 const THUMB_SIZES = '26px'
@@ -132,6 +140,35 @@ function sentence(row: FeedRowData): ReactNode {
       return (
         <>
           {cardMention(row.card).replace(/^une/, 'Une')} est devenue <Tier row={row} />
+        </>
+      )
+    case 'missions_week_completed':
+      return (
+        <>
+          {who} {isPlural ? 'ont bouclé leurs' : 'a bouclé ses'} missions de la semaine
+        </>
+      )
+    case 'league_goal_reached':
+      return (
+        <>
+          <b>Objectif atteint</b>
+          {row.goal === null ? '' : ` · ${goalAmount(row.goal.type, row.goal.target)}`} · +2
+          boosters pour tous
+        </>
+      )
+    case 'league_goal_bonus':
+      return (
+        <>
+          <b>Palier bonus</b> · +1 premium
+        </>
+      )
+    case 'league_goal_missed':
+      return row.goal === null ? (
+        <b>Objectif manqué</b>
+      ) : (
+        <>
+          <b>Objectif manqué</b> de{' '}
+          {goalAmount(row.goal.type, Math.max(1, row.goal.target - row.goal.progress))}
         </>
       )
   }

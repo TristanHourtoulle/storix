@@ -1,5 +1,6 @@
 import {
   emblemDefinition,
+  type GoalType,
   isTierAtLeast,
   type CardTier,
   type CollectionCard,
@@ -78,7 +79,28 @@ export function rowIcon(row: FeedRow): IconName {
       return 'star'
     case 'member_joined':
       return 'user'
+    case 'missions_week_completed':
+      return 'check'
+    case 'league_goal_reached':
+    case 'league_goal_bonus':
+      return 'trophy'
+    case 'league_goal_missed':
+      return 'target'
   }
+}
+
+const GOAL_UNITS: Readonly<Record<GoalType, readonly [string, string]>> = {
+  photos: ['photo', 'photos'],
+  boosters: ['booster', 'boosters'],
+  reactions: ['réaction', 'réactions'],
+  discoveries: ['découverte', 'découvertes'],
+  bravos: ['Bravo', 'Bravo'],
+}
+
+/** "1 photo", "48 photos", "5 Bravo": a goal amount with its unit. */
+export function goalAmount(type: GoalType, count: number): string {
+  const [one, many] = GOAL_UNITS[type]
+  return `${count} ${count > 1 ? many : one}`
 }
 
 /** Splits rows into "since your last visit", then one section per Paris day. */

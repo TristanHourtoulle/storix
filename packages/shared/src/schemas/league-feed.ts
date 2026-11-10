@@ -3,6 +3,7 @@ import { FEED_FILTER_IDS, LEAGUE_EVENT_TYPES } from '../domain'
 import { cardTierSchema, collectionCardSchema } from './cards'
 import { isoDateSchema } from './common'
 import { emblemIdSchema } from './emblems'
+import { goalTypeSchema } from './league-goal'
 
 export const FEED_DEFAULT_LIMIT = 20
 export const FEED_MAX_LIMIT = 50
@@ -52,6 +53,12 @@ export const feedActorSchema = z.object({
   displayUsername: z.string().nullable(),
 })
 
+export const feedGoalSchema = z.object({
+  type: goalTypeSchema,
+  target: z.int().min(1),
+  progress: z.int().min(0),
+})
+
 export const feedRowSchema = z.object({
   id: z.uuid(),
   kind: leagueEventTypeSchema,
@@ -65,6 +72,7 @@ export const feedRowSchema = z.object({
   fromTier: cardTierSchema.nullable(),
   toTier: cardTierSchema.nullable(),
   emblemIds: z.array(emblemIdSchema),
+  goal: feedGoalSchema.nullable(),
   bravoCount: z.int().min(0),
   hasBravoed: z.boolean(),
   isNew: z.boolean(),

@@ -49,6 +49,8 @@ export type IconName =
   | 'pin'
   | 'door'
   | 'search'
+  | 'target'
+  | 'trophy'
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -106,6 +108,9 @@ const PATHS: Record<IconName, string> = {
   up: 'M12 19V6M6 11l6-6 6 6',
   crown: 'M4 8l4 4 4-7 4 7 4-4-2 11H6z',
   arrow: 'M5 12h13M13 6l6 6-6 6',
+  target:
+    'M12 4a8 8 0 1 0 0 16 8 8 0 1 0 0-16zM12 8a4 4 0 1 0 0 8 4 4 0 1 0 0-8zM12 11a1 1 0 1 0 0 2 1 1 0 1 0 0-2z',
+  trophy: 'M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8',
 }
 
 const STROKE_WIDTHS: Partial<Record<IconName, number>> = { more: 3 }
