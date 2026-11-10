@@ -3,7 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
 import { Icon } from '@/components/ui/icon'
-import { Segmented } from '@/components/ui/segmented'
+import { TabBar } from '@/components/ui/tab-bar'
 import { TopBar } from '@/components/ui/top-bar'
 import { JournalPanel } from '@/features/audit/components/journal-panel'
 import { useJournalAlert } from '@/features/audit/use-journal'
@@ -16,12 +16,19 @@ import { RenameLeagueForm } from '@/features/leagues/components/rename-league-fo
 import { MemberList } from '@/features/members/components/member-list'
 import { membersQueryOptions } from '@/features/members/members.queries'
 
-const TAB_IDS = ['members', 'invitations', 'cards', 'settings', 'journal'] as const
+const TAB_IDS = ['cards', 'settings', 'members', 'journal'] as const
+const LEGACY_TAB_IDS = [...TAB_IDS, 'invitations'] as const
 
 type Tab = (typeof TAB_IDS)[number]
 
 export const Route = createFileRoute('/_authed/l/$leagueId/admin')({
-  validateSearch: z.object({ tab: z.enum(TAB_IDS).optional().catch(undefined) }),
+  validateSearch: z.object({
+    tab: z
+      .enum(LEGACY_TAB_IDS)
+      .transform((tab): Tab => (tab === 'invitations' ? 'members' : tab))
+      .optional()
+      .catch(undefined),
+  }),
   beforeLoad: async ({ context, params }) => {
     const league = await loadLeagueDetail(context.queryClient, params.leagueId)
     if (!league?.permissions.canManageMembers) {
@@ -33,20 +40,11 @@ export const Route = createFileRoute('/_authed/l/$leagueId/admin')({
   component: Admin,
 })
 
-const TABS: readonly {
-  id: Tab
-  label: string
-  isVisible: (canManageInvitations: boolean) => boolean
-}[] = [
-  { id: 'members', label: 'Membres', isVisible: () => true },
-  {
-    id: 'invitations',
-    label: 'Invitations',
-    isVisible: (canManageInvitations) => canManageInvitations,
-  },
-  { id: 'cards', label: 'Cartes', isVisible: () => true },
-  { id: 'settings', label: 'Réglages', isVisible: () => true },
-  { id: 'journal', label: 'Journal', isVisible: () => true },
+const TABS: readonly { id: Tab; label: string }[] = [
+  { id: 'cards', label: 'Cartes' },
+  { id: 'settings', label: 'Réglages' },
+  { id: 'members', label: 'Membres' },
+  { id: 'journal', label: 'Journal' },
 ]
 
 function Admin() {
@@ -57,12 +55,10 @@ function Admin() {
   const setTab = (next: Tab) => void navigate({ search: { tab: next }, replace: true })
   const { canManageInvitations } = league.permissions
   const hasJournalAlert = useJournalAlert(leagueId, tab !== 'journal')
-  const visibleTabs = TABS.filter(({ isVisible }) => isVisible(canManageInvitations)).map(
-    (option) => ({
-      ...option,
-      hasDot: option.id === 'journal' && hasJournalAlert && tab !== 'journal',
-    }),
-  )
+  const tabs = TABS.map((option) => ({
+    ...option,
+    hasDot: option.id === 'journal' && hasJournalAlert && tab !== 'journal',
+  }))
 
   return (
     <main className="screen">
@@ -79,11 +75,9 @@ function Admin() {
           </Link>
         }
       />
-      <Segmented options={visibleTabs} value={tab} onChange={setTab} />
+      <TabBar label="Sections d'administration" options={tabs} value={tab} onChange={setTab} />
       {tab === 'journal' ? (
         <JournalPanel leagueId={leagueId} />
-      ) : tab === 'invitations' && canManageInvitations ? (
-        <InvitationsPanel leagueId={leagueId} />
       ) : tab === 'cards' ? (
         <AdminCardsPanel leagueId={leagueId} />
       ) : tab === 'settings' ? (
@@ -95,9 +89,19 @@ function Admin() {
           </div>
         </Suspense>
       ) : (
-        <Suspense fallback={<p className="m-0 text-sm text-muted">Chargement…</p>}>
-          <MemberList leagueId={leagueId} />
-        </Suspense>
+        <div className="flex flex-col gap-6">
+          {canManageInvitations ? (
+            <section aria-labelledby="admin-invitations-title" className="flex flex-col gap-3">
+              <h2 id="admin-invitations-title" className="m-0">
+                Invitations
+              </h2>
+              <InvitationsPanel leagueId={leagueId} />
+            </section>
+          ) : null}
+          <Suspense fallback={<p className="m-0 text-sm text-muted">Chargement…</p>}>
+            <MemberList leagueId={leagueId} />
+          </Suspense>
+        </div>
       )}
     </main>
   )

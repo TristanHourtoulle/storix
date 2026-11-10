@@ -8,14 +8,14 @@ export type JournalPeriod = (typeof JOURNAL_PERIODS)[number]
 
 export interface JournalFilters {
   chip: JournalChip
-  actorId: string | null
+  memberId: string | null
   period: JournalPeriod
   withEconomy: boolean
 }
 
 export const DEFAULT_JOURNAL_FILTERS: JournalFilters = {
   chip: 'all',
-  actorId: null,
+  memberId: null,
   period: '30',
   withEconomy: false,
 }
@@ -54,7 +54,7 @@ export function journalFrom(period: JournalPeriod, now: Date = new Date()): stri
 /** Counts the filters set in the "⋯" sheet, for the chip label. */
 export function sheetFilterCount(filters: JournalFilters): number {
   return (
-    (filters.actorId === null ? 0 : 1) +
+    (filters.memberId === null ? 0 : 1) +
     (filters.period === '30' ? 0 : 1) +
     (filters.withEconomy ? 1 : 0)
   )

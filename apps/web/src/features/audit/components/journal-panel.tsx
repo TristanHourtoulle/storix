@@ -104,6 +104,7 @@ export function JournalPanel({ leagueId }: JournalPanelProps) {
         </Button>
       ) : null}
       <JournalFilterSheet
+        leagueId={leagueId}
         open={isSheetOpen}
         value={filters}
         members={members}

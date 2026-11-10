@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { MemberSummary } from '@storix/shared'
 import { BottomSheet } from '@/components/ui/bottom-sheet'
 import { Button } from '@/components/ui/button'
-import { Chip } from '@/components/ui/chip'
-import { initials } from '@/lib/initials'
+import { MemberChip } from '@/components/ui/member-chip'
+import { countOf } from '@/features/members/member-copy'
+import { journalCountQueryOptions } from '../audit.queries'
 import {
   DEFAULT_JOURNAL_FILTERS,
   JOURNAL_PERIODS,
@@ -12,6 +14,7 @@ import {
 } from '../journal-filters'
 
 interface JournalFilterSheetProps {
+  leagueId: string
   open: boolean
   value: JournalFilters
   members: readonly MemberSummary[]
@@ -29,34 +32,39 @@ export function JournalFilterSheet({ open, ...rest }: JournalFilterSheetProps) {
 }
 
 function JournalFilterForm({
+  leagueId,
   value,
   members,
   onApply,
   onClose,
 }: Omit<JournalFilterSheetProps, 'open'>) {
   const [draft, setDraft] = useState(value)
+  const { data: count } = useQuery({
+    ...journalCountQueryOptions(leagueId, draft),
+    placeholderData: (previous) => previous,
+  })
 
   return (
     <>
       <section className="flex flex-col gap-2">
         <h3 className="filter-label">Membre</h3>
-        <div role="group" aria-label="Filtrer par membre" className="flex flex-wrap gap-2">
-          <Chip
+        <div role="group" aria-label="Filtrer par membre" className="member-chip-row">
+          <MemberChip
             label="Tous"
-            isOn={draft.actorId === null}
-            onToggle={() => setDraft((prev) => ({ ...prev, actorId: null }))}
+            isAll
+            isOn={draft.memberId === null}
+            onToggle={() => setDraft((prev) => ({ ...prev, memberId: null }))}
           />
           {members.map((member) => (
-            <Chip
+            <MemberChip
               key={member.userId}
               label={member.displayUsername}
-              initials={initials(member.displayUsername)}
               portrait={member.avatar}
-              isOn={draft.actorId === member.userId}
+              isOn={draft.memberId === member.userId}
               onToggle={() =>
                 setDraft((prev) => ({
                   ...prev,
-                  actorId: prev.actorId === member.userId ? null : member.userId,
+                  memberId: prev.memberId === member.userId ? null : member.userId,
                 }))
               }
             />
@@ -107,7 +115,9 @@ function JournalFilterForm({
             onClose()
           }}
         >
-          Voir le journal
+          {count === undefined
+            ? 'Voir le journal'
+            : `Voir ${countOf(count.count, 'ligne', 'lignes')}`}
         </Button>
       </div>
     </>
