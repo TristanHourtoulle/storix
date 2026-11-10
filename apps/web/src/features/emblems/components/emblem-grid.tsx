@@ -13,13 +13,6 @@ interface EmblemGridProps {
   isSelf: boolean
 }
 
-function featuredIds(emblems: readonly EmblemProgressView[]): EmblemId[] {
-  return emblems
-    .filter((emblem) => emblem.featuredRank !== null)
-    .toSorted((a, b) => (a.featuredRank ?? 0) - (b.featuredRank ?? 0))
-    .map((emblem) => emblem.id)
-}
-
 /** Three-column emblem grid of a member, with a detail sheet per emblem. */
 export function EmblemGrid({ leagueId, userId, isSelf }: EmblemGridProps) {
   const query = useMemberEmblems(leagueId, userId)
@@ -27,7 +20,7 @@ export function EmblemGrid({ leagueId, userId, isSelf }: EmblemGridProps) {
   const [openId, setOpenId] = useState<EmblemId | null>(null)
   const ordered = useMemo(() => orderEmblems(query.data?.emblems ?? []), [query.data])
   const open = ordered.find((emblem) => emblem.id === openId) ?? null
-  const chosen = featuredIds(ordered)
+  const chosen: readonly EmblemId[] = query.data?.featured ?? []
 
   function toggleFeatured(emblem: EmblemProgressView) {
     const next = chosen.includes(emblem.id)
@@ -69,7 +62,7 @@ export function EmblemGrid({ leagueId, userId, isSelf }: EmblemGridProps) {
       <EmblemSheet
         emblem={open}
         canFeature={isSelf}
-        featuredCount={chosen.length}
+        featuredIds={chosen}
         isSaving={featured.isPending}
         hasError={featured.isError}
         onToggleFeatured={toggleFeatured}

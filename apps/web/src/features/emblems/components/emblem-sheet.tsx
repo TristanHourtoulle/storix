@@ -1,4 +1,9 @@
-import { emblemDefinition, FEATURED_EMBLEMS_MAX, type EmblemProgressView } from '@storix/shared'
+import {
+  emblemDefinition,
+  FEATURED_EMBLEMS_MAX,
+  type EmblemId,
+  type EmblemProgressView,
+} from '@storix/shared'
 import { BottomSheet } from '@/components/ui/bottom-sheet'
 import { Notice } from '@/components/ui/notice'
 import { tierColorStyle } from '@/features/members/member-copy'
@@ -9,7 +14,7 @@ import { EmblemIcon } from './emblem-icon'
 interface EmblemSheetProps {
   emblem: EmblemProgressView | null
   canFeature: boolean
-  featuredCount: number
+  featuredIds: readonly EmblemId[]
   isSaving: boolean
   hasError: boolean
   onToggleFeatured: (emblem: EmblemProgressView) => void
@@ -26,7 +31,7 @@ function statusOf(emblem: EmblemProgressView): string {
 export function EmblemSheet({
   emblem,
   canFeature,
-  featuredCount,
+  featuredIds,
   isSaving,
   hasError,
   onToggleFeatured,
@@ -51,8 +56,10 @@ export function EmblemSheet({
           </div>
           {canFeature && emblem.isEarned ? (
             <FeatureSwitch
-              isOn={emblem.featuredRank !== null}
-              isFull={emblem.featuredRank === null && featuredCount >= FEATURED_EMBLEMS_MAX}
+              isOn={featuredIds.includes(emblem.id)}
+              isFull={
+                !featuredIds.includes(emblem.id) && featuredIds.length >= FEATURED_EMBLEMS_MAX
+              }
               isSaving={isSaving}
               onToggle={() => onToggleFeatured(emblem)}
             />
