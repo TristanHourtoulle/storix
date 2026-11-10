@@ -11,6 +11,9 @@ export const NEWS_ILLUSTRATIONS = [
   'premium',
   'mythic',
   'upgrade',
+  'journey',
+  'history',
+  'reactions',
 ] as const
 export const newsIllustrationSchema = z.enum(NEWS_ILLUSTRATIONS)
 
@@ -19,6 +22,8 @@ export const NEWS_TRY_TARGETS = [
   'home',
   'collection-discovery',
   'collection-upgradable',
+  'collection-reactions',
+  'booster-history',
   'showcase-card',
   'stack-card',
   'none',

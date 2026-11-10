@@ -16,6 +16,12 @@ export type NewsTryLink =
       params: { leagueId: string }
       search: { upgradable: true }
     }
+  | {
+      to: '/l/$leagueId/collection'
+      params: { leagueId: string }
+      search: { sort: 'reactions' }
+    }
+  | { to: '/l/$leagueId/profile/boosters'; params: { leagueId: string } }
   | { to: '/l/$leagueId/cards/$cardId'; params: { leagueId: string; cardId: string } }
 
 interface NewsTargets {
@@ -44,6 +50,12 @@ function linkFor(
       return targets.stackCardId === null
         ? null
         : { to: '/l/$leagueId/collection', params: { leagueId }, search: { upgradable: true } }
+    case 'collection-reactions':
+      return targets.showcaseCardId === null
+        ? null
+        : { to: '/l/$leagueId/collection', params: { leagueId }, search: { sort: 'reactions' } }
+    case 'booster-history':
+      return { to: '/l/$leagueId/profile/boosters', params: { leagueId } }
     case 'showcase-card':
       return cardLink(leagueId, targets.showcaseCardId)
     case 'stack-card':

@@ -1,7 +1,10 @@
 import type { NewsCard } from '../news-deck'
 import { CameraIllustration } from './illustrations/camera-illustration'
+import { HistoryIllustration } from './illustrations/history-illustration'
+import { JourneyIllustration } from './illustrations/journey-illustration'
 import { MythicIllustration } from './illustrations/mythic-illustration'
 import { PremiumIllustration } from './illustrations/premium-illustration'
+import { ReactionsIllustration } from './illustrations/reactions-illustration'
 import { ShareIllustration } from './illustrations/share-illustration'
 import { ShowcaseIllustration } from './illustrations/showcase-illustration'
 import { SortIllustration } from './illustrations/sort-illustration'
@@ -32,6 +35,9 @@ const SCENES = {
   premium: PremiumIllustration,
   mythic: MythicIllustration,
   upgrade: UpgradeIllustration,
+  journey: JourneyIllustration,
+  history: HistoryIllustration,
+  reactions: ReactionsIllustration,
 } as const
 
 /** Decorative animated art of a feature card; it only moves while the card is the live one. */

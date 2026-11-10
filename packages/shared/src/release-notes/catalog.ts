@@ -3,6 +3,36 @@ import type { ReleaseNote } from '../schemas/whats-new'
 /** Every feature release shown in the "Nouveautés" booster, newest first. */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    id: '2026-11-10-b',
+    publishedAt: '2026-11-10T20:00:00+01:00',
+    cards: [
+      {
+        key: 'reactors',
+        title: 'Qui a réagi',
+        body: 'Touche « … ont réagi » sous une carte pour voir qui a mis 🔥, ♥ ou ★. Et trie ta collection par « Plus aimées ».',
+        tier: 'legendary',
+        illustration: 'reactions',
+        tryTarget: 'collection-reactions',
+      },
+      {
+        key: 'booster-history',
+        title: 'Mes boosters',
+        body: "Retrouve chaque booster ouvert, jour par jour, avec tes stats : premium, meilleur tirage, dernière Légendaire. Depuis l'accueil ou Profil.",
+        tier: 'epic',
+        illustration: 'history',
+        tryTarget: 'booster-history',
+      },
+      {
+        key: 'journey',
+        title: 'Son parcours',
+        body: "En bas de la page d'une carte, suis toutes ses montées et descentes de rareté, avec leur date.",
+        tier: 'rare',
+        illustration: 'journey',
+        tryTarget: 'showcase-card',
+      },
+    ],
+  },
+  {
     id: '2026-11-10',
     publishedAt: '2026-11-10T18:00:00+01:00',
     cards: [
