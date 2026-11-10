@@ -7,6 +7,11 @@ import { TIER_LABELS } from '../tier-labels'
 
 type RecycleOption = OwnedCardDetail['actions']['recycle'][number]
 
+export interface TagState {
+  isTagged: boolean
+  isBusy: boolean
+}
+
 interface MoreActionsSheetProps {
   open: boolean
   actions: OwnedCardDetail['actions']
@@ -16,6 +21,8 @@ interface MoreActionsSheetProps {
   onConvert: () => void
   onFoil: () => void
   onRecycle: (option: RecycleOption) => void
+  tagState: TagState
+  onToggleTag: () => void
   onClose: () => void
 }
 
@@ -70,6 +77,8 @@ export function MoreActionsSheet({
   onConvert,
   onFoil,
   onRecycle,
+  tagState,
+  onToggleTag,
   onClose,
 }: MoreActionsSheetProps) {
   const stackCount = stackSize(actions.stack)
@@ -98,6 +107,16 @@ export function MoreActionsSheet({
           value={`${actions.foilUpgrade.cost} ✦`}
           isBlocked={isBusy || foilReason !== null}
           onSelect={onFoil}
+        />
+        <ActionRow
+          icon="profile"
+          title="Je suis sur la photo"
+          sub={
+            tagState.isTagged ? 'Identifié(e) · Retirer' : 'Ajoute-toi aux personnes sur la photo'
+          }
+          value={tagState.isTagged ? '✓' : null}
+          isBlocked={tagState.isBusy}
+          onSelect={onToggleTag}
         />
         {actions.recycle.map((option) => (
           <ActionRow

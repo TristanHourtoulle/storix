@@ -11,6 +11,7 @@ import { leagueDetailQueryOptions } from '@/features/leagues/leagues.queries'
 import { ShareSheet } from '@/features/share/components/share-sheet'
 import { subjectFromCardDetail, type ShareSubject } from '@/features/share/share-subject'
 import { useCardMutations } from '../use-card-mutations'
+import { useCardTag } from '../use-card-tag'
 import { useHoloTilt } from '../use-holo-tilt'
 import { useReactions } from '../use-reactions'
 import { TIER_LABELS } from '../tier-labels'
@@ -62,6 +63,9 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
     .flatMap((person) => (person.displayUsername ? [person.displayUsername] : []))
     .join(', ')
   const copies = card.copiesInLeague
+  const tag = useCardTag(leagueId, card.id)
+  const isTagged = card.tagged.some((person) => person.userId === meId)
+  const tagError = tag.add.error ?? tag.remove.error
   const actionError = recycle.error
   const isBusy =
     recycle.isPending || upgradeToFoil.isPending || promote.isPending || convertStack.isPending
@@ -175,6 +179,7 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
         </Button>
       ) : null}
       {actionError ? <Notice tone="error">{userMessage(actionError)}</Notice> : null}
+      {tagError ? <Notice tone="error">{userMessage(tagError)}</Notice> : null}
       {!actionError && reactions.isError ? (
         <Notice tone="error">Action impossible pour le moment. Réessaie.</Notice>
       ) : null}
@@ -189,6 +194,13 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
         onUpgrade={(callbacks) => upgradeToFoil.mutate(undefined, callbacks)}
         onPromote={(from, callbacks) => promote.mutate(from, callbacks)}
         onConvert={(body, callbacks) => convertStack.mutate(body, callbacks)}
+        tagState={{ isTagged, isBusy: tag.add.isPending || tag.remove.isPending }}
+        onToggleTag={() => {
+          tag.add.reset()
+          tag.remove.reset()
+          if (isTagged) tag.remove.mutate(meId)
+          else tag.add.mutate()
+        }}
         onSheetOpen={() => {
           promote.reset()
           convertStack.reset()

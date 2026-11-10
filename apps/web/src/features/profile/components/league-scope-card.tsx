@@ -9,22 +9,36 @@ import { ROLE_LABELS } from '@/features/leagues/role-labels'
 interface LeagueScopeCardProps {
   league: LeagueSummary
   leagues: LeagueSummary[]
+  hasTaggedDot?: boolean
 }
 
 const TILE_CLASS =
   'flex min-h-[84px] flex-col justify-between gap-2 rounded-input bg-surface-2/80 p-3 text-ink no-underline shadow-hairline hover:bg-surface-2'
 
-function TileContent({ icon, label }: { icon: IconName; label: string }) {
+interface TileContentProps {
+  icon: IconName
+  label: string
+  hasDot?: boolean
+}
+
+function TileContent({ icon, label, hasDot = false }: TileContentProps) {
   return (
     <>
-      <Icon name={icon} className="size-[22px] text-accent" />
+      <span className="flex items-start justify-between">
+        <Icon name={icon} className="size-[22px] text-accent" />
+        {hasDot ? (
+          <span className="size-2 flex-none rounded-full bg-tier-uncommon">
+            <span className="sr-only">nouveau</span>
+          </span>
+        ) : null}
+      </span>
       <span className="text-[13px] leading-tight font-semibold">{label}</span>
     </>
   )
 }
 
 /** "Dans cette ligue" card: the current league, a switcher to any league, and its shortcuts. */
-export function LeagueScopeCard({ league, leagues }: LeagueScopeCardProps) {
+export function LeagueScopeCard({ league, leagues, hasTaggedDot = false }: LeagueScopeCardProps) {
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false)
   const canManage = hasRoleAtLeast(league.role, 'admin')
   const params = { leagueId: league.id }
@@ -59,7 +73,7 @@ export function LeagueScopeCard({ league, leagues }: LeagueScopeCardProps) {
       </div>
       <div className={`grid gap-2 ${canManage ? 'grid-cols-3' : 'grid-cols-2'}`}>
         <Link to="/l/$leagueId/tagged" params={params} className={TILE_CLASS}>
-          <TileContent icon="photo" label="Photos où tu apparais" />
+          <TileContent icon="photo" label="Photos où tu apparais" hasDot={hasTaggedDot} />
         </Link>
         {canManage ? (
           <Link

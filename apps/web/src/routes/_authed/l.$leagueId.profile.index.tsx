@@ -28,6 +28,7 @@ import { usePushNotifications } from '@/features/push/use-push-notifications'
 import { useSoundSettings, type SoundSettings } from '@/features/sound/sound-settings'
 import { formatReleaseDay } from '@/features/whats-new/release-dates'
 import { useWhatsNew } from '@/features/whats-new/use-whats-new'
+import { useHasNewTag } from '@/features/withdrawals/use-tagged-cards'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/profile/')({
   component: Profile,
@@ -52,6 +53,7 @@ function Profile() {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false)
   const myId = me?.user.id ?? ''
   const memberCount = useQuery(membersQueryOptions(leagueId)).data?.length
+  const hasNewTag = useHasNewTag(myId, leagueId)
   const emblems = useQuery({
     ...memberEmblemsQueryOptions(leagueId, myId),
     enabled: myId !== '',
@@ -85,7 +87,9 @@ function Profile() {
         </span>
         <Icon name="chevron-right" className="size-5 flex-none text-faint" />
       </Link>
-      {currentLeague ? <LeagueScopeCard league={currentLeague} leagues={leagues} /> : null}
+      {currentLeague ? (
+        <LeagueScopeCard league={currentLeague} leagues={leagues} hasTaggedDot={hasNewTag} />
+      ) : null}
       <SettingsGroup title="Dans cette ligue">
         <li>
           <Link to="/l/$leagueId/members" params={params} className={settingsRowClassName()}>

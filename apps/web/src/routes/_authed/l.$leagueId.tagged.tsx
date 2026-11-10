@@ -9,7 +9,7 @@ import { TopBar } from '@/components/ui/top-bar'
 import { TaggedCardList } from '@/features/withdrawals/components/tagged-card-list'
 import { WithdrawCardDialog } from '@/features/withdrawals/components/withdraw-card-dialog'
 import { isCardGone, useWithdrawCard } from '@/features/withdrawals/use-withdraw-card'
-import { useTaggedCards } from '@/features/withdrawals/use-tagged-cards'
+import { useMarkTagsSeen, useTaggedCards } from '@/features/withdrawals/use-tagged-cards'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/tagged')({
   component: TaggedScreen,
@@ -17,7 +17,9 @@ export const Route = createFileRoute('/_authed/l/$leagueId/tagged')({
 
 function TaggedScreen() {
   const { leagueId } = Route.useParams()
+  const { me } = Route.useRouteContext()
   const { data: cards, isPending, isError, refetch } = useTaggedCards(leagueId)
+  useMarkTagsSeen(me.user.id, leagueId, cards)
   const withdraw = useWithdrawCard(leagueId)
   const [target, setTarget] = useState<TaggedCard | null>(null)
   const isGone = isCardGone(withdraw.error)

@@ -6,6 +6,7 @@ import { NO_FILTERS, type CollectionFilterState } from '../collection-filters'
 import { useCollectionCount } from '../use-collection-count'
 import { MemberFilter } from './member-filter'
 import { RarityFilter } from './rarity-filter'
+import { TaggedFilter } from './tagged-filter'
 
 interface FilterSheetProps {
   open: boolean
@@ -45,6 +46,16 @@ function FilterSheetForm({ leagueId, value, members, onApply, onClose }: FilterS
             members={members}
             selectedId={draft.authorId}
             onSelect={(authorId) => setDraft((prev) => ({ ...prev, authorId }))}
+          />
+        </section>
+      ) : null}
+      {members.length > 0 ? (
+        <section className="flex flex-col gap-2">
+          <h3 className="filter-label">Sur la photo</h3>
+          <TaggedFilter
+            members={members}
+            selectedId={draft.taggedUserId}
+            onSelect={(taggedUserId) => setDraft((prev) => ({ ...prev, taggedUserId }))}
           />
         </section>
       ) : null}
