@@ -45,7 +45,6 @@ function LeagueLayout() {
   usePortraitCachePruning(leagueId)
   const navStackRef = useHeightVar('--nav-stack-h')
   const shellRef = useRef<HTMLDivElement>(null)
-  useViewportHeal(shellRef)
   useCollectionVisitTracker(me.user.id, leagueId)
   const { hasUnseen } = useWhatsNew()
   const [isNewsOpen, setIsNewsOpen] = useState(false)
@@ -62,6 +61,7 @@ function LeagueLayout() {
     (!onboarding.isSeen && !wasOnboardingShown(me.user.id))
   const isBoosterStage = Boolean(matchRoute({ to: '/l/$leagueId/booster', params: { leagueId } }))
   const isAddScreen = Boolean(matchRoute({ to: '/l/$leagueId/add', params: { leagueId } }))
+  useViewportHeal(shellRef, '[data-nav-stack]', isBoosterStage || isAddScreen)
   const active = matchRoute({ to: '/l/$leagueId/collection', params: { leagueId } })
     ? 'collection'
     : matchRoute({ to: '/l/$leagueId/add', params: { leagueId } })
@@ -133,7 +133,7 @@ function LeagueLayout() {
         />
       )}
       {isBoosterStage ? null : (
-        <div ref={navStackRef} className="sticky bottom-0 z-40 mt-auto">
+        <div ref={navStackRef} data-nav-stack className="sticky bottom-0 z-40 mt-auto">
           {isOnboardingBlocking ? null : <IosInstallHint />}
           <BottomNav leagueId={leagueId} active={active} hasProfileBadge={hasUnseen} />
         </div>
