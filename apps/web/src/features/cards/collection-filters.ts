@@ -6,6 +6,7 @@ export interface CollectionFilterState {
   tier: CardTier | null
   hideLocked: boolean
   upgradable: boolean
+  moment: boolean
   taggedUserId: string | null
 }
 
@@ -14,6 +15,7 @@ export const NO_FILTERS: CollectionFilterState = {
   tier: null,
   hideLocked: false,
   upgradable: false,
+  moment: false,
   taggedUserId: null,
 }
 
@@ -23,11 +25,17 @@ export function activeFilterCount({
   tier,
   hideLocked,
   upgradable,
+  moment,
   taggedUserId,
 }: CollectionFilterState): number {
-  return [authorId !== null, tier !== null, hideLocked, upgradable, taggedUserId !== null].filter(
-    Boolean,
-  ).length
+  return [
+    authorId !== null,
+    tier !== null,
+    hideLocked,
+    upgradable,
+    moment,
+    taggedUserId !== null,
+  ].filter(Boolean).length
 }
 
 /** Builds the collection heading from the member and rarity filters, e.g. "Cartes de Léa · Rare". */

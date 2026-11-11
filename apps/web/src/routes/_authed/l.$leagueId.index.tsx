@@ -9,6 +9,7 @@ import { useWallet } from '@/features/game/use-wallet'
 import { FeedSection } from '@/features/league-feed/components/feed-section'
 import { GoalSection } from '@/features/league-goal/components/goal-section'
 import { MissionsSection } from '@/features/missions/components/missions-section'
+import { MomentHome } from '@/features/moments/components/moment-home'
 import { RemovalNotice } from '@/features/privacy/components/removal-notice'
 import { useRemovedCardsSync } from '@/features/privacy/use-removed-cards-sync'
 import { LeagueHeader } from '@/features/leagues/components/league-header'
@@ -54,6 +55,7 @@ function LeagueHome() {
       {notice ? (
         <RemovalNotice count={notice.count} dust={notice.dust} onClose={acknowledge} />
       ) : null}
+      <MomentHome leagueId={leagueId} />
       {wallet ? (
         <BoosterWidget
           leagueId={leagueId}

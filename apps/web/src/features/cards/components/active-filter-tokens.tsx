@@ -47,6 +47,9 @@ export function ActiveFilterTokens({ filters, members, onChange }: ActiveFilterT
           onRemove={() => onChange({ ...filters, upgradable: false })}
         />
       ) : null}
+      {filters.moment ? (
+        <FilterToken label="Moments" onRemove={() => onChange({ ...filters, moment: false })} />
+      ) : null}
     </>
   )
 }

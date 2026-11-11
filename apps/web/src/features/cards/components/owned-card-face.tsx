@@ -35,6 +35,7 @@ export function OwnedCardFace({
       hasFoilPip={hasFoil}
       isPromoted={isPromoted ?? card.isPromoted}
       stackCount={hasStack ? card.stackCount : 0}
+      moment={card.moment}
       className={className}
     >
       <CardImage
