@@ -10,7 +10,7 @@ import { missionsQueryKey } from '@/features/missions/missions.queries'
 import { logger } from '@/lib/logger'
 import { isBlankTitle, type StackCard } from './session/session-reducer'
 import type { UploadSession } from './session/use-upload-session'
-import { fetchUploadStates, publishUploads } from './uploads.api'
+import { PartialPublishError, fetchUploadStates, publishUploads } from './uploads.api'
 import { draftsQueryKey } from './use-drafts'
 import { uploadQuotaQueryKey } from './use-upload-quota'
 import { emblemsQueryKey } from '@/features/emblems/emblems.queries'
@@ -121,12 +121,26 @@ export function usePublish(leagueId: string, session: UploadSession) {
     [leagueId],
   )
 
+  const refreshCaches = useCallback(
+    () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'cards'] }),
+        queryClient.invalidateQueries({ queryKey: emblemsQueryKey(leagueId) }),
+        queryClient.invalidateQueries({ queryKey: uploadQuotaQueryKey(leagueId) }),
+        queryClient.invalidateQueries({ queryKey: draftsQueryKey(leagueId) }),
+        queryClient.invalidateQueries({ queryKey: missionsQueryKey(leagueId) }),
+        queryClient.invalidateQueries({ queryKey: leagueGoalQueryKey(leagueId) }),
+      ]),
+    [leagueId, queryClient],
+  )
+
   const publish = useCallback(async (): Promise<void> => {
     if (controllerRef.current) return
     const controller = new AbortController()
     controllerRef.current = controller
     const current = sessionRef.current
     setIsPublishing(true)
+    let partialIds: string[] = []
     try {
       if (!(await current.flush())) {
         current.dispatch({ type: 'notice', notice: UNSAVED_NOTICE })
@@ -142,8 +156,11 @@ export function usePublish(leagueId: string, session: UploadSession) {
         const states = await publishUploads(leagueId, ids)
         setProgress({ done: countReady(states), total: ids.length })
       } catch (error) {
-        const problems = problemsOf(error)
-        if (problems === null) throw error
+        const partial = error instanceof PartialPublishError ? error : null
+        if (partial) partialIds = partial.states.map((state) => state.uploadId)
+        const cause = partial ? partial.cause : error
+        const problems = problemsOf(cause)
+        if (problems === null) throw cause
         handleProblems(problems)
         return
       }
@@ -153,14 +170,7 @@ export function usePublish(leagueId: string, session: UploadSession) {
       current.dispatch({ type: 'publishProgress', count, duplicates })
       current.dispatch({ type: 'screen', screen: 'done' })
       if (count >= 1) playSound({ name: 'cardCreated' })
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'cards'] }),
-        queryClient.invalidateQueries({ queryKey: emblemsQueryKey(leagueId) }),
-        queryClient.invalidateQueries({ queryKey: uploadQuotaQueryKey(leagueId) }),
-        queryClient.invalidateQueries({ queryKey: draftsQueryKey(leagueId) }),
-        queryClient.invalidateQueries({ queryKey: missionsQueryKey(leagueId) }),
-        queryClient.invalidateQueries({ queryKey: leagueGoalQueryKey(leagueId) }),
-      ])
+      await refreshCaches()
     } catch (error) {
       logger.warn('Publish failed', { error })
       if (!controller.signal.aborted) {
@@ -170,8 +180,12 @@ export function usePublish(leagueId: string, session: UploadSession) {
     } finally {
       controllerRef.current = null
       if (!controller.signal.aborted) setIsPublishing(false)
+      if (partialIds.length > 0) {
+        void refreshCaches()
+        void poll(partialIds, controller.signal).then(refreshCaches)
+      }
     }
-  }, [handleProblems, leagueId, poll, queryClient])
+  }, [handleProblems, leagueId, poll, refreshCaches])
 
   return { publish, isPublishing, progress }
 }

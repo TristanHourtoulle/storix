@@ -187,6 +187,17 @@ export async function discardUploads(
   }
 }
 
+/** A publish that failed after earlier batches were accepted: carries their states and the failure. */
+export class PartialPublishError extends Error {
+  constructor(
+    readonly states: readonly UploadState[],
+    override readonly cause: unknown,
+  ) {
+    super('Publish failed after some batches were accepted')
+    this.name = 'PartialPublishError'
+  }
+}
+
 /** Publishes staged drafts in stack order, one request per batch; resolves with their states. */
 export async function publishUploads(
   leagueId: string,
@@ -194,12 +205,17 @@ export async function publishUploads(
 ): Promise<UploadState[]> {
   const states: UploadState[] = []
   for (const page of chunk(ids, MAX_PUBLISH_BATCH)) {
-    const response = await apiRequest(uploadsPath(leagueId, '/publish'), {
-      method: 'POST',
-      body: { uploadIds: page },
-      schema: uploadStatesResponseSchema,
-    })
-    states.push(...response.states)
+    try {
+      const response = await apiRequest(uploadsPath(leagueId, '/publish'), {
+        method: 'POST',
+        body: { uploadIds: page },
+        schema: uploadStatesResponseSchema,
+      })
+      states.push(...response.states)
+    } catch (error) {
+      if (states.length === 0) throw error
+      throw new PartialPublishError(states, error)
+    }
   }
   return states
 }
