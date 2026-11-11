@@ -31,19 +31,35 @@ describe('dust', () => {
     expect(resolvePulledCopy(null, { tierAtMint: 'rare', variant: 'normal' })).toEqual({
       outcome: 'new',
       stacked: null,
+      dust: 0,
     })
     expect(resolvePulledCopy(target('rare'), { tierAtMint: 'common', variant: 'normal' })).toEqual({
       outcome: 'duplicate',
       stacked: { tierAtMint: 'common', variant: 'normal' },
+      dust: 25,
     })
     expect(resolvePulledCopy(target('rare'), { tierAtMint: 'rare', variant: 'foil' })).toEqual({
       outcome: 'duplicate',
       stacked: { tierAtMint: 'rare', variant: 'foil' },
+      dust: 50,
     })
     expect(resolvePulledCopy(target('common'), { tierAtMint: 'rare', variant: 'foil' })).toEqual({
       outcome: 'upgraded',
       stacked: { tierAtMint: 'common', variant: 'foil' },
+      dust: 10,
     })
+  })
+  it('values a duplicate at the personal tier of a promoted copy', () => {
+    const promoted = target('common', 'legendary')
+    expect(resolvePulledCopy(promoted, { tierAtMint: 'common', variant: 'normal' }).dust).toBe(400)
+    expect(resolvePulledCopy(target('epic'), { tierAtMint: 'mythic', variant: 'normal' })).toEqual({
+      outcome: 'upgraded',
+      stacked: { tierAtMint: 'epic', variant: 'normal' },
+      dust: 100,
+    })
+    expect(
+      resolvePulledCopy(target('mythic'), { tierAtMint: 'mythic', variant: 'normal' }).dust,
+    ).toBe(1000)
   })
   it('settles a booster in order without mutating the owned map', () => {
     const owned = new Map([[copyKey('b', 'normal'), target('epic')]])
@@ -144,10 +160,12 @@ describe('dust', () => {
     expect(resolvePulledCopy(target('rare'), { tierAtMint: 'epic', variant: 'normal' })).toEqual({
       outcome: 'upgraded',
       stacked: { tierAtMint: 'rare', variant: 'normal' },
+      dust: 25,
     })
     expect(resolvePulledCopy(target('rare'), { tierAtMint: 'rare', variant: 'normal' })).toEqual({
       outcome: 'duplicate',
       stacked: { tierAtMint: 'rare', variant: 'normal' },
+      dust: 25,
     })
   })
   it('decides craft and foil upgrade', () => {

@@ -230,6 +230,7 @@ async function openNewBooster(
     owned,
     stackCounts,
   )
+  const dustGained = settlements.reduce((total, settlement) => total + settlement.dust, 0)
   const discoveries = await discoverySlots(ctx, draws)
 
   const opening = await insertOpening(ctx.tx, {
@@ -240,7 +241,7 @@ async function openNewBooster(
     tableVersion: DROP_TABLE_VERSION,
     pityBefore,
     poolDigest: sha256Hex(boosterPoolDigestInput(pool)),
-    dustGained: 0,
+    dustGained,
     isPremium,
     source,
   })
@@ -273,7 +274,7 @@ async function openNewBooster(
       tierAtMint: settlement.tierAtMint,
       variant: settlement.variant,
       outcome: settlement.outcome,
-      dust: 0,
+      dust: settlement.dust,
       stackCount: settlement.stackCountAfter,
       isFirstCopy: settlement.isFirstCopyOfCard,
       isDiscovery: discoveries.has(draw.slot),
@@ -288,6 +289,7 @@ async function openNewBooster(
   )
   const patch = {
     ...consumedPatch,
+    dust: wallet.dust + dustGained,
     pitySinceEpic: pityAfter.sinceEpic,
     pitySinceLegendary: pityAfter.sinceLegendary,
     boostersOpened: wallet.boostersOpened + 1,
@@ -295,7 +297,7 @@ async function openNewBooster(
   }
   await updateWallet(ctx.tx, { leagueId: ctx.m.leagueId, userId: ctx.m.userId }, patch)
   const walletState = await walletStateFor(ctx, { ...wallet, ...patch })
-  return present(ctx, { ...opening, dustGained: 0 }, walletState, signer)
+  return present(ctx, { ...opening, dustGained }, walletState, signer)
 }
 
 function consumeFromSource(

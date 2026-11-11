@@ -49,7 +49,7 @@ export const DAILY_MISSIONS: readonly MissionDefinition[] = [
     period: 'day',
     source: 'boosters',
     target: 2,
-    reward: dust(15),
+    reward: dust(40),
     label: 'Ouvre 2 boosters',
   },
   {
@@ -57,7 +57,7 @@ export const DAILY_MISSIONS: readonly MissionDefinition[] = [
     period: 'day',
     source: 'boosters',
     target: 4,
-    reward: dust(25),
+    reward: dust(60),
     label: 'Ouvre 4 boosters',
   },
   {
@@ -65,7 +65,7 @@ export const DAILY_MISSIONS: readonly MissionDefinition[] = [
     period: 'day',
     source: 'reactions',
     target: 3,
-    reward: dust(10),
+    reward: dust(25),
     label: 'Réagis à 3 cartes',
   },
   {
@@ -73,7 +73,7 @@ export const DAILY_MISSIONS: readonly MissionDefinition[] = [
     period: 'day',
     source: 'reaction_authors',
     target: 3,
-    reward: dust(15),
+    reward: dust(40),
     label: 'Réagis aux photos de 3 personnes',
   },
   {
@@ -81,7 +81,7 @@ export const DAILY_MISSIONS: readonly MissionDefinition[] = [
     period: 'day',
     source: 'photos',
     target: 1,
-    reward: dust(20),
+    reward: dust(50),
     label: 'Poste 1 photo',
   },
   {
@@ -89,7 +89,7 @@ export const DAILY_MISSIONS: readonly MissionDefinition[] = [
     period: 'day',
     source: 'bravos',
     target: 1,
-    reward: dust(10),
+    reward: dust(25),
     label: 'Envoie 1 Bravo',
   },
   {
@@ -97,7 +97,7 @@ export const DAILY_MISSIONS: readonly MissionDefinition[] = [
     period: 'day',
     source: 'discoveries',
     target: 1,
-    reward: dust(20),
+    reward: dust(50),
     label: 'Découvre 1 carte',
   },
   {
@@ -105,7 +105,7 @@ export const DAILY_MISSIONS: readonly MissionDefinition[] = [
     period: 'day',
     source: 'member_visits',
     target: 1,
-    reward: dust(5),
+    reward: dust(15),
     label: "Visite la page d'un ami",
   },
   {
@@ -113,7 +113,7 @@ export const DAILY_MISSIONS: readonly MissionDefinition[] = [
     period: 'day',
     source: 'self_tags',
     target: 1,
-    reward: dust(10),
+    reward: dust(25),
     label: 'Identifie-toi sur une photo',
   },
   {
@@ -121,7 +121,7 @@ export const DAILY_MISSIONS: readonly MissionDefinition[] = [
     period: 'day',
     source: 'showcase_edits',
     target: 1,
-    reward: dust(10),
+    reward: dust(25),
     label: 'Change ta vitrine',
   },
 ]
@@ -132,7 +132,7 @@ export const WEEKLY_MISSIONS: readonly MissionDefinition[] = [
     period: 'week',
     source: 'boosters',
     target: 15,
-    reward: dust(60),
+    reward: dust(120),
     label: 'Ouvre 15 boosters',
   },
   {
@@ -140,7 +140,7 @@ export const WEEKLY_MISSIONS: readonly MissionDefinition[] = [
     period: 'week',
     source: 'photos',
     target: 4,
-    reward: dust(80),
+    reward: dust(160),
     label: 'Poste 4 photos',
   },
   {
@@ -148,7 +148,7 @@ export const WEEKLY_MISSIONS: readonly MissionDefinition[] = [
     period: 'week',
     source: 'reactions',
     target: 15,
-    reward: dust(50),
+    reward: dust(100),
     label: 'Réagis à 15 cartes',
   },
   {
@@ -156,7 +156,7 @@ export const WEEKLY_MISSIONS: readonly MissionDefinition[] = [
     period: 'week',
     source: 'promotions',
     target: 1,
-    reward: dust(100),
+    reward: dust(200),
     label: 'Améliore 1 carte',
   },
   {
@@ -164,7 +164,7 @@ export const WEEKLY_MISSIONS: readonly MissionDefinition[] = [
     period: 'week',
     source: 'discoveries',
     target: 3,
-    reward: dust(80),
+    reward: dust(160),
     label: 'Découvre 3 cartes',
   },
   {
@@ -172,7 +172,7 @@ export const WEEKLY_MISSIONS: readonly MissionDefinition[] = [
     period: 'week',
     source: 'bravos',
     target: 5,
-    reward: dust(40),
+    reward: dust(80),
     label: 'Envoie 5 Bravo',
   },
   {
@@ -180,7 +180,7 @@ export const WEEKLY_MISSIONS: readonly MissionDefinition[] = [
     period: 'week',
     source: 'foils',
     target: 1,
-    reward: dust(80),
+    reward: dust(160),
     label: 'Passe 1 carte en foil',
   },
   {

@@ -1,12 +1,13 @@
 import { tierRank, type BoosterPull } from '@storix/shared'
 import { authorLabel } from '@/features/cards/author-label'
 
-/** Short outcome label of a pull: the stack it joined, the dust of an older opening, or the "new" badge. */
+/** Short outcome label of a pull: the stack it joined and the dust it gave, or the "new" badge. */
 export function pullLabel(pull: BoosterPull): string {
   if (pull.isFirstCopy) return pull.isDiscovery ? 'Nouvelle · Découverte par toi' : 'Nouvelle'
   if (pull.outcome === 'new') return pull.variant === 'foil' ? 'Nouvelle foil' : 'Nouvelle'
-  const gain =
-    pull.stackCount !== null ? `+1 dans ta pile (×${pull.stackCount})` : `+${pull.dust} paillettes`
+  const dust = pull.dust > 0 ? `+${pull.dust} paillettes` : null
+  const stack = pull.stackCount !== null ? `pile ×${pull.stackCount}` : null
+  const gain = [dust, stack].filter((part) => part !== null).join(' · ')
   return pull.outcome === 'upgraded' ? `Améliorée · ${gain}` : gain
 }
 

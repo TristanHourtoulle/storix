@@ -3,6 +3,36 @@ import type { ReleaseNote } from '../schemas/whats-new'
 /** Every feature release shown in the "Nouveautés" booster, newest first. */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    id: '2026-11-11',
+    publishedAt: '2026-11-11T09:00:00+01:00',
+    cards: [
+      {
+        key: 'duplicate-dust',
+        title: 'Doublons payants',
+        body: 'Chaque doublon rejoint ta pile et rapporte des paillettes. Si ta carte est améliorée, tu touches le montant de sa rareté à toi.',
+        tier: 'legendary',
+        illustration: 'stacks',
+        tryTarget: 'home',
+      },
+      {
+        key: 'mission-rewards',
+        title: 'Missions plus généreuses',
+        body: 'Les missions du jour et de la semaine rapportent bien plus de paillettes, y compris celles déjà en cours.',
+        tier: 'epic',
+        illustration: 'missions',
+        tryTarget: 'home',
+      },
+      {
+        key: 'photo-limit',
+        title: 'Photos sans plafond',
+        body: "La limite de photos par ligue est maintenant réglée par l'admin.",
+        tier: 'rare',
+        illustration: 'camera',
+        tryTarget: 'add',
+      },
+    ],
+  },
+  {
     id: '2026-11-10-e',
     publishedAt: '2026-11-10T23:00:00+01:00',
     cards: [
