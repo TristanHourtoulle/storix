@@ -345,6 +345,9 @@
     height: auto;
     aspect-ratio: 63 / 88;
   }
+  .tryon-grid .card-name {
+    display: none;
+  }
   .tryon-avatar {
     display: grid;
     justify-items: center;
