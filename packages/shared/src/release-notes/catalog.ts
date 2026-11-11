@@ -4,7 +4,7 @@ import type { ReleaseNote } from '../schemas/whats-new'
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
     id: '2026-11-11',
-    publishedAt: '2026-11-11T09:00:00+01:00',
+    publishedAt: '2026-11-11T08:00:00+01:00',
     cards: [
       {
         key: 'duplicate-dust',
@@ -25,7 +25,7 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
       {
         key: 'photo-limit',
         title: 'Photos sans plafond',
-        body: "La limite de photos par ligue est maintenant réglée par l'admin.",
+        body: "Fini la limite de 30 photos : seul le quota quotidien fixé par l'admin compte.",
         tier: 'rare',
         illustration: 'camera',
         tryTarget: 'add',
