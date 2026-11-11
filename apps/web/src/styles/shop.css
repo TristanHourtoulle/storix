@@ -164,6 +164,10 @@
     aspect-ratio: 63 / 88;
     border-radius: 5px;
   }
+  .style-slot-icon .shop-mini-rarity {
+    width: 100%;
+    padding: 0 6px;
+  }
   .shop-mini-rarity .card-band,
   .shop-mini-rarity .card-gem,
   .shop-mini-rarity .card-holo {
