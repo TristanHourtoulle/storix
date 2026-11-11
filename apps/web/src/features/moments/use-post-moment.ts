@@ -8,14 +8,16 @@ import { postToBucket } from '@/features/uploads/uploads.api'
 import { createMomentUploads, postMoment } from './moments.api'
 import { currentMomentQueryKey } from './moments.queries'
 
-interface MomentFiles {
+interface MomentSubmission {
   back: File
   front: File
+  title: string
 }
 
 /**
  * Reserves the Moment uploads when the back photo is taken (the server stamps that instant as the capture
- * time), sends both photos to the bucket on publish, then posts the Moment and refreshes what it touches.
+ * time), sends both photos to the bucket on publish, then posts the Moment with its optional title and
+ * refreshes what it touches.
  */
 export function usePostMoment(leagueId: string) {
   const queryClient = useQueryClient()
@@ -29,14 +31,16 @@ export function usePostMoment(leagueId: string) {
     reservationRef.current = reservation
   }, [leagueId])
 
-  const mutation = useMutation<PostMomentResponse, Error, MomentFiles>({
-    mutationFn: async ({ back, front }) => {
+  const mutation = useMutation<PostMomentResponse, Error, MomentSubmission>({
+    mutationFn: async ({ back, front, title }) => {
       const uploads = await (reservationRef.current ?? createMomentUploads(leagueId))
       await Promise.all([postToBucket(uploads.back, back), postToBucket(uploads.selfie, front)])
+      const trimmedTitle = title.trim()
       return postMoment(leagueId, {
         backUploadId: uploads.back.uploadId,
         selfieUploadId: uploads.selfie.uploadId,
         capturedAt: viewfinderCaptureDate(back),
+        ...(trimmedTitle === '' ? {} : { title: trimmedTitle }),
       })
     },
     onError: () => {

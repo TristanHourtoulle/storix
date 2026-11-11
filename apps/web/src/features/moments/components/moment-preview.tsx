@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import type { PostMomentResponse } from '@storix/shared'
+import { CARD_TITLE_MAX_LENGTH, type PostMomentResponse } from '@storix/shared'
 import { latenessLabel } from '../moment-copy'
 import type { MomentShot } from '../use-moment-capture'
 
@@ -7,39 +8,98 @@ interface MomentPreviewProps {
   leagueId: string
   back: MomentShot
   front: MomentShot
-  stamp: string
+  autoTitle: string
+  title: string
+  isLate: boolean
   result: PostMomentResponse | null
   isPublishing: boolean
   error: string | null
+  onTitleChange: (title: string) => void
   onPublish: () => void
   onRetake: () => void
 }
 
-/** The Moment card preview before publication, then its confirmation with the reward. */
+const TITLE_INPUT_ID = 'moment-title'
+const TITLE_HINT_ID = 'moment-title-hint'
+
+/** The Moment card preview with its optional title before publication, then its confirmation with the reward. */
 export function MomentPreview({
   leagueId,
   back,
   front,
-  stamp,
+  autoTitle,
+  title,
+  isLate,
   result,
   isPublishing,
   error,
+  onTitleChange,
   onPublish,
   onRetake,
 }: MomentPreviewProps) {
+  const [isEditing, setIsEditing] = useState(false)
+  const typedTitle = title.trim()
+  const isPending = result === null
+
   return (
     <main className="moment-preview">
-      <div className="moment-mcard">
+      {isPending ? (
+        <div className="moment-preview-top">
+          <button
+            type="button"
+            className="moment-preview-back"
+            disabled={isPublishing}
+            onClick={onRetake}
+          >
+            Refaire
+          </button>
+          <span className={isLate ? 'moment-late-pill' : 'moment-ontime'}>
+            {isLate ? 'En retard' : latenessLabel(0)}
+          </span>
+        </div>
+      ) : null}
+      <div className={`moment-mcard${isPending && isEditing ? ' is-compact' : ''}`}>
         <img src={back.url} alt="Photo de la caméra arrière" className="moment-mcard-photo" />
         <img src={front.url} alt="Selfie" className="moment-mcard-inset" />
-        <span className="moment-mcard-stamp">{stamp}</span>
         <span className="moment-mcard-badge">MOMENT</span>
+        <span className="moment-mcard-band">
+          <b className={typedTitle === '' ? 'is-auto' : undefined}>
+            {typedTitle === '' ? autoTitle : typedTitle}
+          </b>
+          <small>● À découvrir dans un booster</small>
+        </span>
       </div>
-      {result === null ? (
+      {isPending ? (
         <>
-          <p className="moment-preview-text">
-            Ta Carte Moment rejoint la collection de toute la ligue.
-          </p>
+          <div className="moment-title-field">
+            <label htmlFor={TITLE_INPUT_ID} className="moment-title-label">
+              Titre · facultatif
+            </label>
+            <div className="moment-title-input">
+              <input
+                id={TITLE_INPUT_ID}
+                type="text"
+                value={title}
+                placeholder={autoTitle}
+                maxLength={CARD_TITLE_MAX_LENGTH}
+                autoComplete="off"
+                enterKeyHint="done"
+                aria-describedby={TITLE_HINT_ID}
+                disabled={isPublishing}
+                onChange={(event) => onTitleChange(event.target.value)}
+                onFocus={() => setIsEditing(true)}
+                onBlur={() => setIsEditing(false)}
+              />
+              <small aria-hidden="true">
+                {title.length}/{CARD_TITLE_MAX_LENGTH}
+              </small>
+            </div>
+            {isEditing ? null : (
+              <span id={TITLE_HINT_ID} className="moment-title-hint">
+                Laisse vide pour garder ce titre.
+              </span>
+            )}
+          </div>
           {error ? (
             <p role="alert" className="moment-preview-error">
               {error}
@@ -52,14 +112,6 @@ export function MomentPreview({
             onClick={onPublish}
           >
             {isPublishing ? 'Publication…' : 'Publier'}
-          </button>
-          <button
-            type="button"
-            className="moment-flash-later"
-            disabled={isPublishing}
-            onClick={onRetake}
-          >
-            Refaire
           </button>
         </>
       ) : (
