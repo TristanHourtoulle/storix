@@ -9,6 +9,7 @@ interface EquipCosmetic {
   equip: (body: EquipCosmeticBody, onDone?: () => void) => void
   isPending: boolean
   errorMessage: string | null
+  reset: () => void
 }
 
 /** Wears an owned item, or the original style, and updates the worn cosmetics everywhere. */
@@ -35,5 +36,6 @@ export function useEquipCosmetic(): EquipCosmetic {
     equip: (body, onDone) => mutation.mutate(body, { onSuccess: () => onDone?.() }),
     isPending: mutation.isPending,
     errorMessage: mutation.error ? userMessage(mutation.error) : null,
+    reset: mutation.reset,
   }
 }

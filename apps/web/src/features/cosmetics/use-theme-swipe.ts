@@ -1,6 +1,11 @@
 import { useRef, type KeyboardEvent, type PointerEvent } from 'react'
 
 const SWIPE_THRESHOLD_PX = 48
+const INTERACTIVE_SELECTOR = 'button, a, input, select, textarea, [role="switch"], [role="button"]'
+
+function startsOnControl(event: PointerEvent<HTMLElement>): boolean {
+  return event.target instanceof Element && event.target.closest(INTERACTIVE_SELECTOR) !== null
+}
 
 interface ThemeSwipeHandlers {
   onPointerDown: (event: PointerEvent<HTMLElement>) => void
@@ -15,7 +20,7 @@ export function useThemeSwipe(onStep: (delta: 1 | -1) => void): ThemeSwipeHandle
 
   return {
     onPointerDown: (event) => {
-      startX.current = event.clientX
+      startX.current = startsOnControl(event) ? null : event.clientX
     },
     onPointerUp: (event) => {
       if (startX.current === null) return

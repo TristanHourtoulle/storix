@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import type { CosmeticItemId, CosmeticSlot } from '@storix/shared'
@@ -48,6 +48,17 @@ export function TryOnCabin({ leagueId, category, initialItemId }: TryOnCabinProp
   const tryOn = useTryOnCards(leagueId)
   const equip = useEquipCosmetic()
   const option = options[index] ?? options[0]
+  const regionRef = useRef<HTMLElement>(null)
+  const resetEquip = equip.reset
+
+  useEffect(() => {
+    regionRef.current?.focus({ preventScroll: true })
+  }, [])
+
+  useEffect(() => {
+    resetEquip()
+  }, [index, resetEquip])
+
   const swipe = useThemeSwipe((delta) => {
     if (buying !== null) return
     setIndex((current) => Math.min(options.length - 1, Math.max(0, current + delta)))
@@ -60,6 +71,7 @@ export function TryOnCabin({ leagueId, category, initialItemId }: TryOnCabinProp
 
   return (
     <main
+      ref={regionRef}
       className="tryon"
       style={accent}
       tabIndex={-1}
@@ -115,9 +127,13 @@ export function TryOnCabin({ leagueId, category, initialItemId }: TryOnCabinProp
           >
             Porter
           </button>
-        ) : (
+        ) : state === 'worn' ? (
           <button type="button" className="shop-btn is-ghost" disabled>
             Porté
+          </button>
+        ) : (
+          <button type="button" className="shop-btn is-ghost" disabled aria-busy="true">
+            Chargement…
           </button>
         )}
         {equip.errorMessage ? (
