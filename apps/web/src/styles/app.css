@@ -96,6 +96,17 @@
   }
 }
 
+:root {
+  --color-tier-mythic-fx: #e879f9;
+  --rainbow-red: #f87171;
+  --rainbow-gold: #fbbf24;
+  --rainbow-green: #4ade80;
+  --rainbow-cyan: #22d3ee;
+  --rainbow-blue: #60a5fa;
+  --rainbow-violet: #c084fc;
+  --rainbow-pink: #f472b6;
+}
+
 @layer base {
   html {
     background: var(--color-bg);

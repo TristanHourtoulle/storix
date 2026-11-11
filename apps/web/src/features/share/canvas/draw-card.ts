@@ -1,14 +1,7 @@
 import { tierRank } from '@storix/shared'
 import type { ShareCard } from '../share-subject'
-import {
-  DISPLAY_FONT,
-  INK,
-  RAINBOW,
-  TIER_HEX,
-  fitText,
-  roundRectPath,
-  withAlpha,
-} from './primitives'
+import type { RarityPalette } from '@/features/cosmetics/rarity-palettes'
+import { DISPLAY_FONT, INK, fitText, roundRectPath, withAlpha } from './primitives'
 
 const CARD_RATIO = 88 / 63
 const DARK_ART = '#1e1e2a'
@@ -43,22 +36,25 @@ function drawCover(
 function strokeStyle(
   ctx: CanvasRenderingContext2D,
   card: ShareCard,
+  palette: RarityPalette,
   x: number,
   y: number,
   w: number,
   h: number,
 ): string | CanvasGradient {
   if (card.facts.tier !== 'mythic' || typeof ctx.createConicGradient !== 'function') {
-    return TIER_HEX[card.facts.tier]
+    return palette.tiers[card.facts.tier].ring
   }
+  const rainbow = palette.mythicRainbow
   const gradient = ctx.createConicGradient(0, x + w / 2, y + h / 2)
-  RAINBOW.forEach((color, index) => gradient.addColorStop(index / (RAINBOW.length - 1), color))
+  rainbow.forEach((color, index) => gradient.addColorStop(index / (rainbow.length - 1), color))
   return gradient
 }
 
 function drawSheen(
   ctx: CanvasRenderingContext2D,
   card: ShareCard,
+  palette: RarityPalette,
   x: number,
   y: number,
   w: number,
@@ -69,7 +65,10 @@ function drawSheen(
   const sheen = ctx.createLinearGradient(x, y, x + w, y + h)
   sheen.addColorStop(0.2, 'rgba(255, 255, 255, 0)')
   sheen.addColorStop(0.36, 'rgba(255, 255, 255, 0.28)')
-  sheen.addColorStop(0.46, isFoil ? 'rgba(34, 211, 238, 0.22)' : withAlpha(TIER_HEX[tier], 0.3))
+  sheen.addColorStop(
+    0.46,
+    isFoil ? 'rgba(34, 211, 238, 0.22)' : withAlpha(palette.tiers[tier].ring, 0.3),
+  )
   sheen.addColorStop(0.56, 'rgba(192, 132, 252, 0.2)')
   sheen.addColorStop(0.7, 'rgba(255, 255, 255, 0)')
   ctx.fillStyle = sheen
@@ -84,10 +83,11 @@ export function drawShareCard(
   x: number,
   y: number,
   width: number,
+  palette: RarityPalette,
 ): number {
   const h = width * CARD_RATIO
   const radius = width * 0.06
-  const tierHex = TIER_HEX[card.facts.tier]
+  const tierHex = palette.tiers[card.facts.tier].ring
 
   ctx.save()
   ctx.shadowColor = withAlpha(tierHex, 0.55)
@@ -103,7 +103,7 @@ export function drawShareCard(
   ctx.fillStyle = DARK_ART
   ctx.fillRect(x, y, width, h)
   if (photo) drawCover(ctx, photo, x, y, width, h)
-  drawSheen(ctx, card, x, y, width, h)
+  drawSheen(ctx, card, palette, x, y, width, h)
 
   const band = h * 0.17
   ctx.fillStyle = 'rgba(10, 10, 16, 0.82)'
@@ -129,7 +129,7 @@ export function drawShareCard(
   ctx.save()
   roundRectPath(ctx, x, y, width, h, radius)
   ctx.lineWidth = Math.max(2, width * 0.012)
-  ctx.strokeStyle = strokeStyle(ctx, card, x, y, width, h)
+  ctx.strokeStyle = strokeStyle(ctx, card, palette, x, y, width, h)
   ctx.stroke()
   ctx.restore()
 

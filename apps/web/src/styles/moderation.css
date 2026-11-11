@@ -38,7 +38,15 @@
   }
   .pill.rainbow {
     color: #fff;
-    background: linear-gradient(100deg, #f87171, #fbbf24, #4ade80, #22d3ee, #818cf8, #c084fc);
+    background: linear-gradient(
+      100deg,
+      var(--rainbow-red),
+      var(--rainbow-gold),
+      var(--rainbow-green),
+      var(--rainbow-cyan),
+      #818cf8,
+      var(--rainbow-violet)
+    );
     box-shadow: none;
   }
   .admin-sheet-meta {

@@ -104,7 +104,13 @@
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
   }
   .goal-bx.is-gold {
-    background: linear-gradient(160deg, #4a3410, #b45309 40%, #fbbf24 70%, #5b21b6);
+    background: linear-gradient(
+      160deg,
+      #4a3410,
+      #b45309 40%,
+      var(--color-tier-legendary) 70%,
+      #5b21b6
+    );
     box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.6);
   }
   .goal-contrib {

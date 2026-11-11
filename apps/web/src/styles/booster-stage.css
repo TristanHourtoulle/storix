@@ -28,14 +28,14 @@
     --ar-chrome: calc(238px + env(safe-area-inset-top) + env(safe-area-inset-bottom));
     --ar-k: 1;
     --ar-rainbow: conic-gradient(
-      #f87171,
-      #fbbf24,
-      #4ade80,
-      #22d3ee,
-      #60a5fa,
-      #c084fc,
-      #f472b6,
-      #f87171
+      var(--rainbow-red),
+      var(--rainbow-gold),
+      var(--rainbow-green),
+      var(--rainbow-cyan),
+      var(--rainbow-blue),
+      var(--rainbow-violet),
+      var(--rainbow-pink),
+      var(--rainbow-red)
     );
     position: relative;
     flex: none;
@@ -64,7 +64,7 @@
     --tc: var(--color-tier-legendary);
   }
   .ar-stage [data-t='M'] {
-    --tc: #e879f9;
+    --tc: var(--color-tier-mythic-fx);
   }
   .ar-scaler {
     position: absolute;
@@ -290,13 +290,13 @@
   .ar-stamp[data-t='M'] {
     background: linear-gradient(
       100deg,
-      #f87171,
-      #fbbf24,
-      #4ade80,
-      #22d3ee,
-      #60a5fa,
-      #c084fc,
-      #f472b6
+      var(--rainbow-red),
+      var(--rainbow-gold),
+      var(--rainbow-green),
+      var(--rainbow-cyan),
+      var(--rainbow-blue),
+      var(--rainbow-violet),
+      var(--rainbow-pink)
     );
     box-shadow:
       0 0 0 3px var(--color-bg),
