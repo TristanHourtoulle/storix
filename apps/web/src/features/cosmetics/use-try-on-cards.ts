@@ -13,29 +13,22 @@ interface TryOnCards {
   source: TryOnSource
 }
 
-function sampleFaces(cards: readonly CollectionCard[], count: number): TryOnFace[] {
-  const covered = new Set(cards.map((card) => card.tier))
-  const tiers = [
-    ...CARD_TIERS.filter((tier) => !covered.has(tier)),
-    ...CARD_TIERS.filter((tier) => covered.has(tier)),
-  ]
-  return tiers.slice(0, count).map((tier) => ({ kind: 'sample', key: `sample-${tier}`, tier }))
+function shownTier(card: CollectionCard): CardTier {
+  return card.kind === 'owned' ? card.displayTier : card.tier
 }
 
-function tierRank(face: TryOnFace): number {
-  const tier = face.kind === 'card' ? face.card.tier : face.tier
-  return CARD_TIERS.indexOf(tier)
-}
-
-/** Six faces for the try-on cabin: the viewer's own cards first, completed with sample faces. */
+/** One face per rarity for the try-on cabin: the viewer's own card of that rarity, or a sample face. */
 export function useTryOnCards(leagueId: string): TryOnCards {
   const { data } = useQuery(tryOnCardsQueryOptions(leagueId))
   const cards = data?.cards ?? []
-  const own: TryOnFace[] = cards.map((card) => ({ kind: 'card', key: card.id, card }))
-  const faces = [...own, ...sampleFaces(cards, TRY_ON_CARDS_MAX - own.length)].toSorted(
-    (a, b) => tierRank(a) - tierRank(b),
-  )
+  const faces: TryOnFace[] = CARD_TIERS.slice(0, TRY_ON_CARDS_MAX).map((tier) => {
+    const card = cards.find((candidate) => shownTier(candidate) === tier)
+    return card === undefined
+      ? { kind: 'sample', key: `sample-${tier}`, tier }
+      : { kind: 'card', key: card.id, card }
+  })
+  const ownCount = faces.filter((face) => face.kind === 'card').length
   const source: TryOnSource =
-    own.length === 0 ? 'samples' : own.length < TRY_ON_CARDS_MAX ? 'mixed' : 'collection'
+    ownCount === 0 ? 'samples' : ownCount < faces.length ? 'mixed' : 'collection'
   return { faces, source }
 }
