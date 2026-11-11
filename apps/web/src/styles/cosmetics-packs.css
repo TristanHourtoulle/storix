@@ -37,6 +37,16 @@
       0 12px 30px rgba(0, 0, 0, 0.45),
       inset 0 0 0 1px #d9b45a99;
   }
+  .skin-or-noir .pack-foil,
+  .skin-or-noir .ar-pa-foil {
+    background-image: linear-gradient(
+      115deg,
+      transparent 30%,
+      rgba(232, 207, 138, 0.22) 45%,
+      rgba(255, 255, 255, 0.18) 50%,
+      transparent 65%
+    );
+  }
   .skin-or-noir .pack-logo {
     color: #e8cf8a;
   }
