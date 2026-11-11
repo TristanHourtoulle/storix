@@ -48,6 +48,7 @@ export const uploads = pgTable(
     stageOnly: boolean('stage_only').notNull().default(false),
     crop: jsonb('crop').$type<CropRect>(),
     publishRequestedAt: timestamp('publish_requested_at', { withTimezone: true }),
+    isMoment: boolean('is_moment').notNull().default(false),
   },
   (t) => [
     index('uploads_league_user_created_idx').on(t.leagueId, t.userId, t.createdAt.desc()),
@@ -57,6 +58,7 @@ export const uploads = pgTable(
       'uploads_portrait_flow_check',
       sql`${t.kind} = 'card' or (not ${t.stageOnly} and ${t.crop} is null and ${t.publishRequestedAt} is null)`,
     ),
+    check('uploads_moment_kind_check', sql`not ${t.isMoment} or ${t.kind} = 'card'`),
     check(
       'uploads_portrait_status_check',
       sql`${t.kind} = 'card' or ${t.status}::text not in ('staged', 'publishing', 'discarded')`,

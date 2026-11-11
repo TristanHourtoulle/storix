@@ -54,7 +54,10 @@ export async function loadEmblemStats(db: DbExecutor, m: EmblemMember): Promise<
           AND p.tier_at_mint = 'mythic') AS "mythicPulls",
       (SELECT count(*) FROM cards c
         WHERE c.league_id = ${m.leagueId} AND c.author_id = ${m.userId}
-          AND c.status = 'active' AND c.tier = 'mythic') AS "ownMythicPhotos"
+          AND c.status = 'active' AND c.tier = 'mythic') AS "ownMythicPhotos",
+      (SELECT count(*) FROM moment_posts mp
+        WHERE mp.league_id = ${m.leagueId} AND mp.user_id = ${m.userId}
+          AND mp.late_minutes = 0) AS "momentsOnTime"
   `)
   const row: Partial<Record<keyof EmblemStats, unknown>> = result.rows[0] ?? {}
   return {
@@ -72,6 +75,7 @@ export async function loadEmblemStats(db: DbExecutor, m: EmblemMember): Promise<
     legendaryPulls: int(row.legendaryPulls),
     mythicPulls: int(row.mythicPulls),
     ownMythicPhotos: int(row.ownMythicPhotos),
+    momentsOnTime: int(row.momentsOnTime),
   }
 }
 

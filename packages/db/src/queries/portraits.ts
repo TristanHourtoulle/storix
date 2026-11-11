@@ -9,12 +9,13 @@
 import { and, eq, inArray, ne } from 'drizzle-orm'
 import {
   portraitPrefix,
+  selfiePrefix,
   storedPortraitKeys,
   type PortraitKind,
   type PortraitOwner,
 } from '@storix/shared/domain'
 import type { DbExecutor } from '../client'
-import { portraits, uploads } from '../schema/index'
+import { momentPosts, portraits, uploads } from '../schema/index'
 
 export interface StoredPortrait {
   id: string
@@ -96,7 +97,17 @@ export function portraitKeysOf(portrait: StoredPortrait): string[] {
   })
 }
 
-/** Returns the storage prefixes of every portrait row and of every portrait upload being rendered. */
+/** Returns the storage prefixes of every Moment selfie a post references. */
+async function listLiveSelfiePrefixes(db: DbExecutor): Promise<string[]> {
+  const rows = await db
+    .select({ leagueId: momentPosts.leagueId, uploadId: momentPosts.selfieUploadId })
+    .from(momentPosts)
+  return rows.flatMap((row) =>
+    row.uploadId === null ? [] : [selfiePrefix({ leagueId: row.leagueId, uploadId: row.uploadId })],
+  )
+}
+
+/** Returns the storage prefixes of every portrait row, every Moment selfie and every portrait or selfie upload being rendered. */
 export async function listLivePortraitPrefixes(db: DbExecutor): Promise<Set<string>> {
   const stored = await db
     .select({
@@ -117,10 +128,15 @@ export async function listLivePortraitPrefixes(db: DbExecutor): Promise<Set<stri
     .where(and(ne(uploads.kind, 'card'), inArray(uploads.status, [...RENDERING_UPLOAD_STATUSES])))
   const prefixes = [...stored, ...rendering].flatMap((row) => {
     if (row.kind === 'card') return []
+    if (row.kind === 'selfie') {
+      return row.leagueId === null
+        ? []
+        : [selfiePrefix({ leagueId: row.leagueId, uploadId: row.uploadId })]
+    }
     const ownerId = ownerIdOf({ kind: row.kind, userId: row.userId, leagueId: row.leagueId })
     return ownerId === null
       ? []
       : [portraitPrefix({ kind: row.kind, ownerId, uploadId: row.uploadId })]
   })
-  return new Set(prefixes)
+  return new Set([...prefixes, ...(await listLiveSelfiePrefixes(db))])
 }
