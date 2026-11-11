@@ -18,6 +18,7 @@ export async function insertCardForMedia(
 ): Promise<{ cardId: string; number: number }> {
   const { upload, mediaId, title, now, from } = input
   const number = await repository.nextCardNumber(tx, upload.leagueId)
+  const moment = upload.isMoment ? await repository.findMomentLink(tx, upload.id) : null
   const cardId = await repository.insertCard(tx, {
     leagueId: upload.leagueId,
     mediaId,
@@ -26,6 +27,9 @@ export async function insertCardForMedia(
     title,
     tier: PROVISIONAL_TIER,
     isProvisional: true,
+    momentSelfieUploadId: moment?.selfieUploadId ?? null,
+    momentTakenAt: moment?.takenAt ?? null,
+    momentLateMinutes: moment?.lateMinutes ?? null,
   })
   await repository.insertCardTags(tx, {
     cardId,

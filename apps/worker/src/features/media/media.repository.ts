@@ -6,6 +6,7 @@ import {
   leagueMembers,
   leagues,
   media,
+  momentPosts,
   portraits,
   uploads,
   type AuditAction,
@@ -35,6 +36,7 @@ export interface UploadForProcessing {
   stageOnly: boolean
   crop: CropRect | null
   hasInvalidCrop: boolean
+  isMoment: boolean
 }
 
 export type CardUpload = UploadForProcessing & { kind: 'card'; leagueId: string }
@@ -80,6 +82,15 @@ export interface NewCardRow {
   title: string
   tier: CardTier
   isProvisional: boolean
+  momentSelfieUploadId?: string | null
+  momentTakenAt?: Date | null
+  momentLateMinutes?: number | null
+}
+
+export interface MomentLink {
+  selfieUploadId: string
+  takenAt: Date
+  lateMinutes: number
 }
 
 export interface StaleUpload {
@@ -104,6 +115,7 @@ export const uploadColumns = {
   clientCapturedAt: uploads.clientCapturedAt,
   stageOnly: uploads.stageOnly,
   crop: uploads.crop,
+  isMoment: uploads.isMoment,
 }
 
 interface RawUploadRow extends Omit<
@@ -130,6 +142,7 @@ export function toUploadForProcessing(row: RawUploadRow): UploadForProcessing {
     taggedUserIds: taggedUserIdsSchema.parse(row.taggedUserIds),
     crop: crop.success ? crop.data : null,
     hasInvalidCrop: !crop.success,
+    isMoment: row.isMoment,
   }
 }
 
@@ -290,6 +303,24 @@ export async function insertMedia(db: DbExecutor, row: NewMediaRow): Promise<str
   const [inserted] = await db.insert(media).values(row).returning({ id: media.id })
   if (!inserted) throw new Error('Media insert returned no row')
   return inserted.id
+}
+
+/** Returns the Moment a back-camera upload belongs to, or null when the post or its selfie is gone. */
+export async function findMomentLink(
+  db: DbExecutor,
+  backUploadId: string,
+): Promise<MomentLink | null> {
+  const [row] = await db
+    .select({
+      selfieUploadId: momentPosts.selfieUploadId,
+      takenAt: momentPosts.takenAt,
+      lateMinutes: momentPosts.lateMinutes,
+    })
+    .from(momentPosts)
+    .where(eq(momentPosts.backUploadId, backUploadId))
+    .limit(1)
+  if (row === undefined || row.selfieUploadId === null) return null
+  return { selfieUploadId: row.selfieUploadId, takenAt: row.takenAt, lateMinutes: row.lateMinutes }
 }
 
 /** Inserts a card row and returns its id. */

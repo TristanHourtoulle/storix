@@ -68,6 +68,7 @@ function toPublishRow(row: RawPublishRow): PublishRow {
         clientCapturedAt: row.clientCapturedAt,
         stageOnly: row.stageOnly,
         crop: row.crop,
+        isMoment: row.isMoment,
       }),
     ),
     publishRequestedAt,

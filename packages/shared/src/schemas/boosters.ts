@@ -1,10 +1,5 @@
 import { z } from 'zod'
-import {
-  cardAuthorSchema,
-  cardMomentSchema,
-  cardTierSchema,
-  copyVariantSchema,
-} from './cards'
+import { cardAuthorSchema, cardMomentSchema, cardTierSchema, copyVariantSchema } from './cards'
 import { isoDateSchema } from './common'
 import { imageSetSchema } from './media'
 import { cardTitleSchema } from './uploads'

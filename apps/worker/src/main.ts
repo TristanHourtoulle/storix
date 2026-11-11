@@ -19,6 +19,7 @@ import { createCardPublishService } from './features/media/card-publish.service'
 import { createMediaProcessingService } from './features/media/media-processing.service'
 import { createMediaSweepService } from './features/media/media-sweep.service'
 import { createPortraitProcessingService } from './features/portraits/portrait-processing.service'
+import { createSelfieProcessingService } from './features/moments/selfie-processing.service'
 import { createStorageDeleteService } from './features/storage/storage-delete.service'
 import { createStorageGcService } from './features/storage/storage-gc.service'
 import { createRarityRecomputeService } from './features/rarity/rarity-recompute.service'
@@ -32,6 +33,8 @@ import {
   unscheduleBoosterFullScan,
 } from './jobs/booster-full-scan.job'
 import { registerMediaProcessJob } from './jobs/media-process.job'
+import { registerMomentsTickJob } from './jobs/moments-tick.job'
+import { createMomentsTickService } from './features/moments/moments-tick.service'
 import { registerMediaPublishJob } from './jobs/media-publish.job'
 import { createMediaQueue } from './jobs/media-queue'
 import { registerMediaSweepJob } from './jobs/media-sweep.job'
@@ -121,6 +124,13 @@ async function start(): Promise<void> {
     logger,
     storageDelete,
   })
+  const selfies = createSelfieProcessingService({
+    db: database.db,
+    storage,
+    pipeline: imagePipeline,
+    clock,
+    logger,
+  })
   const processing = createMediaProcessingService({
     db: database.db,
     storage,
@@ -129,6 +139,7 @@ async function start(): Promise<void> {
     logger,
     rarity: rarityQueue,
     portraits,
+    selfies,
   })
   const sweep = createMediaSweepService({
     db: database.db,
@@ -178,6 +189,10 @@ async function start(): Promise<void> {
     const sender = createPushSender(vapid, logger)
     const boosterFull = createBoosterFullService({ db: database.db, sender, clock, logger })
     await registerBoosterFullScanJob(boss, boosterFull)
+    await registerMomentsTickJob(
+      boss,
+      createMomentsTickService({ db: database.db, sender, clock, logger }),
+    )
   }
   logger.info({ concurrency: env.MEDIA_CONCURRENCY, push: isPushEnabled }, 'Worker started')
 }
