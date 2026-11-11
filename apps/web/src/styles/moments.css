@@ -277,7 +277,7 @@
   }
   .moment-vf-photo > .moment-video,
   .moment-vf-photo > .moment-vf-state {
-    grid-row: 1 / -1;
+    grid-area: 1 / 1 / -1 / -1;
   }
   .moment-video {
     width: 100%;
