@@ -11,7 +11,6 @@ export type TryOnSource = 'collection' | 'mixed' | 'samples'
 interface TryOnCards {
   faces: TryOnFace[]
   source: TryOnSource
-  isLoading: boolean
 }
 
 function sampleFaces(cards: readonly CollectionCard[], count: number): TryOnFace[] {
@@ -30,7 +29,7 @@ function tierRank(face: TryOnFace): number {
 
 /** Six faces for the try-on cabin: the viewer's own cards first, completed with sample faces. */
 export function useTryOnCards(leagueId: string): TryOnCards {
-  const { data, isPending } = useQuery(tryOnCardsQueryOptions(leagueId))
+  const { data } = useQuery(tryOnCardsQueryOptions(leagueId))
   const cards = data?.cards ?? []
   const own: TryOnFace[] = cards.map((card) => ({ kind: 'card', key: card.id, card }))
   const faces = [...own, ...sampleFaces(cards, TRY_ON_CARDS_MAX - own.length)].toSorted(
@@ -38,5 +37,5 @@ export function useTryOnCards(leagueId: string): TryOnCards {
   )
   const source: TryOnSource =
     own.length === 0 ? 'samples' : own.length < TRY_ON_CARDS_MAX ? 'mixed' : 'collection'
-  return { faces, source, isLoading: isPending }
+  return { faces, source }
 }

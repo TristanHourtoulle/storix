@@ -18,7 +18,6 @@ export interface RarityPalette {
   frame: RarityFrame
   tiers: Readonly<Record<CardTier, TierPalette>>
   mythicRainbow: readonly string[]
-  arcadeRainbow: readonly string[]
   legendaryHeadline: GradientStops
   mythicHeadline: GradientStops
 }
@@ -70,16 +69,6 @@ const DEFAULT_PALETTE: RarityPalette = {
     },
   },
   mythicRainbow: ['#f87171', '#fbbf24', '#4ade80', '#22d3ee', '#60a5fa', '#c084fc', '#f87171'],
-  arcadeRainbow: [
-    '#f87171',
-    '#fbbf24',
-    '#4ade80',
-    '#22d3ee',
-    '#60a5fa',
-    '#c084fc',
-    '#f472b6',
-    '#f87171',
-  ],
   legendaryHeadline: [
     [0, '#fcd34d'],
     [0.5, '#fbbf24'],
@@ -111,43 +100,3 @@ export const RARITY_PALETTES: Readonly<Record<RaritySetKey, RarityPalette>> = {
 }
 
 export const DEFAULT_RARITY_PALETTE: RarityPalette = DEFAULT_PALETTE
-
-const TIER_TOKEN: Readonly<Record<CardTier, string>> = {
-  common: '--color-tier-common',
-  uncommon: '--color-tier-uncommon',
-  rare: '--color-tier-rare',
-  epic: '--color-tier-epic',
-  legendary: '--color-tier-legendary',
-  mythic: '--color-tier-mythic',
-}
-
-const RAINBOW_TOKENS = [
-  '--rainbow-red',
-  '--rainbow-gold',
-  '--rainbow-green',
-  '--rainbow-cyan',
-  '--rainbow-blue',
-  '--rainbow-violet',
-  '--rainbow-pink',
-] as const
-
-/** Returns the CSS custom properties a palette sets on a subtree, so DOM styles follow it. */
-export function rarityCssVars(palette: RarityPalette): Readonly<Record<string, string>> {
-  const tierVars = Object.fromEntries(
-    (Object.keys(TIER_TOKEN) as CardTier[]).map((tier) => [
-      TIER_TOKEN[tier],
-      palette.tiers[tier].ring,
-    ]),
-  )
-  const rainbowVars = Object.fromEntries(
-    RAINBOW_TOKENS.map((token, index) => [
-      token,
-      palette.arcadeRainbow[index] ?? palette.arcadeRainbow[0] ?? '',
-    ]),
-  )
-  return {
-    ...tierVars,
-    ...rainbowVars,
-    '--color-tier-mythic-fx': palette.tiers.mythic.fx,
-  }
-}
