@@ -38,13 +38,14 @@ export function TryOnCabin({ leagueId, category, initialItemId }: TryOnCabinProp
   const { slot, eyebrow } = shopCategory(category)
   const options = useMemo(() => slotOptions(slot), [slot])
   const mine = useQuery(myCosmeticsQueryOptions).data
-  const [index, setIndex] = useState(() => {
-    const startId = initialItemId ?? mine?.equipped[slot] ?? null
-    return Math.max(
+  const [chosenIndex, setChosenIndex] = useState<number | null>(null)
+  const startId = initialItemId ?? mine?.equipped[slot] ?? null
+  const index =
+    chosenIndex ??
+    Math.max(
       0,
       options.findIndex((option) => option.itemId === startId),
     )
-  })
   const [buying, setBuying] = useState<ShopOption | null>(null)
   const tryOn = useTryOnCards(leagueId)
   const equip = useEquipCosmetic()
@@ -62,7 +63,7 @@ export function TryOnCabin({ leagueId, category, initialItemId }: TryOnCabinProp
 
   const swipe = useThemeSwipe((delta) => {
     if (buying !== null) return
-    setIndex((current) => Math.min(options.length - 1, Math.max(0, current + delta)))
+    setChosenIndex(Math.min(options.length - 1, Math.max(0, index + delta)))
   })
   const override = useMemo(() => ({ [slot]: option?.itemId ?? null }), [slot, option])
   if (option === undefined) return null
@@ -110,7 +111,7 @@ export function TryOnCabin({ leagueId, category, initialItemId }: TryOnCabinProp
               type="button"
               aria-label={item.name}
               aria-current={dot === index}
-              onClick={() => setIndex(dot)}
+              onClick={() => setChosenIndex(dot)}
             />
           ))}
         </div>
