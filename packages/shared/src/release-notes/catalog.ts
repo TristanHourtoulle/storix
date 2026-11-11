@@ -3,6 +3,36 @@ import type { ReleaseNote } from '../schemas/whats-new'
 /** Every feature release shown in the "Nouveautés" booster, newest first. */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    id: '2026-11-11-c',
+    publishedAt: '2026-11-11T21:00:00+01:00',
+    cards: [
+      {
+        key: 'boutique',
+        title: 'La Boutique',
+        body: "Dépense tes paillettes en cosmétiques : boosters, dos de carte, cadres de rareté, cadres d'avatar et auras. Essaie-les sur tes propres cartes avant d'acheter.",
+        tier: 'legendary',
+        illustration: 'premium',
+        tryTarget: 'shop',
+      },
+      {
+        key: 'mon-style',
+        title: 'Mon style',
+        body: "Ce que tu achètes sert dans toutes tes ligues. Change de style quand tu veux dans Profil › Mon style. Ton cadre d'avatar se voit par toute la ligue.",
+        tier: 'epic',
+        illustration: 'showcase',
+        tryTarget: 'style',
+      },
+      {
+        key: 'moment-title',
+        title: 'Un titre pour tes Moments',
+        body: 'Avant de publier ton Moment, donne-lui un titre si tu veux. Laisse vide et il garde sa date, comme « Moment du 11 novembre ».',
+        tier: 'rare',
+        illustration: 'camera',
+        tryTarget: 'home',
+      },
+    ],
+  },
+  {
     id: '2026-11-11-b',
     publishedAt: '2026-11-11T09:30:00+01:00',
     cards: [

@@ -31,6 +31,8 @@ export type NewsTryLink =
       search: { tab: 'emblems' }
     }
   | { to: '/l/$leagueId/cards/$cardId'; params: { leagueId: string; cardId: string } }
+  | { to: '/l/$leagueId/shop'; params: { leagueId: string } }
+  | { to: '/l/$leagueId/profile/style'; params: { leagueId: string } }
 
 interface NewsTargets {
   hrefFor: (target: NewsTryTarget) => NewsTryLink | null
@@ -79,6 +81,10 @@ function linkFor(
       return cardLink(leagueId, targets.showcaseCardId)
     case 'stack-card':
       return cardLink(leagueId, targets.stackCardId)
+    case 'shop':
+      return { to: '/l/$leagueId/shop', params: { leagueId } }
+    case 'style':
+      return { to: '/l/$leagueId/profile/style', params: { leagueId } }
     case 'none':
       return null
   }
