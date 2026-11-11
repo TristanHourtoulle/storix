@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   cardAuthorSchema,
+  cardMomentSchema,
   cardTierSchema,
   copyVariantSchema,
 } from './cards'
@@ -25,6 +26,7 @@ export const boosterPullSchema = z.object({
     height: z.int().positive(),
     image: imageSetSchema,
     capturedAt: isoDateSchema.nullable(),
+    moment: cardMomentSchema.nullable(),
   }),
   variant: copyVariantSchema,
   outcome: z.enum(['new', 'upgraded', 'duplicate']),

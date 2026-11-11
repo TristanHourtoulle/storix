@@ -28,12 +28,18 @@ export const boosterFullPushPayloadSchema = z.object({
   title: z.string().max(64),
   body: z.string().max(512),
   url: z.string().regex(new RegExp(`^/l/${LEAGUE_ID_PATTERN}$`)),
-  tag: z.string().regex(new RegExp(`^booster-full:${LEAGUE_ID_PATTERN}$`)),
+  tag: z.string().regex(new RegExp(`^(booster-full|moment):${LEAGUE_ID_PATTERN}$`)),
 })
 
 export type BoosterFullPushPayload = z.infer<typeof boosterFullPushPayloadSchema>
 
 export const BOOSTER_FULL_SCAN_JOB = 'push.booster-full-scan'
+
+export const MOMENTS_TICK_JOB = 'moments.tick'
+
+export const MOMENTS_TICK_QUEUE_OPTIONS = { policy: 'exclusive' } as const
+
+export const MOMENTS_TICK_RETRY_OPTIONS = { retryLimit: 0, expireInSeconds: 120 } as const
 
 export const BOOSTER_FULL_SCAN_QUEUE_OPTIONS = { policy: 'exclusive' } as const
 

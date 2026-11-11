@@ -105,7 +105,7 @@ describe('portrait contracts', () => {
   })
 
   it('lists the upload kinds and accepts an empty strict completion body only', () => {
-    expect(UPLOAD_KINDS).toEqual(['card', 'avatar', 'league'])
+    expect(UPLOAD_KINDS).toEqual(['card', 'avatar', 'league', 'selfie'])
     expect(completePortraitUploadBodySchema.safeParse({}).success).toBe(true)
     expect(completePortraitUploadBodySchema.safeParse({ title: 'x' }).success).toBe(false)
     expect(avatarUploadParamsSchema.safeParse({ uploadId: U }).success).toBe(true)

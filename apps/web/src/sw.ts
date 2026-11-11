@@ -24,7 +24,7 @@ interface TaggedNotificationOptions extends NotificationOptions {
 const OFFLINE_READ_PATTERN = /^\/api\/(me|leagues\/[^/]+(\/cards(\/[^/]+)?)?)$/
 const API_NETWORK_TIMEOUT_SECONDS = 3
 const LEAGUE_URL_PATTERN = /^\/l\/[0-9a-f-]{36}$/
-const PUSH_TAG_PATTERN = /^booster-full:[0-9a-f-]{36}$/
+const PUSH_TAG_PATTERN = /^(booster-full|moment):[0-9a-f-]{36}$/
 const NOTIFICATION_ICON = '/icons/icon-192.png'
 const FALLBACK_TITLE = 'Storix'
 const FALLBACK_BODY = "Tes boosters t'attendent"

@@ -21,6 +21,7 @@ export const MISSION_SOURCES = [
   'promotions',
   'foils',
   'daily_streak',
+  'moments_on_time',
 ] as const
 
 export type MissionSource = (typeof MISSION_SOURCES)[number]
@@ -123,6 +124,14 @@ export const DAILY_MISSIONS: readonly MissionDefinition[] = [
     target: 1,
     reward: dust(25),
     label: 'Change ta vitrine',
+  },
+  {
+    id: 'moment_on_time',
+    period: 'day',
+    source: 'moments_on_time',
+    target: 1,
+    reward: dust(40),
+    label: "Poste ton Moment à l'heure",
   },
 ]
 
@@ -251,6 +260,19 @@ const midnightOf = (key: string): number => {
   return Date.UTC(year, month - 1, day)
 }
 
+/** Returns the `YYYY-MM-DD` Paris calendar day (midnight to midnight) containing `now`. */
+export function parisDayKey(now: Date): string {
+  const p = parisParts(now)
+  return keyOf(Date.UTC(p.year, p.month - 1, p.day))
+}
+
+/** Returns the instant of `minutes` after Paris midnight on the day `key`, DST aware. */
+export function parisLocalInstant(key: string, minutes: number): Date {
+  const guess = midnightOf(key) + minutes * 60_000
+  const first = guess - parisOffsetMs(new Date(guess))
+  return new Date(guess - parisOffsetMs(new Date(first)))
+}
+
 /** Returns the `YYYY-MM-DD` key of the mission day containing `now` (days start at 05:00 Paris). */
 export function missionDayKey(now: Date): string {
   const p = parisParts(now)
@@ -267,9 +289,7 @@ export function missionWeekKey(now: Date): string {
 
 /** Returns the Paris 05:00 instant of a day key. */
 export function periodStart(key: string): Date {
-  const guess = midnightOf(key) + MISSION_RESET_HOUR * 3_600_000
-  const first = guess - parisOffsetMs(new Date(guess))
-  return new Date(guess - parisOffsetMs(new Date(first)))
+  return parisLocalInstant(key, MISSION_RESET_HOUR * 60)
 }
 
 /** Returns the [start, end) instants of a mission period. */
