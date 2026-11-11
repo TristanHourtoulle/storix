@@ -1,5 +1,6 @@
+import { useCallback, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { UPLOAD_CONTENT_TYPE, type PostMomentResponse } from '@storix/shared'
+import type { CreateMomentUploadsResponse, PostMomentResponse } from '@storix/shared'
 import { walletQueryOptions } from '@/features/game/game.queries'
 import { refreshMissions } from '@/features/missions/missions.queries'
 import { viewfinderCaptureDate } from '@/features/uploads/camera/capture'
@@ -12,21 +13,34 @@ interface MomentFiles {
   front: File
 }
 
-/** Sends both photos of a Moment to the bucket, then posts it and refreshes what it rewards. */
+/**
+ * Reserves the Moment uploads when the back photo is taken (the server stamps that instant as the capture
+ * time), sends both photos to the bucket on publish, then posts the Moment and refreshes what it touches.
+ */
 export function usePostMoment(leagueId: string) {
   const queryClient = useQueryClient()
-  return useMutation<PostMomentResponse, Error, MomentFiles>({
+  const reservationRef = useRef<Promise<CreateMomentUploadsResponse> | null>(null)
+
+  const reserve = useCallback(() => {
+    const reservation = createMomentUploads(leagueId)
+    reservation.catch(() => {
+      if (reservationRef.current === reservation) reservationRef.current = null
+    })
+    reservationRef.current = reservation
+  }, [leagueId])
+
+  const mutation = useMutation<PostMomentResponse, Error, MomentFiles>({
     mutationFn: async ({ back, front }) => {
-      const uploads = await createMomentUploads(leagueId, {
-        back: { contentType: UPLOAD_CONTENT_TYPE, size: back.size },
-        selfie: { contentType: UPLOAD_CONTENT_TYPE, size: front.size },
-      })
+      const uploads = await (reservationRef.current ?? createMomentUploads(leagueId))
       await Promise.all([postToBucket(uploads.back, back), postToBucket(uploads.selfie, front)])
       return postMoment(leagueId, {
         backUploadId: uploads.back.uploadId,
         selfieUploadId: uploads.selfie.uploadId,
         capturedAt: viewfinderCaptureDate(back),
       })
+    },
+    onError: () => {
+      reservationRef.current = null
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: currentMomentQueryKey(leagueId) })
@@ -35,4 +49,6 @@ export function usePostMoment(leagueId: string) {
       refreshMissions(queryClient, leagueId)
     },
   })
+
+  return { ...mutation, reserve }
 }

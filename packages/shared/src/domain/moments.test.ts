@@ -5,6 +5,7 @@ import {
   momentLateMinutes,
   momentRewardDust,
   momentSlot,
+  momentTakenAt,
   targetMoment,
 } from './moments'
 
@@ -75,5 +76,18 @@ describe('lateness and rewards', () => {
     expect(formatMomentLateness(72)).toBe('1 h 12')
     expect(formatMomentLateness(180)).toBe('3 h')
     expect(formatMomentLateness(61)).toBe('1 h 01')
+  })
+})
+
+describe('momentTakenAt', () => {
+  const reservedAt = new Date('2026-11-11T10:00:00Z')
+
+  it('keeps the reservation instant when posted within five minutes', () => {
+    expect(momentTakenAt(reservedAt, new Date('2026-11-11T10:05:00Z'))).toEqual(reservedAt)
+  })
+
+  it('falls back to the post time when the upload took longer', () => {
+    const postedAt = new Date('2026-11-11T10:05:01Z')
+    expect(momentTakenAt(reservedAt, postedAt)).toEqual(postedAt)
   })
 })

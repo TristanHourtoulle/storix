@@ -28,9 +28,9 @@ export function momentNotificationBody(leagueName: string): string {
 }
 
 /**
- * Creates the use case run every minute: claims each league's Moment once it fired today and, while its
- * 2-minute window is still open, pushes it to every member device. A Moment missed by a stopped worker is
- * recorded without a push, since its window is over.
+ * Creates the use case run every minute: records each league's Moment once it fired today and, while its
+ * 2-minute window is open, pushes it to every member device until a run completes the push (a failed run is
+ * retried by the next tick). A Moment missed by a stopped worker is recorded without a push.
  */
 export function createMomentsTickService(deps: Deps): MomentsTickService {
   const { db, sender, clock, logger } = deps
@@ -68,14 +68,12 @@ export function createMomentsTickService(deps: Deps): MomentsTickService {
         if (slot.firesAt.getTime() > now.getTime()) continue
         const isOpen = isMomentWindowOpen(slot, now)
         try {
-          const isClaimed = await repository.claimMoment(db, {
-            leagueId: league.id,
-            day,
-            firesAt: slot.firesAt,
-            notifiedAt: isOpen ? now : null,
-          })
-          if (!isClaimed || !isOpen) continue
+          await repository.claimMoment(db, { leagueId: league.id, day, firesAt: slot.firesAt })
+          if (!isOpen || !(await repository.isMomentUnnotified(db, { leagueId: league.id, day }))) {
+            continue
+          }
           const sent = await notify(league)
+          await repository.markMomentNotified(db, { leagueId: league.id, day, now: clock() })
           logger.info({ leagueId: league.id, sent }, 'Moment fired')
         } catch (error) {
           logger.error(

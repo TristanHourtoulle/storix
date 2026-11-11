@@ -9,6 +9,7 @@ CREATE TABLE "moment_posts" (
 	"taken_at" timestamp with time zone NOT NULL,
 	"late_minutes" integer NOT NULL,
 	"reward_dust" integer NOT NULL,
+	"reward_paid_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "moment_posts_back_upload_id_unique" UNIQUE("back_upload_id"),
 	CONSTRAINT "moment_posts_selfie_upload_id_unique" UNIQUE("selfie_upload_id"),
@@ -33,7 +34,6 @@ ALTER TABLE "cards" ADD COLUMN "moment_late_minutes" integer;--> statement-break
 ALTER TABLE "moment_posts" ADD CONSTRAINT "moment_posts_league_id_leagues_id_fk" FOREIGN KEY ("league_id") REFERENCES "public"."leagues"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "moment_posts" ADD CONSTRAINT "moment_posts_back_upload_id_uploads_id_fk" FOREIGN KEY ("back_upload_id") REFERENCES "public"."uploads"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "moment_posts" ADD CONSTRAINT "moment_posts_selfie_upload_id_uploads_id_fk" FOREIGN KEY ("selfie_upload_id") REFERENCES "public"."uploads"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "moment_posts" ADD CONSTRAINT "moment_posts_member_fk" FOREIGN KEY ("league_id","user_id") REFERENCES "public"."league_members"("league_id","user_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "moments" ADD CONSTRAINT "moments_league_id_leagues_id_fk" FOREIGN KEY ("league_id") REFERENCES "public"."leagues"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "moment_posts_league_user_idx" ON "moment_posts" USING btree ("league_id","user_id","late_minutes");--> statement-breakpoint
 CREATE INDEX "cards_league_moment_idx" ON "cards" USING btree ("league_id","moment_taken_at") WHERE "cards"."moment_taken_at" is not null;--> statement-breakpoint

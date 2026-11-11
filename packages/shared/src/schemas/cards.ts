@@ -23,8 +23,8 @@ export const cardPersonSchema = z.object({
 export const cardAuthorSchema = cardPersonSchema.extend({ isFormerMember: z.boolean() })
 
 export const cardMomentSchema = z.object({
-  selfieUrl: z.string().startsWith('/media/'),
-  selfieSmallUrl: z.string().startsWith('/media/'),
+  selfieUrl: z.string().startsWith('/media/').nullable(),
+  selfieSmallUrl: z.string().startsWith('/media/').nullable(),
   takenAt: isoDateSchema,
   lateMinutes: z.int().min(0),
 })

@@ -1,8 +1,10 @@
-import { parisDayKey, parisLocalInstant, previousDayKey } from './missions'
+import { nextDayKey, parisDayKey, parisLocalInstant, previousDayKey } from './missions'
 
 export const MOMENT_EARLIEST_MINUTE = 7 * 60
 export const MOMENT_LATEST_MINUTE = 21 * 60
 export const MOMENT_WINDOW_MS = 2 * 60_000
+/** How long after the back-photo reservation a post keeps that instant as its capture time. */
+export const MOMENT_CAPTURE_GRACE_MS = 5 * 60_000
 export const MOMENT_ON_TIME_DUST = 30
 export const MOMENT_LATE_DUST = 10
 export const MOMENT_ON_TIME_EMBLEM_TARGET = 10
@@ -46,6 +48,14 @@ export function targetMoment(leagueId: string, now: Date): MomentSlot {
     : momentSlot(leagueId, previousDayKey(today.day))
 }
 
+/** Returns when a league's next Moment fires after `now`: today's if still ahead, else tomorrow's. */
+export function nextMomentFiresAt(leagueId: string, now: Date): Date {
+  const today = momentSlot(leagueId, parisDayKey(now))
+  return today.firesAt.getTime() > now.getTime()
+    ? today.firesAt
+    : momentSlot(leagueId, nextDayKey(today.day)).firesAt
+}
+
 /** Tells whether the 2-minute window of a Moment is open at `now`. */
 export function isMomentWindowOpen(slot: MomentSlot, now: Date): boolean {
   const time = now.getTime()
@@ -56,6 +66,13 @@ export function isMomentWindowOpen(slot: MomentSlot, now: Date): boolean {
 export function momentLateMinutes(slot: MomentSlot, takenAt: Date): number {
   if (takenAt.getTime() < slot.windowEndsAt.getTime()) return 0
   return Math.floor((takenAt.getTime() - slot.firesAt.getTime()) / 60_000)
+}
+
+/** Returns the capture time of a Moment: the back-photo reservation when posted soon after it, else the post time. */
+export function momentTakenAt(reservedAt: Date, postedAt: Date): Date {
+  return postedAt.getTime() - reservedAt.getTime() <= MOMENT_CAPTURE_GRACE_MS
+    ? reservedAt
+    : postedAt
 }
 
 /** Returns the paillettes credited for posting a Moment. */

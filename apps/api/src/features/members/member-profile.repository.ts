@@ -15,6 +15,7 @@ import {
   authorMembership,
   authorMembershipOn,
 } from '../cards/card-author.repository'
+import { readyMomentSelfieUploadId } from '../cards/card-moment'
 
 export interface ProfileMember {
   leagueId: string
@@ -127,7 +128,7 @@ export async function listCardBases(
       height: media.height,
       variants: media.variants,
       leagueId: cards.leagueId,
-      momentSelfieUploadId: cards.momentSelfieUploadId,
+      momentSelfieUploadId: readyMomentSelfieUploadId,
       momentTakenAt: cards.momentTakenAt,
       momentLateMinutes: cards.momentLateMinutes,
     })

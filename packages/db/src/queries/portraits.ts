@@ -6,7 +6,7 @@
  * - api removal: owner row (`user` or `leagues`), then `portraits`.
  * @module
  */
-import { and, eq, inArray, ne } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, ne } from 'drizzle-orm'
 import {
   portraitPrefix,
   selfiePrefix,
@@ -15,7 +15,7 @@ import {
   type PortraitOwner,
 } from '@storix/shared/domain'
 import type { DbExecutor } from '../client'
-import { momentPosts, portraits, uploads } from '../schema/index'
+import { cards, momentPosts, portraits, uploads } from '../schema/index'
 
 export interface StoredPortrait {
   id: string
@@ -97,12 +97,16 @@ export function portraitKeysOf(portrait: StoredPortrait): string[] {
   })
 }
 
-/** Returns the storage prefixes of every Moment selfie a post references. */
+/** Returns the storage prefixes of every Moment selfie a post or a card references. */
 async function listLiveSelfiePrefixes(db: DbExecutor): Promise<string[]> {
-  const rows = await db
+  const fromPosts = await db
     .select({ leagueId: momentPosts.leagueId, uploadId: momentPosts.selfieUploadId })
     .from(momentPosts)
-  return rows.flatMap((row) =>
+  const fromCards = await db
+    .select({ leagueId: cards.leagueId, uploadId: cards.momentSelfieUploadId })
+    .from(cards)
+    .where(isNotNull(cards.momentSelfieUploadId))
+  return [...fromPosts, ...fromCards].flatMap((row) =>
     row.uploadId === null ? [] : [selfiePrefix({ leagueId: row.leagueId, uploadId: row.uploadId })],
   )
 }

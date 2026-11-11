@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { UPLOAD_CONTENT_TYPE, UPLOAD_MAX_BYTES, UPLOAD_MIN_BYTES } from '../domain'
 import { isoDateSchema } from './common'
 import { createUploadResponseSchema } from './uploads'
 
@@ -13,18 +12,12 @@ export const currentMomentSchema = z.object({
   day: z.iso.date(),
   firesAt: isoDateSchema,
   windowEndsAt: isoDateSchema,
+  nextFiresAt: isoDateSchema,
   post: momentPostViewSchema.nullable(),
 })
 
-const momentFileSchema = z.object({
-  contentType: z.literal(UPLOAD_CONTENT_TYPE),
-  size: z.int().min(UPLOAD_MIN_BYTES).max(UPLOAD_MAX_BYTES),
-})
-
-export const createMomentUploadsBodySchema = z.object({
-  back: momentFileSchema,
-  selfie: momentFileSchema,
-})
+/** The reservation is made when the back photo is taken, before either file size is known. */
+export const createMomentUploadsBodySchema = z.object({})
 
 export const createMomentUploadsResponseSchema = z.object({
   back: createUploadResponseSchema,

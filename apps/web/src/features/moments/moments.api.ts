@@ -2,7 +2,6 @@ import {
   createMomentUploadsResponseSchema,
   currentMomentSchema,
   postMomentResponseSchema,
-  type CreateMomentUploadsBody,
   type CreateMomentUploadsResponse,
   type CurrentMoment,
   type PostMomentBody,
@@ -20,13 +19,10 @@ export function fetchCurrentMoment(leagueId: string): Promise<CurrentMoment> {
 }
 
 /** Reserves the back-camera and selfie uploads of a Moment, outside the daily quota. */
-export function createMomentUploads(
-  leagueId: string,
-  body: CreateMomentUploadsBody,
-): Promise<CreateMomentUploadsResponse> {
+export function createMomentUploads(leagueId: string): Promise<CreateMomentUploadsResponse> {
   return apiRequest(momentsPath(leagueId, '/uploads'), {
     method: 'POST',
-    body,
+    body: {},
     schema: createMomentUploadsResponseSchema,
   })
 }

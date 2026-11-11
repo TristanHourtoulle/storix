@@ -25,8 +25,11 @@ function toShot(file: File): MomentShot {
   return { file, url: URL.createObjectURL(file) }
 }
 
-/** Drives the sequential two-camera capture: back photo, then the selfie after a 3-2-1, then the preview. */
-export function useMomentCapture(isActive: boolean): MomentCapture {
+/**
+ * Drives the sequential two-camera capture: back photo, then the selfie after a 3-2-1, then the preview.
+ * `onBackShot` runs the moment the back photo is taken, so the server stamps the capture time.
+ */
+export function useMomentCapture(isActive: boolean, onBackShot?: () => void): MomentCapture {
   const [step, setStep] = useState<MomentStep>('back')
   const [back, setBack] = useState<MomentShot | null>(null)
   const [front, setFront] = useState<MomentShot | null>(null)
@@ -34,6 +37,10 @@ export function useMomentCapture(isActive: boolean): MomentCapture {
   const camera = useCameraStream(isActive && step !== 'preview')
   const isShootingRef = useRef(false)
   const shotsRef = useRef<MomentShot[]>([])
+  const onBackShotRef = useRef(onBackShot)
+  useEffect(() => {
+    onBackShotRef.current = onBackShot
+  }, [onBackShot])
 
   useEffect(
     () => () => {
@@ -58,6 +65,7 @@ export function useMomentCapture(isActive: boolean): MomentCapture {
         if (file === null) return
         if (step === 'back') {
           setBack(keep(file))
+          onBackShotRef.current?.()
           setStep('front')
           if (camera.canFlip && camera.facing === 'environment') camera.flip()
         } else if (step === 'front') {
@@ -107,6 +115,8 @@ export function useMomentCapture(isActive: boolean): MomentCapture {
   }, [needsBackCamera, flip])
 
   const retake = useCallback(() => {
+    for (const shot of shotsRef.current) URL.revokeObjectURL(shot.url)
+    shotsRef.current = []
     setBack(null)
     setFront(null)
     setCountdown(null)

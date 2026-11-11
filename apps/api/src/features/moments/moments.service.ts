@@ -4,6 +4,8 @@ import {
   isUploadReservationExpired,
   momentLateMinutes,
   momentRewardDust,
+  momentTakenAt,
+  nextMomentFiresAt,
   sanitizeCaptureDate,
   targetMoment,
   UPLOAD_CONTENT_TYPE,
@@ -26,8 +28,8 @@ import { lockMemberRole } from '../uploads/uploads.repository'
 import {
   completeMomentUploads,
   countMomentReservationsSince,
-  creditMomentReward,
   findMemberPost,
+  findMemberUploads,
   insertMomentPost,
   insertMomentUploads,
   lockMemberUpload,
@@ -105,7 +107,9 @@ export function createMomentsService(deps: {
   }
 
   async function assertObjectsUploaded(rows: readonly MomentUploadRow[]): Promise<void> {
+    if (rows.length !== 2) throw notFound('Upload not found')
     for (const row of rows) {
+      if (row.status !== 'pending') continue
       if ((await storage.head(row.objectKey)) === null) {
         throw new AppError('UPLOAD_NOT_READY', 409, 'The file has not been uploaded yet')
       }
@@ -114,7 +118,8 @@ export function createMomentsService(deps: {
 
   return {
     async getCurrent(m) {
-      const slot = targetMoment(m.leagueId, clock())
+      const now = clock()
+      const slot = targetMoment(m.leagueId, now)
       const post = await findMemberPost(db, {
         leagueId: m.leagueId,
         day: slot.day,
@@ -124,6 +129,7 @@ export function createMomentsService(deps: {
         day: slot.day,
         firesAt: slot.firesAt.toISOString(),
         windowEndsAt: slot.windowEndsAt.toISOString(),
+        nextFiresAt: nextMomentFiresAt(m.leagueId, now).toISOString(),
         post: post === null ? null : toPostView(post),
       }
     },
@@ -162,6 +168,8 @@ export function createMomentsService(deps: {
     async post(m, body) {
       const now = clock()
       const member = { leagueId: m.leagueId, userId: m.userId }
+      const ids = [body.backUploadId, body.selfieUploadId]
+      await assertObjectsUploaded(await findMemberUploads(db, { ...member, uploadIds: ids }))
       const result = await runInTransaction(db, async (tx) => {
         if ((await lockMemberRole(tx, m.leagueId, m.userId)) === null) throw notFound()
         const back = assertPendingUpload(
@@ -172,8 +180,7 @@ export function createMomentsService(deps: {
           await lockMemberUpload(tx, { ...member, uploadId: body.selfieUploadId }),
           { kind: 'selfie', now },
         )
-        await assertObjectsUploaded([back, selfie])
-        const takenAt = back.createdAt
+        const takenAt = momentTakenAt(back.createdAt, now)
         const slot = targetMoment(m.leagueId, takenAt)
         const lateMinutes = momentLateMinutes(slot, takenAt)
         const rewardDust = momentRewardDust(lateMinutes)
@@ -195,7 +202,6 @@ export function createMomentsService(deps: {
           capturedAt: sanitizeCaptureDate(capturedAt, now),
           now,
         })
-        await creditMomentReward(tx, { ...member, dust: rewardDust, lateMinutes, now })
         return { day: slot.day, takenAt, lateMinutes, rewardDust, uploadIds: [back.id, selfie.id] }
       })
       for (const uploadId of result.uploadIds) await jobs.enqueueMediaProcess({ uploadId })

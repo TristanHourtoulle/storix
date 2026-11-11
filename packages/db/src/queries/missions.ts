@@ -147,7 +147,8 @@ function sourceCount(source: MissionSource, m: MissionMember, w: Window, weekKey
         GROUP BY d.period_key HAVING count(*) FILTER (WHERE d.claimed_at IS NOT NULL) >= 3) streak)`
     case 'moments_on_time':
       return sql`(SELECT count(*) FROM moment_posts mp WHERE mp.league_id = ${m.leagueId}
-        AND mp.user_id = ${m.userId} AND mp.late_minutes = 0 AND ${between(sql`mp.created_at`)})`
+        AND mp.user_id = ${m.userId} AND mp.late_minutes = 0 AND mp.reward_paid_at IS NOT NULL
+        AND ${between(sql`mp.created_at`)})`
   }
 }
 

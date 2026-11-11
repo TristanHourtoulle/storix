@@ -31,6 +31,7 @@ export async function insertCardForMedia(
     momentTakenAt: moment?.takenAt ?? null,
     momentLateMinutes: moment?.lateMinutes ?? null,
   })
+  if (moment !== null) await repository.payMomentReward(tx, { backUploadId: upload.id, now })
   await repository.insertCardTags(tx, {
     cardId,
     leagueId: upload.leagueId,

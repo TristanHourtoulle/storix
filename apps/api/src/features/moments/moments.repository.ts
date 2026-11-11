@@ -1,12 +1,5 @@
-import { and, count, eq, gte, sql } from 'drizzle-orm'
-import {
-  auditLog,
-  ensureMemberWallets,
-  memberWallets,
-  momentPosts,
-  uploads,
-  type DbExecutor,
-} from '@storix/db'
+import { and, count, eq, gte, inArray } from 'drizzle-orm'
+import { momentPosts, uploads, type DbExecutor } from '@storix/db'
 
 export type MomentPostRow = typeof momentPosts.$inferSelect
 export type MomentUploadRow = typeof uploads.$inferSelect
@@ -71,6 +64,23 @@ export async function insertMomentUploads(
   ])
 }
 
+/** Reads a member's uploads in a league, without locking them. */
+export function findMemberUploads(
+  db: DbExecutor,
+  input: { leagueId: string; userId: string; uploadIds: readonly string[] },
+): Promise<MomentUploadRow[]> {
+  return db
+    .select()
+    .from(uploads)
+    .where(
+      and(
+        inArray(uploads.id, [...input.uploadIds]),
+        eq(uploads.leagueId, input.leagueId),
+        eq(uploads.userId, input.userId),
+      ),
+    )
+}
+
 /** Locks and returns a member's upload in a league, or null. */
 export async function lockMemberUpload(
   db: DbExecutor,
@@ -128,27 +138,4 @@ export async function insertMomentPost(
     .onConflictDoNothing()
     .returning({ id: momentPosts.id })
   return inserted.length > 0
-}
-
-/** Credits a Moment reward to the member wallet and records it in the Journal. */
-export async function creditMomentReward(
-  db: DbExecutor,
-  input: { leagueId: string; userId: string; dust: number; lateMinutes: number; now: Date },
-): Promise<void> {
-  await ensureMemberWallets(db, {
-    leagueId: input.leagueId,
-    userIds: [input.userId],
-    now: input.now,
-  })
-  await db
-    .update(memberWallets)
-    .set({ dust: sql`${memberWallets.dust} + ${input.dust}`, updatedAt: input.now })
-    .where(and(eq(memberWallets.leagueId, input.leagueId), eq(memberWallets.userId, input.userId)))
-  await db.insert(auditLog).values({
-    leagueId: input.leagueId,
-    actorId: input.userId,
-    targetUserId: null,
-    action: 'moment.posted',
-    metadata: { dust: input.dust, lateMinutes: input.lateMinutes },
-  })
 }

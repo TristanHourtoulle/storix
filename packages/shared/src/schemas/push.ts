@@ -39,7 +39,11 @@ export const MOMENTS_TICK_JOB = 'moments.tick'
 
 export const MOMENTS_TICK_QUEUE_OPTIONS = { policy: 'exclusive' } as const
 
-export const MOMENTS_TICK_RETRY_OPTIONS = { retryLimit: 0, expireInSeconds: 120 } as const
+export const MOMENTS_TICK_RETRY_OPTIONS = {
+  retryLimit: 1,
+  retryDelay: 15,
+  expireInSeconds: 120,
+} as const
 
 export const BOOSTER_FULL_SCAN_QUEUE_OPTIONS = { policy: 'exclusive' } as const
 

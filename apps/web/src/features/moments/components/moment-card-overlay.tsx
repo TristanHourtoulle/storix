@@ -13,20 +13,21 @@ const isLarge = (size: MomentCardOverlayProps['size']): boolean =>
 export function MomentCardOverlay({ moment, size }: MomentCardOverlayProps) {
   const [hasFailed, setHasFailed] = useState(false)
   const large = isLarge(size)
+  const selfieUrl = large ? moment.selfieUrl : moment.selfieSmallUrl
 
   return (
     <>
-      <span className="moment-inset">
-        {hasFailed ? null : (
+      {selfieUrl === null || hasFailed ? null : (
+        <span className="moment-inset">
           <img
-            src={large ? moment.selfieUrl : moment.selfieSmallUrl}
+            src={selfieUrl}
             alt=""
             loading="lazy"
             decoding="async"
             onError={() => setHasFailed(true)}
           />
-        )}
-      </span>
+        </span>
+      )}
       {moment.lateMinutes > 0 ? (
         <span className="moment-late">+{formatMomentLateness(moment.lateMinutes)}</span>
       ) : null}

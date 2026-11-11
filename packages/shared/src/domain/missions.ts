@@ -303,6 +303,11 @@ export function previousDayKey(key: string): string {
   return keyOf(midnightOf(key) - DAY_MS)
 }
 
+/** Returns the day key that follows `key`. */
+export function nextDayKey(key: string): string {
+  return keyOf(midnightOf(key) + DAY_MS)
+}
+
 /** Returns the week key that precedes `key`. */
 export function previousWeekKey(key: string): string {
   return keyOf(midnightOf(key) - 7 * DAY_MS)

@@ -57,7 +57,7 @@ export async function loadEmblemStats(db: DbExecutor, m: EmblemMember): Promise<
           AND c.status = 'active' AND c.tier = 'mythic') AS "ownMythicPhotos",
       (SELECT count(*) FROM moment_posts mp
         WHERE mp.league_id = ${m.leagueId} AND mp.user_id = ${m.userId}
-          AND mp.late_minutes = 0) AS "momentsOnTime"
+          AND mp.late_minutes = 0 AND mp.reward_paid_at IS NOT NULL) AS "momentsOnTime"
   `)
   const row: Partial<Record<keyof EmblemStats, unknown>> = result.rows[0] ?? {}
   return {

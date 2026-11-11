@@ -27,6 +27,7 @@ import {
   authorMembership,
   authorMembershipOn,
 } from './card-author.repository'
+import { readyMomentSelfieUploadId } from './card-moment'
 
 export interface CollectionRow {
   id: string
@@ -173,7 +174,7 @@ function collectionColumns(
     height: media.height,
     variants: media.variants,
     leagueId: cards.leagueId,
-    momentSelfieUploadId: cards.momentSelfieUploadId,
+    momentSelfieUploadId: readyMomentSelfieUploadId,
     momentTakenAt: cards.momentTakenAt,
     momentLateMinutes: cards.momentLateMinutes,
     normalTier: owned.normalTier,

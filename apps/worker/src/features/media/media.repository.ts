@@ -3,7 +3,9 @@ import {
   auditLog,
   cards,
   cardTags,
+  ensureMemberWallets,
   leagueMembers,
+  memberWallets,
   leagues,
   media,
   momentPosts,
@@ -177,15 +179,18 @@ export async function markUploadRejected(
     .set({ status: 'rejected', rejectionReason: reason, processedAt: now })
     .where(and(eq(uploads.id, uploadId), inArray(uploads.status, PROCESSABLE)))
     .returning({ id: uploads.id })
+  if (rows.length > 0) await voidUnpaidMomentPost(db, uploadId)
   return rows.length > 0
 }
 
 /** Marks a processable upload as failed. */
 export async function markUploadFailed(db: DbExecutor, uploadId: string, now: Date): Promise<void> {
-  await db
+  const rows = await db
     .update(uploads)
     .set({ status: 'failed', processedAt: now })
     .where(and(eq(uploads.id, uploadId), inArray(uploads.status, PROCESSABLE)))
+    .returning({ id: uploads.id })
+  if (rows.length > 0) await voidUnpaidMomentPost(db, uploadId)
 }
 
 /** Marks an upload in one of the `from` statuses as ready and links its card; returns the updated row count. */
@@ -321,6 +326,45 @@ export async function findMomentLink(
     .limit(1)
   if (row === undefined || row.selfieUploadId === null) return null
   return { selfieUploadId: row.selfieUploadId, takenAt: row.takenAt, lateMinutes: row.lateMinutes }
+}
+
+/**
+ * Pays a Moment's reward once its back-camera card exists: credits the paillettes, records the Journal entry and
+ * stamps the post; a no-op when the post is gone or already paid.
+ */
+export async function payMomentReward(
+  db: DbExecutor,
+  input: { backUploadId: string; now: Date },
+): Promise<void> {
+  const [post] = await db
+    .update(momentPosts)
+    .set({ rewardPaidAt: input.now })
+    .where(and(eq(momentPosts.backUploadId, input.backUploadId), isNull(momentPosts.rewardPaidAt)))
+    .returning({
+      leagueId: momentPosts.leagueId,
+      userId: momentPosts.userId,
+      rewardDust: momentPosts.rewardDust,
+      lateMinutes: momentPosts.lateMinutes,
+    })
+  if (post === undefined) return
+  await ensureMemberWallets(db, { leagueId: post.leagueId, userIds: [post.userId], now: input.now })
+  await db
+    .update(memberWallets)
+    .set({ dust: sql`${memberWallets.dust} + ${post.rewardDust}`, updatedAt: input.now })
+    .where(and(eq(memberWallets.leagueId, post.leagueId), eq(memberWallets.userId, post.userId)))
+  await insertAuditEntry(db, {
+    leagueId: post.leagueId,
+    actorId: post.userId,
+    action: 'moment.posted',
+    metadata: { dust: post.rewardDust, lateMinutes: post.lateMinutes },
+  })
+}
+
+/** Deletes the unpaid Moment post of a back-camera upload that will never become a card, so the member can retry. */
+export async function voidUnpaidMomentPost(db: DbExecutor, backUploadId: string): Promise<void> {
+  await db
+    .delete(momentPosts)
+    .where(and(eq(momentPosts.backUploadId, backUploadId), isNull(momentPosts.rewardPaidAt)))
 }
 
 /** Inserts a card row and returns its id. */

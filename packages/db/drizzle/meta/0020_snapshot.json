@@ -4461,6 +4461,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "reward_paid_at": {
+          "name": "reward_paid_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -4536,21 +4542,6 @@
             "id"
           ],
           "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "moment_posts_member_fk": {
-          "name": "moment_posts_member_fk",
-          "tableFrom": "moment_posts",
-          "tableTo": "league_members",
-          "columnsFrom": [
-            "league_id",
-            "user_id"
-          ],
-          "columnsTo": [
-            "league_id",
-            "user_id"
-          ],
-          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

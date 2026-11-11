@@ -2,7 +2,6 @@ import { sql } from 'drizzle-orm'
 import {
   check,
   date,
-  foreignKey,
   index,
   integer,
   pgTable,
@@ -12,7 +11,7 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { leagueMembers, leagues } from './leagues'
+import { leagues } from './leagues'
 import { uploads } from './uploads'
 
 export const moments = pgTable(
@@ -47,6 +46,7 @@ export const momentPosts = pgTable(
     takenAt: timestamp('taken_at', { withTimezone: true }).notNull(),
     lateMinutes: integer('late_minutes').notNull(),
     rewardDust: integer('reward_dust').notNull(),
+    rewardPaidAt: timestamp('reward_paid_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -54,10 +54,5 @@ export const momentPosts = pgTable(
     index('moment_posts_league_user_idx').on(t.leagueId, t.userId, t.lateMinutes),
     check('moment_posts_late_non_negative', sql`${t.lateMinutes} >= 0`),
     check('moment_posts_reward_non_negative', sql`${t.rewardDust} >= 0`),
-    foreignKey({
-      name: 'moment_posts_member_fk',
-      columns: [t.leagueId, t.userId],
-      foreignColumns: [leagueMembers.leagueId, leagueMembers.userId],
-    }).onDelete('cascade'),
   ],
 )

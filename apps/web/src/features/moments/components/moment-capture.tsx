@@ -84,8 +84,8 @@ function FrozenShot({ shot, className }: { shot: MomentShot; className: string }
 
 /** The Moment capture screen: back photo, split screen with the 3-2-1 selfie, preview and publication. */
 export function MomentCapture({ leagueId, authorName }: MomentCaptureProps) {
-  const capture = useMomentCapture(true)
   const post = usePostMoment(leagueId)
+  const capture = useMomentCapture(true, post.reserve)
   const { step, camera, back, front, countdown } = capture
 
   if (step === 'preview' && back !== null && front !== null) {

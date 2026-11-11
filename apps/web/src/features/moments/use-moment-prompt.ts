@@ -1,9 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { CurrentMoment } from '@storix/shared'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { dismissFlash, isFlashDismissed } from './moment-dismissal'
-import { currentMomentQueryOptions } from './moments.queries'
+import { currentMomentQueryKey, currentMomentQueryOptions } from './moments.queries'
 import { useNow } from './use-now'
+
+const FIRE_SLACK_MS = 250
+const MAX_TIMER_MS = 24 * 3_600_000
 
 export interface MomentPrompt {
   moment: CurrentMoment
@@ -18,7 +21,18 @@ export interface MomentPrompt {
 
 /** Derives what the home shows for the current Moment: the full-screen flash during its window, else a banner until posted. */
 export function useMomentPrompt(leagueId: string): MomentPrompt | null {
+  const queryClient = useQueryClient()
   const { data: moment } = useQuery(currentMomentQueryOptions(leagueId))
+  const nextFiresAt = moment?.nextFiresAt
+  useEffect(() => {
+    if (nextFiresAt === undefined) return
+    const delay = new Date(nextFiresAt).getTime() - Date.now()
+    if (delay < 0 || delay > MAX_TIMER_MS) return
+    const timer = window.setTimeout(() => {
+      void queryClient.invalidateQueries({ queryKey: currentMomentQueryKey(leagueId) })
+    }, delay + FIRE_SLACK_MS)
+    return () => window.clearTimeout(timer)
+  }, [leagueId, nextFiresAt, queryClient])
   const [dismissedDay, setDismissedDay] = useState<string | null>(null)
   const isPending = moment !== undefined && moment.post === null
   const now = useNow(isPending)
