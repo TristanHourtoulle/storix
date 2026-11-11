@@ -1,6 +1,7 @@
 import {
   CARD_TIERS,
   LEAGUE_ROLES,
+  formatMomentLateness,
   type AuditAction,
   type AuditCategory,
   type AuditEntry,
@@ -275,6 +276,17 @@ function economySentence(actor: SentencePart, entry: AuditEntry): AuditSentence 
         ],
       )
     }
+    case 'moment.posted': {
+      const dust = num(meta, 'dust') ?? 0
+      const late = num(meta, 'lateMinutes') ?? 0
+      return sentence(
+        [actor, ' a posté son Moment'],
+        [
+          late === 0 ? 'À l’heure' : `En retard de ${formatMomentLateness(late)}`,
+          ...(dust > 0 ? [`+${dust} paillettes`] : []),
+        ],
+      )
+    }
     case 'league_goal.reward_granted': {
       const boosters = num(meta, 'boosters') ?? 0
       const gifts = num(meta, 'premiumGifts') ?? 0
@@ -410,6 +422,7 @@ export function auditSentence(entry: AuditEntry): AuditSentence {
     case 'stack.converted':
     case 'mission.claimed':
     case 'league_goal.reward_granted':
+    case 'moment.posted':
       return economySentence(actor, entry)
     case 'card.created':
     case 'card.hidden':

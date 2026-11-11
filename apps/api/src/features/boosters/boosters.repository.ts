@@ -81,6 +81,10 @@ interface CardMediaColumns {
   width: number
   height: number
   variants: MediaVariant[]
+  leagueId: string
+  momentSelfieUploadId: string | null
+  momentTakenAt: Date | null
+  momentLateMinutes: number | null
 }
 
 export interface PullViewRow extends CardMediaColumns {
@@ -114,6 +118,10 @@ const cardMediaColumns = {
   width: media.width,
   height: media.height,
   variants: media.variants,
+  leagueId: cards.leagueId,
+  momentSelfieUploadId: cards.momentSelfieUploadId,
+  momentTakenAt: cards.momentTakenAt,
+  momentLateMinutes: cards.momentLateMinutes,
 }
 
 function parseVariants<T extends { variants: unknown }>(

@@ -126,6 +126,10 @@ export async function listCardBases(
       width: media.width,
       height: media.height,
       variants: media.variants,
+      leagueId: cards.leagueId,
+      momentSelfieUploadId: cards.momentSelfieUploadId,
+      momentTakenAt: cards.momentTakenAt,
+      momentLateMinutes: cards.momentLateMinutes,
     })
     .from(cards)
     .innerJoin(media, eq(media.id, cards.mediaId))

@@ -1,5 +1,6 @@
 import type { BoosterPull, MediaVariantSize } from '@storix/shared'
 import type { MediaSigner } from '../../lib/media-signer'
+import { toCardMoment } from '../cards/card-moment'
 import { toCardAuthor } from '../cards/card-views'
 import { toImageSet } from '../cards/image-set'
 import type { PullViewRow } from './boosters.repository'
@@ -22,6 +23,7 @@ export function toBoosterPull(row: PullViewRow, signer: MediaSigner): BoosterPul
       height: row.height,
       image: toImageSet(row.variants, PULL_SIZES, signer),
       capturedAt: row.capturedAt?.toISOString() ?? null,
+      moment: toCardMoment(row, signer),
     },
     variant: row.variant,
     outcome: row.outcome,

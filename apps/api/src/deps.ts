@@ -15,6 +15,7 @@ import {
   type LeagueFeedService,
 } from './features/league-feed/league-feed.service'
 import { createMissionsService, type MissionsService } from './features/missions/missions.service'
+import { createMomentsService, type MomentsService } from './features/moments/moments.service'
 import {
   createLeagueGoalService,
   type LeagueGoalService,
@@ -108,6 +109,7 @@ export interface Services {
   invitations: InvitationsService
   leagueFeed: LeagueFeedService
   missions: MissionsService
+  moments: MomentsService
   leagueGoal: LeagueGoalService
   leagues: LeaguesService
   leagueSettings: LeagueSettingsService
@@ -185,6 +187,13 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       clock: deps.clock,
     }),
     missions: createMissionsService({ db: deps.db, clock: deps.clock }),
+    moments: createMomentsService({
+      db: deps.db,
+      storage: deps.storage,
+      jobs: deps.jobs,
+      emblems: emblemAwards,
+      clock: deps.clock,
+    }),
     leagueGoal: createLeagueGoalService({
       db: deps.db,
       signer: deps.mediaSigner,
