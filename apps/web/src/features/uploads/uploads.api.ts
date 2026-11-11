@@ -1,4 +1,5 @@
 import {
+  MAX_PUBLISH_BATCH,
   createUploadResponseSchema,
   uploadDraftsResponseSchema,
   uploadQuotaSchema,
@@ -186,15 +187,19 @@ export async function discardUploads(
   }
 }
 
-/** Publishes staged drafts in stack order; resolves with their states. */
+/** Publishes staged drafts in stack order, one request per batch; resolves with their states. */
 export async function publishUploads(
   leagueId: string,
   ids: readonly string[],
 ): Promise<UploadState[]> {
-  const response = await apiRequest(uploadsPath(leagueId, '/publish'), {
-    method: 'POST',
-    body: { uploadIds: ids },
-    schema: uploadStatesResponseSchema,
-  })
-  return response.states
+  const states: UploadState[] = []
+  for (const page of chunk(ids, MAX_PUBLISH_BATCH)) {
+    const response = await apiRequest(uploadsPath(leagueId, '/publish'), {
+      method: 'POST',
+      body: { uploadIds: page },
+      schema: uploadStatesResponseSchema,
+    })
+    states.push(...response.states)
+  }
+  return states
 }
