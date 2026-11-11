@@ -39,18 +39,10 @@ describe('moderation rules', () => {
     expect(canWithdrawCard({ isTagged: true, isAuthor: false })).toBe(true)
     expect(canWithdrawCard({ isTagged: false, isAuthor: true })).toBe(true)
     expect(canWithdrawCard({ isTagged: false, isAuthor: false })).toBe(false)
-    expect(canTransferOwnership({ actorRole: 'owner', targetRole: 'admin', isSelf: false })).toBe(
-      true,
-    )
-    expect(canTransferOwnership({ actorRole: 'owner', targetRole: 'admin', isSelf: true })).toBe(
-      false,
-    )
-    expect(canTransferOwnership({ actorRole: 'owner', targetRole: 'member', isSelf: false })).toBe(
-      false,
-    )
-    expect(canTransferOwnership({ actorRole: 'admin', targetRole: 'admin', isSelf: false })).toBe(
-      false,
-    )
+    expect(canTransferOwnership({ actorRole: 'owner', targetRole: 'admin', isSelf: false })).toBe(true)
+    expect(canTransferOwnership({ actorRole: 'owner', targetRole: 'admin', isSelf: true })).toBe(false)
+    expect(canTransferOwnership({ actorRole: 'owner', targetRole: 'member', isSelf: false })).toBe(false)
+    expect(canTransferOwnership({ actorRole: 'admin', targetRole: 'admin', isSelf: false })).toBe(false)
     expect(canLeaveLeague('owner')).toBe(false)
     expect(canLeaveLeague('admin')).toBe(true)
     expect(canLeaveLeague('member')).toBe(true)
