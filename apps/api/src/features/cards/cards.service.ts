@@ -61,6 +61,7 @@ export function createCardsService({ db, signer, clock }: CardsServiceDeps): Car
         authorId: query.authorId,
         tier: query.tier,
         upgradable: query.upgradable,
+        moment: query.moment,
         taggedUserId: query.taggedUserId,
       }
       const revealOwnOf = query.revealOwn === true && query.authorId === m.userId ? m.userId : null

@@ -24,7 +24,7 @@ export const UPLOAD_STATUSES = [
   'discarded',
 ] as const satisfies readonly DraftUploadStatus[]
 export const UPLOAD_REJECTION_REASONS = ['DUPLICATE_PHOTO', 'INVALID_IMAGE', 'NOT_ALLOWED'] as const
-export const UPLOAD_KINDS = ['card', 'avatar', 'league'] as const
+export const UPLOAD_KINDS = ['card', 'avatar', 'league', 'selfie'] as const
 
 export type UploadStatus = (typeof UPLOAD_STATUSES)[number]
 export type UploadRejectionReason = (typeof UPLOAD_REJECTION_REASONS)[number]

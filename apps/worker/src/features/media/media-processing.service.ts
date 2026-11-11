@@ -22,6 +22,7 @@ import {
   toPortraitUpload,
   type PortraitProcessingService,
 } from '../portraits/portrait-processing.service'
+import type { SelfieProcessingService } from '../moments/selfie-processing.service'
 import { insertCardForMedia } from './card-creation'
 import type { ImagePipeline, RenderedFile } from './image-pipeline'
 import * as repository from './media.repository'
@@ -42,6 +43,7 @@ interface Deps {
   logger: WorkerLogger
   rarity: RarityQueue
   portraits: PortraitProcessingService
+  selfies: SelfieProcessingService
 }
 
 interface DuplicateMatch {
@@ -80,7 +82,7 @@ async function findLeagueDuplicate(
 
 /** Creates the use case turning an uploaded JPEG into card media. */
 export function createMediaProcessingService(deps: Deps): MediaProcessingService {
-  const { db, storage, pipeline, clock, logger, rarity, portraits } = deps
+  const { db, storage, pipeline, clock, logger, rarity, portraits, selfies } = deps
 
   const bestEffort = createBestEffort(logger)
 
@@ -220,7 +222,7 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
     }
     const gray = await pipeline.grayscaleForHash(buffer)
     const phash = perceptualHash(gray)
-    const dedupable = hasEnoughDetailForDedup(gray)
+    const dedupable = !upload.isMoment && hasEnoughDetailForDedup(gray)
     if (
       dedupable &&
       findDuplicate(phash, await repository.listLeaguePhashes(db, upload.leagueId))
@@ -320,6 +322,11 @@ export function createMediaProcessingService(deps: Deps): MediaProcessingService
       }
       if (!(await repository.markUploadProcessing(db, uploadId))) return
       const { kind } = upload
+      if (kind === 'selfie') {
+        if (upload.leagueId === null) await reject(upload, 'INVALID_IMAGE')
+        else await selfies.processUpload({ ...upload, leagueId: upload.leagueId }, input)
+        return
+      }
       if (kind !== 'card') {
         const portrait = toPortraitUpload({ ...upload, kind, userId })
         if (portrait === null) await reject(upload, 'INVALID_IMAGE')

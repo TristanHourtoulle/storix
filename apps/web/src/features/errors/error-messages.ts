@@ -46,6 +46,8 @@ const MESSAGES: Record<ErrorCode, string> = {
   MISSION_ALREADY_CLAIMED: 'Cette mission est déjà récupérée.',
   MISSION_NOT_COMPLETE: "Cette mission n'est pas encore terminée.",
   MISSION_REROLL_NOT_ALLOWED: 'Tu ne peux plus changer cette mission aujourd’hui.',
+  MOMENT_ALREADY_POSTED: 'Tu as déjà posté ce Moment.',
+  MOMENT_TOO_MANY_ATTEMPTS: 'Trop d’essais. Réessaie dans un moment.',
   INTERNAL_ERROR: 'Une erreur est survenue.',
 }
 

@@ -27,6 +27,7 @@ import {
   authorMembership,
   authorMembershipOn,
 } from './card-author.repository'
+import { readyMomentSelfieUploadId } from './card-moment'
 
 export interface CollectionRow {
   id: string
@@ -43,6 +44,10 @@ export interface CollectionRow {
   width: number
   height: number
   variants: (typeof media.$inferSelect)['variants']
+  leagueId: string
+  momentSelfieUploadId: string | null
+  momentTakenAt: Date | null
+  momentLateMinutes: number | null
   normalTier: CardTier | null
   foilTier: CardTier | null
   normalPromotedTier: CardTier | null
@@ -77,6 +82,7 @@ export interface CollectionFilters {
   authorId?: string
   tier?: CardTier
   upgradable?: boolean
+  moment?: boolean
   taggedUserId?: string
 }
 
@@ -167,6 +173,10 @@ function collectionColumns(
     width: media.width,
     height: media.height,
     variants: media.variants,
+    leagueId: cards.leagueId,
+    momentSelfieUploadId: readyMomentSelfieUploadId,
+    momentTakenAt: cards.momentTakenAt,
+    momentLateMinutes: cards.momentLateMinutes,
     normalTier: owned.normalTier,
     foilTier: owned.foilTier,
     normalPromotedTier: owned.normalPromotedTier,
@@ -225,6 +235,7 @@ function collectionWhere(
     input.tier === undefined ? undefined : eq(displayTierOf(owned), input.tier),
     input.upgradable === true ? upgradableNow(input, owned, stacked) : undefined,
     input.taggedUserId === undefined ? undefined : taggedWith(input.taggedUserId),
+    input.moment === true ? isNotNull(cards.momentTakenAt) : undefined,
   )
 }
 

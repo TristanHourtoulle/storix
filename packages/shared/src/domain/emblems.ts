@@ -16,6 +16,7 @@ export const EMBLEM_IDS = [
   'archivist',
   'mythic',
   'muse',
+  'on-time',
 ] as const
 
 export type EmblemId = (typeof EMBLEM_IDS)[number]
@@ -35,6 +36,7 @@ export interface EmblemStats {
   legendaryPulls: number
   mythicPulls: number
   ownMythicPhotos: number
+  momentsOnTime: number
 }
 
 export type EmblemMetric = keyof EmblemStats
@@ -180,6 +182,14 @@ export const EMBLEM_CATALOGUE: readonly EmblemDefinition[] = [
     tier: 'mythic',
     metric: 'ownMythicPhotos',
     target: 1,
+  },
+  {
+    id: 'on-time',
+    name: "Pile à l'heure",
+    rule: "Poste 10 Moments à l'heure.",
+    tier: 'rare',
+    metric: 'momentsOnTime',
+    target: 10,
   },
 ]
 

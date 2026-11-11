@@ -1,5 +1,6 @@
 import type { ReactNode, Ref } from 'react'
-import type { CardTier } from '@storix/shared'
+import type { CardMoment, CardTier } from '@storix/shared'
+import { MomentCardOverlay } from '@/features/moments/components/moment-card-overlay'
 import { countLabel } from '../progression-copy'
 import { TIER_CLASS, TIER_LABELS } from '../tier-labels'
 
@@ -16,6 +17,7 @@ export interface CardFaceProps {
   className?: string
   isPromoted?: boolean
   stackCount?: number
+  moment?: CardMoment | null
 }
 
 export function CardFace({
@@ -31,14 +33,18 @@ export function CardFace({
   className = '',
   isPromoted = false,
   stackCount = 0,
+  moment = null,
 }: CardFaceProps) {
   const tierLabel = isPromoted ? `${TIER_LABELS[tier]} ★` : TIER_LABELS[tier]
   const tierLine = isProvisional ? `${tierLabel} · provisoire` : tierLabel
 
   return (
-    <div className={`card ${size} ${TIER_CLASS[tier]}${isFoil ? ' foil' : ''} ${className}`}>
+    <div
+      className={`card ${size} ${TIER_CLASS[tier]}${isFoil ? ' foil' : ''}${moment ? ' moment' : ''} ${className}`}
+    >
       <div className="card-art">{children}</div>
       <div className="card-holo" ref={holoRef} />
+      {moment ? <MomentCardOverlay moment={moment} size={size} /> : null}
       <span className="card-gem" />
       {stackCount > 0 ? (
         <span className="card-stack-badge">

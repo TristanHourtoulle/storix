@@ -1,5 +1,7 @@
+import { sql } from 'drizzle-orm'
 import {
   boolean,
+  check,
   doublePrecision,
   index,
   integer,
@@ -47,9 +49,19 @@ export const cards = pgTable(
     discoveredById: text('discovered_by_id').references(() => user.id, { onDelete: 'set null' }),
     discoveredAt: timestamp('discovered_at', { withTimezone: true }),
     status: cardStatus('status').notNull().default('active'),
+    momentSelfieUploadId: uuid('moment_selfie_upload_id'),
+    momentTakenAt: timestamp('moment_taken_at', { withTimezone: true }),
+    momentLateMinutes: integer('moment_late_minutes'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    check(
+      'cards_moment_fields_check',
+      sql`(${t.momentSelfieUploadId} is null) = (${t.momentTakenAt} is null) and (${t.momentTakenAt} is null) = (${t.momentLateMinutes} is null)`,
+    ),
+    index('cards_league_moment_idx')
+      .on(t.leagueId, t.momentTakenAt)
+      .where(sql`${t.momentTakenAt} is not null`),
     unique('cards_league_number_unique').on(t.leagueId, t.number),
     index('cards_league_status_created_idx').on(t.leagueId, t.status, t.createdAt),
     index('cards_league_author_number_idx').on(t.leagueId, t.authorId, t.number.desc()),

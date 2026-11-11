@@ -92,6 +92,19 @@ function FilterSheetForm({ leagueId, value, members, onApply, onClose }: FilterS
         </span>
         <span aria-hidden="true" className="filter-switch-track" />
       </button>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={draft.moment}
+        className="filter-switch"
+        onClick={() => setDraft((prev) => ({ ...prev, moment: !prev.moment }))}
+      >
+        <span className="filter-switch-text">
+          <b>Moments</b>
+          <span>Ne montre que les cartes Moment, prises avec les deux caméras.</span>
+        </span>
+        <span aria-hidden="true" className="filter-switch-track" />
+      </button>
       <div className="bsheet-footer">
         <Button variant="ghost" className="flex-1" onClick={() => setDraft(NO_FILTERS)}>
           Réinitialiser

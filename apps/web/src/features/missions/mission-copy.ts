@@ -14,6 +14,7 @@ export const MISSION_ICONS: Readonly<Record<MissionSource, IconName>> = {
   promotions: 'star',
   foils: 'gem',
   daily_streak: 'check',
+  moments_on_time: 'flip',
 }
 
 const NUMBER_FORMAT = new Intl.NumberFormat('fr-FR')

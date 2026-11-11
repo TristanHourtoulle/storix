@@ -14,6 +14,7 @@ import {
   authorMembership,
   authorMembershipOn,
 } from '../cards/card-author.repository'
+import { readyMomentSelfieUploadId } from '../cards/card-moment'
 
 export interface HistoryOpeningRow {
   id: string
@@ -36,6 +37,10 @@ export interface HistoryCardRow {
   width: number
   height: number
   variants: MediaVariant[]
+  leagueId: string
+  momentSelfieUploadId: string | null
+  momentTakenAt: Date | null
+  momentLateMinutes: number | null
 }
 
 export interface HistoryPullRow {
@@ -82,6 +87,10 @@ export const historyCardColumns = {
   width: media.width,
   height: media.height,
   variants: media.variants,
+  leagueId: cards.leagueId,
+  momentSelfieUploadId: readyMomentSelfieUploadId,
+  momentTakenAt: cards.momentTakenAt,
+  momentLateMinutes: cards.momentLateMinutes,
 }
 
 /** Builds a card row from left-joined columns, or null when the card no longer exists. */
@@ -100,6 +109,10 @@ export function toHistoryCardRow(row: {
   width: number | null
   height: number | null
   variants: unknown
+  leagueId: string | null
+  momentSelfieUploadId: string | null
+  momentTakenAt: Date | null
+  momentLateMinutes: number | null
 }): HistoryCardRow | null {
   if (
     row.cardId === null ||
@@ -110,7 +123,8 @@ export function toHistoryCardRow(row: {
     row.thumbhash === null ||
     row.dominantColor === null ||
     row.width === null ||
-    row.height === null
+    row.height === null ||
+    row.leagueId === null
   ) {
     return null
   }
@@ -129,6 +143,10 @@ export function toHistoryCardRow(row: {
     width: row.width,
     height: row.height,
     variants: mediaVariantsSchema.parse(row.variants),
+    leagueId: row.leagueId,
+    momentSelfieUploadId: row.momentSelfieUploadId,
+    momentTakenAt: row.momentTakenAt,
+    momentLateMinutes: row.momentLateMinutes,
   }
 }
 

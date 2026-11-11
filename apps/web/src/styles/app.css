@@ -9,6 +9,7 @@
 @import './booster-history.css';
 @import './league-feed.css';
 @import './missions.css';
+@import './moments.css';
 @import './league-goal.css';
 @import './promotion-celebration.css';
 @import './journal.css';
@@ -39,6 +40,7 @@
   --color-cyan: #22d3ee;
   --color-cyan-soft: #67e8f9;
   --color-danger: #f87171;
+  --color-late: #fb923c;
   --color-tier-common: #a1a1aa;
   --color-tier-uncommon: #4ade80;
   --color-tier-rare: #60a5fa;

@@ -59,9 +59,11 @@ function LeagueLayout() {
     isOnboardingOpen ||
     onboarding.isPending ||
     (!onboarding.isSeen && !wasOnboardingShown(me.user.id))
-  const isBoosterStage = Boolean(matchRoute({ to: '/l/$leagueId/booster', params: { leagueId } }))
+  const isImmersiveScreen =
+    Boolean(matchRoute({ to: '/l/$leagueId/booster', params: { leagueId } })) ||
+    Boolean(matchRoute({ to: '/l/$leagueId/moment', params: { leagueId } }))
   const isAddScreen = Boolean(matchRoute({ to: '/l/$leagueId/add', params: { leagueId } }))
-  useViewportHeal(shellRef, '[data-nav-stack]', isBoosterStage || isAddScreen)
+  useViewportHeal(shellRef, '[data-nav-stack]', isImmersiveScreen || isAddScreen)
   const active = matchRoute({ to: '/l/$leagueId/collection', params: { leagueId } })
     ? 'collection'
     : matchRoute({ to: '/l/$leagueId/add', params: { leagueId } })
@@ -80,27 +82,27 @@ function LeagueLayout() {
       <OnboardingGate
         leagueId={leagueId}
         userId={me.user.id}
-        isSuspended={isBoosterStage || isAddScreen}
+        isSuspended={isImmersiveScreen || isAddScreen}
         onOpenChange={setIsOnboardingOpen}
       />
       <WhatsNewGate
         leagueId={leagueId}
         userId={me.user.id}
-        isSuspended={isBoosterStage || isAddScreen || isOnboardingBlocking}
+        isSuspended={isImmersiveScreen || isAddScreen || isOnboardingBlocking}
         onOpenChange={setIsNewsOpen}
       />
       <EmblemGate
         leagueId={leagueId}
         userId={me.user.id}
         isSuspended={
-          isBoosterStage || isAddScreen || isOnboardingBlocking || isNewsOpen || isNewsPending
+          isImmersiveScreen || isAddScreen || isOnboardingBlocking || isNewsOpen || isNewsPending
         }
         onOpenChange={setIsEmblemOpen}
       />
       <MythicBannerGate
         leagueId={leagueId}
         isSuspended={
-          isBoosterStage ||
+          isImmersiveScreen ||
           isAddScreen ||
           isOnboardingBlocking ||
           isNewsOpen ||
@@ -114,7 +116,7 @@ function LeagueLayout() {
       <GoalBannerGate
         leagueId={leagueId}
         isSuspended={
-          isBoosterStage ||
+          isImmersiveScreen ||
           isAddScreen ||
           isOnboardingBlocking ||
           isNewsOpen ||
@@ -132,7 +134,7 @@ function LeagueLayout() {
           onOpenChange={setIsPasskeyOpen}
         />
       )}
-      {isBoosterStage ? null : (
+      {isImmersiveScreen ? null : (
         <div ref={navStackRef} data-nav-stack className="sticky bottom-0 z-40 mt-auto">
           {isOnboardingBlocking ? null : <IosInstallHint />}
           <BottomNav leagueId={leagueId} active={active} hasProfileBadge={hasUnseen} />

@@ -3,6 +3,28 @@ import type { ReleaseNote } from '../schemas/whats-new'
 /** Every feature release shown in the "Nouveautés" booster, newest first. */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    id: '2026-11-11-b',
+    publishedAt: '2026-11-11T09:30:00+01:00',
+    cards: [
+      {
+        key: 'le-moment',
+        title: 'Le Moment',
+        body: 'Une fois par jour, entre 7 h et 21 h, toute la ligue a 2 minutes pour une photo devant toi puis un selfie. En retard ? Tu peux poster quand même.',
+        tier: 'legendary',
+        illustration: 'camera',
+        tryTarget: 'home',
+      },
+      {
+        key: 'moment-cards',
+        title: 'Cartes Moment',
+        body: 'Ton Moment devient une carte à collectionner avec ton selfie en vignette. Retrouve-les avec le filtre Moments de la collection.',
+        tier: 'epic',
+        illustration: 'stacks',
+        tryTarget: 'home',
+      },
+    ],
+  },
+  {
     id: '2026-11-11',
     publishedAt: '2026-11-11T08:00:00+01:00',
     cards: [

@@ -22,6 +22,13 @@ export const cardPersonSchema = z.object({
 
 export const cardAuthorSchema = cardPersonSchema.extend({ isFormerMember: z.boolean() })
 
+export const cardMomentSchema = z.object({
+  selfieUrl: z.string().startsWith('/media/').nullable(),
+  selfieSmallUrl: z.string().startsWith('/media/').nullable(),
+  takenAt: isoDateSchema,
+  lateMinutes: z.int().min(0),
+})
+
 export const cardSummarySchema = z.object({
   id: z.uuid(),
   number: z.int().positive(),
@@ -34,6 +41,7 @@ export const cardSummarySchema = z.object({
   width: z.int().positive(),
   height: z.int().positive(),
   image: imageSetSchema,
+  moment: cardMomentSchema.nullable(),
 })
 
 export const collectionCursorSchema = z.string().transform((raw, ctx) => {
@@ -57,6 +65,7 @@ export const listCardsQuerySchema = z
     authorId: idSchema.optional(),
     tier: cardTierSchema.optional(),
     upgradable: z.stringbool().optional(),
+    moment: z.stringbool().optional(),
     taggedUserId: idSchema.optional(),
     revealOwn: z.stringbool().optional(),
     sort: collectionSortSchema.default(DEFAULT_COLLECTION_SORT),
@@ -143,6 +152,7 @@ export const unpulledCardSummarySchema = z.strictObject({
   width: z.int().positive(),
   height: z.int().positive(),
   image: imageSetSchema,
+  moment: cardMomentSchema.nullable(),
 })
 
 export const collectionCardSchema = z.discriminatedUnion('kind', [
@@ -235,6 +245,7 @@ export const cardTagParamsSchema = cardParamsSchema.extend({ userId: idSchema })
 
 export type CardPerson = z.infer<typeof cardPersonSchema>
 export type CardAuthor = z.infer<typeof cardAuthorSchema>
+export type CardMoment = z.infer<typeof cardMomentSchema>
 export type CardSummary = z.infer<typeof cardSummarySchema>
 export type ListCardsQuery = z.infer<typeof listCardsQuerySchema>
 export type OwnedCardSummary = z.infer<typeof ownedCardSummarySchema>

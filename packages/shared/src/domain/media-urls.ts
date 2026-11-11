@@ -1,3 +1,4 @@
+import { SELFIE_OBJECT_KEY_PATTERN } from './moments'
 import { PORTRAIT_OBJECT_KEY_PATTERN } from './portraits'
 
 export const MEDIA_WINDOW_SECONDS = 86_400
@@ -10,9 +11,13 @@ export type MediaFormat = (typeof MEDIA_FORMATS)[number]
 export const MEDIA_OBJECT_KEY_PATTERN =
   /^img\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[0-9a-f]{64}\/(?:c[0-9a-f]{16}\/)?(256|768|1600)\.(avif|webp)$/
 
-/** Tells whether a key is a servable media object: a card image variant or a portrait variant. */
+/** Tells whether a key is a servable media object: a card image variant, a portrait or a Moment selfie. */
 export function isMediaObjectKey(key: string): boolean {
-  return MEDIA_OBJECT_KEY_PATTERN.test(key) || PORTRAIT_OBJECT_KEY_PATTERN.test(key)
+  return (
+    MEDIA_OBJECT_KEY_PATTERN.test(key) ||
+    PORTRAIT_OBJECT_KEY_PATTERN.test(key) ||
+    SELFIE_OBJECT_KEY_PATTERN.test(key)
+  )
 }
 
 const SIGNATURE_PATTERN = /^[0-9a-f]{64}$/
