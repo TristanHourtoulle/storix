@@ -94,11 +94,9 @@ export function MomentPreview({
                 {title.length}/{CARD_TITLE_MAX_LENGTH}
               </small>
             </div>
-            {isEditing ? null : (
-              <span id={TITLE_HINT_ID} className="moment-title-hint">
-                Laisse vide pour garder ce titre.
-              </span>
-            )}
+            <span id={TITLE_HINT_ID} className="moment-title-hint" hidden={isEditing}>
+              Laisse vide pour garder ce titre.
+            </span>
           </div>
           {error ? (
             <p role="alert" className="moment-preview-error">
