@@ -62,11 +62,7 @@ const BASIS_POINTS = 10_000
 
 const toBasisPoints = (value: number): number => Math.round(value * BASIS_POINTS)
 
-function tierForBasisPoints(
-  basisPoints: number,
-  bounds: TierBounds,
-  isStrict = false,
-): BoundTier {
+function tierForBasisPoints(basisPoints: number, bounds: TierBounds, isStrict = false): BoundTier {
   return BOUND_TIERS.reduce<BoundTier>((found, tier) => {
     const bound = toBasisPoints(bounds[tier])
     return (isStrict ? bound < basisPoints : bound <= basisPoints) ? tier : found

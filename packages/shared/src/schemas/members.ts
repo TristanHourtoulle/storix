@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { idSchema, isoDateSchema, leagueRoleSchema } from './common'
+import { cosmeticItemIdSchema } from './cosmetics'
 import { portraitSchema } from './portraits'
 
 export const memberSummarySchema = z.object({
@@ -15,6 +16,7 @@ export const memberSummarySchema = z.object({
   authoredCardCount: z.int().min(0),
   canTransferOwnership: z.boolean(),
   avatar: portraitSchema.nullable(),
+  avatarFrame: cosmeticItemIdSchema.nullable(),
 })
 
 export const updateMemberRoleBodySchema = z.object({ role: z.enum(['admin', 'member']) })

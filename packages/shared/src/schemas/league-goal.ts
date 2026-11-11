@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { GOAL_CONTRIBUTOR_AVATARS, GOAL_STATUSES, GOAL_TYPES } from '../domain'
 import { idSchema, isoDateSchema } from './common'
+import { cosmeticItemIdSchema } from './cosmetics'
 import { portraitSchema } from './portraits'
 
 export const goalTypeSchema = z.enum(GOAL_TYPES)
@@ -10,6 +11,7 @@ export const goalContributorSchema = z.object({
   userId: idSchema,
   displayUsername: z.string(),
   avatar: portraitSchema.nullable(),
+  avatarFrame: cosmeticItemIdSchema.nullable(),
   count: z.int().min(1),
 })
 

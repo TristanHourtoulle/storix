@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { isoDateSchema } from './common'
-import { createUploadResponseSchema } from './uploads'
+import { cardTitleSchema, createUploadResponseSchema } from './uploads'
 
 export const momentPostViewSchema = z.object({
   takenAt: isoDateSchema,
@@ -29,6 +29,7 @@ export const postMomentBodySchema = z
     backUploadId: z.uuid(),
     selfieUploadId: z.uuid(),
     capturedAt: isoDateSchema.nullable(),
+    title: cardTitleSchema.optional(),
   })
   .refine((body) => body.backUploadId !== body.selfieUploadId)
 
