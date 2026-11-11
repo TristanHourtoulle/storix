@@ -87,6 +87,12 @@
     font-size: 12.5px;
     color: var(--color-muted);
   }
+  .shop-status-pending {
+    width: 44px;
+    height: 14px;
+    border-radius: var(--radius-full);
+    background: var(--color-line);
+  }
   .shop-worn {
     font: 700 11px var(--font-display);
     letter-spacing: 0.06em;

@@ -7,7 +7,7 @@ import {
   type MyCosmeticsResponse,
 } from '@storix/shared'
 
-export type OptionState = 'worn' | 'owned' | 'forSale'
+export type OptionState = 'worn' | 'owned' | 'forSale' | 'unknown'
 
 export interface ShopOption {
   itemId: CosmeticItemId | null
@@ -25,14 +25,14 @@ export function slotOptions(slot: CosmeticSlot): ShopOption[] {
   ]
 }
 
-/** Whether the viewer wears an option, owns it, or can buy it. */
+/** Whether the viewer wears an option, owns it, or can buy it; unknown until the viewer's cosmetics are loaded. */
 export function optionState(
   option: ShopOption,
   mine: MyCosmeticsResponse | undefined,
 ): OptionState {
-  const worn = mine?.equipped[option.slot] ?? null
-  if (worn === option.itemId) return 'worn'
-  if (option.itemId === null || mine?.owned.includes(option.itemId) === true) return 'owned'
+  if (mine === undefined) return 'unknown'
+  if (mine.equipped[option.slot] === option.itemId) return 'worn'
+  if (option.itemId === null || mine.owned.includes(option.itemId)) return 'owned'
   return 'forSale'
 }
 
