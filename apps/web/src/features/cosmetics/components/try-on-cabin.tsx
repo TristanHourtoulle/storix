@@ -37,14 +37,15 @@ interface TryOnCabinProps {
 export function TryOnCabin({ leagueId, category, initialItemId }: TryOnCabinProps) {
   const { slot, eyebrow } = shopCategory(category)
   const options = useMemo(() => slotOptions(slot), [slot])
-  const [index, setIndex] = useState(() =>
-    Math.max(
-      0,
-      options.findIndex((option) => option.itemId === (initialItemId ?? null)),
-    ),
-  )
-  const [buying, setBuying] = useState<ShopOption | null>(null)
   const mine = useQuery(myCosmeticsQueryOptions).data
+  const [index, setIndex] = useState(() => {
+    const startId = initialItemId ?? mine?.equipped[slot] ?? null
+    return Math.max(
+      0,
+      options.findIndex((option) => option.itemId === startId),
+    )
+  })
+  const [buying, setBuying] = useState<ShopOption | null>(null)
   const tryOn = useTryOnCards(leagueId)
   const equip = useEquipCosmetic()
   const option = options[index] ?? options[0]
