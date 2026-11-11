@@ -147,9 +147,10 @@ async function charge(d: Director, index: number, tier: TierFx): Promise<void> {
       colors: tier.particles,
       speed: [160, 340],
       angle: [-Math.PI * 0.85, -Math.PI * 0.15],
-      gravity: 700,
-      life: [0.5, 0.9],
-      size: [1.4, 3],
+      gravity: tier.auraKind === null ? 700 : 260,
+      life: tier.auraKind === null ? [0.5, 0.9] : [0.9, 1.5],
+      size: tier.auraKind === null ? [1.4, 3] : [2, 3.6],
+      kind: tier.auraKind ?? 'dot',
       jx: 100,
     })
     if (L >= 3) d.tint(tier, r % 2 ? 0.2 : 0.45 + (L - 3) * 0.15, 120)

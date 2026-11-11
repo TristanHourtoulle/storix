@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useReducer, useRef, useState, type RefObject } from 'react'
 import type { BoosterPull } from '@storix/shared'
 import { TIER_LABELS } from '@/features/cards/tier-labels'
+import { raritySetPalette, revealAuraKind } from '@/features/cosmetics/cosmetic-skins'
+import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { playSound, preloadSound, stopSounds } from '@/features/sound/sound'
 import { logger } from '@/lib/logger'
 import { revealLong, revealQuick, stash } from './arcade/choreography'
@@ -145,6 +147,9 @@ export function useArcadeOpening(
   const count = pulls.length
   const [isReduced] = useState(prefersReducedMotion)
   const [state, dispatch] = useReducer(reducer, count, initialState)
+  const style = useEquippedStyle()
+  const palette = raritySetPalette(style.raritySet)
+  const auraKind = revealAuraKind(style.revealAura)
   const directorRef = useRef<Director | null>(null)
   const stateRef = useRef(state)
   const busyRef = useRef(false)
@@ -205,14 +210,19 @@ export function useArcadeOpening(
       if (!pull) return
       dispatch({ type: 'revealing', index })
       if (pull.isFirstCopy) {
-        await revealLong(director, index, tierFx(pull.card.tier), TIER_LABELS[pull.card.tier])
+        await revealLong(
+          director,
+          index,
+          tierFx(pull.card.tier, palette, auraKind),
+          TIER_LABELS[pull.card.tier],
+        )
       } else {
         await revealQuick(director, index)
         if (hasPileOrDustGain(pull)) playSound({ name: 'coin' })
       }
       dispatch({ type: 'revealed', index, announcement: describe(pull, index + 1, count) })
     },
-    [pulls, count],
+    [pulls, count, palette, auraKind],
   )
 
   const open = useCallback(
@@ -236,7 +246,7 @@ export function useArcadeOpening(
         const { phase, current } = stateRef.current
         if (phase === 'shown') {
           const shown = pulls[current]
-          if (shown) await stash(director, current, tierFx(shown.card.tier))
+          if (shown) await stash(director, current, tierFx(shown.card.tier, palette, auraKind))
           dispatch({ type: 'stashed', index: current })
           if (current >= count - 1) {
             playSummary(isEpicGuaranteedNext)
@@ -246,7 +256,7 @@ export function useArcadeOpening(
         }
         await playReveal(director, current + 1)
       }),
-    [run, pulls, count, playReveal, isEpicGuaranteedNext],
+    [run, pulls, count, playReveal, isEpicGuaranteedNext, palette, auraKind],
   )
 
   const { phase, current } = state

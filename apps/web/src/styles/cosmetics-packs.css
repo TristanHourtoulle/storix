@@ -1,0 +1,74 @@
+@layer components {
+  .pack.skin-neon {
+    --skin-step: 18px;
+    background:
+      linear-gradient(transparent 0 62%, #ff2bd633 62% 63%, transparent 63%),
+      repeating-linear-gradient(90deg, #22d3ee22 0 1px, transparent 1px var(--skin-step)),
+      repeating-linear-gradient(0deg, #ff2bd622 0 1px, transparent 1px var(--skin-step)),
+      linear-gradient(170deg, #2a0055, #050010);
+    box-shadow:
+      0 12px 30px rgba(255, 43, 214, 0.28),
+      inset 0 0 0 1px #ff2bd6aa;
+  }
+  .skin-neon .pack-logo {
+    color: #fff;
+    text-shadow:
+      0 0 6px #ff2bd6,
+      0 0 14px #ff2bd6;
+  }
+  .skin-neon .pack-sub {
+    color: #67e8f9;
+  }
+  .pack.skin-or-noir {
+    --skin-step: 13px;
+    background:
+      repeating-linear-gradient(
+        45deg,
+        transparent 0 var(--skin-step),
+        #d9b45a1f var(--skin-step) calc(var(--skin-step) + 1px)
+      ),
+      repeating-linear-gradient(
+        -45deg,
+        transparent 0 var(--skin-step),
+        #d9b45a1f var(--skin-step) calc(var(--skin-step) + 1px)
+      ),
+      linear-gradient(170deg, #1a1712, #050505);
+    box-shadow:
+      0 12px 30px rgba(0, 0, 0, 0.45),
+      inset 0 0 0 1px #d9b45a99;
+  }
+  .skin-or-noir .pack-logo {
+    color: #e8cf8a;
+  }
+  .skin-or-noir .pack-sub {
+    color: #d9b45a;
+  }
+  .pack.skin-aquarelle {
+    background:
+      radial-gradient(45% 35% at 25% 30%, #f9a8d4cc, transparent 70%),
+      radial-gradient(50% 40% at 75% 60%, #93c5fdcc, transparent 70%),
+      radial-gradient(40% 30% at 40% 85%, #fde68acc, transparent 70%), #f4ece1;
+    box-shadow:
+      0 12px 30px rgba(0, 0, 0, 0.35),
+      inset 0 0 0 1px #ffffff99;
+  }
+  .skin-aquarelle .pack-logo {
+    color: #3b3355;
+  }
+  .skin-aquarelle .pack-sub {
+    color: #3b3355b3;
+  }
+  .pack.is-premium.skin-neon,
+  .pack.is-premium.skin-or-noir,
+  .pack.is-premium.skin-aquarelle {
+    box-shadow:
+      inset 0 0 0 1.5px #d9b45a,
+      0 0 22px color-mix(in srgb, #d9b45a 45%, transparent),
+      0 12px 30px rgba(0, 0, 0, 0.45);
+  }
+  .is-premium.skin-neon .pack-sub,
+  .is-premium.skin-or-noir .pack-sub,
+  .is-premium.skin-aquarelle .pack-sub {
+    color: #d9b45a;
+  }
+}

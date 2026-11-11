@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { FeedRow as FeedRowData } from '@storix/shared'
+import { useMemberAvatarFrames } from '@/features/portraits/use-member-avatar-frames'
 import { useMemberAvatars } from '@/features/portraits/use-member-avatars'
 import { feedSections } from '../feed-copy'
 import { useBravo } from '../use-bravo'
@@ -14,6 +15,7 @@ interface FeedListProps {
 /** Feed rows split into "since your last visit" then one block per day. */
 export function FeedList({ leagueId, meId, rows }: FeedListProps) {
   const avatars = useMemberAvatars(leagueId)
+  const frames = useMemberAvatarFrames(leagueId)
   const { sendBravo } = useBravo(leagueId)
   const sections = useMemo(() => feedSections(rows), [rows])
 
@@ -30,6 +32,7 @@ export function FeedList({ leagueId, meId, rows }: FeedListProps) {
                 row={row}
                 meId={meId}
                 avatars={avatars}
+                frames={frames}
                 onBravo={sendBravo}
               />
             ))}

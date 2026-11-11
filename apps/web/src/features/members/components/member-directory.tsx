@@ -36,7 +36,12 @@ export function MemberDirectory({ leagueId }: MemberDirectoryProps) {
             params={{ leagueId, userId: member.userId }}
             className="mdir-row"
           >
-            <Avatar label={member.displayUsername} portrait={member.avatar} size="md" />
+            <Avatar
+              label={member.displayUsername}
+              portrait={member.avatar}
+              frame={member.avatarFrame}
+              size="md"
+            />
             <span className="min-w-0 flex-1">
               <b>
                 {member.displayUsername}

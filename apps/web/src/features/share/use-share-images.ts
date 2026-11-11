@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { shareFileName, type Box } from '@storix/shared'
+import { raritySetPalette } from '@/features/cosmetics/cosmetic-skins'
+import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { logger } from '@/lib/logger'
 import { renderShareImage } from './render-share-image'
 import type { ShareStyle, ShareSubject } from './share-subject'
@@ -26,6 +28,7 @@ export function useShareImages(
 ): ShareImages {
   const [rendered, setRendered] = useState<RenderedImages>({ subject, images: {} })
   const firstRef = useRef(first)
+  const palette = raritySetPalette(useEquippedStyle().raritySet)
 
   useEffect(() => {
     let isCancelled = false
@@ -42,7 +45,7 @@ export function useShareImages(
     const renderAll = async (): Promise<void> => {
       for (const style of order) {
         try {
-          const { blob, logoBox } = await renderShareImage(style, subject)
+          const { blob, logoBox } = await renderShareImage(style, subject, palette)
           if (isCancelled) return
           const url = URL.createObjectURL(blob)
           urls = [...urls, url]
@@ -61,7 +64,7 @@ export function useShareImages(
       isCancelled = true
       urls.forEach((url) => URL.revokeObjectURL(url))
     }
-  }, [subject, styles])
+  }, [subject, styles, palette])
 
   return useMemo(() => {
     const images = rendered.subject === subject ? rendered.images : {}

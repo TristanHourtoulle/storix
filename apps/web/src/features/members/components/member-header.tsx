@@ -27,7 +27,12 @@ export function MemberHeader({ header, bestTier }: MemberHeaderProps) {
   return (
     <div className="mpage-head" style={tierColorStyle(bestTier)}>
       <span className={`mpage-av${bestTier === 'mythic' ? ' t-M' : ''}`}>
-        <Avatar label={header.displayUsername} portrait={header.avatar} size="lg" />
+        <Avatar
+          label={header.displayUsername}
+          portrait={header.avatar}
+          frame={header.avatarFrame}
+          size="lg"
+        />
       </span>
       <div className="min-w-0">
         <p className="mpage-name">{header.displayUsername}</p>

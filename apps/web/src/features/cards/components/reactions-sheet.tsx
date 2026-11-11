@@ -1,6 +1,12 @@
 import { useId, useRef, type KeyboardEvent } from 'react'
 import { Link } from '@tanstack/react-router'
-import type { CardReactor, Portrait, ReactionCounts, ReactionType } from '@storix/shared'
+import type {
+  CardReactor,
+  CosmeticItemId,
+  Portrait,
+  ReactionCounts,
+  ReactionType,
+} from '@storix/shared'
 import { REACTION_TYPES } from '@storix/shared'
 import { Avatar } from '@/components/ui/avatar'
 import { BottomSheet } from '@/components/ui/bottom-sheet'
@@ -42,6 +48,7 @@ interface ReactionsSheetProps {
   reactors: readonly CardReactor[] | undefined
   isLoading: boolean
   avatars: ReadonlyMap<string, Portrait>
+  frames: ReadonlyMap<string, CosmeticItemId>
   onClose: () => void
 }
 
@@ -55,6 +62,7 @@ export function ReactionsSheet({
   reactors,
   isLoading,
   avatars,
+  frames,
   onClose,
 }: ReactionsSheetProps) {
   const total = REACTION_TYPES.reduce((sum, type) => sum + counts[type].count, 0)
@@ -128,6 +136,7 @@ export function ReactionsSheet({
                     size="compact"
                     label={name}
                     portrait={userId ? (avatars.get(userId) ?? null) : null}
+                    frame={userId ? (frames.get(userId) ?? null) : null}
                   />
                   <div className="min-w-0">
                     <b>{name}</b>

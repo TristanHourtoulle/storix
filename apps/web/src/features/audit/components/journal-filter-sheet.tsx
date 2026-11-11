@@ -60,6 +60,7 @@ function JournalFilterForm({
               key={member.userId}
               label={member.displayUsername}
               portrait={member.avatar}
+              frame={member.avatarFrame}
               isOn={draft.memberId === member.userId}
               onToggle={() =>
                 setDraft((prev) => ({

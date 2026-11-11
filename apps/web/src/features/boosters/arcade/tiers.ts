@@ -1,4 +1,5 @@
 import { tierRank, type CardTier } from '@storix/shared'
+import type { RevealAuraKind } from '@/features/cosmetics/cosmetic-skins'
 import { DEFAULT_RARITY_PALETTE, type RarityPalette } from '@/features/cosmetics/rarity-palettes'
 
 export type TierKey = 'C' | 'U' | 'R' | 'E' | 'L' | 'M'
@@ -8,6 +9,7 @@ export interface TierFx {
   level: number
   color: string
   particles: readonly string[]
+  auraKind: RevealAuraKind | null
 }
 
 const KEYS: Readonly<Record<CardTier, TierKey>> = {
@@ -29,10 +31,17 @@ export const CONFETTI_PARTICLES = [
   '#ffffff',
 ] as const
 
-/** Returns the arcade effect settings of a tier, with its level from common (0) to mythic (5). */
-export function tierFx(tier: CardTier, palette: RarityPalette = DEFAULT_RARITY_PALETTE): TierFx {
+/**
+ * Returns the arcade effect settings of a tier, with its level from common (0) to mythic (5),
+ * and the particle shape of the worn reveal aura.
+ */
+export function tierFx(
+  tier: CardTier,
+  palette: RarityPalette = DEFAULT_RARITY_PALETTE,
+  auraKind: RevealAuraKind | null = null,
+): TierFx {
   const { fx, particles } = palette.tiers[tier]
-  return { key: KEYS[tier], level: tierRank(tier), color: fx, particles }
+  return { key: KEYS[tier], level: tierRank(tier), color: fx, particles, auraKind }
 }
 
 /** Returns the short tier key used by the arcade styles (`data-t`). */

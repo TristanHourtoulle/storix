@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { GOAL_REWARD_BOOSTERS, type LeagueGoal, type Portrait } from '@storix/shared'
 import { Avatar } from '@/components/ui/avatar'
+import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { useCountdown } from '@/features/game/use-countdown'
 import { formatTimeLeft } from '@/lib/time-left'
 import { GOAL_WORDING } from '../goal-copy'
@@ -29,6 +30,7 @@ export function GoalCard({ leagueId, goal, me, onElapsed }: GoalCardProps) {
   const targetPercent = percent(goal.target, goal.bonusTarget)
   const friends = goal.contributors.filter((contributor) => contributor.userId !== me.id)
   const friendsTotal = Math.max(0, goal.progress - goal.own)
+  const ownFrame = useEquippedStyle().avatarFrame
 
   return (
     <section className="goal" aria-label="Objectif de la ligue">
@@ -74,6 +76,7 @@ export function GoalCard({ leagueId, goal, me, onElapsed }: GoalCardProps) {
             <Avatar
               label={me.displayUsername}
               portrait={me.avatar}
+              frame={ownFrame}
               size="mini"
               isTinted
               tint={OWN_AVATAR_TINT}
@@ -92,6 +95,7 @@ export function GoalCard({ leagueId, goal, me, onElapsed }: GoalCardProps) {
                   <Avatar
                     label={friend.displayUsername}
                     portrait={friend.avatar}
+                    frame={friend.avatarFrame}
                     size="mini"
                     isTinted
                   />

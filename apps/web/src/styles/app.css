@@ -18,6 +18,9 @@
 @import './emblems.css';
 @import './moderation.css';
 @import './rotate-overlay.css';
+@import './cosmetics-packs.css';
+@import './cosmetics-rarity.css';
+@import './cosmetics-avatar.css';
 
 @theme {
   --spacing-nav: calc(68px + env(safe-area-inset-bottom));

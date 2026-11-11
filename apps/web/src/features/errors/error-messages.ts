@@ -20,6 +20,8 @@ const MESSAGES: Record<ErrorCode, string> = {
   BOOSTER_STOCK_EMPTY: 'Plus de booster en stock, reviens un peu plus tard.',
   BOOSTER_POOL_EMPTY: 'Pas encore assez de cartes dans la ligue pour un booster.',
   INSUFFICIENT_DUST: 'Il te manque des paillettes.',
+  ALREADY_OWNED: 'Tu as déjà cet objet, retrouve-le dans Mon style.',
+  NOT_OWNED: "Tu ne possèdes pas encore cet objet, achète-le d'abord dans la Boutique.",
   COPY_NOT_OWNED: "Tu n'as plus cet exemplaire.",
   CRAFT_NOT_ALLOWED: 'Cette carte ne peut pas être fabriquée.',
   FOIL_NOT_ALLOWED: 'Cet exemplaire ne peut pas passer en foil.',

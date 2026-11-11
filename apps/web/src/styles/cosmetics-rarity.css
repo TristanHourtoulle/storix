@@ -1,0 +1,157 @@
+@layer components {
+  .card.rs-gemmes.t-C {
+    --tc-deep: #3f3f46;
+  }
+  .card.rs-gemmes.t-U {
+    --tc-deep: #14532d;
+  }
+  .card.rs-gemmes.t-R {
+    --tc-deep: #1e3a8a;
+  }
+  .card.rs-gemmes.t-E {
+    --tc-deep: #4c1d95;
+  }
+  .card.rs-gemmes.t-L {
+    --tc-deep: #92400e;
+  }
+  .card.rs-gemmes.t-M {
+    --tc-deep: #4a044e;
+  }
+
+  .card-frame {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .card.rs-neon {
+    --frame-gap: 4px;
+    --frame-tube: 1.5px;
+    box-shadow:
+      0 0 0 1.5px var(--tc),
+      0 0 12px var(--tc);
+  }
+  .card.rs-neon.lg,
+  .card.rs-neon.xl,
+  .card.rs-neon.showcase {
+    --frame-gap: 7px;
+    --frame-tube: 2px;
+    box-shadow:
+      0 0 0 2px var(--tc),
+      0 0 18px var(--tc);
+  }
+  .rs-neon .card-frame {
+    box-shadow:
+      inset 0 0 0 var(--frame-gap) var(--color-bg),
+      inset 0 0 0 calc(var(--frame-gap) + var(--frame-tube)) var(--tc),
+      inset 0 0 18px color-mix(in srgb, var(--tc) 60%, transparent);
+  }
+  .rs-neon .card-tier {
+    text-shadow: 0 0 6px var(--tc);
+  }
+  .card.rs-neon.t-M {
+    box-shadow:
+      0 0 16px var(--color-tier-mythic-fx),
+      0 0 26px color-mix(in srgb, var(--color-cyan) 40%, transparent);
+  }
+  .rs-neon.t-M .card-frame {
+    box-shadow:
+      inset 0 0 0 var(--frame-gap) var(--color-bg),
+      inset 0 0 0 calc(var(--frame-gap) + var(--frame-tube)) var(--color-tier-mythic-fx),
+      inset 0 0 18px color-mix(in srgb, var(--color-tier-mythic-fx) 60%, transparent);
+  }
+
+  .card.rs-gemmes {
+    --tc-deep: #3f3f46;
+    --frame-width: 5px;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--tc) 35%, transparent);
+  }
+  .card.rs-gemmes.lg,
+  .card.rs-gemmes.xl,
+  .card.rs-gemmes.showcase {
+    --frame-width: 8px;
+    box-shadow: 0 0 20px color-mix(in srgb, var(--tc) 35%, transparent);
+  }
+  .rs-gemmes .card-frame {
+    padding: var(--frame-width);
+    background: conic-gradient(
+      from 30deg,
+      var(--tc),
+      #ffffffcc 8%,
+      var(--tc-deep) 20%,
+      var(--tc) 34%,
+      #ffffffaa 44%,
+      var(--tc-deep) 58%,
+      var(--tc) 72%,
+      #ffffffcc 82%,
+      var(--tc-deep) 92%,
+      var(--tc)
+    );
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+  .card.rs-gemmes.t-M {
+    box-shadow: 0 0 16px #f5d0fe88;
+  }
+  .card.rs-gemmes.t-M::before {
+    display: none;
+  }
+  .rs-gemmes.t-M .card-frame {
+    background: conic-gradient(
+      from 0deg,
+      #fecaca,
+      #fef08a,
+      #bbf7d0,
+      #a5f3fc,
+      #c7d2fe,
+      #f5d0fe,
+      #fecaca
+    );
+  }
+  .rs-gemmes .card-gem {
+    border-radius: 1px;
+    transform: rotate(45deg);
+  }
+
+  .card.rs-filet {
+    box-shadow:
+      0 0 0 1px var(--tc),
+      0 0 0 4px var(--color-bg),
+      0 0 0 5px color-mix(in srgb, var(--tc) 70%, transparent);
+  }
+  .card.rs-filet.sm {
+    border-radius: 6px;
+  }
+  .card.rs-filet.md {
+    border-radius: 7px;
+  }
+  .card.rs-filet.lg,
+  .card.rs-filet.xl,
+  .card.rs-filet.showcase {
+    border-radius: 10px;
+    box-shadow:
+      0 0 0 1px var(--tc),
+      0 0 0 6px var(--color-bg),
+      0 0 0 7px color-mix(in srgb, var(--tc) 70%, transparent);
+  }
+  .card.rs-filet.t-M {
+    box-shadow:
+      0 0 0 4px var(--color-bg),
+      0 0 0 5px var(--color-tier-mythic-fx);
+  }
+  .rs-filet .card-tier {
+    font-family: var(--font-sans);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+  }
+  .rs-filet .card-gem {
+    width: 11px;
+    height: 1px;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}

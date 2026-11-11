@@ -11,6 +11,7 @@ import {
   settingsRowClassName,
 } from '@/components/ui/settings-list'
 import { DeleteAccountRow } from '@/features/account/components/delete-account-row'
+import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { memberEmblemsQueryOptions } from '@/features/emblems/emblems.queries'
 import { meQueryOptions } from '@/features/auth/session.queries'
 import { useLogout } from '@/features/auth/use-logout'
@@ -43,6 +44,7 @@ function soundSummary({ isBoosterEnabled, isInterfaceEnabled }: SoundSettings): 
 function Profile() {
   const { leagueId } = Route.useParams()
   const { data: me } = useSuspenseQuery(meQueryOptions)
+  const ownFrame = useEquippedStyle().avatarFrame
   const leagues = useMyLeagues()
   const { passkeys, isReady: arePasskeysReady } = usePasskeys()
   const { logout, isPending, errorMessage } = useLogout()
@@ -78,7 +80,7 @@ function Profile() {
         aria-label={`${me.user.displayUsername}, @${me.user.username}, modifier le pseudo affiché`}
         className="flex items-center gap-3.5 rounded-control p-1 text-ink no-underline hover:bg-surface"
       >
-        <Avatar label={me.user.displayUsername} portrait={me.avatar} size="lg" />
+        <Avatar label={me.user.displayUsername} portrait={me.avatar} frame={ownFrame} size="lg" />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate font-display text-2xl leading-tight font-semibold">
             {me.user.displayUsername}

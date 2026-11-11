@@ -21,6 +21,7 @@ import { CardFullscreen } from './card-fullscreen'
 import { OwnedCardFace } from './owned-card-face'
 import { authorLabel } from '../author-label'
 import { MotionPrompt } from './motion-prompt'
+import { useMemberAvatarFrames } from '@/features/portraits/use-member-avatar-frames'
 import { useMemberAvatars } from '@/features/portraits/use-member-avatars'
 import { AuthorLink } from './author-link'
 import { MetaCell, discovererLabel, formatDate } from './meta-cell'
@@ -51,6 +52,7 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
   const reactions = useReactions(leagueId, card.id)
   const avatars = useMemberAvatars(leagueId)
+  const frames = useMemberAvatarFrames(leagueId)
   const reactionTotal = REACTION_TYPES.reduce((sum, type) => sum + card.reactions[type].count, 0)
   const reactors = useCardReactors(leagueId, card.id, reactionTotal > 0)
   const [isReactionsOpen, setIsReactionsOpen] = useState(false)
@@ -139,6 +141,7 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
               <Avatar
                 label={authorLabel(card.author)}
                 portrait={card.author.userId ? (avatars.get(card.author.userId) ?? null) : null}
+                frame={card.author.userId ? (frames.get(card.author.userId) ?? null) : null}
               />
             }
           />
@@ -151,7 +154,7 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
         />
         <MetaCell label="Sur la photo" value={tagged || 'Personne'} />
       </div>
-      <PromotedHolders holders={card.promotedHolders} avatars={avatars} />
+      <PromotedHolders holders={card.promotedHolders} avatars={avatars} frames={frames} />
       <ReactionBar
         reactions={card.reactions}
         canReact={card.canReact}
@@ -162,6 +165,7 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
         <ReactorsSummary
           reactors={reactors.data?.reactors ?? []}
           avatars={avatars}
+          frames={frames}
           onOpen={() => openReactions('all')}
         />
       ) : null}
@@ -174,6 +178,7 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
         reactors={reactors.data?.reactors}
         isLoading={reactionTotal > 0 && reactors.isPending}
         avatars={avatars}
+        frames={frames}
         onClose={() => setIsReactionsOpen(false)}
       />
       <Button
