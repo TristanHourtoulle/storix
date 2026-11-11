@@ -185,15 +185,15 @@ async function start(): Promise<void> {
     createMissionsSettleService({ db: database.db, clock, logger }),
   )
   await registerLeagueGoalsJobs(boss, createLeagueGoalsService({ db: database.db, clock, logger }))
-  if (vapid) {
-    const sender = createPushSender(vapid, logger)
+  const sender = vapid ? createPushSender(vapid, logger) : null
+  if (sender) {
     const boosterFull = createBoosterFullService({ db: database.db, sender, clock, logger })
     await registerBoosterFullScanJob(boss, boosterFull)
-    await registerMomentsTickJob(
-      boss,
-      createMomentsTickService({ db: database.db, sender, clock, logger }),
-    )
   }
+  await registerMomentsTickJob(
+    boss,
+    createMomentsTickService({ db: database.db, sender, clock, logger }),
+  )
   logger.info({ concurrency: env.MEDIA_CONCURRENCY, push: isPushEnabled }, 'Worker started')
 }
 

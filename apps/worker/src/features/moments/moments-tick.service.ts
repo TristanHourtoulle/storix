@@ -17,7 +17,8 @@ export interface MomentsTickService {
 
 interface Deps {
   db: Database
-  sender: PushSender
+  /** Null when VAPID keys are missing: Moments are still recorded, pushes are skipped. */
+  sender: PushSender | null
   clock: () => Date
   logger: WorkerLogger
 }
@@ -43,6 +44,7 @@ export function createMomentsTickService(deps: Deps): MomentsTickService {
       url: `/l/${league.id}`,
       tag: `moment:${league.id}`,
     })
+    if (!sender) return 0
     const targets = await repository.listLeaguePushTargets(db, league.id)
     let sent = 0
     for (const target of targets) {
