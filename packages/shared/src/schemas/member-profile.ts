@@ -3,7 +3,7 @@ import { EMBLEM_IDS, FEATURED_EMBLEMS_MAX, SHOWCASE_SLOTS } from '../domain'
 import { cardTierSchema, collectionCardSchema } from './cards'
 import { idSchema, isoDateSchema } from './common'
 import { emblemIdSchema } from './emblems'
-import { cosmeticItemIdSchema } from './cosmetics'
+import { storedCosmeticItemIdSchema } from './cosmetics'
 import { portraitSchema } from './portraits'
 
 export const memberProfileSchema = z.object({
@@ -11,7 +11,7 @@ export const memberProfileSchema = z.object({
     userId: idSchema,
     displayUsername: z.string(),
     avatar: portraitSchema.nullable(),
-    avatarFrame: cosmeticItemIdSchema.nullable(),
+    avatarFrame: storedCosmeticItemIdSchema,
     joinedAt: isoDateSchema,
     isSelf: z.boolean(),
     featuredEmblems: z.array(emblemIdSchema).max(FEATURED_EMBLEMS_MAX),

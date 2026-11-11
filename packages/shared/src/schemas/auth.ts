@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { idSchema } from './common'
 import { leagueSummarySchema } from './leagues'
-import { cosmeticItemIdSchema } from './cosmetics'
+import { storedCosmeticItemIdSchema } from './cosmetics'
 import { portraitSchema } from './portraits'
 
 export const usernameSchema = z
@@ -37,7 +37,7 @@ export const meResponseSchema = z.object({
   homeLeagueId: idSchema.nullable(),
   leagues: z.array(leagueSummarySchema),
   avatar: portraitSchema.nullable(),
-  avatarFrame: cosmeticItemIdSchema.nullable(),
+  avatarFrame: storedCosmeticItemIdSchema,
 })
 
 export type MeResponse = z.infer<typeof meResponseSchema>
