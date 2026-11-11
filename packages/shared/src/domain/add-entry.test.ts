@@ -41,20 +41,15 @@ describe('shotStripStatus', () => {
     const s = shotStripStatus({ quota: limited(2, 8), draftCount: 0, shotCount: 3 })
     expect([s.left, s.canShoot, s.chip]).toEqual([0, false, { kind: 'places', left: 0 }])
   })
-  it('caps an admin at 30 per batch, drafts included', () => {
-    const s = shotStripStatus({ quota: admin(0), draftCount: 3, shotCount: 2 })
-    expect([s.left, s.chip, s.continueCount]).toEqual([25, { kind: 'batch', left: 25, max: 30 }, 5])
-  })
-  it('stops an admin at a full batch', () => {
-    const s = shotStripStatus({ quota: admin(12), draftCount: 10, shotCount: 20 })
-    expect([s.left, s.canShoot, s.block]).toEqual([0, false, 'batch'])
-  })
-  it('admin with 35 drafts has no room', () => {
-    const s = shotStripStatus({ quota: admin(35), draftCount: 35, shotCount: 0 })
-    expect([s.left, s.chip, s.continueCount]).toEqual([0, { kind: 'batch', left: 0, max: 30 }, 35])
-  })
-  it('admin with 35 drafts is blocked by the batch', () => {
-    expect(shotStripStatus({ quota: admin(35), draftCount: 35, shotCount: 0 }).block).toBe('batch')
+  it('never caps an admin, whatever the drafts and shots', () => {
+    const s = shotStripStatus({ quota: admin(120), draftCount: 80, shotCount: 40 })
+    expect([s.left, s.chip, s.canShoot, s.continueCount, s.block]).toEqual([
+      Number.POSITIVE_INFINITY,
+      { kind: 'unlimited' },
+      true,
+      120,
+      null,
+    ])
   })
 })
 

@@ -36,7 +36,7 @@ const SHUTTER_MODES: Record<CameraPhase, ShutterMode> = {
 }
 
 function chipTone(chip: ShotChip): string {
-  if (chip.kind === 'batch') return 'text-tier-legendary'
+  if (chip.kind === 'unlimited') return 'text-tier-legendary'
   return chip.left === 0 ? 'text-danger' : 'text-ink-2'
 }
 
@@ -72,9 +72,7 @@ export function CameraStart({ leagueId, session, drafts }: CameraStartProps) {
   const handlePick = (files: File[]): void => {
     const { accepted, skipped } = fitShots(status.left, files.length)
     strip.add(files.slice(0, accepted))
-    setStripOverflow(
-      skipped > 0 ? { kind: quota.unlimited ? 'batch' : 'dailyQuota', skipped, accepted } : null,
-    )
+    setStripOverflow(skipped > 0 ? { kind: 'dailyQuota', skipped, accepted } : null)
   }
 
   const handleShutter = async (): Promise<void> => {

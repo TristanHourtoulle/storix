@@ -43,28 +43,6 @@ export async function countUploadsSince(
   return rows[0]?.total ?? 0
 }
 
-/** Counts the member's open drafts: uploads not yet published, discarded or rejected, pending ones since `pendingSince`. */
-export async function countOpenDrafts(
-  db: DbExecutor,
-  input: { leagueId: string; userId: string; pendingSince: Date },
-): Promise<number> {
-  const rows = await db
-    .select({ total: count() })
-    .from(uploads)
-    .where(
-      and(
-        eq(uploads.kind, 'card'),
-        eq(uploads.leagueId, input.leagueId),
-        eq(uploads.userId, input.userId),
-        or(
-          inArray(uploads.status, ['uploaded', 'processing', 'staged']),
-          and(eq(uploads.status, 'pending'), gte(uploads.createdAt, input.pendingSince)),
-        ),
-      ),
-    )
-  return rows[0]?.total ?? 0
-}
-
 /** Inserts a pending upload. */
 export async function insertUpload(
   db: DbExecutor,

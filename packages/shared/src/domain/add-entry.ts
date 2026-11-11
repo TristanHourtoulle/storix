@@ -1,10 +1,8 @@
-import { MAX_PUBLISH_BATCH } from './upload-drafts'
 import type { UploadQuotaStatus } from './uploads'
 
-export type ShotChip =
-  { kind: 'places'; left: number } | { kind: 'batch'; left: number; max: number }
+export type ShotChip = { kind: 'places'; left: number } | { kind: 'unlimited' }
 
-export type ShotBlock = 'quota' | 'batch'
+export type ShotBlock = 'quota'
 
 export interface ShotStripInput {
   quota: UploadQuotaStatus
@@ -23,18 +21,14 @@ export interface ShotStripStatus {
 /** Derives what the camera start screen can still take and shows, from the quota, drafts and shots. */
 export function shotStripStatus(input: ShotStripInput): ShotStripStatus {
   const { quota, draftCount, shotCount } = input
-  const left = quota.unlimited
-    ? Math.max(0, MAX_PUBLISH_BATCH - draftCount - shotCount)
-    : Math.max(0, quota.remaining - shotCount)
-  const chip: ShotChip = quota.unlimited
-    ? { kind: 'batch', left, max: MAX_PUBLISH_BATCH }
-    : { kind: 'places', left }
+  const left = quota.unlimited ? Number.POSITIVE_INFINITY : Math.max(0, quota.remaining - shotCount)
+  const chip: ShotChip = quota.unlimited ? { kind: 'unlimited' } : { kind: 'places', left }
   return {
     left,
     chip,
     canShoot: left > 0,
     continueCount: draftCount + shotCount,
-    block: left > 0 ? null : quota.unlimited ? 'batch' : 'quota',
+    block: left > 0 ? null : 'quota',
   }
 }
 

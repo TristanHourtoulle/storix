@@ -51,9 +51,6 @@ const MESSAGES: Record<ErrorCode, string> = {
 
 function quotaExceededMessage(details: Readonly<Record<string, unknown>> | undefined): string {
   const limit = details?.limit
-  if (details?.batch === true && typeof limit === 'number') {
-    return `${limit} photos max par envoi : publie ou retire ton brouillon pour en ajouter.`
-  }
   return typeof limit === 'number' && Number.isInteger(limit) && limit > 0
     ? `Tu as atteint ta limite de ${limit} photo${limit > 1 ? 's' : ''} aujourd'hui.`
     : MESSAGES.UPLOAD_QUOTA_EXCEEDED

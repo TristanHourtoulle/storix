@@ -1,6 +1,6 @@
-import { MAX_PUBLISH_BATCH, type UploadQuota } from '@storix/shared'
+import type { UploadQuota } from '@storix/shared'
 
-export type CapacityKind = 'dailyQuota' | 'batch'
+export type CapacityKind = 'dailyQuota' | 'unlimited'
 
 export interface DraftCapacity {
   kind: CapacityKind
@@ -13,12 +13,9 @@ export interface DraftOverflow {
   accepted: number
 }
 
-/** Stack size cap for admins and owners, whose daily quota is unlimited (R16). */
-export const UNLIMITED_BATCH_SIZE = MAX_PUBLISH_BATCH
-
-/** Derives the draft capacity: the remaining daily quota, or one batch for unlimited roles. */
+/** Derives the draft capacity: the remaining daily quota, or no cap for admins and owners (R16). */
 export function draftCapacityOf(quota: UploadQuota): DraftCapacity {
   return quota.unlimited
-    ? { kind: 'batch', slots: UNLIMITED_BATCH_SIZE }
+    ? { kind: 'unlimited', slots: Number.POSITIVE_INFINITY }
     : { kind: 'dailyQuota', slots: quota.remaining }
 }

@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { Database, DbExecutor } from '@storix/db'
 import {
-  MAX_PUBLISH_BATCH,
   checkUploadQuota,
   isUploadQuotaExempt,
   isUploadReservationExpired,
@@ -29,7 +28,6 @@ import type { Membership } from '../leagues/leagues.service'
 import { assertTaggedMembers } from './assert-tagged-members'
 import { toUploadState } from './upload-state'
 import {
-  countOpenDrafts,
   countUploadsSince,
   findUpload,
   insertUpload,
@@ -72,21 +70,6 @@ async function assertQuotaAvailable(db: DbExecutor, m: Membership, now: Date): P
   }
 }
 
-async function assertBatchAvailable(db: DbExecutor, m: Membership, now: Date): Promise<void> {
-  const open = await countOpenDrafts(db, {
-    leagueId: m.leagueId,
-    userId: m.userId,
-    pendingSince: uploadReservationCutoff(now),
-  })
-  if (open >= MAX_PUBLISH_BATCH) {
-    throw new AppError('UPLOAD_QUOTA_EXCEEDED', 429, 'Open draft batch is full', {
-      limit: MAX_PUBLISH_BATCH,
-      remaining: 0,
-      batch: true,
-    })
-  }
-}
-
 /** Builds the uploads service handling presigned uploads, the daily quota and completion. */
 export function createUploadsService(deps: {
   db: Database
@@ -124,8 +107,7 @@ export function createUploadsService(deps: {
       await runInTransaction(db, async (tx) => {
         const role = await lockMemberRole(tx, m.leagueId, m.userId)
         if (role === null) throw notFound()
-        if (isUploadQuotaExempt(role)) await assertBatchAvailable(tx, m, now)
-        else await assertQuotaAvailable(tx, m, now)
+        if (!isUploadQuotaExempt(role)) await assertQuotaAvailable(tx, m, now)
         await insertUpload(tx, { id: uploadId, leagueId: m.leagueId, userId: m.userId, objectKey })
       })
       return {

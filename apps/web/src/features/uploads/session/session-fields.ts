@@ -49,9 +49,9 @@ export function changedFields(sent: DraftFields, current: DraftFields): EditUplo
   return Object.keys(body).length > 0 ? body : null
 }
 
-/** Counts the cards that take a slot of the capacity: every card for a batch, unreserved ones for the daily quota. */
+/** Counts the cards that take a slot of the capacity: every card when unlimited, unreserved ones for the daily quota. */
 export function slotsUsed(cards: readonly StackCard[], capacity: DraftCapacity): number {
-  if (capacity.kind === 'batch') return cards.length
+  if (capacity.kind === 'unlimited') return cards.length
   return cards.filter(
     (card) => card.uploadId === null && card.phase !== 'error' && card.phase !== 'duplicate',
   ).length
