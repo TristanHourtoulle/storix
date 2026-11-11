@@ -36,6 +36,9 @@ import { Route as AuthedLLeagueIdProfileNouveautesRouteImport } from './routes/_
 import { Route as AuthedLLeagueIdProfilePhotoRouteImport } from './routes/_authed/l.$leagueId.profile.photo'
 import { Route as AuthedLLeagueIdProfilePseudoRouteImport } from './routes/_authed/l.$leagueId.profile.pseudo'
 import { Route as AuthedLLeagueIdProfileSonsRouteImport } from './routes/_authed/l.$leagueId.profile.sons'
+import { Route as AuthedLLeagueIdProfileStyleRouteImport } from './routes/_authed/l.$leagueId.profile.style'
+import { Route as AuthedLLeagueIdShopIndexRouteImport } from './routes/_authed/l.$leagueId.shop.index'
+import { Route as AuthedLLeagueIdShopTryCategoryRouteImport } from './routes/_authed/l.$leagueId.shop.try.$category'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -184,6 +187,24 @@ const AuthedLLeagueIdProfileSonsRoute =
     path: '/profile/sons',
     getParentRoute: () => AuthedLLeagueIdRoute,
   } as any)
+const AuthedLLeagueIdProfileStyleRoute =
+  AuthedLLeagueIdProfileStyleRouteImport.update({
+    id: '/profile/style',
+    path: '/profile/style',
+    getParentRoute: () => AuthedLLeagueIdRoute,
+  } as any)
+const AuthedLLeagueIdShopIndexRoute =
+  AuthedLLeagueIdShopIndexRouteImport.update({
+    id: '/shop/',
+    path: '/shop/',
+    getParentRoute: () => AuthedLLeagueIdRoute,
+  } as any)
+const AuthedLLeagueIdShopTryCategoryRoute =
+  AuthedLLeagueIdShopTryCategoryRouteImport.update({
+    id: '/shop/try/$category',
+    path: '/shop/try/$category',
+    getParentRoute: () => AuthedLLeagueIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
@@ -210,8 +231,11 @@ export interface FileRoutesByFullPath {
   '/l/$leagueId/profile/photo': typeof AuthedLLeagueIdProfilePhotoRoute
   '/l/$leagueId/profile/pseudo': typeof AuthedLLeagueIdProfilePseudoRoute
   '/l/$leagueId/profile/sons': typeof AuthedLLeagueIdProfileSonsRoute
+  '/l/$leagueId/profile/style': typeof AuthedLLeagueIdProfileStyleRoute
   '/l/$leagueId/members/': typeof AuthedLLeagueIdMembersIndexRoute
   '/l/$leagueId/profile/': typeof AuthedLLeagueIdProfileIndexRoute
+  '/l/$leagueId/shop/': typeof AuthedLLeagueIdShopIndexRoute
+  '/l/$leagueId/shop/try/$category': typeof AuthedLLeagueIdShopTryCategoryRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -237,8 +261,11 @@ export interface FileRoutesByTo {
   '/l/$leagueId/profile/photo': typeof AuthedLLeagueIdProfilePhotoRoute
   '/l/$leagueId/profile/pseudo': typeof AuthedLLeagueIdProfilePseudoRoute
   '/l/$leagueId/profile/sons': typeof AuthedLLeagueIdProfileSonsRoute
+  '/l/$leagueId/profile/style': typeof AuthedLLeagueIdProfileStyleRoute
   '/l/$leagueId/members': typeof AuthedLLeagueIdMembersIndexRoute
   '/l/$leagueId/profile': typeof AuthedLLeagueIdProfileIndexRoute
+  '/l/$leagueId/shop': typeof AuthedLLeagueIdShopIndexRoute
+  '/l/$leagueId/shop/try/$category': typeof AuthedLLeagueIdShopTryCategoryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -267,8 +294,11 @@ export interface FileRoutesById {
   '/_authed/l/$leagueId/profile/photo': typeof AuthedLLeagueIdProfilePhotoRoute
   '/_authed/l/$leagueId/profile/pseudo': typeof AuthedLLeagueIdProfilePseudoRoute
   '/_authed/l/$leagueId/profile/sons': typeof AuthedLLeagueIdProfileSonsRoute
+  '/_authed/l/$leagueId/profile/style': typeof AuthedLLeagueIdProfileStyleRoute
   '/_authed/l/$leagueId/members/': typeof AuthedLLeagueIdMembersIndexRoute
   '/_authed/l/$leagueId/profile/': typeof AuthedLLeagueIdProfileIndexRoute
+  '/_authed/l/$leagueId/shop/': typeof AuthedLLeagueIdShopIndexRoute
+  '/_authed/l/$leagueId/shop/try/$category': typeof AuthedLLeagueIdShopTryCategoryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -297,8 +327,11 @@ export interface FileRouteTypes {
     | '/l/$leagueId/profile/photo'
     | '/l/$leagueId/profile/pseudo'
     | '/l/$leagueId/profile/sons'
+    | '/l/$leagueId/profile/style'
     | '/l/$leagueId/members/'
     | '/l/$leagueId/profile/'
+    | '/l/$leagueId/shop/'
+    | '/l/$leagueId/shop/try/$category'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -324,8 +357,11 @@ export interface FileRouteTypes {
     | '/l/$leagueId/profile/photo'
     | '/l/$leagueId/profile/pseudo'
     | '/l/$leagueId/profile/sons'
+    | '/l/$leagueId/profile/style'
     | '/l/$leagueId/members'
     | '/l/$leagueId/profile'
+    | '/l/$leagueId/shop'
+    | '/l/$leagueId/shop/try/$category'
   id:
     | '__root__'
     | '/_authed'
@@ -353,8 +389,11 @@ export interface FileRouteTypes {
     | '/_authed/l/$leagueId/profile/photo'
     | '/_authed/l/$leagueId/profile/pseudo'
     | '/_authed/l/$leagueId/profile/sons'
+    | '/_authed/l/$leagueId/profile/style'
     | '/_authed/l/$leagueId/members/'
     | '/_authed/l/$leagueId/profile/'
+    | '/_authed/l/$leagueId/shop/'
+    | '/_authed/l/$leagueId/shop/try/$category'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -555,6 +594,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedLLeagueIdProfileSonsRouteImport
       parentRoute: typeof AuthedLLeagueIdRoute
     }
+    '/_authed/l/$leagueId/profile/style': {
+      id: '/_authed/l/$leagueId/profile/style'
+      path: '/profile/style'
+      fullPath: '/l/$leagueId/profile/style'
+      preLoaderRoute: typeof AuthedLLeagueIdProfileStyleRouteImport
+      parentRoute: typeof AuthedLLeagueIdRoute
+    }
+    '/_authed/l/$leagueId/shop/': {
+      id: '/_authed/l/$leagueId/shop/'
+      path: '/shop'
+      fullPath: '/l/$leagueId/shop/'
+      preLoaderRoute: typeof AuthedLLeagueIdShopIndexRouteImport
+      parentRoute: typeof AuthedLLeagueIdRoute
+    }
+    '/_authed/l/$leagueId/shop/try/$category': {
+      id: '/_authed/l/$leagueId/shop/try/$category'
+      path: '/shop/try/$category'
+      fullPath: '/l/$leagueId/shop/try/$category'
+      preLoaderRoute: typeof AuthedLLeagueIdShopTryCategoryRouteImport
+      parentRoute: typeof AuthedLLeagueIdRoute
+    }
   }
 }
 
@@ -577,8 +637,11 @@ interface AuthedLLeagueIdRouteChildren {
   AuthedLLeagueIdProfilePhotoRoute: typeof AuthedLLeagueIdProfilePhotoRoute
   AuthedLLeagueIdProfilePseudoRoute: typeof AuthedLLeagueIdProfilePseudoRoute
   AuthedLLeagueIdProfileSonsRoute: typeof AuthedLLeagueIdProfileSonsRoute
+  AuthedLLeagueIdProfileStyleRoute: typeof AuthedLLeagueIdProfileStyleRoute
   AuthedLLeagueIdMembersIndexRoute: typeof AuthedLLeagueIdMembersIndexRoute
   AuthedLLeagueIdProfileIndexRoute: typeof AuthedLLeagueIdProfileIndexRoute
+  AuthedLLeagueIdShopIndexRoute: typeof AuthedLLeagueIdShopIndexRoute
+  AuthedLLeagueIdShopTryCategoryRoute: typeof AuthedLLeagueIdShopTryCategoryRoute
 }
 
 const AuthedLLeagueIdRouteChildren: AuthedLLeagueIdRouteChildren = {
@@ -601,8 +664,11 @@ const AuthedLLeagueIdRouteChildren: AuthedLLeagueIdRouteChildren = {
   AuthedLLeagueIdProfilePhotoRoute: AuthedLLeagueIdProfilePhotoRoute,
   AuthedLLeagueIdProfilePseudoRoute: AuthedLLeagueIdProfilePseudoRoute,
   AuthedLLeagueIdProfileSonsRoute: AuthedLLeagueIdProfileSonsRoute,
+  AuthedLLeagueIdProfileStyleRoute: AuthedLLeagueIdProfileStyleRoute,
   AuthedLLeagueIdMembersIndexRoute: AuthedLLeagueIdMembersIndexRoute,
   AuthedLLeagueIdProfileIndexRoute: AuthedLLeagueIdProfileIndexRoute,
+  AuthedLLeagueIdShopIndexRoute: AuthedLLeagueIdShopIndexRoute,
+  AuthedLLeagueIdShopTryCategoryRoute: AuthedLLeagueIdShopTryCategoryRoute,
 }
 
 const AuthedLLeagueIdRouteWithChildren = AuthedLLeagueIdRoute._addFileChildren(

@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { Icon } from './icon'
 
-type NavSection = 'home' | 'collection' | 'add' | 'profile'
+export type NavSection = 'home' | 'collection' | 'add' | 'shop' | 'profile'
 
 interface BottomNavProps {
   leagueId: string
@@ -51,11 +51,15 @@ export function BottomNav({ leagueId, active, hasProfileBadge = false }: BottomN
           <Icon name="plus" />
         </span>
       </Link>
-      <div aria-disabled="true" className={`${ITEM} text-faint opacity-40`}>
-        <Icon name="trade" />
-        <span>Échanges</span>
-        <span className="-mt-1 text-[9px]">bientôt</span>
-      </div>
+      <Link
+        to="/l/$leagueId/shop"
+        params={{ leagueId }}
+        aria-current={current('shop')}
+        className={`${ITEM} ${tone('shop')}`}
+      >
+        <Icon name="shop" />
+        <span>Boutique</span>
+      </Link>
       <Link
         to="/l/$leagueId/profile"
         params={{ leagueId }}

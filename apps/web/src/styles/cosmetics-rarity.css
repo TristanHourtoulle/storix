@@ -154,4 +154,39 @@
     border-radius: 0;
     box-shadow: none;
   }
+
+  .hmc.rs-neon {
+    box-shadow:
+      0 0 0 1px var(--tc),
+      0 0 0 3px var(--color-bg),
+      0 0 0 4px var(--tc),
+      0 0 10px var(--tc);
+  }
+  .hmc.rs-gemmes {
+    border: 2.5px solid transparent;
+    background:
+      linear-gradient(170deg, #2e2550, #1a2c44 60%, #10161f) padding-box,
+      conic-gradient(
+          from 30deg,
+          var(--tc),
+          #ffffffcc 8%,
+          var(--tc-deep) 20%,
+          var(--tc) 34%,
+          #ffffffaa 44%,
+          var(--tc-deep) 58%,
+          var(--tc) 72%,
+          #ffffffcc 82%,
+          var(--tc-deep) 92%,
+          var(--tc)
+        )
+        border-box;
+    box-shadow: 0 0 8px color-mix(in srgb, var(--tc) 35%, transparent);
+  }
+  .hmc.rs-filet {
+    border-radius: 4px;
+    box-shadow:
+      0 0 0 1px var(--tc),
+      0 0 0 3px var(--color-bg),
+      0 0 0 4px color-mix(in srgb, var(--tc) 70%, transparent);
+  }
 }

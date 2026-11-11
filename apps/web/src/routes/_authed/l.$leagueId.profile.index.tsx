@@ -134,6 +134,16 @@ function Profile() {
             />
           </Link>
         </li>
+        <li>
+          <Link to="/l/$leagueId/profile/style" params={params} className={settingsRowClassName()}>
+            <SettingsRowContent
+              icon="gem"
+              label="Mon style"
+              hint="Boosters, dos, raretés, cadre et aura"
+              hasChevron
+            />
+          </Link>
+        </li>
       </SettingsGroup>
       <SettingsGroup title="Mon compte">
         <li>

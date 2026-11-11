@@ -1,5 +1,8 @@
 import type { CSSProperties } from 'react'
 import type { CardTier, CollectionCard } from '@storix/shared'
+import { raritySetClass } from '@/features/cosmetics/cosmetic-skins'
+import { DEFAULT_RARITY_PALETTE } from '@/features/cosmetics/rarity-palettes'
+import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { CardImage } from './card-image'
 import { TIER_COLOR_VAR } from '../tier-labels'
 import { useThumbhashUrl } from '../use-thumbhash-url'
@@ -22,7 +25,7 @@ function BlurredFill({ thumbhash }: { thumbhash: string }) {
   )
 }
 
-/** A card in miniature ringed in a tier colour: its photo when visible, a blur when locked, a neutral tile once removed. */
+/** A card in miniature ringed in a tier colour, in the worn rarity set: its photo when visible, a blur when locked, a neutral tile once removed. */
 export function MiniCard({
   card,
   tier,
@@ -30,8 +33,12 @@ export function MiniCard({
   isFoil = false,
   isDiscovery = false,
 }: MiniCardProps) {
-  const classes = ['hmc', isFoil ? 'is-foil' : '', card === null ? 'is-removed' : '']
-  const style = { '--tc': TIER_COLOR_VAR[tier] } as CSSProperties
+  const raritySet = raritySetClass(useEquippedStyle().raritySet)
+  const classes = ['hmc', raritySet, isFoil ? 'is-foil' : '', card === null ? 'is-removed' : '']
+  const style = {
+    '--tc': TIER_COLOR_VAR[tier],
+    '--tc-deep': DEFAULT_RARITY_PALETTE.tiers[tier].deep,
+  } as CSSProperties
   return (
     <span className={classes.filter(Boolean).join(' ')} style={style}>
       {card === null ? (
