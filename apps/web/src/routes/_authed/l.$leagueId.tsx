@@ -1,5 +1,5 @@
 import { Outlet, createFileRoute, redirect, useMatchRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { BottomNav } from '@/components/ui/bottom-nav'
 import { PasskeyPrompt } from '@/features/auth/components/passkey-prompt'
 import { IosInstallHint } from '@/features/pwa/components/ios-install-hint'
@@ -20,6 +20,7 @@ import { WhatsNewGate } from '@/features/whats-new/components/whats-new-gate'
 import { wasAutoShown } from '@/features/whats-new/news-session'
 import { useWhatsNew } from '@/features/whats-new/use-whats-new'
 import { useHeightVar } from '@/lib/use-height-var'
+import { useViewportHeal } from '@/lib/use-viewport-heal'
 
 export const Route = createFileRoute('/_authed/l/$leagueId')({
   loader: async ({ context, params, preload }) => {
@@ -43,6 +44,8 @@ function LeagueLayout() {
   useRemovedCardsSync(me.user.id, leagueId)
   usePortraitCachePruning(leagueId)
   const navStackRef = useHeightVar('--nav-stack-h')
+  const shellRef = useRef<HTMLDivElement>(null)
+  useViewportHeal(shellRef)
   useCollectionVisitTracker(me.user.id, leagueId)
   const { hasUnseen } = useWhatsNew()
   const [isNewsOpen, setIsNewsOpen] = useState(false)
@@ -70,7 +73,7 @@ function LeagueLayout() {
         : 'home'
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div ref={shellRef} className="flex min-h-dvh flex-col">
       <div className="isolate flex flex-1 flex-col">
         <Outlet />
       </div>
