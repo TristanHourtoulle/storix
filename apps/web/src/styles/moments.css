@@ -478,6 +478,9 @@
     color: var(--color-muted);
   }
   .moment-mcard-band small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font: 600 10px var(--font-display);
     letter-spacing: 0.1em;
     text-transform: uppercase;
