@@ -9,11 +9,17 @@ export const cosmeticSlotSchema = z.enum(COSMETIC_SLOTS)
 export const storedCosmeticItemIdSchema = cosmeticItemIdSchema.nullable().catch(null)
 
 /** Owned item ids read back from the server, dropping ids this client does not know. */
-export const ownedCosmeticItemIdsSchema = z.array(z.string()).transform((ids) =>
-  ids.flatMap((id) => {
-    const parsed = cosmeticItemIdSchema.safeParse(id)
-    return parsed.success ? [parsed.data] : []
-  }),
+export const ownedCosmeticItemIdsSchema = z.codec(
+  z.array(z.string()),
+  z.array(cosmeticItemIdSchema),
+  {
+    decode: (ids) =>
+      ids.flatMap((id) => {
+        const parsed = cosmeticItemIdSchema.safeParse(id)
+        return parsed.success ? [parsed.data] : []
+      }),
+    encode: (ids) => ids,
+  },
 )
 
 export const equippedCosmeticsSchema = z.object({
