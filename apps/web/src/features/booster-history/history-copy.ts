@@ -26,8 +26,9 @@ export function openingTime(iso: string): string {
 export function pullOutcomeLabel(pull: BoosterHistoryPull): string {
   if (pull.outcome === 'new') return pull.isDiscovery ? 'découverte' : 'nouvelle'
   if (pull.outcome === 'upgraded') return 'améliorée'
+  if (pull.dust > 0) return `+${pull.dust} paillettes`
   if (pull.stackCount !== null) return `doublon ×${pull.stackCount}`
-  return pull.dust > 0 ? `+${pull.dust} paillettes` : 'doublon'
+  return 'doublon'
 }
 
 /** The pull's card title when the viewer may see it. */

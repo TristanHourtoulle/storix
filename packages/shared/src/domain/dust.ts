@@ -1,4 +1,4 @@
-import { type CardTier, tierRank } from './cards'
+import { type CardTier, maxTier, tierRank } from './cards'
 
 export const COPY_VARIANTS = ['normal', 'foil'] as const
 
@@ -36,6 +36,7 @@ export interface CopySettlement {
   outcome: PulledCopyOutcome
   stacked: StackedCopy | null
   stackCountAfter: number | null
+  dust: number
   isFirstCopyOfCard: boolean
 }
 
@@ -67,22 +68,26 @@ export function copyKey(cardId: string, variant: CopyVariant): string {
 
 /**
  * Decides what happens to a pulled copy against the owned copy of the same variant: it replaces that
- * copy only above its value tier, the displaced copy then stacking at its value tier.
+ * copy only above its value tier, the displaced copy then stacking at its value tier. Every stacked
+ * copy grants dust: a duplicate is valued at the higher of its tier and the owned value tier, so a
+ * promoted card keeps paying at its personal rarity; a displaced copy is valued at its value tier.
  */
 export function resolvePulledCopy(
   owned: OwnedPullTarget | null,
   pulled: StackedCopy,
-): { outcome: PulledCopyOutcome; stacked: StackedCopy | null } {
-  if (owned === null) return { outcome: 'new', stacked: null }
+): { outcome: PulledCopyOutcome; stacked: StackedCopy | null; dust: number } {
+  if (owned === null) return { outcome: 'new', stacked: null, dust: 0 }
   if (tierRank(pulled.tierAtMint) > tierRank(owned.valueTier)) {
     return {
       outcome: 'upgraded',
       stacked: { tierAtMint: owned.valueTier, variant: pulled.variant },
+      dust: dustValue(owned.valueTier, pulled.variant),
     }
   }
   return {
     outcome: 'duplicate',
     stacked: { tierAtMint: pulled.tierAtMint, variant: pulled.variant },
+    dust: dustValue(maxTier(pulled.tierAtMint, owned.valueTier), pulled.variant),
   }
 }
 
@@ -109,7 +114,7 @@ export function settleBoosterCopies(
     const current = acc.owned.get(key) ?? null
     const isFirstCopyOfCard =
       !acc.owned.has(copyKey(pull.cardId, 'normal')) && !acc.owned.has(copyKey(pull.cardId, 'foil'))
-    const { outcome, stacked } = resolvePulledCopy(current, {
+    const { outcome, stacked, dust } = resolvePulledCopy(current, {
       tierAtMint: pull.tier,
       variant: pull.variant,
     })
@@ -129,6 +134,7 @@ export function settleBoosterCopies(
       outcome,
       stacked,
       stackCountAfter,
+      dust,
       isFirstCopyOfCard,
     }
     return {
