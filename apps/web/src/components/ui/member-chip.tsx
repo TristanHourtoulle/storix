@@ -1,9 +1,10 @@
-import type { Portrait } from '@storix/shared'
+import type { CosmeticItemId, Portrait } from '@storix/shared'
 import { Avatar } from './avatar'
 
 interface MemberChipProps {
   label: string
   portrait?: Portrait | null
+  frame?: CosmeticItemId | null
   isAll?: boolean
   isOn: boolean
   onToggle: () => void
@@ -13,6 +14,7 @@ interface MemberChipProps {
 export function MemberChip({
   label,
   portrait = null,
+  frame = null,
   isAll = false,
   isOn,
   onToggle,
@@ -24,7 +26,7 @@ export function MemberChip({
           ·
         </span>
       ) : (
-        <Avatar label={label} portrait={portrait} size="xs" isTinted />
+        <Avatar label={label} portrait={portrait} frame={frame} size="xs" isTinted />
       )}
       {label}
     </button>

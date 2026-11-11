@@ -1,6 +1,7 @@
 import {
   CARD_TIERS,
   LEAGUE_ROLES,
+  findCosmetic,
   formatMomentLateness,
   type AuditAction,
   type AuditCategory,
@@ -10,6 +11,7 @@ import {
 } from '@storix/shared'
 import type { IconName } from '@/components/ui/icon'
 import { TIER_LABELS } from '@/features/cards/tier-labels'
+import { cosmeticFullName, formatDustPrice } from '@/features/cosmetics/cosmetic-copy'
 import { ROLE_LABELS } from '@/features/leagues/role-labels'
 import { parisClock } from '@/lib/paris-dates'
 
@@ -287,6 +289,16 @@ function economySentence(actor: SentencePart, entry: AuditEntry): AuditSentence 
         ],
       )
     }
+    case 'cosmetic.purchased': {
+      const item = findCosmetic(str(meta, 'itemId') ?? '')
+      const price = num(meta, 'price')
+      return sentence(
+        item === undefined
+          ? [actor, ' a acheté un cosmétique']
+          : [actor, ' a acheté ', { strong: cosmeticFullName(item) }],
+        price === null ? [] : [formatDustPrice(price)],
+      )
+    }
     case 'league_goal.reward_granted': {
       const boosters = num(meta, 'boosters') ?? 0
       const gifts = num(meta, 'premiumGifts') ?? 0
@@ -423,6 +435,7 @@ export function auditSentence(entry: AuditEntry): AuditSentence {
     case 'mission.claimed':
     case 'league_goal.reward_granted':
     case 'moment.posted':
+    case 'cosmetic.purchased':
       return economySentence(actor, entry)
     case 'card.created':
     case 'card.hidden':

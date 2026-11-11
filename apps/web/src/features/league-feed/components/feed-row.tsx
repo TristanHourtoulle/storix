@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   emblemDefinition,
+  type CosmeticItemId,
   type EmblemId,
   type FeedRow as FeedRowData,
   type Portrait,
@@ -39,6 +40,7 @@ interface FeedRowProps {
   row: FeedRowData
   meId: string
   avatars: ReadonlyMap<string, Portrait>
+  frames: ReadonlyMap<string, CosmeticItemId>
   onBravo: (eventId: string, bravoCount: number) => void
 }
 
@@ -195,7 +197,7 @@ function details(row: FeedRowData): string {
   return parts.join(' · ')
 }
 
-function RowIcon({ row, avatars }: Pick<FeedRowProps, 'row' | 'avatars'>) {
+function RowIcon({ row, avatars, frames }: Pick<FeedRowProps, 'row' | 'avatars' | 'frames'>) {
   if (row.kind === 'member_joined') {
     const actor = row.actors[0]
     const userId = actor?.userId ?? null
@@ -204,6 +206,7 @@ function RowIcon({ row, avatars }: Pick<FeedRowProps, 'row' | 'avatars'>) {
         <Avatar
           label={actor ? actorName(actor) : 'Ancien membre'}
           portrait={userId === null ? null : (avatars.get(userId) ?? null)}
+          frame={userId === null ? null : (frames.get(userId) ?? null)}
           size="compact"
           isTinted
         />
@@ -280,7 +283,7 @@ function RowTail({ row, tier }: { row: FeedRowData; tier: ReturnType<typeof rowT
 }
 
 /** One feed sentence: who did what, when, with the card in miniature and a Bravo on promotions. */
-export function FeedRow({ leagueId, row, meId, avatars, onBravo }: FeedRowProps) {
+export function FeedRow({ leagueId, row, meId, avatars, frames, onBravo }: FeedRowProps) {
   const tier = rowTier(row)
   const classes = [
     'feed-act',
@@ -296,7 +299,7 @@ export function FeedRow({ leagueId, row, meId, avatars, onBravo }: FeedRowProps)
       className={classes.filter(Boolean).join(' ')}
       style={GOAL_KINDS.has(row.kind) ? GOAL_TONE : tierColorStyle(tier)}
     >
-      <RowIcon row={row} avatars={avatars} />
+      <RowIcon row={row} avatars={avatars} frames={frames} />
       <span className="feed-txt">
         <RowLink leagueId={leagueId} row={row}>
           {sentence(row)}

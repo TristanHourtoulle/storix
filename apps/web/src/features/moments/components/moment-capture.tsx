@@ -1,9 +1,10 @@
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { userMessage } from '@/features/errors/user-message'
 import { CAMERA_COPY } from '@/features/uploads/camera/camera-copy'
 import type { CameraStream } from '@/features/uploads/camera/camera-types'
-import { clockLabel, countdownLabel } from '../moment-copy'
+import { countdownLabel, momentAutoTitle } from '../moment-copy'
 import { currentMomentQueryOptions } from '../moments.queries'
 import { useMomentCapture, type MomentShot } from '../use-moment-capture'
 import { useNow } from '../use-now'
@@ -12,7 +13,6 @@ import { MomentPreview } from './moment-preview'
 
 interface MomentCaptureProps {
   leagueId: string
-  authorName: string
 }
 
 function MomentTimer({ leagueId }: { leagueId: string }) {
@@ -83,22 +83,28 @@ function FrozenShot({ shot, className }: { shot: MomentShot; className: string }
 }
 
 /** The Moment capture screen: back photo, split screen with the 3-2-1 selfie, preview and publication. */
-export function MomentCapture({ leagueId, authorName }: MomentCaptureProps) {
+export function MomentCapture({ leagueId }: MomentCaptureProps) {
   const post = usePostMoment(leagueId)
   const capture = useMomentCapture(true, post.reserve)
+  const { data: moment } = useQuery(currentMomentQueryOptions(leagueId))
+  const [title, setTitle] = useState('')
   const { step, camera, back, front, countdown } = capture
 
   if (step === 'preview' && back !== null && front !== null) {
+    const capturedAt = new Date(back.file.lastModified)
     return (
       <MomentPreview
         leagueId={leagueId}
         back={back}
         front={front}
-        stamp={`${authorName} · ${clockLabel(new Date(back.file.lastModified))}`}
+        autoTitle={momentAutoTitle(moment === undefined ? capturedAt : new Date(moment.firesAt))}
+        title={title}
+        isLate={moment !== undefined && capturedAt > new Date(moment.windowEndsAt)}
         result={post.data ?? null}
         isPublishing={post.isPending}
         error={post.error === null ? null : userMessage(post.error)}
-        onPublish={() => post.mutate({ back: back.file, front: front.file })}
+        onTitleChange={setTitle}
+        onPublish={() => post.mutate({ back: back.file, front: front.file, title })}
         onRetake={() => {
           post.reset()
           capture.retake()

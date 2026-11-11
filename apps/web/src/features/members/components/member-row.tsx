@@ -29,7 +29,11 @@ export function MemberRow({
   return (
     <li className="flex flex-col gap-3 rounded-input bg-surface p-3 shadow-hairline">
       <div className="flex items-center gap-3">
-        <Avatar label={member.displayUsername} portrait={member.avatar} />
+        <Avatar
+          label={member.displayUsername}
+          portrait={member.avatar}
+          frame={member.avatarFrame}
+        />
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-[15px] font-medium">{member.displayUsername}</span>
           {member.username !== null ? (

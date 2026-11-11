@@ -14,7 +14,6 @@ export const Route = createFileRoute('/_authed/l/$leagueId/moment')({
 
 function MomentRoute() {
   const { leagueId } = Route.useParams()
-  const { me } = Route.useRouteContext()
   const { data: moment } = useSuspenseQuery(currentMomentQueryOptions(leagueId))
   const [postedOnArrival] = useState(moment.post)
 
@@ -35,5 +34,5 @@ function MomentRoute() {
       </main>
     )
   }
-  return <MomentCapture leagueId={leagueId} authorName={me.user.displayUsername} />
+  return <MomentCapture leagueId={leagueId} />
 }

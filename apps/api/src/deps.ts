@@ -24,6 +24,10 @@ import { createBoostersService, type BoostersService } from './features/boosters
 import { createCardsService, type CardsService } from './features/cards/cards.service'
 import { createCopiesService, type CopiesService } from './features/copies/copies.service'
 import {
+  createCosmeticsService,
+  type CosmeticsService,
+} from './features/cosmetics/cosmetics.service'
+import {
   createEmblemAwards,
   createEmblemsService,
   type EmblemsService,
@@ -103,6 +107,7 @@ export interface Services {
   cardRemoval: CardRemoval
   cards: CardsService
   copies: CopiesService
+  cosmetics: CosmeticsService
   stacks: StacksService
   emblems: EmblemsService
   health: HealthService
@@ -172,6 +177,11 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
     cardRemoval,
     cards: createCardsService({ db: deps.db, signer: deps.mediaSigner, clock: deps.clock }),
     copies: createCopiesService({ db: deps.db, clock: deps.clock, emblems: emblemAwards }),
+    cosmetics: createCosmeticsService({
+      db: deps.db,
+      signer: deps.mediaSigner,
+      clock: deps.clock,
+    }),
     stacks: createStacksService({ db: deps.db, clock: deps.clock, emblems: emblemAwards }),
     emblems: createEmblemsService({ db: deps.db, clock: deps.clock }),
     health: createHealthService(deps.db),

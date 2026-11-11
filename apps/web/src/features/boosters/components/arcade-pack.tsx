@@ -1,3 +1,5 @@
+import { packSkinClass } from '@/features/cosmetics/cosmetic-skins'
+import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { CRACK_PATHS, PACK_TOP, PIPS_TOP, SHARDS } from '../arcade/geometry'
 
 const SPARKLE = 'M50 35Q52.25 47.75 65 50Q52.25 52.25 50 65Q47.75 52.25 35 50Q47.75 47.75 50 35Z'
@@ -10,9 +12,15 @@ interface ArcadePackProps {
   isPremium?: boolean
 }
 
-function PackArt({ label, isPremium }: { label: string; isPremium: boolean }) {
+interface PackArtProps {
+  label: string
+  isPremium: boolean
+  skin: string
+}
+
+function PackArt({ label, isPremium, skin }: PackArtProps) {
   return (
-    <div className={`ar-pack-art${isPremium ? ' is-premium' : ''}`}>
+    <div className={`ar-pack-art${isPremium ? ' is-premium' : ''}${skin ? ` ${skin}` : ''}`}>
       <div className="ar-pa-orb" />
       <div className="ar-pa-foil" />
       <div className="ar-pa-crimp is-top" />
@@ -41,11 +49,12 @@ export function ArcadePack({
   const cardsLabel = count > 1 ? `${count} cartes` : '1 carte'
   const label = subtitle ?? (isPremium ? `Premium · ${cardsLabel}` : cardsLabel)
   const premiumClass = isPremium ? ' is-premium' : ''
+  const skin = packSkinClass(useEquippedStyle().booster)
   return (
     <>
       <div className={`ar-pack-halo${premiumClass}`} style={{ top: PACK_TOP + 145 }} />
       <div className={`ar-pack-pos ar-pack-wrap${premiumClass}`} style={PACK_STYLE}>
-        <PackArt label={label} isPremium={isPremium} />
+        <PackArt label={label} isPremium={isPremium} skin={skin} />
         <svg className="ar-cracks" viewBox="0 0 200 290" aria-hidden="true">
           {CRACK_PATHS.map((group, index) => (
             <g key={index}>
@@ -71,7 +80,7 @@ export function ArcadePack({
       {SHARDS.map((poly) => (
         <div key={poly.join()} className="ar-pack-pos ar-shard" style={PACK_STYLE}>
           <div className="ar-shard-clip" style={{ clipPath: `polygon(${poly.join(', ')})` }}>
-            <PackArt label={label} isPremium={isPremium} />
+            <PackArt label={label} isPremium={isPremium} skin={skin} />
           </div>
         </div>
       ))}

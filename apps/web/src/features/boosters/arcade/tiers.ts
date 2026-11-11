@@ -1,4 +1,6 @@
 import { tierRank, type CardTier } from '@storix/shared'
+import type { RevealAuraKind } from '@/features/cosmetics/cosmetic-skins'
+import { DEFAULT_RARITY_PALETTE, type RarityPalette } from '@/features/cosmetics/rarity-palettes'
 
 export type TierKey = 'C' | 'U' | 'R' | 'E' | 'L' | 'M'
 
@@ -7,19 +9,16 @@ export interface TierFx {
   level: number
   color: string
   particles: readonly string[]
+  auraKind: RevealAuraKind | null
 }
 
-const FX: Record<CardTier, Omit<TierFx, 'level'>> = {
-  common: { key: 'C', color: '#a1a1aa', particles: ['#e4e4e7', '#a1a1aa'] },
-  uncommon: { key: 'U', color: '#4ade80', particles: ['#bbf7d0', '#4ade80'] },
-  rare: { key: 'R', color: '#60a5fa', particles: ['#bfdbfe', '#60a5fa'] },
-  epic: { key: 'E', color: '#c084fc', particles: ['#f3e8ff', '#c084fc', '#a78bfa'] },
-  legendary: { key: 'L', color: '#fbbf24', particles: ['#fff7d6', '#fcd34d', '#fbbf24'] },
-  mythic: {
-    key: 'M',
-    color: '#e879f9',
-    particles: ['#f87171', '#fbbf24', '#4ade80', '#22d3ee', '#60a5fa', '#c084fc', '#f472b6'],
-  },
+const KEYS: Readonly<Record<CardTier, TierKey>> = {
+  common: 'C',
+  uncommon: 'U',
+  rare: 'R',
+  epic: 'E',
+  legendary: 'L',
+  mythic: 'M',
 }
 
 export const BRAND_PARTICLES = ['#ffffff', '#a78bfa', '#22d3ee', '#c4b5fd'] as const
@@ -32,12 +31,20 @@ export const CONFETTI_PARTICLES = [
   '#ffffff',
 ] as const
 
-/** Returns the arcade effect settings of a tier, with its level from common (0) to mythic (5). */
-export function tierFx(tier: CardTier): TierFx {
-  return { ...FX[tier], level: tierRank(tier) }
+/**
+ * Returns the arcade effect settings of a tier, with its level from common (0) to mythic (5),
+ * and the particle shape of the worn reveal aura.
+ */
+export function tierFx(
+  tier: CardTier,
+  palette: RarityPalette = DEFAULT_RARITY_PALETTE,
+  auraKind: RevealAuraKind | null = null,
+): TierFx {
+  const { fx, particles } = palette.tiers[tier]
+  return { key: KEYS[tier], level: tierRank(tier), color: fx, particles, auraKind }
 }
 
 /** Returns the short tier key used by the arcade styles (`data-t`). */
 export function tierKey(tier: CardTier): TierKey {
-  return FX[tier].key
+  return KEYS[tier]
 }

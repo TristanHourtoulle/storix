@@ -3,6 +3,7 @@ export type IconName =
   | 'collection'
   | 'plus'
   | 'trade'
+  | 'shop'
   | 'profile'
   | 'close'
   | 'back'
@@ -59,6 +60,7 @@ const PATHS: Record<IconName, string> = {
   collection: 'M3 5h8v14H3zM13 5h8v14h-8z',
   plus: 'M12 5v14M5 12h14',
   trade: 'M4 8h14l-4-4M20 16H6l4 4',
+  shop: 'M5 8h14l-1.2 11.1a1 1 0 0 1-1 .9H7.2a1 1 0 0 1-1-.9zM9 8V7a3 3 0 0 1 6 0v1',
   profile: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
   close: 'M6 6l12 12M18 6L6 18',
   back: 'M15 5l-7 7 7 7',

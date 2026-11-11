@@ -1,5 +1,7 @@
 import type { ReactNode, Ref } from 'react'
 import type { CardMoment, CardTier } from '@storix/shared'
+import { raritySetClass } from '@/features/cosmetics/cosmetic-skins'
+import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { MomentCardOverlay } from '@/features/moments/components/moment-card-overlay'
 import { countLabel } from '../progression-copy'
 import { TIER_CLASS, TIER_LABELS } from '../tier-labels'
@@ -37,12 +39,14 @@ export function CardFace({
 }: CardFaceProps) {
   const tierLabel = isPromoted ? `${TIER_LABELS[tier]} ★` : TIER_LABELS[tier]
   const tierLine = isProvisional ? `${tierLabel} · provisoire` : tierLabel
+  const raritySet = raritySetClass(useEquippedStyle().raritySet)
 
   return (
     <div
-      className={`card ${size} ${TIER_CLASS[tier]}${isFoil ? ' foil' : ''}${moment ? ' moment' : ''} ${className}`}
+      className={`card ${size} ${TIER_CLASS[tier]}${raritySet ? ` ${raritySet}` : ''}${isFoil ? ' foil' : ''}${moment ? ' moment' : ''} ${className}`}
     >
       <div className="card-art">{children}</div>
+      {raritySet ? <span className="card-frame" aria-hidden="true" /> : null}
       <div className="card-holo" ref={holoRef} />
       {moment ? <MomentCardOverlay moment={moment} size={size} /> : null}
       <span className="card-gem" />

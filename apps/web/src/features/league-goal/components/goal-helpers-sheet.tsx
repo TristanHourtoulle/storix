@@ -31,6 +31,7 @@ export function GoalHelpersSheet({ leagueId, type, isOpen, onClose }: GoalHelper
               <Avatar
                 label={contributor.displayUsername}
                 portrait={contributor.avatar}
+                frame={contributor.avatarFrame}
                 size="compact"
                 isTinted
               />

@@ -61,18 +61,23 @@ function LeagueLayout() {
     (!onboarding.isSeen && !wasOnboardingShown(me.user.id))
   const isImmersiveScreen =
     Boolean(matchRoute({ to: '/l/$leagueId/booster', params: { leagueId } })) ||
-    Boolean(matchRoute({ to: '/l/$leagueId/moment', params: { leagueId } }))
+    Boolean(matchRoute({ to: '/l/$leagueId/moment', params: { leagueId } })) ||
+    Boolean(
+      matchRoute({ to: '/l/$leagueId/shop/try/$category', params: { leagueId }, fuzzy: true }),
+    )
   const isAddScreen = Boolean(matchRoute({ to: '/l/$leagueId/add', params: { leagueId } }))
   useViewportHeal(shellRef, '[data-nav-stack]', isImmersiveScreen || isAddScreen)
   const active = matchRoute({ to: '/l/$leagueId/collection', params: { leagueId } })
     ? 'collection'
     : matchRoute({ to: '/l/$leagueId/add', params: { leagueId } })
       ? 'add'
-      : matchRoute({ to: '/l/$leagueId/profile', params: { leagueId }, fuzzy: true }) ||
-          matchRoute({ to: '/l/$leagueId/members', params: { leagueId }, fuzzy: true }) ||
-          matchRoute({ to: '/l/$leagueId/admin', params: { leagueId } })
-        ? 'profile'
-        : 'home'
+      : matchRoute({ to: '/l/$leagueId/shop', params: { leagueId }, fuzzy: true })
+        ? 'shop'
+        : matchRoute({ to: '/l/$leagueId/profile', params: { leagueId }, fuzzy: true }) ||
+            matchRoute({ to: '/l/$leagueId/members', params: { leagueId }, fuzzy: true }) ||
+            matchRoute({ to: '/l/$leagueId/admin', params: { leagueId } })
+          ? 'profile'
+          : 'home'
 
   return (
     <div ref={shellRef} className="flex min-h-dvh flex-col">

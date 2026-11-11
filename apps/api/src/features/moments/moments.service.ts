@@ -198,7 +198,7 @@ export function createMomentsService(deps: {
         await completeMomentUploads(tx, {
           backUploadId: back.id,
           selfieUploadId: selfie.id,
-          title: momentCardTitle(slot),
+          title: body.title ?? momentCardTitle(slot),
           capturedAt: sanitizeCaptureDate(capturedAt, now),
           now,
         })

@@ -148,6 +148,13 @@
       "when": 1794389351130,
       "tag": "0020_wave7_le_moment",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794419919594,
+      "tag": "0021_wave8_boutique",
+      "breakpoints": true
     }
   ]
 }

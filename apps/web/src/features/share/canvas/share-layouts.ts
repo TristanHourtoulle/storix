@@ -9,6 +9,7 @@ import {
   type ShareBadge,
 } from '@storix/shared'
 import { formatCardNumber } from '@/features/cards/card-number'
+import type { RarityPalette } from '@/features/cosmetics/rarity-palettes'
 import type { ShareCard, ShareStyle, ShareSubject } from '../share-subject'
 import { drawBrand } from './draw-brand'
 import { drawShareCard } from './draw-card'
@@ -17,7 +18,6 @@ import {
   BODY_FONT,
   DISPLAY_FONT,
   INK,
-  TIER_HEX,
   fitText,
   roundRectPath,
   setLetterSpacing,
@@ -39,12 +39,17 @@ const PILL_GAP = 16
 const PACK_ROW_WIDTH = 200
 const PACK_ROW_GAP = 26
 
-function drawBackground(ctx: CanvasRenderingContext2D, tier: CardTier): void {
+function drawBackground(
+  ctx: CanvasRenderingContext2D,
+  tier: CardTier,
+  palette: RarityPalette,
+): void {
+  const ring = palette.tiers[tier].ring
   ctx.fillStyle = '#050508'
   ctx.fillRect(0, 0, W, H)
   const glow = ctx.createRadialGradient(W / 2, H * 0.42, 0, W / 2, H * 0.42, W * 0.8)
-  glow.addColorStop(0, withAlpha(TIER_HEX[tier], 0.32))
-  glow.addColorStop(1, withAlpha(TIER_HEX[tier], 0))
+  glow.addColorStop(0, withAlpha(ring, 0.32))
+  glow.addColorStop(1, withAlpha(ring, 0))
   ctx.fillStyle = glow
   ctx.fillRect(0, 0, W, H)
 }
@@ -53,24 +58,13 @@ function headlineFill(
   ctx: CanvasRenderingContext2D,
   tier: CardTier,
   textWidth: number,
+  palette: RarityPalette,
 ): string | CanvasGradient {
   if (tier !== 'legendary' && tier !== 'mythic') {
-    return tierRank(tier) >= tierRank('rare') ? TIER_HEX[tier] : INK
+    return tierRank(tier) >= tierRank('rare') ? palette.tiers[tier].ring : INK
   }
   const gradient = ctx.createLinearGradient(W / 2 - textWidth / 2, 0, W / 2 + textWidth / 2, 0)
-  const stops: readonly (readonly [number, string])[] =
-    tier === 'legendary'
-      ? [
-          [0, '#fcd34d'],
-          [0.5, '#fbbf24'],
-          [1, '#f59e0b'],
-        ]
-      : [
-          [0, '#f87171'],
-          [0.33, '#fbbf24'],
-          [0.66, '#22d3ee'],
-          [1, '#c084fc'],
-        ]
+  const stops = tier === 'legendary' ? palette.legendaryHeadline : palette.mythicHeadline
   stops.forEach(([offset, color]) => gradient.addColorStop(offset, color))
   return gradient
 }
@@ -81,6 +75,7 @@ function drawHeadline(
   tier: CardTier,
   y: number,
   size: number,
+  palette: RarityPalette,
 ): void {
   ctx.save()
   ctx.font = `700 ${size}px ${DISPLAY_FONT}`
@@ -88,8 +83,8 @@ function drawHeadline(
   ctx.textBaseline = 'alphabetic'
   setLetterSpacing(ctx, -1)
   const fitted = fitText(ctx, text, W - 100)
-  ctx.fillStyle = headlineFill(ctx, tier, ctx.measureText(fitted).width)
-  ctx.shadowColor = withAlpha(TIER_HEX[tier], 0.5)
+  ctx.fillStyle = headlineFill(ctx, tier, ctx.measureText(fitted).width, palette)
+  ctx.shadowColor = withAlpha(palette.tiers[tier].ring, 0.5)
   ctx.shadowBlur = 30
   ctx.fillText(fitted, W / 2, y)
   ctx.restore()
@@ -152,10 +147,11 @@ function drawCardLayout(
   ctx: CanvasRenderingContext2D,
   subject: ShareSubject,
   assets: ShareAssets,
+  palette: RarityPalette,
 ): Box {
   const { card } = subject
-  drawBackground(ctx, card.facts.tier)
-  drawShareCard(ctx, card, photoOf(assets, card), (W - 660) / 2, 110, 660)
+  drawBackground(ctx, card.facts.tier, palette)
+  drawShareCard(ctx, card, photoOf(assets, card), (W - 660) / 2, 110, 660, palette)
   return drawBrand(ctx, assets.logo, W, 1200, cardLine(subject))
 }
 
@@ -163,12 +159,13 @@ function drawFlexLayout(
   ctx: CanvasRenderingContext2D,
   subject: ShareSubject,
   assets: ShareAssets,
+  palette: RarityPalette,
 ): Box {
   const { card, origin } = subject
-  drawBackground(ctx, card.facts.tier)
-  drawHeadline(ctx, shareBanner(card.facts, origin), card.facts.tier, 128, 84)
+  drawBackground(ctx, card.facts.tier, palette)
+  drawHeadline(ctx, shareBanner(card.facts, origin), card.facts.tier, 128, 84, palette)
   drawSubline(ctx, origin.kind === 'booster' ? boosterContextLine(origin) : cardLine(subject), 186)
-  drawShareCard(ctx, card, photoOf(assets, card), (W - 560) / 2, 236, 560)
+  drawShareCard(ctx, card, photoOf(assets, card), (W - 560) / 2, 236, 560, palette)
   drawBadges(ctx, shareBadges(card.facts, origin), 1050)
   return drawBrand(ctx, assets.logo, W, 1210, leagueLine(subject))
 }
@@ -177,18 +174,19 @@ function drawPackLayout(
   ctx: CanvasRenderingContext2D,
   subject: ShareSubject,
   assets: ShareAssets,
+  palette: RarityPalette,
 ): Box {
   const pack = subject.pack && subject.pack.length > 0 ? subject.pack : [subject.card]
   const [best = subject.card, ...others] = pack
-  drawBackground(ctx, best.facts.tier)
-  drawHeadline(ctx, 'Mon booster', best.facts.tier, 118, 80)
+  drawBackground(ctx, best.facts.tier, palette)
+  drawHeadline(ctx, 'Mon booster', best.facts.tier, 118, 80, palette)
   drawSubline(ctx, packSubline(pack.length, best.facts.tierLabel), 174)
-  drawShareCard(ctx, best, photoOf(assets, best), (W - 400) / 2, 220, 400)
+  drawShareCard(ctx, best, photoOf(assets, best), (W - 400) / 2, 220, 400, palette)
   const rowWidth = others.length * PACK_ROW_WIDTH + Math.max(0, others.length - 1) * PACK_ROW_GAP
   const rowLeft = (W - rowWidth) / 2
   others.forEach((card, index) => {
     const x = rowLeft + index * (PACK_ROW_WIDTH + PACK_ROW_GAP)
-    drawShareCard(ctx, card, photoOf(assets, card), x, 830, PACK_ROW_WIDTH)
+    drawShareCard(ctx, card, photoOf(assets, card), x, 830, PACK_ROW_WIDTH, palette)
   })
   return drawBrand(ctx, assets.logo, W, 1240, leagueLine(subject))
 }
@@ -199,8 +197,9 @@ export function drawShareLayout(
   style: ShareStyle,
   subject: ShareSubject,
   assets: ShareAssets,
+  palette: RarityPalette,
 ): Box {
-  if (style === 'card') return drawCardLayout(ctx, subject, assets)
-  if (style === 'flex') return drawFlexLayout(ctx, subject, assets)
-  return drawPackLayout(ctx, subject, assets)
+  if (style === 'card') return drawCardLayout(ctx, subject, assets, palette)
+  if (style === 'flex') return drawFlexLayout(ctx, subject, assets, palette)
+  return drawPackLayout(ctx, subject, assets, palette)
 }

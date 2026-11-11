@@ -1,5 +1,13 @@
 :root {
-  --rainbow: linear-gradient(90deg, #f87171, #fbbf24, #4ade80, #22d3ee, #60a5fa, #c084fc);
+  --rainbow: linear-gradient(
+    90deg,
+    var(--rainbow-red),
+    var(--rainbow-gold),
+    var(--rainbow-green),
+    var(--rainbow-cyan),
+    var(--rainbow-blue),
+    var(--rainbow-violet)
+  );
 }
 
 @layer components {
@@ -221,13 +229,13 @@
     border-radius: 17.5px;
     background: conic-gradient(
       from var(--mythic-angle, 0deg),
-      #f87171,
-      #fbbf24,
-      #4ade80,
-      #22d3ee,
-      #60a5fa,
-      #c084fc,
-      #f87171
+      var(--rainbow-red),
+      var(--rainbow-gold),
+      var(--rainbow-green),
+      var(--rainbow-cyan),
+      var(--rainbow-blue),
+      var(--rainbow-violet),
+      var(--rainbow-red)
     );
     z-index: -1;
     animation: mythic-spin 6s linear infinite;
@@ -301,7 +309,7 @@
   animation: vitrine-pulse 1.6s ease-in-out infinite;
 }
 .vitrine-go.is-rainbow {
-  --nc: #c084fc;
+  --nc: var(--color-tier-mythic);
   background: var(--rainbow);
 }
 .vitrine-go:disabled {

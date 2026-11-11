@@ -1,4 +1,4 @@
-type ParticleKind = 'dot' | 'spark' | 'confetti'
+export type ParticleKind = 'dot' | 'spark' | 'confetti' | 'petal' | 'star' | 'flake'
 type Range = readonly [number, number]
 
 interface Particle {
@@ -56,8 +56,54 @@ function density(): number {
   return (navigator.hardwareConcurrency || 4) <= 4 ? 0.55 : 1
 }
 
+function drawPetal(g: CanvasRenderingContext2D, p: Particle): void {
+  g.beginPath()
+  g.ellipse(0, 0, p.size * 1.6, p.size * 0.8, 0, 0, TAU)
+  g.fill()
+}
+
+function drawStar(g: CanvasRenderingContext2D, p: Particle): void {
+  const outer = p.size * 1.8
+  const inner = outer * 0.42
+  g.beginPath()
+  for (let i = 0; i < 8; i++) {
+    const radius = i % 2 === 0 ? outer : inner
+    const a = (i * Math.PI) / 4
+    g.lineTo(Math.cos(a) * radius, Math.sin(a) * radius)
+  }
+  g.closePath()
+  g.fill()
+}
+
+function drawFlake(g: CanvasRenderingContext2D, p: Particle): void {
+  const arm = p.size * 1.7
+  g.lineWidth = Math.max(0.8, p.size * 0.35)
+  g.lineCap = 'round'
+  g.beginPath()
+  for (let i = 0; i < 3; i++) {
+    const a = (i * Math.PI) / 3
+    g.moveTo(Math.cos(a) * arm, Math.sin(a) * arm)
+    g.lineTo(-Math.cos(a) * arm, -Math.sin(a) * arm)
+  }
+  g.stroke()
+}
+
+const SHAPES = { petal: drawPetal, star: drawStar, flake: drawFlake } as const
+
 function draw(g: CanvasRenderingContext2D, p: Particle, k: number): void {
   const alpha = 1 - k
+  if (p.kind === 'petal' || p.kind === 'star' || p.kind === 'flake') {
+    g.globalCompositeOperation = p.kind === 'petal' ? 'source-over' : 'lighter'
+    g.globalAlpha = alpha
+    g.fillStyle = p.color
+    g.strokeStyle = p.color
+    g.save()
+    g.translate(p.x, p.y)
+    g.rotate(p.rot)
+    SHAPES[p.kind](g, p)
+    g.restore()
+    return
+  }
   if (p.kind === 'confetti') {
     g.globalCompositeOperation = 'source-over'
     g.globalAlpha = alpha

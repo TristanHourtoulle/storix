@@ -2,6 +2,8 @@ import type { BoosterPull, CardTier } from '@storix/shared'
 import type { ReactNode } from 'react'
 import { CardFace, type CardFaceProps } from '@/features/cards/components/card-face'
 import { CardImage } from '@/features/cards/components/card-image'
+import { cardBackClass, revealAuraKind } from '@/features/cosmetics/cosmetic-skins'
+import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { tierKey } from '../arcade/tiers'
 
 const SPARKLE = 'M50 35Q52.25 47.75 65 50Q52.25 52.25 50 65Q47.75 52.25 35 50Q47.75 47.75 50 35Z'
@@ -72,14 +74,18 @@ interface ArcadeCardShellProps {
 
 /** Arcade card markup (aura, rings, flipper, back and dim) around any front face. */
 export function ArcadeCardShell({ tier, front }: ArcadeCardShellProps) {
+  const style = useEquippedStyle()
+  const back = cardBackClass(style.cardBack)
+  const aura = revealAuraKind(style.revealAura)
   return (
     <div className="ar-card" data-t={tierKey(tier)}>
       <div className="ar-aura">
         <div className="ar-aura-spin" />
       </div>
+      {aura ? <div className={`ar-aura-fx is-${aura}`} aria-hidden="true" /> : null}
       <div className="ar-rings" />
       <div className="ar-flipper">
-        <div className="ar-face ar-back">
+        <div className={`ar-face ar-back${back ? ` ${back}` : ''}`}>
           <CardBackArt />
         </div>
         <div className="ar-face ar-front">{front}</div>

@@ -1,0 +1,56 @@
+@layer components {
+  .avatar-frame {
+    --av: 36px;
+    --af-gap: max(1px, calc(var(--av) * 0.05));
+    --af-ring: max(1px, calc(var(--av) * 0.034));
+    position: relative;
+    display: inline-grid;
+    flex: none;
+    border-radius: 9999px;
+  }
+  .af-couronne {
+    box-shadow:
+      0 0 0 var(--af-gap) var(--color-bg),
+      0 0 0 calc(var(--af-gap) + var(--af-ring)) #d9b45a,
+      0 0 calc(var(--av) * 0.3) #d9b45a66;
+  }
+  .af-couronne::after {
+    content: '✦';
+    position: absolute;
+    top: calc(var(--av) * -0.13);
+    right: calc(var(--av) * -0.1);
+    font-size: max(7px, calc(var(--av) * 0.27));
+    line-height: 1;
+    color: #d9b45a;
+    pointer-events: none;
+  }
+  .af-arc-en-ciel::before {
+    content: '';
+    position: absolute;
+    inset: calc(var(--af-gap) * -2);
+    border-radius: 9999px;
+    padding: max(1.5px, calc(var(--av) * 0.05));
+    background: conic-gradient(
+      var(--rainbow-red),
+      var(--rainbow-gold),
+      var(--rainbow-green),
+      var(--rainbow-cyan),
+      var(--rainbow-blue),
+      var(--rainbow-violet),
+      var(--rainbow-red)
+    );
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  .af-neon {
+    box-shadow:
+      0 0 0 var(--af-gap) var(--color-bg),
+      0 0 0 calc(var(--af-gap) + var(--af-ring)) #ff2bd6,
+      0 0 0 calc(var(--af-gap) * 2 + var(--af-ring)) var(--color-bg),
+      0 0 0 calc(var(--af-gap) * 2 + var(--af-ring) * 2) #22d3ee,
+      0 0 calc(var(--av) * 0.3) #ff2bd699;
+  }
+}

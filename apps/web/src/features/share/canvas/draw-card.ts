@@ -1,14 +1,7 @@
 import { tierRank } from '@storix/shared'
 import type { ShareCard } from '../share-subject'
-import {
-  DISPLAY_FONT,
-  INK,
-  RAINBOW,
-  TIER_HEX,
-  fitText,
-  roundRectPath,
-  withAlpha,
-} from './primitives'
+import type { GradientStops, RarityPalette } from '@/features/cosmetics/rarity-palettes'
+import { DISPLAY_FONT, INK, fitText, roundRectPath, withAlpha } from './primitives'
 
 const CARD_RATIO = 88 / 63
 const DARK_ART = '#1e1e2a'
@@ -43,22 +36,25 @@ function drawCover(
 function strokeStyle(
   ctx: CanvasRenderingContext2D,
   card: ShareCard,
+  palette: RarityPalette,
   x: number,
   y: number,
   w: number,
   h: number,
 ): string | CanvasGradient {
   if (card.facts.tier !== 'mythic' || typeof ctx.createConicGradient !== 'function') {
-    return TIER_HEX[card.facts.tier]
+    return palette.tiers[card.facts.tier].ring
   }
+  const rainbow = palette.mythicRainbow
   const gradient = ctx.createConicGradient(0, x + w / 2, y + h / 2)
-  RAINBOW.forEach((color, index) => gradient.addColorStop(index / (RAINBOW.length - 1), color))
+  rainbow.forEach((color, index) => gradient.addColorStop(index / (rainbow.length - 1), color))
   return gradient
 }
 
 function drawSheen(
   ctx: CanvasRenderingContext2D,
   card: ShareCard,
+  palette: RarityPalette,
   x: number,
   y: number,
   w: number,
@@ -69,11 +65,106 @@ function drawSheen(
   const sheen = ctx.createLinearGradient(x, y, x + w, y + h)
   sheen.addColorStop(0.2, 'rgba(255, 255, 255, 0)')
   sheen.addColorStop(0.36, 'rgba(255, 255, 255, 0.28)')
-  sheen.addColorStop(0.46, isFoil ? 'rgba(34, 211, 238, 0.22)' : withAlpha(TIER_HEX[tier], 0.3))
+  sheen.addColorStop(
+    0.46,
+    isFoil ? 'rgba(34, 211, 238, 0.22)' : withAlpha(palette.tiers[tier].ring, 0.3),
+  )
   sheen.addColorStop(0.56, 'rgba(192, 132, 252, 0.2)')
   sheen.addColorStop(0.7, 'rgba(255, 255, 255, 0)')
   ctx.fillStyle = sheen
   ctx.fillRect(x, y, w, h)
+}
+
+interface CardRect {
+  x: number
+  y: number
+  w: number
+  h: number
+  radius: number
+}
+
+const FRAME_GAP = '#0a0a10'
+
+function strokeRect(
+  ctx: CanvasRenderingContext2D,
+  rect: CardRect,
+  inset: number,
+  lineWidth: number,
+  style: string | CanvasGradient,
+): void {
+  roundRectPath(
+    ctx,
+    rect.x + inset,
+    rect.y + inset,
+    rect.w - inset * 2,
+    rect.h - inset * 2,
+    Math.max(0, rect.radius - inset),
+  )
+  ctx.lineWidth = lineWidth
+  ctx.strokeStyle = style
+  ctx.stroke()
+}
+
+function gemGradient(
+  ctx: CanvasRenderingContext2D,
+  card: ShareCard,
+  palette: RarityPalette,
+  rect: CardRect,
+): string | CanvasGradient {
+  const { ring, deep } = palette.tiers[card.facts.tier]
+  if (typeof ctx.createConicGradient !== 'function') return ring
+  const gradient = ctx.createConicGradient(Math.PI / 6, rect.x + rect.w / 2, rect.y + rect.h / 2)
+  const stops: GradientStops =
+    card.facts.tier === 'mythic'
+      ? palette.mythicRainbow.map((color, index, all) => [index / (all.length - 1), color] as const)
+      : [
+          [0, ring],
+          [0.08, 'rgba(255, 255, 255, 0.8)'],
+          [0.2, deep],
+          [0.34, ring],
+          [0.44, 'rgba(255, 255, 255, 0.67)'],
+          [0.58, deep],
+          [0.72, ring],
+          [0.82, 'rgba(255, 255, 255, 0.8)'],
+          [0.92, deep],
+          [1, ring],
+        ]
+  stops.forEach(([offset, color]) => gradient.addColorStop(offset, color))
+  return gradient
+}
+
+function drawFrame(
+  ctx: CanvasRenderingContext2D,
+  card: ShareCard,
+  palette: RarityPalette,
+  rect: CardRect,
+): void {
+  const unit = Math.max(2, rect.w * 0.012)
+  const ring = palette.tiers[card.facts.tier].ring
+  const ringStyle = strokeStyle(ctx, card, palette, rect.x, rect.y, rect.w, rect.h)
+  ctx.save()
+  switch (palette.frame) {
+    case 'ring':
+      strokeRect(ctx, rect, 0, unit, ringStyle)
+      break
+    case 'neon':
+      ctx.shadowColor = ring
+      ctx.shadowBlur = rect.w * 0.05
+      strokeRect(ctx, rect, 0, unit * 0.75, ringStyle)
+      strokeRect(ctx, rect, unit * 2, unit * 0.5, ring)
+      break
+    case 'gem':
+      ctx.shadowColor = withAlpha(ring, 0.35)
+      ctx.shadowBlur = rect.w * 0.05
+      strokeRect(ctx, rect, unit, unit * 2, gemGradient(ctx, card, palette, rect))
+      break
+    case 'filet':
+      strokeRect(ctx, rect, unit * 0.5, unit * 0.5, ringStyle)
+      strokeRect(ctx, rect, -unit * 1.5, unit * 1.5, FRAME_GAP)
+      strokeRect(ctx, rect, -unit * 2.5, unit * 0.5, withAlpha(ring, 0.7))
+      break
+  }
+  ctx.restore()
 }
 
 /** Draws a 63:88 Storix card with its photo, band, tier line and tier stroke; returns its height. */
@@ -84,10 +175,11 @@ export function drawShareCard(
   x: number,
   y: number,
   width: number,
+  palette: RarityPalette,
 ): number {
   const h = width * CARD_RATIO
   const radius = width * 0.06
-  const tierHex = TIER_HEX[card.facts.tier]
+  const tierHex = palette.tiers[card.facts.tier].ring
 
   ctx.save()
   ctx.shadowColor = withAlpha(tierHex, 0.55)
@@ -103,7 +195,7 @@ export function drawShareCard(
   ctx.fillStyle = DARK_ART
   ctx.fillRect(x, y, width, h)
   if (photo) drawCover(ctx, photo, x, y, width, h)
-  drawSheen(ctx, card, x, y, width, h)
+  drawSheen(ctx, card, palette, x, y, width, h)
 
   const band = h * 0.17
   ctx.fillStyle = 'rgba(10, 10, 16, 0.82)'
@@ -126,12 +218,7 @@ export function drawShareCard(
   ctx.fill()
   ctx.restore()
 
-  ctx.save()
-  roundRectPath(ctx, x, y, width, h, radius)
-  ctx.lineWidth = Math.max(2, width * 0.012)
-  ctx.strokeStyle = strokeStyle(ctx, card, x, y, width, h)
-  ctx.stroke()
-  ctx.restore()
+  drawFrame(ctx, card, palette, { x, y, w: width, h, radius })
 
   return h
 }

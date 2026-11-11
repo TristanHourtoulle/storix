@@ -36,6 +36,8 @@ export const NEWS_TRY_TARGETS = [
   'emblems',
   'showcase-card',
   'stack-card',
+  'shop',
+  'style',
   'none',
 ] as const
 export const newsTryTargetSchema = z.enum(NEWS_TRY_TARGETS)

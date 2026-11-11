@@ -1,27 +1,6 @@
-import type { CardTier } from '@storix/shared'
-
 export const DISPLAY_FONT = '"Space Grotesk Variable", "Space Grotesk", sans-serif'
 export const BODY_FONT = '"Inter Variable", Inter, system-ui, sans-serif'
 export const INK = '#f2f2f7'
-
-export const TIER_HEX: Readonly<Record<CardTier, string>> = {
-  common: '#a1a1aa',
-  uncommon: '#4ade80',
-  rare: '#60a5fa',
-  epic: '#c084fc',
-  legendary: '#fbbf24',
-  mythic: '#c084fc',
-}
-
-export const RAINBOW: readonly string[] = [
-  '#f87171',
-  '#fbbf24',
-  '#4ade80',
-  '#22d3ee',
-  '#60a5fa',
-  '#c084fc',
-  '#f87171',
-]
 
 /** Traces a rounded rectangle as the current path. */
 export function roundRectPath(

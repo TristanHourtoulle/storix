@@ -74,7 +74,9 @@ describe('portrait contracts', () => {
       homeLeagueId: null,
       leagues: [],
     }
-    expect(meResponseSchema.safeParse({ ...me, avatar: portrait }).success).toBe(true)
+    expect(meResponseSchema.safeParse({ ...me, avatar: portrait, avatarFrame: null }).success).toBe(
+      true,
+    )
     expect(meResponseSchema.safeParse(me).success).toBe(false)
     const member = {
       userId: 'u1',
@@ -89,7 +91,9 @@ describe('portrait contracts', () => {
       authoredCardCount: 0,
       canTransferOwnership: false,
     }
-    expect(memberSummarySchema.safeParse({ ...member, avatar: null }).success).toBe(true)
+    expect(
+      memberSummarySchema.safeParse({ ...member, avatar: null, avatarFrame: 'frame-neon' }).success,
+    ).toBe(true)
     expect(memberSummarySchema.safeParse(member).success).toBe(false)
   })
 
