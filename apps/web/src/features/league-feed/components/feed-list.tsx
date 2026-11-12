@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { FeedRow as FeedRowData } from '@storix/shared'
 import { useMemberAvatarFrames } from '@/features/portraits/use-member-avatar-frames'
 import { useMemberAvatars } from '@/features/portraits/use-member-avatars'
+import { useMemberNameStyles } from '@/features/portraits/use-member-name-styles'
 import { feedSections } from '../feed-copy'
 import { useBravo } from '../use-bravo'
 import { FeedRow } from './feed-row'
@@ -16,6 +17,7 @@ interface FeedListProps {
 export function FeedList({ leagueId, meId, rows }: FeedListProps) {
   const avatars = useMemberAvatars(leagueId)
   const frames = useMemberAvatarFrames(leagueId)
+  const nameStyles = useMemberNameStyles(leagueId)
   const { sendBravo } = useBravo(leagueId)
   const sections = useMemo(() => feedSections(rows), [rows])
 
@@ -33,6 +35,7 @@ export function FeedList({ leagueId, meId, rows }: FeedListProps) {
                 meId={meId}
                 avatars={avatars}
                 frames={frames}
+                nameStyles={nameStyles}
                 onBravo={sendBravo}
               />
             ))}

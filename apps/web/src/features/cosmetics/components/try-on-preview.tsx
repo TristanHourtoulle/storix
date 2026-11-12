@@ -6,8 +6,11 @@ import { BoosterPack } from '@/features/game/components/booster-pack'
 import { useEquippedStyle } from '../style-context'
 import type { TryOnFace } from '../use-try-on-cards'
 import { AuraDemo } from './aura-demo'
+import { MemberBanner } from './member-banner'
+import { SampleMomentFace } from './sample-card-face'
 import { ScaledBox } from './scaled-box'
 import { ShopCardBack } from './shop-card-back'
+import { StyledName } from './styled-name'
 import { TryOnFaceView } from './try-on-face'
 
 const PACK_WIDTH = 112
@@ -43,6 +46,60 @@ function AvatarPreview() {
   )
 }
 
+function facePhotoUrls(faces: readonly TryOnFace[]): string[] {
+  return faces.flatMap((face) => {
+    if (face.kind !== 'card') return []
+    const { card } = face
+    if (card.kind !== 'owned' && card.kind !== 'unpulled') return []
+    const smallest = card.image.webp.toSorted((a, b) => a.width - b.width)[0]
+    return smallest === undefined ? [] : [smallest.url]
+  })
+}
+
+function BannerPreview({ faces }: { faces: readonly TryOnFace[] }) {
+  const me = useQuery(meQueryOptions).data
+  const { banner, avatarFrame, nameStyle } = useEquippedStyle()
+  const name = me?.user.displayUsername ?? ''
+  return (
+    <div className={`tryon-member${banner === null ? '' : ' mpage-hero'}`}>
+      {banner === null ? (
+        <div className="bn bn-original" aria-hidden="true" />
+      ) : (
+        <MemberBanner bannerId={banner} photoUrls={facePhotoUrls(faces)} />
+      )}
+      <div className="tryon-member-who">
+        <Avatar label={name} portrait={me?.avatar ?? null} size="lg" frame={avatarFrame} />
+        <StyledName styleId={nameStyle}>{name}</StyledName>
+      </div>
+    </div>
+  )
+}
+
+function NamePreview() {
+  const me = useQuery(meQueryOptions).data
+  const { avatarFrame, nameStyle } = useEquippedStyle()
+  const name = me?.user.displayUsername ?? ''
+  return (
+    <div className="tryon-feed">
+      <div className="tryon-feed-row">
+        <Avatar label={name} portrait={me?.avatar ?? null} size="compact" frame={avatarFrame} />
+        <span>
+          <b>
+            <StyledName styleId={nameStyle}>{name}</StyledName>
+          </b>{' '}
+          a tiré une <b className="tryon-feed-tier">Légendaire</b>
+        </span>
+      </div>
+      <div className="tryon-feed-row is-other">
+        <Avatar label="Un membre" portrait={null} size="compact" frame={null} />
+        <span>
+          <b>Un membre</b> a ajouté 3 photos
+        </span>
+      </div>
+    </div>
+  )
+}
+
 function AuraPreview({ faces }: { faces: readonly TryOnFace[] }) {
   const face = faces.at(-1)
   const tier = face?.kind === 'card' ? face.card.tier : (face?.tier ?? 'legendary')
@@ -72,5 +129,11 @@ export function TryOnPreview({ slot, faces }: TryOnPreviewProps) {
       return <AvatarPreview />
     case 'revealAura':
       return <AuraPreview faces={faces} />
+    case 'banner':
+      return <BannerPreview faces={faces} />
+    case 'nameStyle':
+      return <NamePreview />
+    case 'momentStamp':
+      return <SampleMomentFace size="lg" />
   }
 }

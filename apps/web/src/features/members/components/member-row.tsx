@@ -1,6 +1,8 @@
 import type { MemberSummary } from '@storix/shared'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { StyledName } from '@/features/cosmetics/components/styled-name'
+import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { ROLE_LABELS } from '@/features/leagues/role-labels'
 
 interface MemberRowProps {
@@ -20,6 +22,7 @@ export function MemberRow({
   onResetCode,
   onTransferOwnership,
 }: MemberRowProps) {
+  const ownNameStyle = useEquippedStyle().nameStyle
   const hasActions =
     member.canChangeRole ||
     member.canRemove ||
@@ -35,7 +38,12 @@ export function MemberRow({
           frame={member.avatarFrame}
         />
         <div className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-[15px] font-medium">{member.displayUsername}</span>
+          <StyledName
+            styleId={member.isSelf ? ownNameStyle : member.nameStyle}
+            className="truncate text-[15px] font-medium"
+          >
+            {member.displayUsername}
+          </StyledName>
           {member.username !== null ? (
             <span className="truncate text-xs text-muted">identifiant : {member.username}</span>
           ) : null}

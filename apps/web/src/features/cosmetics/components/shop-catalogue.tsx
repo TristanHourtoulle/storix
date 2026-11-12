@@ -3,22 +3,21 @@ import { Link } from '@tanstack/react-router'
 import { DustBalance } from '@/features/game/components/dust-balance'
 import { useWallet } from '@/features/game/use-wallet'
 import { myCosmeticsQueryOptions } from '../cosmetics.queries'
-import { shopCategory, type ShopCategorySlug } from '../shop-categories'
+import { shopCategory } from '../shop-categories'
 import { optionState, slotOptions } from '../shop-options'
-import { ShopCategoryChips } from './shop-category-chips'
 import { ShopItemRowContent, shopRowClassName } from './shop-item-row'
+import { ShopShelves, type ShopShelf } from './shop-shelves'
 
 interface ShopCatalogueProps {
   leagueId: string
-  category: ShopCategorySlug
-  onCategoryChange: (slug: ShopCategorySlug) => void
+  shelf: ShopShelf
+  onShelfChange: (shelf: ShopShelf) => void
 }
 
-/** The shop: the league balance, the categories and one row per theme with its status. */
-export function ShopCatalogue({ leagueId, category, onCategoryChange }: ShopCatalogueProps) {
+/** The shop: the league balance, the families and their categories, one row per theme with its status. */
+export function ShopCatalogue({ leagueId, shelf, onShelfChange }: ShopCatalogueProps) {
   const mine = useQuery(myCosmeticsQueryOptions).data
   const dust = useWallet(leagueId).data?.dust
-  const { slot } = shopCategory(category)
 
   return (
     <main className="screen gap-3.5">
@@ -26,21 +25,24 @@ export function ShopCatalogue({ leagueId, category, onCategoryChange }: ShopCata
         <h1 className="shop-title">Boutique</h1>
         <DustBalance dust={dust} />
       </div>
-      <ShopCategoryChips active={category} onSelect={onCategoryChange} />
-      <ul className="shop-list">
-        {slotOptions(slot).map((option) => (
-          <li key={option.itemId ?? 'original'}>
-            <Link
-              to="/l/$leagueId/shop/try/$category"
-              params={{ leagueId, category }}
-              search={option.itemId === null ? {} : { item: option.itemId }}
-              className={shopRowClassName()}
-            >
-              <ShopItemRowContent option={option} state={optionState(option, mine)} />
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <ShopShelves shelf={shelf} onChange={onShelfChange}>
+        {(category) => (
+          <ul className="shop-list">
+            {slotOptions(shopCategory(category).slot).map((option) => (
+              <li key={option.itemId ?? 'original'}>
+                <Link
+                  to="/l/$leagueId/shop/try/$category"
+                  params={{ leagueId, category }}
+                  search={option.itemId === null ? {} : { item: option.itemId }}
+                  className={shopRowClassName()}
+                >
+                  <ShopItemRowContent option={option} state={optionState(option, mine)} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </ShopShelves>
     </main>
   )
 }

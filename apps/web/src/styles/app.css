@@ -21,6 +21,7 @@
 @import './cosmetics-packs.css';
 @import './cosmetics-rarity.css';
 @import './cosmetics-avatar.css';
+@import './cosmetics-league.css';
 @import './shop.css';
 
 @theme {

@@ -30,6 +30,14 @@ function photosFooter(isSelf: boolean) {
   }
 }
 
+function showcasePhotoUrls(cards: MemberProfile['showcase']): string[] {
+  return cards.flatMap((card) => {
+    if (card.kind !== 'owned' && card.kind !== 'unpulled') return []
+    const smallest = card.image.webp.toSorted((a, b) => a.width - b.width)[0]
+    return smallest === undefined ? [] : [smallest.url]
+  })
+}
+
 function taggedFooter({ total, owned }: { total: number; owned: number }): string {
   return `${countOf(owned, 'possédée', 'possédées')} · ${total - owned} à découvrir`
 }
@@ -44,7 +52,11 @@ export function MemberPage({ leagueId, profile, tab, onTabChange, emblems }: Mem
 
   return (
     <>
-      <MemberHeader header={header} bestTier={stats.bestTier} />
+      <MemberHeader
+        header={header}
+        bestTier={stats.bestTier}
+        photoUrls={showcasePhotoUrls(profile.showcase)}
+      />
       <MemberStatTiles stats={stats} />
       <MemberShowcase
         leagueId={leagueId}

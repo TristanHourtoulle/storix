@@ -3,6 +3,8 @@ import { Link } from '@tanstack/react-router'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
+import { StyledName } from '@/features/cosmetics/components/styled-name'
+import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { ROLE_LABELS } from '@/features/leagues/role-labels'
 import { countOf } from '../member-copy'
 import { membersQueryOptions } from '../members.queries'
@@ -14,6 +16,7 @@ interface MemberDirectoryProps {
 /** Every current member of the league, each row opening their member page. */
 export function MemberDirectory({ leagueId }: MemberDirectoryProps) {
   const members = useQuery(membersQueryOptions(leagueId))
+  const ownNameStyle = useEquippedStyle().nameStyle
 
   if (members.isError && !members.data) {
     return (
@@ -44,7 +47,9 @@ export function MemberDirectory({ leagueId }: MemberDirectoryProps) {
             />
             <span className="min-w-0 flex-1">
               <b>
-                {member.displayUsername}
+                <StyledName styleId={member.isSelf ? ownNameStyle : member.nameStyle}>
+                  {member.displayUsername}
+                </StyledName>
                 {member.isSelf ? <span className="mdir-you"> · toi</span> : null}
               </b>
               <small>
