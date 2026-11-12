@@ -14,7 +14,7 @@ import {
   authorMembership,
   authorMembershipOn,
 } from '../cards/card-author.repository'
-import { readyMomentSelfieUploadId } from '../cards/card-moment'
+import { authorMomentStamp, readyMomentSelfieUploadId } from '../cards/card-moment'
 
 export interface HistoryOpeningRow {
   id: string
@@ -41,6 +41,7 @@ export interface HistoryCardRow {
   momentSelfieUploadId: string | null
   momentTakenAt: Date | null
   momentLateMinutes: number | null
+  momentStamp: string | null
 }
 
 export interface HistoryPullRow {
@@ -91,6 +92,7 @@ export const historyCardColumns = {
   momentSelfieUploadId: readyMomentSelfieUploadId,
   momentTakenAt: cards.momentTakenAt,
   momentLateMinutes: cards.momentLateMinutes,
+  momentStamp: authorMomentStamp,
 }
 
 /** Builds a card row from left-joined columns, or null when the card no longer exists. */
@@ -113,6 +115,7 @@ export function toHistoryCardRow(row: {
   momentSelfieUploadId: string | null
   momentTakenAt: Date | null
   momentLateMinutes: number | null
+  momentStamp: string | null
 }): HistoryCardRow | null {
   if (
     row.cardId === null ||
@@ -147,6 +150,7 @@ export function toHistoryCardRow(row: {
     momentSelfieUploadId: row.momentSelfieUploadId,
     momentTakenAt: row.momentTakenAt,
     momentLateMinutes: row.momentLateMinutes,
+    momentStamp: row.momentStamp,
   }
 }
 

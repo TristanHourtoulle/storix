@@ -5,7 +5,6 @@ import {
   canLeaveLeague,
   canRemoveMember,
   canTransferOwnership,
-  type CosmeticItemId,
   type LeagueRole,
   type MemberSummary,
   type PhotosChoice,
@@ -16,7 +15,7 @@ import type { MediaSigner } from '../../lib/media-signer'
 import { AppError, forbidden, notFound } from '../../lib/errors'
 import { runInTransaction } from '../../lib/transaction'
 import { insertAuditEntry } from '../audit/audit.repository'
-import { findAvatarFrames } from '../cosmetics/cosmetics.repository'
+import { ORIGINAL_LOOK, findMemberLooks, type MemberLook } from '../cosmetics/cosmetics.repository'
 import {
   deleteUploads,
   findCardIdsByAuthor,
@@ -102,10 +101,11 @@ function toSummary(
   m: Membership,
   row: MemberRow,
   ownerIds: ReadonlyMap<string, string>,
-  frames: ReadonlyMap<string, CosmeticItemId>,
+  looks: ReadonlyMap<string, MemberLook>,
   signer: MediaSigner,
 ): MemberSummary {
   const isSelf = row.userId === m.userId
+  const look = looks.get(row.userId) ?? ORIGINAL_LOOK
   const homeLeagueOwnerId =
     row.homeLeagueId === null ? null : (ownerIds.get(row.homeLeagueId) ?? null)
   return {
@@ -134,7 +134,8 @@ function toSummary(
       targetIsHomeLeagueMember: row.homeLeagueId === m.leagueId,
     }).allowed,
     avatar: avatarOf(row, signer),
-    avatarFrame: frames.get(row.userId) ?? null,
+    avatarFrame: look.avatarFrame,
+    nameStyle: look.nameStyle,
   }
 }
 
@@ -232,14 +233,14 @@ export function createMembersService(deps: MembersServiceDeps): MembersService {
       const homeLeagueIds = [
         ...new Set(rows.flatMap((row) => (row.homeLeagueId === null ? [] : [row.homeLeagueId]))),
       ]
-      const [ownerIds, frames] = await Promise.all([
+      const [ownerIds, looks] = await Promise.all([
         findOwnerIds(db, homeLeagueIds),
-        findAvatarFrames(
+        findMemberLooks(
           db,
           rows.map((row) => row.userId),
         ),
       ])
-      return rows.map((row) => toSummary(m, row, ownerIds, frames, signer))
+      return rows.map((row) => toSummary(m, row, ownerIds, looks, signer))
     },
 
     async changeRole(m, targetUserId, nextRole) {
