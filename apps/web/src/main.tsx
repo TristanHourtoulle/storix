@@ -1,5 +1,6 @@
 import '@fontsource-variable/space-grotesk'
 import '@fontsource-variable/inter'
+import '@fontsource-variable/caveat'
 import './styles/app.css'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'

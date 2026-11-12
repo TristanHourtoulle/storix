@@ -25,6 +25,9 @@ const SLOT_HINT: Readonly<Record<Exclude<CosmeticSlot, 'raritySet'>, string>> = 
   cardBack: "Au moment d'ouvrir un booster",
   avatarFrame: 'Autour de ta photo, vu par toute la ligue',
   revealAura: 'Juste avant que ta carte se retourne',
+  banner: 'En tête de ta page membre, vu par la ligue',
+  nameStyle: 'Sur ton pseudo dans le fil et les membres',
+  momentStamp: 'Sur tes cartes Moment, vu par la ligue',
 }
 
 interface TryOnCabinProps {

@@ -5,7 +5,7 @@ import { AppError, notFound } from '../../lib/errors'
 import type { MediaSigner } from '../../lib/media-signer'
 import { runInTransaction } from '../../lib/transaction'
 import { insertAuditEntry } from '../audit/audit.repository'
-import { findAvatarFrames } from '../cosmetics/cosmetics.repository'
+import { findMemberLooks } from '../cosmetics/cosmetics.repository'
 import { toLeagueSummary } from '../leagues/league-views'
 import { listLeaguesForUser } from '../leagues/leagues.repository'
 import { toPortraitView } from '../portraits/portrait-view'
@@ -31,18 +31,18 @@ export function createMeService(deps: {
   const { db, clock, signer } = deps
 
   const describe = async (session: AuthSession, displayUsername: string): Promise<MeResponse> => {
-    const [home, leagues, avatar, frames] = await Promise.all([
+    const [home, leagues, avatar, looks] = await Promise.all([
       findUserHomeLeague(db, session.userId),
       listLeaguesForUser(db, session.userId),
       findPortraitForOwner(db, { kind: 'avatar', ownerId: session.userId }),
-      findAvatarFrames(db, [session.userId]),
+      findMemberLooks(db, [session.userId]),
     ])
     return {
       user: { id: session.userId, username: session.username, displayUsername },
       homeLeagueId: home?.homeLeagueId ?? null,
       leagues: leagues.map((row) => toLeagueSummary(row, signer)),
       avatar: avatar === null ? null : toPortraitView(avatar, signer),
-      avatarFrame: frames.get(session.userId) ?? null,
+      avatarFrame: looks.get(session.userId)?.avatarFrame ?? null,
     }
   }
 

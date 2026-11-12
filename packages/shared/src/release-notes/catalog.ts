@@ -3,6 +3,36 @@ import type { ReleaseNote } from '../schemas/whats-new'
 /** Every feature release shown in the "Nouveautés" booster, newest first. */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    id: '2026-11-12',
+    publishedAt: '2026-11-12T09:00:00+01:00',
+    cards: [
+      {
+        key: 'boutique-familles',
+        title: 'Une Boutique rangée',
+        body: 'La Boutique se range en trois familles : Cartes, Profil, et bientôt Sons & partage. Glisse d’une catégorie à l’autre avec les puces.',
+        tier: 'epic',
+        illustration: 'premium',
+        tryTarget: 'shop',
+      },
+      {
+        key: 'vu-par-la-ligue',
+        title: 'Bannière et reflet du pseudo',
+        body: 'Une bannière en tête de ta page membre et un reflet doré, holo ou surligné sur ton pseudo dans le fil et les membres. Toute la ligue les voit.',
+        tier: 'legendary',
+        illustration: 'showcase',
+        tryTarget: 'shop',
+      },
+      {
+        key: 'tampon-moment',
+        title: 'Le tampon du Moment',
+        body: 'Ticket, Polaroid ou Encre : choisis le style du badge et du selfie de tes cartes Moment. La ligue le voit quand elle tire ton Moment.',
+        tier: 'rare',
+        illustration: 'camera',
+        tryTarget: 'shop',
+      },
+    ],
+  },
+  {
     id: '2026-11-11-c',
     publishedAt: '2026-11-11T21:00:00+01:00',
     cards: [

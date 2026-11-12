@@ -3,6 +3,10 @@ import { RARITY_PALETTES, type RarityPalette, type RaritySetKey } from './rarity
 
 export type RevealAuraKind = 'petal' | 'star' | 'flake'
 
+export type BannerKind = 'constellation' | 'pellicule' | 'aurore'
+
+export type MomentStampKind = 'ticket' | 'polaroid' | 'encre'
+
 type ItemId<Prefix extends string> = Extract<CosmeticItemId, `${Prefix}-${string}`>
 
 const PACK_SKIN: Readonly<Record<ItemId<'booster'>, string>> = {
@@ -33,6 +37,24 @@ const REVEAL_AURA: Readonly<Record<ItemId<'aura'>, RevealAuraKind>> = {
   'aura-petales': 'petal',
   'aura-etoiles': 'star',
   'aura-flocons': 'flake',
+}
+
+const BANNER: Readonly<Record<ItemId<'banner'>, BannerKind>> = {
+  'banner-constellation': 'constellation',
+  'banner-pellicule': 'pellicule',
+  'banner-aurore': 'aurore',
+}
+
+const NAME_STYLE: Readonly<Record<ItemId<'name'>, string>> = {
+  'name-or': 'nm-or',
+  'name-holo': 'nm-holo',
+  'name-surligneur': 'nm-surligneur',
+}
+
+const MOMENT_STAMP: Readonly<Record<ItemId<'stamp'>, MomentStampKind>> = {
+  'stamp-ticket': 'ticket',
+  'stamp-polaroid': 'polaroid',
+  'stamp-encre': 'encre',
 }
 
 function lookup<K extends string, V>(map: Readonly<Record<K, V>>, id: string | null): V | null {
@@ -74,4 +96,19 @@ export function avatarFrameClass(id: CosmeticItemId | null): string | null {
 /** Particle shape of the reveal aura, or null for the original dots. */
 export function revealAuraKind(id: CosmeticItemId | null): RevealAuraKind | null {
   return lookup(REVEAL_AURA, id)
+}
+
+/** Kind of member banner, or null for the original header without banner. */
+export function bannerKind(id: CosmeticItemId | null): BannerKind | null {
+  return lookup(BANNER, id)
+}
+
+/** Class of the display name reflection (`nm-*`), or null for the plain name. */
+export function nameStyleClass(id: CosmeticItemId | null): string | null {
+  return lookup(NAME_STYLE, id)
+}
+
+/** Kind of Moment stamp, or null for the original Moment badge. */
+export function momentStampKind(id: CosmeticItemId | null): MomentStampKind | null {
+  return lookup(MOMENT_STAMP, id)
 }

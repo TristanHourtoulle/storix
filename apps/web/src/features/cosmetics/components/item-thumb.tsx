@@ -6,9 +6,11 @@ import { meQueryOptions } from '@/features/auth/session.queries'
 import { BoosterPack } from '@/features/game/components/booster-pack'
 import { StylePreview, useEquippedStyle } from '../style-context'
 import { AuraDemo } from './aura-demo'
-import { SampleCardFace } from './sample-card-face'
+import { MemberBanner } from './member-banner'
+import { SampleCardFace, SampleMomentFace } from './sample-card-face'
 import { ScaledBox } from './scaled-box'
 import { CARD_BACK_HEIGHT, CARD_BACK_WIDTH, ShopCardBack } from './shop-card-back'
+import { StyledName } from './styled-name'
 
 const PACK_WIDTH = 84
 const PACK_HEIGHT = 117
@@ -38,6 +40,40 @@ const RARITY_TIERS: Readonly<Record<ThumbVariant, readonly CardTier[]>> = {
 const AVATAR_SIZE = { row: 'md', slot: 'compact', sheet: 'xl' } as const
 
 const AURA_WIDTH: Readonly<Record<ThumbVariant, number>> = { row: 30, slot: 24, sheet: 70 }
+
+export const BANNER_WIDTH = 300
+export const BANNER_HEIGHT = 96
+
+const BANNER_THUMB_WIDTH: Readonly<Record<ThumbVariant, number>> = { row: 88, slot: 52, sheet: 260 }
+
+const MOMENT_SIZE = { row: 'sm', slot: 'sm', sheet: 'md' } as const
+
+function BannerThumb({ variant }: { variant: ThumbVariant }) {
+  const banner = useEquippedStyle().banner
+  return (
+    <ScaledBox
+      width={BANNER_WIDTH}
+      height={BANNER_HEIGHT}
+      scale={BANNER_THUMB_WIDTH[variant] / BANNER_WIDTH}
+    >
+      {banner === null ? (
+        <div className="bn bn-original" aria-hidden="true" />
+      ) : (
+        <MemberBanner bannerId={banner} />
+      )}
+    </ScaledBox>
+  )
+}
+
+function NameThumb({ variant }: { variant: ThumbVariant }) {
+  const me = useQuery(meQueryOptions).data
+  const nameStyle = useEquippedStyle().nameStyle
+  return (
+    <StyledName styleId={nameStyle} className={`thumb-name is-${variant}`}>
+      {me?.user.displayUsername ?? 'Pseudo'}
+    </StyledName>
+  )
+}
 
 function PackThumb({ variant }: { variant: ThumbVariant }) {
   return (
@@ -88,6 +124,12 @@ function ThumbContent({ slot, variant }: { slot: CosmeticSlot; variant: ThumbVar
       return <AvatarThumb variant={variant} />
     case 'revealAura':
       return <AuraDemo width={AURA_WIDTH[variant]} />
+    case 'banner':
+      return <BannerThumb variant={variant} />
+    case 'nameStyle':
+      return <NameThumb variant={variant} />
+    case 'momentStamp':
+      return <SampleMomentFace size={MOMENT_SIZE[variant]} />
   }
 }
 

@@ -27,7 +27,7 @@ import {
   authorMembership,
   authorMembershipOn,
 } from './card-author.repository'
-import { readyMomentSelfieUploadId } from './card-moment'
+import { authorMomentStamp, readyMomentSelfieUploadId } from './card-moment'
 
 export interface CollectionRow {
   id: string
@@ -48,6 +48,7 @@ export interface CollectionRow {
   momentSelfieUploadId: string | null
   momentTakenAt: Date | null
   momentLateMinutes: number | null
+  momentStamp: string | null
   normalTier: CardTier | null
   foilTier: CardTier | null
   normalPromotedTier: CardTier | null
@@ -177,6 +178,7 @@ function collectionColumns(
     momentSelfieUploadId: readyMomentSelfieUploadId,
     momentTakenAt: cards.momentTakenAt,
     momentLateMinutes: cards.momentLateMinutes,
+    momentStamp: authorMomentStamp,
     normalTier: owned.normalTier,
     foilTier: owned.foilTier,
     normalPromotedTier: owned.normalPromotedTier,

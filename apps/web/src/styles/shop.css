@@ -10,36 +10,6 @@
     font: 700 28px var(--font-display);
     color: var(--color-ink);
   }
-  .shop-seg {
-    display: flex;
-    gap: 8px;
-    margin: 0 -16px;
-    padding: 0 16px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .shop-seg::-webkit-scrollbar {
-    display: none;
-  }
-  .shop-seg button {
-    flex: none;
-    display: grid;
-    place-items: center;
-    height: 36px;
-    padding: 0 14px;
-    border: 0;
-    border-radius: 999px;
-    background: var(--color-surface-2);
-    box-shadow: inset 0 0 0 1px var(--color-line-strong);
-    color: var(--color-ink-2);
-    font: 500 14px var(--font-sans);
-    cursor: pointer;
-  }
-  .shop-seg button[aria-pressed='true'] {
-    background: var(--color-ink);
-    color: var(--color-bg);
-    box-shadow: none;
-  }
   .shop-list {
     display: grid;
     gap: 10px;
@@ -532,5 +502,84 @@
     .shop-switch::after {
       transition: none;
     }
+  }
+
+  /* ---------- Wave 8b previews: banner, name reflection, Moment stamp ---------- */
+  .bn-original {
+    background:
+      radial-gradient(70% 90% at 20% 0%, #a78bfa1f, transparent 70%), var(--color-surface-2);
+    box-shadow: inset 0 0 0 1px var(--color-line);
+  }
+  .shop-scaled .bn {
+    width: 100%;
+  }
+  .thumb-name {
+    max-width: 100%;
+    overflow: hidden;
+    font: 700 16px var(--font-display);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--color-ink);
+  }
+  .thumb-name.is-slot {
+    font-size: 11px;
+  }
+  .thumb-name.is-sheet {
+    font-size: 28px;
+  }
+  .shop-sample.is-moment {
+    background:
+      radial-gradient(60% 40% at 30% 70%, #f59e0b55, transparent),
+      radial-gradient(50% 35% at 75% 30%, #38bdf855, transparent),
+      linear-gradient(170deg, #1e3a5f, #3b2f2a 55%, #6b4423);
+  }
+  .shop-sample-selfie {
+    background:
+      radial-gradient(38% 30% at 50% 45%, #e8b9a0, #c98b6b 60%, transparent 62%),
+      radial-gradient(60% 40% at 50% 100%, #334155, transparent 70%),
+      linear-gradient(160deg, #475569, #1f2937);
+  }
+  .tryon-member {
+    display: grid;
+    width: min(320px, 100%);
+  }
+  .tryon-member .bn {
+    margin-bottom: -28px;
+  }
+  .tryon-member-who {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: end;
+    gap: 10px;
+    padding-left: 12px;
+    font: 700 18px var(--font-display);
+    color: var(--color-ink);
+  }
+  .tryon-feed {
+    display: grid;
+    gap: 8px;
+    width: min(320px, 100%);
+  }
+  .tryon-feed-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 1px var(--color-line);
+    font-size: 14px;
+    color: var(--color-ink-2);
+  }
+  .tryon-feed-row b {
+    font: 700 15px var(--font-display);
+    color: var(--color-ink);
+  }
+  .tryon-feed-row b.tryon-feed-tier {
+    color: var(--color-tier-legendary);
+  }
+  .tryon-feed-row.is-other {
+    opacity: 0.75;
   }
 }

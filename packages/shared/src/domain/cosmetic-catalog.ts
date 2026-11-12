@@ -4,6 +4,9 @@ export const COSMETIC_SLOTS = [
   'raritySet',
   'avatarFrame',
   'revealAura',
+  'banner',
+  'nameStyle',
+  'momentStamp',
 ] as const
 
 export type CosmeticSlot = (typeof COSMETIC_SLOTS)[number]
@@ -26,6 +29,15 @@ export const COSMETIC_ITEM_IDS = [
   'aura-petales',
   'aura-etoiles',
   'aura-flocons',
+  'banner-constellation',
+  'banner-pellicule',
+  'banner-aurore',
+  'name-or',
+  'name-holo',
+  'name-surligneur',
+  'stamp-ticket',
+  'stamp-polaroid',
+  'stamp-encre',
 ] as const
 
 export type CosmeticItemId = (typeof COSMETIC_ITEM_IDS)[number]
@@ -45,6 +57,21 @@ export const COSMETIC_PRICES: Readonly<Record<CosmeticSlot, number>> = {
   raritySet: 2500,
   avatarFrame: 500,
   revealAura: 800,
+  banner: 400,
+  nameStyle: 900,
+  momentStamp: 400,
+}
+
+const LEAGUE_VISIBLE_SLOTS: ReadonlySet<CosmeticSlot> = new Set<CosmeticSlot>([
+  'avatarFrame',
+  'banner',
+  'nameStyle',
+  'momentStamp',
+])
+
+/** Whether the rest of the league sees what a member wears in this slot. */
+export function isLeagueVisibleSlot(slot: CosmeticSlot): boolean {
+  return LEAGUE_VISIBLE_SLOTS.has(slot)
 }
 
 export const DEFAULT_THEME_NAME: Readonly<Record<CosmeticSlot, string>> = {
@@ -53,6 +80,9 @@ export const DEFAULT_THEME_NAME: Readonly<Record<CosmeticSlot, string>> = {
   raritySet: "D'origine",
   avatarFrame: "D'origine",
   revealAura: "D'origine",
+  banner: "D'origine",
+  nameStyle: "D'origine",
+  momentStamp: "D'origine",
 }
 
 function item(
@@ -60,13 +90,14 @@ function item(
   slot: CosmeticSlot,
   name: string,
   sortOrder: number,
+  price: number = COSMETIC_PRICES[slot],
 ): CosmeticItem {
   return {
     id,
     slot,
     name,
-    price: COSMETIC_PRICES[slot],
-    visibility: slot === 'avatarFrame' ? 'league' : 'self',
+    price,
+    visibility: isLeagueVisibleSlot(slot) ? 'league' : 'self',
     sortOrder,
   }
 }
@@ -87,4 +118,13 @@ export const COSMETIC_ITEMS: readonly CosmeticItem[] = [
   item('aura-petales', 'revealAura', 'Pétales', 1),
   item('aura-etoiles', 'revealAura', 'Étoiles', 2),
   item('aura-flocons', 'revealAura', 'Flocons', 3),
+  item('banner-constellation', 'banner', 'Constellation', 1),
+  item('banner-pellicule', 'banner', 'Pellicule', 2, 500),
+  item('banner-aurore', 'banner', 'Aurore', 3),
+  item('name-or', 'nameStyle', 'Or', 1),
+  item('name-holo', 'nameStyle', 'Holo', 2),
+  item('name-surligneur', 'nameStyle', 'Surligneur', 3, 600),
+  item('stamp-ticket', 'momentStamp', 'Ticket', 1),
+  item('stamp-polaroid', 'momentStamp', 'Polaroid', 2),
+  item('stamp-encre', 'momentStamp', 'Encre', 3),
 ]

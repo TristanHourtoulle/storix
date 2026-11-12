@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   CARD_TIERS,
+  COSMETIC_ITEM_IDS,
   COLLECTION_SORTS,
   COPY_VARIANTS,
   DEFAULT_COLLECTION_SORT,
@@ -27,6 +28,7 @@ export const cardMomentSchema = z.object({
   selfieSmallUrl: z.string().startsWith('/media/').nullable(),
   takenAt: isoDateSchema,
   lateMinutes: z.int().min(0),
+  stamp: z.enum(COSMETIC_ITEM_IDS).nullable().catch(null),
 })
 
 export const cardSummarySchema = z.object({

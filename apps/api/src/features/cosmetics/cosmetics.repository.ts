@@ -40,6 +40,9 @@ const EMPTY_EQUIPPED: EquippedCosmetics = {
   raritySet: null,
   avatarFrame: null,
   revealAura: null,
+  banner: null,
+  nameStyle: null,
+  momentStamp: null,
 }
 
 const SLOT_COLUMNS = {
@@ -48,6 +51,9 @@ const SLOT_COLUMNS = {
   raritySet: userCosmetics.raritySet,
   avatarFrame: userCosmetics.avatarFrame,
   revealAura: userCosmetics.revealAura,
+  banner: userCosmetics.banner,
+  nameStyle: userCosmetics.nameStyle,
+  momentStamp: userCosmetics.momentStamp,
 } as const satisfies Record<CosmeticSlot, unknown>
 
 function toItemId(value: string | null): CosmeticItemId | null {
@@ -83,6 +89,9 @@ export async function findEquipped(db: DbExecutor, userId: string): Promise<Equi
     raritySet: toItemId(row.raritySet),
     avatarFrame: toItemId(row.avatarFrame),
     revealAura: toItemId(row.revealAura),
+    banner: toItemId(row.banner),
+    nameStyle: toItemId(row.nameStyle),
+    momentStamp: toItemId(row.momentStamp),
   }
 }
 
@@ -104,21 +113,38 @@ export async function insertPurchase(db: DbExecutor, row: PurchaseRow): Promise<
   await db.insert(cosmeticPurchases).values(row)
 }
 
-/** Maps each given user to their equipped avatar frame, absent when none is equipped. */
-export async function findAvatarFrames(
+export interface MemberLook {
+  avatarFrame: CosmeticItemId | null
+  nameStyle: CosmeticItemId | null
+  banner: CosmeticItemId | null
+}
+
+export const ORIGINAL_LOOK: MemberLook = { avatarFrame: null, nameStyle: null, banner: null }
+
+/** Maps each given user to the cosmetics the league sees on them, absent when they wear none. */
+export async function findMemberLooks(
   db: DbExecutor,
   userIds: readonly string[],
-): Promise<ReadonlyMap<string, CosmeticItemId>> {
+): Promise<ReadonlyMap<string, MemberLook>> {
   if (userIds.length === 0) return new Map()
   const rows = await db
-    .select({ userId: userCosmetics.userId, avatarFrame: userCosmetics.avatarFrame })
+    .select({
+      userId: userCosmetics.userId,
+      avatarFrame: userCosmetics.avatarFrame,
+      nameStyle: userCosmetics.nameStyle,
+      banner: userCosmetics.banner,
+    })
     .from(userCosmetics)
     .where(inArray(userCosmetics.userId, [...new Set(userIds)]))
   return new Map(
-    rows.flatMap((row) => {
-      const frame = toItemId(row.avatarFrame)
-      return frame === null ? [] : [[row.userId, frame] as const]
-    }),
+    rows.map((row) => [
+      row.userId,
+      {
+        avatarFrame: toItemId(row.avatarFrame),
+        nameStyle: toItemId(row.nameStyle),
+        banner: toItemId(row.banner),
+      },
+    ]),
   )
 }
 

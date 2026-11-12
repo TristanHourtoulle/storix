@@ -1,10 +1,19 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { COSMETIC_SLOTS, DEFAULT_THEME_NAME, findCosmetic, type CosmeticSlot } from '@storix/shared'
+import {
+  DEFAULT_THEME_NAME,
+  findCosmetic,
+  isLeagueVisibleSlot,
+  type CosmeticSlot,
+} from '@storix/shared'
+import { SegmentedControl, segmentPanelId, segmentTabId } from '@/components/ui/segmented-control'
 import { myCosmeticsQueryOptions } from '../cosmetics.queries'
+import { SHOP_FAMILY_SLUGS, shopFamily, type ShopFamilySlug } from '../shop-categories'
 import { SLOT_TITLE } from '../shop-copy'
+import { useTravelDirection } from '../use-travel-direction'
 import { ItemThumb } from './item-thumb'
+import { FAMILY_OPTIONS, ShopComingSoon } from './shop-shelves'
 import { StyleSlotSheet } from './style-slot-sheet'
 
 const ORIGINAL_SUFFIX = " · d'origine"
@@ -20,10 +29,14 @@ interface MyStyleProps {
   leagueId: string
 }
 
-/** Profil › Mon style: one slot per kind of cosmetic, with what is worn and a way to change it. */
+/** Profil › Mon style: the worn cosmetics of a family, one slot per kind, with a way to change each. */
 export function MyStyle({ leagueId }: MyStyleProps) {
   const equipped = useQuery(myCosmeticsQueryOptions).data?.equipped
+  const [familySlug, setFamilySlug] = useState<ShopFamilySlug>('cartes')
   const [changing, setChanging] = useState<CosmeticSlot | null>(null)
+  const family = shopFamily(familySlug)
+  const direction = useTravelDirection(SHOP_FAMILY_SLUGS.indexOf(familySlug))
+  const idBase = useId()
 
   return (
     <main className="screen gap-3.5">
@@ -33,38 +46,57 @@ export function MyStyle({ leagueId }: MyStyleProps) {
         </Link>
       </div>
       <h1 className="shop-title">Mon style</h1>
-      <ul className="style-slots">
-        {COSMETIC_SLOTS.map((slot) => {
-          const itemId = equipped?.[slot] ?? null
-          return (
-            <li key={slot} className="style-slot">
-              <span className="style-slot-icon">
-                <ItemThumb slot={slot} itemId={itemId} variant="slot" />
-              </span>
-              <span>
-                <b>{SLOT_TITLE[slot]}</b>
-                <small>
-                  {wornName(slot, itemId)}
-                  {slot === 'avatarFrame' ? (
-                    <>
-                      {' · '}
-                      <em>vu par la ligue</em>
-                    </>
-                  ) : null}
-                </small>
-              </span>
-              <button
-                type="button"
-                className="style-change"
-                aria-label={`Changer ${SLOT_TITLE[slot].toLowerCase()}`}
-                onClick={() => setChanging(slot)}
-              >
-                Changer
-              </button>
-            </li>
-          )
-        })}
-      </ul>
+      <SegmentedControl
+        label="Familles"
+        idBase={idBase}
+        options={FAMILY_OPTIONS}
+        value={familySlug}
+        onChange={setFamilySlug}
+      />
+      <div
+        key={familySlug}
+        id={segmentPanelId(idBase)}
+        role="tabpanel"
+        aria-labelledby={segmentTabId(idBase, familySlug)}
+        className={`shop-pane ${direction}`}
+      >
+        {family.categories.length === 0 ? (
+          <ShopComingSoon />
+        ) : (
+          <ul className="style-slots">
+            {family.categories.map(({ slot }) => {
+              const itemId = equipped?.[slot] ?? null
+              return (
+                <li key={slot} className="style-slot">
+                  <span className="style-slot-icon">
+                    <ItemThumb slot={slot} itemId={itemId} variant="slot" />
+                  </span>
+                  <span>
+                    <b>{SLOT_TITLE[slot]}</b>
+                    <small>
+                      {wornName(slot, itemId)}
+                      {isLeagueVisibleSlot(slot) ? (
+                        <>
+                          {' · '}
+                          <em>vu par la ligue</em>
+                        </>
+                      ) : null}
+                    </small>
+                  </span>
+                  <button
+                    type="button"
+                    className="style-change"
+                    aria-label={`Changer ${SLOT_TITLE[slot].toLowerCase()}`}
+                    onClick={() => setChanging(slot)}
+                  >
+                    Changer
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </div>
       <StyleSlotSheet leagueId={leagueId} slot={changing} onClose={() => setChanging(null)} />
     </main>
   )

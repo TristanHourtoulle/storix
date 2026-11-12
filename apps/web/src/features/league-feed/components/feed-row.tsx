@@ -9,6 +9,7 @@ import {
 } from '@storix/shared'
 import { Avatar } from '@/components/ui/avatar'
 import { Icon } from '@/components/ui/icon'
+import { StyledName } from '@/features/cosmetics/components/styled-name'
 import { EmblemIcon } from '@/features/emblems/components/emblem-icon'
 import { MiniCard } from '@/features/cards/components/mini-card'
 import { TIER_CLASS, TIER_LABELS } from '@/features/cards/tier-labels'
@@ -16,7 +17,7 @@ import { countOf, tierColorStyle } from '@/features/members/member-copy'
 import { timeAgo } from '@/lib/paris-dates'
 import {
   actorName,
-  actorsLabel,
+  actorsSummary,
   cardMention,
   goalAmount,
   isBigRow,
@@ -41,6 +42,7 @@ interface FeedRowProps {
   meId: string
   avatars: ReadonlyMap<string, Portrait>
   frames: ReadonlyMap<string, CosmeticItemId>
+  nameStyles: ReadonlyMap<string, CosmeticItemId>
   onBravo: (eventId: string, bravoCount: number) => void
 }
 
@@ -84,8 +86,37 @@ function EmblemNames({ ids }: { ids: readonly EmblemId[] }) {
   )
 }
 
-function sentence(row: FeedRowData): ReactNode {
-  const who = <b>{actorsLabel(row.actors)}</b>
+function Who({
+  actors,
+  nameStyles,
+}: {
+  actors: FeedRowData['actors']
+  nameStyles: ReadonlyMap<string, CosmeticItemId>
+}) {
+  const { named, rest } = actorsSummary(actors)
+  const separator = (index: number) => {
+    if (index === 0) return ''
+    return rest === 0 && index === named.length - 1 ? ' et ' : ', '
+  }
+  return (
+    <b>
+      {named.map((actor, index) => (
+        <span key={actor.userId ?? `former-${index}`}>
+          {separator(index)}
+          <StyledName
+            styleId={actor.userId === null ? null : (nameStyles.get(actor.userId) ?? null)}
+          >
+            {actorName(actor)}
+          </StyledName>
+        </span>
+      ))}
+      {rest > 0 ? ` et ${rest} autres` : ''}
+    </b>
+  )
+}
+
+function sentence(row: FeedRowData, nameStyles: ReadonlyMap<string, CosmeticItemId>): ReactNode {
+  const who = <Who actors={row.actors} nameStyles={nameStyles} />
   const isPlural = row.actors.length > 1
   switch (row.kind) {
     case 'booster_opened':
@@ -283,7 +314,15 @@ function RowTail({ row, tier }: { row: FeedRowData; tier: ReturnType<typeof rowT
 }
 
 /** One feed sentence: who did what, when, with the card in miniature and a Bravo on promotions. */
-export function FeedRow({ leagueId, row, meId, avatars, frames, onBravo }: FeedRowProps) {
+export function FeedRow({
+  leagueId,
+  row,
+  meId,
+  avatars,
+  frames,
+  nameStyles,
+  onBravo,
+}: FeedRowProps) {
   const tier = rowTier(row)
   const classes = [
     'feed-act',
@@ -302,7 +341,7 @@ export function FeedRow({ leagueId, row, meId, avatars, frames, onBravo }: FeedR
       <RowIcon row={row} avatars={avatars} frames={frames} />
       <span className="feed-txt">
         <RowLink leagueId={leagueId} row={row}>
-          {sentence(row)}
+          {sentence(row, nameStyles)}
         </RowLink>
         <small>{details(row)}</small>
         {showsBravo ? (

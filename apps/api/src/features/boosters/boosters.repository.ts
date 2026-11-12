@@ -24,7 +24,7 @@ import {
   authorMembership,
   authorMembershipOn,
 } from '../cards/card-author.repository'
-import { readyMomentSelfieUploadId } from '../cards/card-moment'
+import { authorMomentStamp, readyMomentSelfieUploadId } from '../cards/card-moment'
 
 export interface BoosterPoolCard extends PoolCard {
   leagueId: string
@@ -86,6 +86,7 @@ interface CardMediaColumns {
   momentSelfieUploadId: string | null
   momentTakenAt: Date | null
   momentLateMinutes: number | null
+  momentStamp: string | null
 }
 
 export interface PullViewRow extends CardMediaColumns {
@@ -123,6 +124,7 @@ const cardMediaColumns = {
   momentSelfieUploadId: readyMomentSelfieUploadId,
   momentTakenAt: cards.momentTakenAt,
   momentLateMinutes: cards.momentLateMinutes,
+  momentStamp: authorMomentStamp,
 }
 
 function parseVariants<T extends { variants: unknown }>(

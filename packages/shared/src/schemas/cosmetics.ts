@@ -28,6 +28,9 @@ export const equippedCosmeticsSchema = z.object({
   raritySet: storedCosmeticItemIdSchema,
   avatarFrame: storedCosmeticItemIdSchema,
   revealAura: storedCosmeticItemIdSchema,
+  banner: storedCosmeticItemIdSchema,
+  nameStyle: storedCosmeticItemIdSchema,
+  momentStamp: storedCosmeticItemIdSchema,
 })
 
 export const myCosmeticsResponseSchema = z.object({

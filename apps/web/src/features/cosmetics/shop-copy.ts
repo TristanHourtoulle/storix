@@ -7,6 +7,9 @@ export const SLOT_ROW_HINT: Readonly<Record<CosmeticSlot, string>> = {
   raritySet: 'Cadres · 6 raretés',
   avatarFrame: 'Vu par la ligue',
   revealAura: 'Avant chaque carte',
+  banner: 'Vu par la ligue',
+  nameStyle: 'Vu par la ligue',
+  momentStamp: 'Sur tes Moments',
 }
 
 export const ORIGINAL_ROW_HINT = "Le style d'origine"
@@ -18,6 +21,9 @@ export const SLOT_TITLE: Readonly<Record<CosmeticSlot, string>> = {
   raritySet: 'Cadres de rareté',
   avatarFrame: "Cadre d'avatar",
   revealAura: 'Aura de révélation',
+  banner: 'Bannière de classeur',
+  nameStyle: 'Reflet du pseudo',
+  momentStamp: 'Tampon du Moment',
 }
 
 const PURCHASE_NOUN: Readonly<Record<CosmeticSlot, string>> = {
@@ -26,6 +32,9 @@ const PURCHASE_NOUN: Readonly<Record<CosmeticSlot, string>> = {
   raritySet: 'les raretés',
   avatarFrame: 'le cadre',
   revealAura: "l'aura",
+  banner: 'la bannière',
+  nameStyle: 'le reflet',
+  momentStamp: 'le tampon',
 }
 
 /** Question title of the purchase sheet, e.g. "Acheter les raretés Néon ?". */
@@ -49,6 +58,15 @@ const THEME_ACCENT: Readonly<Record<CosmeticItemId, string>> = {
   'aura-petales': '#f9a8d4',
   'aura-etoiles': '#fde68a',
   'aura-flocons': '#bae6fd',
+  'banner-constellation': '#c4b5fd',
+  'banner-pellicule': '#e7e5e4',
+  'banner-aurore': '#67e8f9',
+  'name-or': '#fbbf24',
+  'name-holo': '#f0abfc',
+  'name-surligneur': '#a78bfa',
+  'stamp-ticket': '#fef3c7',
+  'stamp-polaroid': '#f9a8d4',
+  'stamp-encre': '#fda4af',
 }
 
 const ORIGINAL_ACCENT = '#22d3ee'

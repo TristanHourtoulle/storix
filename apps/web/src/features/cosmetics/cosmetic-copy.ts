@@ -9,6 +9,9 @@ export const SLOT_ITEM_PREFIX: Readonly<Record<CosmeticSlot, string>> = {
   raritySet: 'Raretés',
   avatarFrame: 'Cadre',
   revealAura: 'Aura',
+  banner: 'Bannière',
+  nameStyle: 'Pseudo',
+  momentStamp: 'Tampon',
 }
 
 /** Full name of an item with what it is, e.g. "Raretés Néon" or "Cadre Couronne d'or". */

@@ -9,7 +9,7 @@ import { notFound } from '../../lib/errors'
 import type { MediaSigner } from '../../lib/media-signer'
 import { isOwned, isVisibleTo, toCollectionCard, withViewerCopies } from '../cards/card-views'
 import { listOwnedCopies } from '../copies/copies.repository'
-import { findAvatarFrames } from '../cosmetics/cosmetics.repository'
+import { ORIGINAL_LOOK, findMemberLooks } from '../cosmetics/cosmetics.repository'
 import { listStackEntries } from '../copies/stacks.repository'
 import { listEarnedEmblems } from '../emblems/emblems.repository'
 import { featuredEmblemIds } from '../emblems/emblems.service'
@@ -74,12 +74,13 @@ export function createMemberProfileService({
       const header = await findProfileHeader(db, member)
       if (header === null) throw notFound('Member not found')
       const isSelf = userId === m.userId
-      const [stats, earned, showcase, frames] = await Promise.all([
+      const [stats, earned, showcase, looks] = await Promise.all([
         findProfileStats(db, member),
         listEarnedEmblems(db, member),
         showcaseFor(m, member),
-        findAvatarFrames(db, [userId]),
+        findMemberLooks(db, [userId]),
       ])
+      const look = looks.get(userId) ?? ORIGINAL_LOOK
       const completionPercent =
         stats.activeCards === 0 ? 0 : Math.round((stats.cardsOwned / stats.activeCards) * 100)
       return {
@@ -98,7 +99,9 @@ export function createMemberProfileService({
                   },
                   signer,
                 ),
-          avatarFrame: frames.get(userId) ?? null,
+          avatarFrame: look.avatarFrame,
+          nameStyle: look.nameStyle,
+          banner: look.banner,
           joinedAt: header.joinedAt.toISOString(),
           isSelf,
           featuredEmblems: featuredEmblemIds(earned),

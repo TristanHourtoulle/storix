@@ -9,6 +9,9 @@ const ORIGINAL_STYLE: EquippedCosmetics = {
   raritySet: null,
   avatarFrame: null,
   revealAura: null,
+  banner: null,
+  nameStyle: null,
+  momentStamp: null,
 }
 
 const StyleContext = createContext<EquippedCosmetics>(ORIGINAL_STYLE)

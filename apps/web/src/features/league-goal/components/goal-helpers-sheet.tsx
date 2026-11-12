@@ -2,6 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 import type { GoalType } from '@storix/shared'
 import { Avatar } from '@/components/ui/avatar'
 import { BottomSheet } from '@/components/ui/bottom-sheet'
+import { meQueryOptions } from '@/features/auth/session.queries'
+import { StyledName } from '@/features/cosmetics/components/styled-name'
+import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { goalAmount } from '../goal-copy'
 import { goalContributorsQueryOptions } from '../league-goal.queries'
 
@@ -16,6 +19,8 @@ interface GoalHelpersSheetProps {
 export function GoalHelpersSheet({ leagueId, type, isOpen, onClose }: GoalHelpersSheetProps) {
   const { data, isError } = useQuery({ ...goalContributorsQueryOptions(leagueId), enabled: isOpen })
   const contributors = data?.contributors ?? []
+  const meId = useQuery(meQueryOptions).data?.user.id
+  const ownNameStyle = useEquippedStyle().nameStyle
 
   return (
     <BottomSheet open={isOpen} title="Qui a aidé" onClose={onClose}>
@@ -35,7 +40,12 @@ export function GoalHelpersSheet({ leagueId, type, isOpen, onClose }: GoalHelper
                 size="compact"
                 isTinted
               />
-              <span className="goal-helper-name">{contributor.displayUsername}</span>
+              <StyledName
+                styleId={contributor.userId === meId ? ownNameStyle : contributor.nameStyle}
+                className="goal-helper-name"
+              >
+                {contributor.displayUsername}
+              </StyledName>
               <em>{goalAmount(type, contributor.count)}</em>
             </li>
           ))}

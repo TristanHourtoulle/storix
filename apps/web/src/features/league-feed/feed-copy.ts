@@ -27,12 +27,20 @@ export function actorName(actor: FeedActor): string {
 
 /** "Léa", "Léa et Tom" or "Tom, Léa et 4 autres" from a row's actors. */
 export function actorsLabel(actors: readonly FeedActor[]): string {
-  const names = actors.map(actorName)
-  if (names.length <= 1) return names[0] ?? 'Ancien membre'
-  if (names.length <= SUMMARY_NAMES + 1) {
-    return `${names.slice(0, -1).join(', ')} et ${names.at(-1)}`
-  }
-  return `${names.slice(0, SUMMARY_NAMES).join(', ')} et ${names.length - SUMMARY_NAMES} autres`
+  const { named, rest } = actorsSummary(actors)
+  const names = named.map(actorName)
+  if (names.length <= 1 && rest === 0) return names[0] ?? 'Ancien membre'
+  if (rest === 0) return `${names.slice(0, -1).join(', ')} et ${names.at(-1)}`
+  return `${names.join(', ')} et ${rest} autres`
+}
+
+/** The actors named in a row's sentence and how many more are summed up as "et N autres". */
+export function actorsSummary(actors: readonly FeedActor[]): {
+  named: readonly FeedActor[]
+  rest: number
+} {
+  if (actors.length <= SUMMARY_NAMES + 1) return { named: actors, rest: 0 }
+  return { named: actors.slice(0, SUMMARY_NAMES), rest: actors.length - SUMMARY_NAMES }
 }
 
 /** The card's title in quotes when the viewer may read it, "une carte" otherwise. */

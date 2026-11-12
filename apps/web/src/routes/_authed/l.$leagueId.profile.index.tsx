@@ -11,6 +11,7 @@ import {
   settingsRowClassName,
 } from '@/components/ui/settings-list'
 import { DeleteAccountRow } from '@/features/account/components/delete-account-row'
+import { StyledName } from '@/features/cosmetics/components/styled-name'
 import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { memberEmblemsQueryOptions } from '@/features/emblems/emblems.queries'
 import { meQueryOptions } from '@/features/auth/session.queries'
@@ -44,7 +45,7 @@ function soundSummary({ isBoosterEnabled, isInterfaceEnabled }: SoundSettings): 
 function Profile() {
   const { leagueId } = Route.useParams()
   const { data: me } = useSuspenseQuery(meQueryOptions)
-  const ownFrame = useEquippedStyle().avatarFrame
+  const { avatarFrame: ownFrame, nameStyle: ownNameStyle } = useEquippedStyle()
   const leagues = useMyLeagues()
   const { passkeys, isReady: arePasskeysReady } = usePasskeys()
   const { logout, isPending, errorMessage } = useLogout()
@@ -83,7 +84,7 @@ function Profile() {
         <Avatar label={me.user.displayUsername} portrait={me.avatar} frame={ownFrame} size="lg" />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate font-display text-2xl leading-tight font-semibold">
-            {me.user.displayUsername}
+            <StyledName styleId={ownNameStyle}>{me.user.displayUsername}</StyledName>
           </span>
           <span className="truncate text-sm text-muted">@{me.user.username}</span>
         </span>

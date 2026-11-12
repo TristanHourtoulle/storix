@@ -10,7 +10,7 @@ import {
 import type { MediaSigner } from '../../lib/media-signer'
 import { runInTransaction } from '../../lib/transaction'
 import type { Membership } from '../leagues/leagues.service'
-import { findAvatarFrames } from '../cosmetics/cosmetics.repository'
+import { ORIGINAL_LOOK, findMemberLooks } from '../cosmetics/cosmetics.repository'
 import { toPortraitView } from '../portraits/portrait-view'
 import {
   advanceGoal,
@@ -45,14 +45,15 @@ export function createLeagueGoalService({
     rows: readonly GoalContribution[],
   ): Promise<GoalContributor[]> {
     const userIds = rows.map((row) => row.userId)
-    const [peopleRows, frames] = await Promise.all([
+    const [peopleRows, looks] = await Promise.all([
       listGoalPeople(db, leagueId, userIds),
-      findAvatarFrames(db, userIds),
+      findMemberLooks(db, userIds),
     ])
     const people = new Map(peopleRows.map((p) => [p.userId, p]))
     return rows.flatMap((row) => {
       const person = people.get(row.userId)
       if (person === undefined) return []
+      const look = looks.get(row.userId) ?? ORIGINAL_LOOK
       const avatar =
         person.avatarUploadId === null || person.avatarColor === null
           ? null
@@ -70,7 +71,8 @@ export function createLeagueGoalService({
           userId: row.userId,
           displayUsername: person.displayUsername,
           avatar,
-          avatarFrame: frames.get(row.userId) ?? null,
+          avatarFrame: look.avatarFrame,
+          nameStyle: look.nameStyle,
           count: row.count,
         },
       ]

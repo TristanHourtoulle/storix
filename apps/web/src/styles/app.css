@@ -21,7 +21,9 @@
 @import './cosmetics-packs.css';
 @import './cosmetics-rarity.css';
 @import './cosmetics-avatar.css';
+@import './cosmetics-league.css';
 @import './shop.css';
+@import './shop-shelves.css';
 
 @theme {
   --spacing-nav: calc(68px + env(safe-area-inset-bottom));
