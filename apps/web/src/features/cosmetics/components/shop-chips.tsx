@@ -90,6 +90,7 @@ export function ShopChips({ categories, active, onSelect, hasCounts = true }: Sh
     return () => cancelAnimationFrame(frame)
   }, [box, isPlaced])
 
+  const activeLabel = categories.find((category) => category.slug === active)?.chip ?? null
   const indicator =
     box === null
       ? undefined
@@ -118,6 +119,9 @@ export function ShopChips({ categories, active, onSelect, hasCounts = true }: Sh
           </span>
         </button>
       ))}
+      <span className="sr-only" aria-live="polite">
+        {activeLabel === null ? '' : `Catégorie ${activeLabel}`}
+      </span>
     </div>
   )
 }

@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
-import { SegmentedControl } from '@/components/ui/segmented-control'
+import { useId, type ReactNode } from 'react'
+import { SegmentedControl, segmentPanelId, segmentTabId } from '@/components/ui/segmented-control'
 import {
   SHOP_FAMILIES,
   categoryOrder,
@@ -54,11 +54,13 @@ export function ShopShelves({ shelf, onChange, hasCounts = true, children }: Sho
     family.categories[0]?.slug ??
     null
   const direction = useTravelDirection(categoryOrder(category))
+  const idBase = useId()
 
   return (
     <>
       <SegmentedControl
         label="Familles"
+        idBase={idBase}
         options={FAMILY_OPTIONS}
         value={shelf.family}
         onChange={(slug) =>
@@ -73,7 +75,13 @@ export function ShopShelves({ shelf, onChange, hasCounts = true, children }: Sho
           onSelect={(slug) => onChange({ family: shelf.family, category: slug })}
         />
       ) : null}
-      <div key={category ?? 'soon'} className={`shop-pane ${direction}`}>
+      <div
+        key={category ?? 'soon'}
+        id={segmentPanelId(idBase)}
+        role="tabpanel"
+        aria-labelledby={segmentTabId(idBase, shelf.family)}
+        className={`shop-pane ${direction}`}
+      >
         {category === null ? <ShopComingSoon /> : children(category)}
       </div>
     </>

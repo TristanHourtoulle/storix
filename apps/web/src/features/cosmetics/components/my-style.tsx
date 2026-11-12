@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
@@ -7,7 +7,7 @@ import {
   isLeagueVisibleSlot,
   type CosmeticSlot,
 } from '@storix/shared'
-import { SegmentedControl } from '@/components/ui/segmented-control'
+import { SegmentedControl, segmentPanelId, segmentTabId } from '@/components/ui/segmented-control'
 import { myCosmeticsQueryOptions } from '../cosmetics.queries'
 import { SHOP_FAMILY_SLUGS, shopFamily, type ShopFamilySlug } from '../shop-categories'
 import { SLOT_TITLE } from '../shop-copy'
@@ -36,6 +36,7 @@ export function MyStyle({ leagueId }: MyStyleProps) {
   const [changing, setChanging] = useState<CosmeticSlot | null>(null)
   const family = shopFamily(familySlug)
   const direction = useTravelDirection(SHOP_FAMILY_SLUGS.indexOf(familySlug))
+  const idBase = useId()
 
   return (
     <main className="screen gap-3.5">
@@ -47,11 +48,18 @@ export function MyStyle({ leagueId }: MyStyleProps) {
       <h1 className="shop-title">Mon style</h1>
       <SegmentedControl
         label="Familles"
+        idBase={idBase}
         options={FAMILY_OPTIONS}
         value={familySlug}
         onChange={setFamilySlug}
       />
-      <div key={familySlug} className={`shop-pane ${direction}`}>
+      <div
+        key={familySlug}
+        id={segmentPanelId(idBase)}
+        role="tabpanel"
+        aria-labelledby={segmentTabId(idBase, familySlug)}
+        className={`shop-pane ${direction}`}
+      >
         {family.categories.length === 0 ? (
           <ShopComingSoon />
         ) : (
