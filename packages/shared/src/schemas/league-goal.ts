@@ -12,6 +12,7 @@ export const goalContributorSchema = z.object({
   displayUsername: z.string(),
   avatar: portraitSchema.nullable(),
   avatarFrame: storedCosmeticItemIdSchema,
+  nameStyle: storedCosmeticItemIdSchema,
   count: z.int().min(1),
 })
 

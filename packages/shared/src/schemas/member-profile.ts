@@ -12,6 +12,8 @@ export const memberProfileSchema = z.object({
     displayUsername: z.string(),
     avatar: portraitSchema.nullable(),
     avatarFrame: storedCosmeticItemIdSchema,
+    nameStyle: storedCosmeticItemIdSchema,
+    banner: storedCosmeticItemIdSchema,
     joinedAt: isoDateSchema,
     isSelf: z.boolean(),
     featuredEmblems: z.array(emblemIdSchema).max(FEATURED_EMBLEMS_MAX),

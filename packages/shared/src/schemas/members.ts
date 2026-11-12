@@ -17,6 +17,7 @@ export const memberSummarySchema = z.object({
   canTransferOwnership: z.boolean(),
   avatar: portraitSchema.nullable(),
   avatarFrame: storedCosmeticItemIdSchema,
+  nameStyle: storedCosmeticItemIdSchema,
 })
 
 export const updateMemberRoleBodySchema = z.object({ role: z.enum(['admin', 'member']) })

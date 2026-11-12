@@ -20,6 +20,23 @@ describe('cosmetics catalogue', () => {
     ])
     expect(findCosmetic('nope')).toBeUndefined()
   })
+
+  it('prices items individually where the slot default does not apply', () => {
+    expect(findCosmetic('banner-constellation')?.price).toBe(400)
+    expect(findCosmetic('banner-pellicule')?.price).toBe(500)
+    expect(findCosmetic('name-or')?.price).toBe(900)
+    expect(findCosmetic('name-surligneur')?.price).toBe(600)
+    expect(findCosmetic('stamp-encre')?.price).toBe(400)
+  })
+
+  it('marks what the league sees as league-visible', () => {
+    const visibility = (id: string) => findCosmetic(id)?.visibility
+    expect(visibility('frame-neon')).toBe('league')
+    expect(visibility('banner-aurore')).toBe('league')
+    expect(visibility('name-holo')).toBe('league')
+    expect(visibility('stamp-ticket')).toBe('league')
+    expect(visibility('back-neon')).toBe('self')
+  })
 })
 
 describe('purchaseDecision', () => {
