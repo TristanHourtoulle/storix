@@ -62,12 +62,17 @@ export const COSMETIC_PRICES: Readonly<Record<CosmeticSlot, number>> = {
   momentStamp: 400,
 }
 
-const LEAGUE_VISIBLE_SLOTS: readonly CosmeticSlot[] = [
+const LEAGUE_VISIBLE_SLOTS: ReadonlySet<CosmeticSlot> = new Set<CosmeticSlot>([
   'avatarFrame',
   'banner',
   'nameStyle',
   'momentStamp',
-]
+])
+
+/** Whether the rest of the league sees what a member wears in this slot. */
+export function isLeagueVisibleSlot(slot: CosmeticSlot): boolean {
+  return LEAGUE_VISIBLE_SLOTS.has(slot)
+}
 
 export const DEFAULT_THEME_NAME: Readonly<Record<CosmeticSlot, string>> = {
   booster: 'Nuit holo',
@@ -92,7 +97,7 @@ function item(
     slot,
     name,
     price,
-    visibility: LEAGUE_VISIBLE_SLOTS.includes(slot) ? 'league' : 'self',
+    visibility: isLeagueVisibleSlot(slot) ? 'league' : 'self',
     sortOrder,
   }
 }

@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { DEFAULT_THEME_NAME, findCosmetic, type CosmeticSlot } from '@storix/shared'
+import {
+  DEFAULT_THEME_NAME,
+  findCosmetic,
+  isLeagueVisibleSlot,
+  type CosmeticSlot,
+} from '@storix/shared'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { myCosmeticsQueryOptions } from '../cosmetics.queries'
 import { SHOP_FAMILY_SLUGS, shopFamily, type ShopFamilySlug } from '../shop-categories'
@@ -12,13 +17,6 @@ import { FAMILY_OPTIONS, ShopComingSoon } from './shop-shelves'
 import { StyleSlotSheet } from './style-slot-sheet'
 
 const ORIGINAL_SUFFIX = " · d'origine"
-
-const LEAGUE_VISIBLE: ReadonlySet<CosmeticSlot> = new Set([
-  'avatarFrame',
-  'banner',
-  'nameStyle',
-  'momentStamp',
-])
 
 function wornName(slot: CosmeticSlot, itemId: string | null): string {
   const item = itemId === null ? undefined : findCosmetic(itemId)
@@ -69,7 +67,7 @@ export function MyStyle({ leagueId }: MyStyleProps) {
                     <b>{SLOT_TITLE[slot]}</b>
                     <small>
                       {wornName(slot, itemId)}
-                      {LEAGUE_VISIBLE.has(slot) ? (
+                      {isLeagueVisibleSlot(slot) ? (
                         <>
                           {' · '}
                           <em>vu par la ligue</em>
