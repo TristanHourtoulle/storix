@@ -5,6 +5,19 @@ import { logger } from '@/lib/logger'
 import { equipCosmetic } from './cosmetics.api'
 import { myCosmeticsQueryKey } from './cosmetics.queries'
 
+const WORN_STYLE_SEGMENTS: ReadonlySet<unknown> = new Set([
+  'cards',
+  'members',
+  'booster-history',
+  'feed',
+  'goal',
+])
+
+/** League queries whose payload carries what members wear (Moment stamp, name, banner, frame). */
+function carriesWornStyle(queryKey: readonly unknown[]): boolean {
+  return queryKey[0] === 'leagues' && WORN_STYLE_SEGMENTS.has(queryKey[2])
+}
+
 interface EquipCosmetic {
   equip: (body: EquipCosmeticBody, onDone?: () => void) => void
   isPending: boolean
@@ -20,6 +33,12 @@ export function useEquipCosmetic(): EquipCosmetic {
     onSuccess: (equipped) => {
       queryClient.setQueryData<MyCosmeticsResponse>(myCosmeticsQueryKey, (mine) =>
         mine ? { ...mine, equipped } : mine,
+      )
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['me'] }),
+        queryClient.invalidateQueries({ predicate: (query) => carriesWornStyle(query.queryKey) }),
+      ]).catch((refreshError: unknown) =>
+        logger.warn('Worn style refresh failed', { error: refreshError }),
       )
     },
     onError: (error: Error) => {
