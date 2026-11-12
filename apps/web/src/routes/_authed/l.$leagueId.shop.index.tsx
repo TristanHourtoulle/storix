@@ -20,7 +20,7 @@ function ShopScreen() {
   const { family, category } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
   const shelf = {
-    family: family ?? (category === undefined ? 'cartes' : familyOfCategory(category)),
+    family: category === undefined ? (family ?? 'cartes') : familyOfCategory(category),
     category: category ?? null,
   }
 
