@@ -6,6 +6,7 @@ import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { CardImage } from './card-image'
 import { TIER_COLOR_VAR } from '../tier-labels'
 import { useThumbhashUrl } from '../use-thumbhash-url'
+import { Icon } from '@/components/ui/icon'
 
 interface MiniCardProps {
   card: CollectionCard | null
@@ -19,7 +20,7 @@ function MiniSeal({ seal }: { seal: CardSeal | undefined }) {
   if (seal === undefined) return null
   return (
     <span className="hmc-seal" style={{ '--sc': seal.color } as CSSProperties} aria-hidden="true">
-      {seal.emoji}
+      <Icon name={seal.icon} className="hmc-seal-ic" />
     </span>
   )
 }

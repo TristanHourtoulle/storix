@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router'
 import { Avatar } from '@/components/ui/avatar'
 import { daysLeftLabel, postsLabel } from '../series-copy'
 import { themeCardQueryOptions } from '../series.queries'
+import { Icon } from '@/components/ui/icon'
 
 interface ThemeCardProps {
   leagueId: string
@@ -21,8 +22,8 @@ export function ThemeCard({ leagueId }: ThemeCardProps) {
       aria-label="Thème de la semaine"
     >
       <div className="home-theme-top">
-        <span className="home-theme-em" aria-hidden="true">
-          {series.emoji}
+        <span className="home-theme-em">
+          <Icon name={series.icon} className="size-6" />
         </span>
         <div>
           <small>Thème de la semaine</small>

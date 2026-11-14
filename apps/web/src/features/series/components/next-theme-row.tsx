@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { NextTheme } from '@storix/shared'
 import { NextThemeSheet } from './next-theme-sheet'
+import { Icon } from '@/components/ui/icon'
 
 interface NextThemeRowProps {
   leagueId: string
@@ -21,8 +22,8 @@ export function NextThemeRow({ leagueId, next, canOverride }: NextThemeRowProps)
     <div className="series-next">
       <span>
         La semaine prochaine :{' '}
-        <b>
-          {next.emoji} {next.title}
+        <b className="series-next-name">
+          <Icon name={next.icon} className="series-next-ic" /> {next.title}
         </b>
         {next.isOverride ? <em> · choisi par un admin</em> : null}
       </span>

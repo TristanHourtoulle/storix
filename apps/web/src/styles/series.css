@@ -9,15 +9,47 @@
     pointer-events: none;
   }
   .card-seal {
+    position: relative;
     display: grid;
     place-items: center;
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    font-size: 11px;
-    line-height: 1;
-    background: var(--color-bg);
-    box-shadow: 0 0 0 1.5px var(--sc, var(--color-accent));
+    color: var(--sc, var(--color-accent));
+    background:
+      radial-gradient(
+        circle at 30% 25%,
+        color-mix(in srgb, var(--sc, var(--color-accent)) 35%, transparent),
+        transparent 60%
+      ),
+      rgba(10, 10, 16, 0.86);
+    box-shadow:
+      0 0 0 1.5px color-mix(in srgb, var(--sc, var(--color-accent)) 70%, transparent),
+      0 0 8px -2px var(--sc, var(--color-accent));
+  }
+  .card-seal::before {
+    content: '';
+    position: absolute;
+    inset: -1.5px;
+    border-radius: 50%;
+    padding: 1.5px;
+    background: conic-gradient(
+      from 210deg,
+      var(--sc, var(--color-accent)),
+      var(--color-cyan-soft),
+      var(--color-tier-legendary-soft),
+      var(--sc, var(--color-accent))
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.55;
+  }
+  .card-seal-ic {
+    width: 12px;
+    height: 12px;
   }
   .card.lg .card-seals,
   .card.xl .card-seals,
@@ -31,10 +63,15 @@
   .card.showcase .card-seal {
     width: 34px;
     height: 34px;
-    font-size: 18px;
     box-shadow:
-      0 0 0 2px var(--sc, var(--color-accent)),
-      0 4px 10px rgba(0, 0, 0, 0.4);
+      0 0 0 2px color-mix(in srgb, var(--sc, var(--color-accent)) 70%, transparent),
+      0 4px 12px rgba(0, 0, 0, 0.45);
+  }
+  .card.lg .card-seal-ic,
+  .card.xl .card-seal-ic,
+  .card.showcase .card-seal-ic {
+    width: 19px;
+    height: 19px;
   }
   .card.has-seal .card-stack-badge {
     top: 30px;
@@ -53,10 +90,13 @@
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    font-size: 8px;
-    line-height: 1;
-    background: var(--color-bg);
-    box-shadow: 0 0 0 1px var(--sc, var(--color-accent));
+    color: var(--sc, var(--color-accent));
+    background: rgba(10, 10, 16, 0.86);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--sc, var(--color-accent)) 70%, transparent);
+  }
+  .hmc-seal-ic {
+    width: 9px;
+    height: 9px;
   }
 
   .series-shelf-wrap {
@@ -109,8 +149,14 @@
     outline-offset: 2px;
   }
   .stile-em {
-    font-size: 22px;
-    line-height: 1;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    color: var(--sc);
+    background: color-mix(in srgb, var(--sc) 16%, var(--color-bg));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sc) 45%, transparent);
   }
   .stile b {
     overflow: hidden;
@@ -162,8 +208,44 @@
     );
   }
   .series-head-em {
-    font-size: 30px;
-    line-height: 1;
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    color: var(--sc);
+    background: color-mix(in srgb, var(--sc) 18%, var(--color-bg));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sc) 50%, transparent);
+  }
+  .series-next-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .series-next-ic {
+    width: 15px;
+    height: 15px;
+  }
+  .series-icons {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .series-icon-pick {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    border: 0;
+    border-radius: 12px;
+    color: var(--color-ink-2);
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 1px var(--color-line);
+    cursor: pointer;
+  }
+  .series-icon-pick[aria-checked='true'] {
+    color: var(--color-ink);
+    background: var(--color-surface-2);
+    box-shadow: inset 0 0 0 2px var(--color-accent);
   }
   .series-head h1 {
     margin: 0;

@@ -5,6 +5,7 @@ import type { OwnedCardDetail, SeriesSummary } from '@storix/shared'
 import { isSeriesOpen } from '../series-copy'
 import { themeCardQueryOptions } from '../series.queries'
 import { useAddCardToSeries } from '../use-series-mutations'
+import { Icon } from '@/components/ui/icon'
 
 interface CardSeriesProps {
   leagueId: string
@@ -17,8 +18,7 @@ function canJoin(card: OwnedCardDetail, meId: string, theme: SeriesSummary | und
   if (card.seals.some((seal) => seal.seriesId === theme.id)) return false
   const createdAt = new Date(card.createdAt).getTime()
   return (
-    createdAt >= new Date(theme.startsAt).getTime() &&
-    createdAt < new Date(theme.endsAt).getTime()
+    createdAt >= new Date(theme.startsAt).getTime() && createdAt < new Date(theme.endsAt).getTime()
   )
 }
 
@@ -38,7 +38,7 @@ export function CardSeries({ leagueId, card, meId }: CardSeriesProps) {
           className="series-chip"
           style={{ '--sc': seal.color } as CSSProperties}
         >
-          <span aria-hidden="true">{seal.emoji}</span> {seal.title}
+          <Icon name={seal.icon} className="series-chip-ic" /> {seal.title}
         </Link>
       ))}
       {isJoinable && theme !== undefined ? (
@@ -49,7 +49,7 @@ export function CardSeries({ leagueId, card, meId }: CardSeriesProps) {
           disabled={add.isPending}
           onClick={() => add.mutate(theme.id)}
         >
-          ＋ Ajouter au thème {theme.emoji} {theme.title}
+          <Icon name="plus" className="series-chip-ic" /> Ajouter au thème {theme.title}
         </button>
       ) : null}
     </div>

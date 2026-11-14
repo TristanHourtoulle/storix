@@ -1,4 +1,4 @@
-import type { SeriesKind, SeriesSummary } from '@storix/shared'
+import type { SeriesIcon, SeriesKind, SeriesSummary } from '@storix/shared'
 
 const DAY = new Intl.DateTimeFormat('fr-FR', {
   timeZone: 'Europe/Paris',
@@ -69,4 +69,40 @@ export function isSeriesOpen(series: Pick<SeriesSummary, 'phase'>): boolean {
 /** Owned share of a series, in percent. */
 export function seriesPercent(series: Pick<SeriesSummary, 'cardCount' | 'ownedCount'>): number {
   return series.cardCount === 0 ? 0 : Math.round((series.ownedCount / series.cardCount) * 100)
+}
+
+const ICON_LABELS: Readonly<Record<SeriesIcon, string>> = {
+  leaf: 'Feuille',
+  sun: 'Soleil',
+  moon: 'Lune',
+  cloud: 'Nuage',
+  drop: 'Goutte',
+  flower: 'Fleur',
+  book: 'Livre',
+  music: 'Musique',
+  paw: 'Patte',
+  shoe: 'Chaussure',
+  window: 'Fenêtre',
+  door: 'Porte',
+  mug: 'Tasse',
+  cake: 'Gâteau',
+  road: 'Route',
+  ball: 'Ballon',
+  brush: 'Pinceau',
+  clock: 'Horloge',
+  hand: 'Main',
+  wind: 'Vent',
+  mirror: 'Miroir',
+  bulb: 'Ampoule',
+  basket: 'Panier',
+  monitor: 'Écran',
+  camera: 'Appareil photo',
+  heart: 'Cœur',
+  star: 'Étoile',
+  eye: 'Œil',
+}
+
+/** French name of a series icon, for screen readers. */
+export function seriesIconLabel(icon: SeriesIcon): string {
+  return ICON_LABELS[icon]
 }

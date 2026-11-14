@@ -117,8 +117,8 @@ function SeriesScreen() {
     <main className="screen">
       {back}
       <section className="series-head" style={{ '--sc': series.color } as CSSProperties}>
-        <span className="series-head-em" aria-hidden="true">
-          {series.emoji}
+        <span className="series-head-em">
+          <Icon name={series.icon} className="size-7" />
         </span>
         <h1>{series.title}</h1>
         <div className="series-meta">

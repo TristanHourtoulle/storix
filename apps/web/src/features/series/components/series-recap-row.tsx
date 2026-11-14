@@ -5,6 +5,7 @@ import { StyledName } from '@/features/cosmetics/components/styled-name'
 import { MiniCard } from '@/features/cards/components/mini-card'
 import { actorName } from '@/features/league-feed/feed-copy'
 import { cardsLabel } from '../series-copy'
+import { Icon } from '@/components/ui/icon'
 
 interface SeriesRecapRowProps {
   leagueId: string
@@ -22,7 +23,7 @@ export function SeriesRecapRow({ leagueId, row, nameStyles }: SeriesRecapRowProp
   const subtitle =
     series.next === null
       ? 'Thème de la semaine'
-      : `Thème de la semaine · cette semaine : ${series.next.emoji} ${series.next.title}`
+      : `Thème de la semaine · cette semaine : ${series.next.title}`
   return (
     <Link
       to="/l/$leagueId/series/$seriesId"
@@ -31,8 +32,8 @@ export function SeriesRecapRow({ leagueId, row, nameStyles }: SeriesRecapRowProp
       style={{ '--sc': series.color } as CSSProperties}
     >
       <span className="feed-recap-h">
-        <span className="feed-recap-em" aria-hidden="true">
-          {series.emoji}
+        <span className="feed-recap-em">
+          <Icon name={series.icon} className="size-[18px]" />
         </span>
         <span>
           <b>« {series.title} » est terminé</b>

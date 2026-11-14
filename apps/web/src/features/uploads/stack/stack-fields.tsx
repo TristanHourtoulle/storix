@@ -50,8 +50,8 @@ function SeriesToggles({
             style={{ '--sc': series.color } as CSSProperties}
             onClick={() => onToggleSeries(series.id)}
           >
-            <span className="series-toggle-em" aria-hidden="true">
-              {series.emoji}
+            <span className="series-toggle-em">
+              <Icon name={series.icon} className="size-5" />
             </span>
             <span className="series-toggle-tx" aria-hidden="true">
               <b>{seriesName(series)}</b>
