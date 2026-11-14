@@ -82,14 +82,14 @@ function TrophySheet({ leagueId, standing, isOpen, onClose }: TrophySheetProps) 
             <p className="lg-tro-empty">Personne ne l’a encore. Un seul suffit pour le prendre.</p>
           ) : (
             <ol className="lg-tro-top">
-              {standing.top.map((row, index) => (
+              {standing.top.map((row) => (
                 <li key={row.entry.userId}>
                   <Link
                     to="/l/$leagueId/members/$userId"
                     params={{ leagueId, userId: row.entry.userId }}
                     className="lg-tro-row"
                   >
-                    <span className="lg-tro-pos" style={{ color: PODIUM_COLORS[index] }}>
+                    <span className="lg-tro-pos" style={{ color: PODIUM_COLORS[row.position - 1] }}>
                       {row.position}
                     </span>
                     <StandingAvatar member={row.entry} size="compact" />
