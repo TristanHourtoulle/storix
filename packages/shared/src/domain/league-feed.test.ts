@@ -13,6 +13,22 @@ const event = (overrides: Partial<FeedEvent> & Pick<FeedEvent, 'id' | 'type'>): 
 })
 
 describe('groupFeed', () => {
+  it('should keep charmed openings apart, grouped per member and charm', () => {
+    const rows = groupFeed(
+      [
+        event({ id: 'a', type: 'booster_opened', actorId: 'max', payload: { charm: 'tamis' } }),
+        event({ id: 'b', type: 'booster_opened', actorId: 'max', payload: { charm: 'tamis' } }),
+        event({ id: 'c', type: 'booster_opened', actorId: 'lea' }),
+        event({ id: 'd', type: 'booster_opened', actorId: 'max' }),
+      ],
+      { viewerId: 'tom', lastSeenAt: null },
+    )
+    expect(rows.map((row) => [row.count, row.payload.charm ?? null])).toEqual([
+      [2, 'tamis'],
+      [2, null],
+    ])
+  })
+
   it('should group the same actor and type within 3 hours and split beyond', () => {
     const rows = groupFeed(
       [

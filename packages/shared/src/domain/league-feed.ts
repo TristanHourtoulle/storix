@@ -96,6 +96,9 @@ function groupKeyOf(event: FeedEvent): string | null {
   if (event.type === 'card_pulled' && isTierAtLeast(event.payload.tier ?? 'common', 'legendary')) {
     return null
   }
+  if (event.type === 'booster_opened' && event.payload.charm !== undefined) {
+    return `${event.type}:${event.actorId ?? ''}:${event.payload.charm}`
+  }
   if (GROUPED_ACROSS_ACTORS.has(event.type)) return event.type
   return `${event.type}:${event.actorId ?? ''}`
 }
@@ -153,7 +156,8 @@ function extendGroup(group: FeedGroup, event: FeedEvent, isNew: boolean): FeedGr
 /**
  * Groups raw feed events (newest first) into display rows, newest first.
  * Legendary/Mythic pulls, tier milestones, promotions and arrivals stay alone; booster openings
- * from any members collapse within the window; other events collapse per actor and type.
+ * from any members collapse within the window, except charmed ones, which collapse per member and
+ * charm so the charm icon stays true; other events collapse per actor and type.
  */
 export function groupFeed(
   events: readonly FeedEvent[],
