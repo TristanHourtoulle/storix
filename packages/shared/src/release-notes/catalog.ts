@@ -3,6 +3,28 @@ import type { ReleaseNote } from '../schemas/whats-new'
 /** Every feature release shown in the "Nouveautés" booster, newest first. */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    id: '2026-11-14',
+    publishedAt: '2026-11-14T09:00:00+01:00',
+    cards: [
+      {
+        key: 'dechirure',
+        title: 'Une déchirure à ton style',
+        body: 'Braises, Éclats de verre ou Ruban : choisis comment ton booster s’ouvre quand tu le tapes trois fois. Essaie-les dans la cabine de la Boutique.',
+        tier: 'legendary',
+        illustration: 'celebration',
+        tryTarget: 'shop',
+      },
+      {
+        key: 'cosmos-vitrail',
+        title: 'Cosmos et Vitrail',
+        body: 'Deux nouveaux thèmes pour tes boosters et tes dos de carte, et des cadres de rareté Vitrail en plomb noir et verre teinté.',
+        tier: 'epic',
+        illustration: 'premium',
+        tryTarget: 'shop',
+      },
+    ],
+  },
+  {
     id: '2026-11-12',
     publishedAt: '2026-11-12T09:00:00+01:00',
     cards: [
