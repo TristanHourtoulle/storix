@@ -248,7 +248,7 @@ export function listPullCounts(db: DbExecutor, leagueId: string): Promise<PullCo
       userId: boosterOpenings.userId,
       discoveries: sql<number>`count(*) filter (where ${boosterPulls.isDiscovery})`.mapWith(Number),
       mythicPulls:
-        sql<number>`count(*) filter (where ${boosterPulls.rolledTier} = 'mythic')`.mapWith(Number),
+        sql<number>`count(*) filter (where ${boosterPulls.tierAtMint} = 'mythic')`.mapWith(Number),
     })
     .from(boosterPulls)
     .innerJoin(boosterOpenings, eq(boosterOpenings.id, boosterPulls.openingId))
