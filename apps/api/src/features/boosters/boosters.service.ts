@@ -1,13 +1,11 @@
-import type { Database, DbExecutor } from '@storix/db'
+import type { Database } from '@storix/db'
 import {
   activeCharmOf,
-  BOOSTER_SLOTS,
   boosterEligibleBefore,
   charmDust,
   boosterPoolDigestInput,
   canOpenBooster,
   computeBoosterStock,
-  consumeBooster,
   copyKey,
   copyValueTier,
   createSeededRandom,
@@ -15,7 +13,6 @@ import {
   DROP_TABLE_VERSION,
   isPremiumBooster,
   isPullCharmBoosted,
-  isTierAtLeast,
   MIN_DRAWABLE_CARDS_FOR_BOOSTER,
   nextPityState,
   pickBoosterSource,
@@ -23,49 +20,44 @@ import {
   settleBoosterCopies,
   spendCharmCharge,
   stackCountsByCard,
-  tierRank,
-  type BoosterCadence,
-  type BoosterSource,
-  type BoosterStockState,
-  type CardTier,
-  type CharmId,
-  type BoosterDraw,
   type BoosterOpening,
   type OwnedPullTarget,
-  type CopySettlement,
-  type WalletState,
 } from '@storix/shared'
 import { generateBoosterSeed, sha256Hex } from '../../lib/crypto'
 import { AppError, isUniqueViolation } from '../../lib/errors'
 import type { MediaSigner } from '../../lib/media-signer'
 import { runInTransaction } from '../../lib/transaction'
 import { awardAfter, type EmblemAwards } from '../emblems/emblems.service'
-import { insertCopy, listOwnedCopies, updateCopyTier } from '../copies/copies.repository'
+import { listOwnedCopies } from '../copies/copies.repository'
 import { addToStack, listStackEntries } from '../copies/stacks.repository'
-import { insertLeagueEvents, type NewLeagueEvent } from '../league-feed/league-events.repository'
+import { insertLeagueEvents } from '../league-feed/league-events.repository'
 import { findLeagueSettings } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
-import { toWalletState } from '../wallets/wallet-state'
 import {
   ensureWallet,
   lockWallet,
   updateWallet,
-  type WalletPatch,
   type WalletRow,
 } from '../wallets/wallets.repository'
 import {
-  claimDiscoveries,
   findOpeningByRequest,
   insertOpening,
   insertPulls,
   listBoosterPool,
-  listOpeningPulls,
-  type BoosterPoolCard,
   type InsertPullRow,
-  type OpeningRecord,
 } from './boosters.repository'
-import { toBoosterPull } from './opening-view'
-import { loadPoolAvailability } from './pool-availability'
+import {
+  assertLeagueCards,
+  charmPatch,
+  consumeFromSource,
+  discoverySlots,
+  mintCopies,
+  openingEvents,
+  ownedPoolCardIds,
+  present,
+  walletStateFor,
+  type OpeningContext,
+} from './booster-opening'
 
 export interface BoostersService {
   openBooster(m: Membership, requestId: string): Promise<BoosterOpening>
@@ -76,122 +68,6 @@ export interface BoostersServiceDeps {
   signer: MediaSigner
   clock: () => Date
   emblems: EmblemAwards
-}
-
-interface OpeningContext {
-  tx: DbExecutor
-  m: Membership
-  requestId: string
-  now: Date
-  cadence: BoosterCadence
-  delayMinutes: number
-}
-
-function assertLeagueCards(
-  pool: readonly BoosterPoolCard[],
-  draws: readonly BoosterDraw[],
-  leagueId: string,
-): void {
-  const poolIds = new Set(pool.map((card) => card.cardId))
-  const foreign =
-    pool.some((card) => card.leagueId !== leagueId) ||
-    draws.some((draw) => !poolIds.has(draw.cardId))
-  if (foreign) throw new Error('Booster draw contains a card outside the opening league')
-}
-
-async function discoverySlots(
-  ctx: OpeningContext,
-  draws: readonly BoosterDraw[],
-): Promise<ReadonlySet<number>> {
-  const firstSlotByCard = draws.reduce<ReadonlyMap<string, number>>(
-    (acc, draw) => (acc.has(draw.cardId) ? acc : new Map([...acc, [draw.cardId, draw.slot]])),
-    new Map(),
-  )
-  const claimed = await claimDiscoveries(ctx.tx, {
-    cardIds: [...firstSlotByCard.keys()],
-    userId: ctx.m.userId,
-    now: ctx.now,
-  })
-  return new Set(
-    claimed.flatMap((cardId) => {
-      const slot = firstSlotByCard.get(cardId)
-      return slot === undefined ? [] : [slot]
-    }),
-  )
-}
-
-async function mintCopies(
-  ctx: OpeningContext,
-  settlements: readonly CopySettlement[],
-  openingId: string,
-): Promise<void> {
-  for (const settlement of settlements) {
-    const key = { cardId: settlement.cardId, ownerId: ctx.m.userId, variant: settlement.variant }
-    if (settlement.outcome === 'new') {
-      await insertCopy(ctx.tx, {
-        ...key,
-        leagueId: ctx.m.leagueId,
-        tierAtMint: settlement.tierAtMint,
-        source: 'booster',
-        openingId,
-      })
-    } else if (settlement.outcome === 'upgraded') {
-      await updateCopyTier(ctx.tx, {
-        ...key,
-        tierAtMint: settlement.tierAtMint,
-        openingId,
-        now: ctx.now,
-      })
-    }
-  }
-}
-
-async function walletStateFor(ctx: OpeningContext, wallet: WalletRow): Promise<WalletState> {
-  const pool = await loadPoolAvailability(ctx.tx, {
-    leagueId: ctx.m.leagueId,
-    now: ctx.now,
-    delayMinutes: ctx.delayMinutes,
-  })
-  return toWalletState(wallet, ctx.cadence, ctx.now, pool)
-}
-
-function openingCharm(opening: OpeningRecord, wallet: WalletState): BoosterOpening['charm'] {
-  const used =
-    opening.charm === null ? null : activeCharmOf({ charm: opening.charm, charmCharges: 1 })
-  if (used === null) return null
-  return { id: used.id, chargesLeft: wallet.charm?.id === used.id ? wallet.charm.charges : 0 }
-}
-
-async function present(
-  ctx: OpeningContext,
-  opening: OpeningRecord,
-  wallet: WalletState,
-  signer: MediaSigner,
-): Promise<BoosterOpening> {
-  const pulls = await listOpeningPulls(ctx.tx, opening.id)
-  return {
-    id: opening.id,
-    openedAt: opening.openedAt.toISOString(),
-    pulls: pulls.map((row) => toBoosterPull(row, signer)),
-    dustGained: opening.dustGained,
-    isPremium: opening.isPremium,
-    charm: openingCharm(opening, wallet),
-    wallet,
-  }
-}
-
-async function ownedPoolCardIds(
-  ctx: OpeningContext,
-  pool: readonly BoosterPoolCard[],
-  charm: CharmId | null,
-): Promise<ReadonlySet<string>> {
-  if (charm !== 'boussole' && charm !== 'aimant') return new Set()
-  const rows = await listOwnedCopies(ctx.tx, {
-    leagueId: ctx.m.leagueId,
-    ownerId: ctx.m.userId,
-    cardIds: [...new Set(pool.map((card) => card.cardId))],
-  })
-  return new Set(rows.map((row) => row.cardId))
 }
 
 async function openNewBooster(
@@ -229,6 +105,8 @@ async function openNewBooster(
   const isPremium = source === 'premium_gift' || isPremiumBooster(wallet.boostersOpened)
   const activeCharm = activeCharmOf(wallet)
   const charm = activeCharm?.id ?? null
+  const charmChargesAfter =
+    activeCharm === null ? null : (spendCharmCharge(activeCharm)?.charges ?? 0)
   const draws = drawBooster({
     pool,
     pity: pityBefore,
@@ -281,6 +159,7 @@ async function openNewBooster(
     isPremium,
     source,
     charm,
+    charmChargesAfter,
   })
   await mintCopies(ctx, settlements, opening.id)
   await addToStack(
@@ -317,12 +196,10 @@ async function openNewBooster(
       isDiscovery: discoveries.has(draw.slot),
       isCharmBoosted: isPullCharmBoosted({
         charm,
-        slot: draw.slot,
-        lastSlot: BOOSTER_SLOTS.length - 1,
-        tier: draw.tier,
         variant: settlement.variant,
         dust: settlement.dust,
         isRedirected: draw.isRedirected,
+        isLuckBoosted: draw.isLuckBoosted,
       }),
     }
   })
@@ -344,63 +221,7 @@ async function openNewBooster(
   }
   await updateWallet(ctx.tx, { leagueId: ctx.m.leagueId, userId: ctx.m.userId }, patch)
   const walletState = await walletStateFor(ctx, { ...wallet, ...patch })
-  return present(ctx, { ...opening, dustGained, charm }, walletState, signer)
-}
-
-function charmPatch(
-  active: ReturnType<typeof activeCharmOf>,
-): Pick<WalletPatch, 'charm' | 'charmCharges'> {
-  if (active === null) return {}
-  const next = spendCharmCharge(active)
-  return { charm: next?.id ?? null, charmCharges: next?.charges ?? 0 }
-}
-
-function consumeFromSource(
-  source: BoosterSource,
-  wallet: WalletRow,
-  stockState: BoosterStockState,
-  ctx: OpeningContext,
-): Pick<WalletPatch, 'boosterStock' | 'boosterStockAt' | 'bonusBoosters' | 'premiumGifts'> {
-  if (source === 'premium_gift') return { premiumGifts: wallet.premiumGifts - 1 }
-  if (source === 'bonus') return { bonusBoosters: wallet.bonusBoosters - 1 }
-  const consumed = consumeBooster(stockState, ctx.now, ctx.cadence)
-  if (consumed === null) throw new Error('Timed booster source without available stock')
-  return { boosterStock: consumed.stock, boosterStockAt: consumed.anchor }
-}
-
-function openingEvents(
-  m: Membership,
-  opening: { id: string; openedAt: Date; isPremium: boolean; charm: CharmId | null },
-  pulls: readonly InsertPullRow[],
-): NewLeagueEvent[] {
-  const bestTier = pulls.reduce<CardTier | null>(
-    (best, pull) =>
-      best === null || tierRank(pull.tierAtMint) > tierRank(best) ? pull.tierAtMint : best,
-    null,
-  )
-  const base = { leagueId: m.leagueId, actorId: m.userId, visibleAt: opening.openedAt }
-  const notable = pulls.filter((pull) => isTierAtLeast(pull.tierAtMint, 'epic') || pull.isDiscovery)
-  return [
-    {
-      ...base,
-      type: 'booster_opened',
-      payload: {
-        openingId: opening.id,
-        isPremium: opening.isPremium,
-        ...(bestTier === null ? {} : { tier: bestTier }),
-        ...(opening.charm === null ? {} : { charm: opening.charm }),
-      },
-      dedupeKey: `opening:${opening.id}`,
-    },
-    ...notable.map((pull): NewLeagueEvent => ({
-      ...base,
-      type: 'card_pulled',
-      cardId: pull.cardId,
-      tier: pull.tierAtMint,
-      payload: { openingId: opening.id, tier: pull.tierAtMint, isDiscovery: pull.isDiscovery },
-      dedupeKey: `pull:${opening.id}:${pull.slot}`,
-    })),
-  ]
+  return present(ctx, { ...opening, dustGained, charm, charmChargesAfter }, walletState, signer)
 }
 
 /** Builds the service opening boosters in one idempotent, member-serialized transaction. */

@@ -43,6 +43,7 @@ export interface OpeningRecord {
   dustGained: number
   isPremium: boolean
   charm: string | null
+  charmChargesAfter: number | null
 }
 
 export interface InsertOpeningRow {
@@ -57,6 +58,7 @@ export interface InsertOpeningRow {
   isPremium: boolean
   source: BoosterSource
   charm: string | null
+  charmChargesAfter: number | null
 }
 
 export interface InsertPullRow {
@@ -202,6 +204,7 @@ export async function findOpeningByRequest(
       dustGained: boosterOpenings.dustGained,
       isPremium: boosterOpenings.isPremium,
       charm: boosterOpenings.charm,
+      charmChargesAfter: boosterOpenings.charmChargesAfter,
     })
     .from(boosterOpenings)
     .where(
