@@ -1,30 +1,27 @@
 import {
-  CARD_TIERS,
   LEAGUE_ROLES,
-  findCharm,
-  findCosmetic,
-  formatMomentLateness,
   type AuditAction,
   type AuditCategory,
   type AuditEntry,
   type AuditPerson,
-  type CardTier,
 } from '@storix/shared'
 import type { IconName } from '@/components/ui/icon'
 import { TIER_LABELS } from '@/features/cards/tier-labels'
-import { cosmeticFullName, formatDustPrice } from '@/features/cosmetics/cosmetic-copy'
 import { ROLE_LABELS } from '@/features/leagues/role-labels'
 import { parisClock } from '@/lib/paris-dates'
+import { economySentence } from './audit-economy-sentence'
+import {
+  num,
+  rec,
+  sentence,
+  str,
+  tierOf,
+  type AuditSentence,
+  type Metadata,
+  type SentencePart,
+} from './audit-sentence-kit'
 
-export type SentencePart = string | { strong: string; tier?: CardTier; isWarning?: boolean }
-
-export interface AuditSentence {
-  parts: SentencePart[]
-  details: string[]
-  isWarning: boolean
-}
-
-type Metadata = Record<string, unknown>
+export type { AuditSentence, SentencePart } from './audit-sentence-kit'
 
 const DATE_FORMAT = new Intl.DateTimeFormat('fr-FR', {
   timeZone: 'Europe/Paris',
@@ -74,27 +71,6 @@ export const CATEGORY_CLASS: Readonly<Record<AuditCategory, string>> = {
   security: 'j-sec',
   economy: 'j-eco',
   accounts: 'j-acc',
-}
-
-function rec(meta: Metadata, key: string): Metadata | null {
-  const value = meta[key]
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? (value as Metadata)
-    : null
-}
-
-function str(meta: Metadata | null, key: string): string | null {
-  const value = meta?.[key]
-  return typeof value === 'string' ? value : null
-}
-
-function num(meta: Metadata | null, key: string): number | null {
-  const value = meta?.[key]
-  return typeof value === 'number' && Number.isFinite(value) ? value : null
-}
-
-function tierOf(value: string | null): CardTier | null {
-  return CARD_TIERS.find((tier) => tier === value) ?? null
 }
 
 function roleOf(value: string | null): string | null {
@@ -176,10 +152,6 @@ function tierStateLabel(state: Metadata | null): string | null {
   return source === 'pinned' ? `${TIER_LABELS[tier]} (épinglée)` : `${TIER_LABELS[tier]} (calculée)`
 }
 
-function sentence(parts: SentencePart[], details: string[] = []): AuditSentence {
-  return { parts, details, isWarning: false }
-}
-
 function cardSentence(actor: SentencePart, entry: AuditEntry): AuditSentence {
   const meta = entry.metadata
   const card = cardLabel(meta)
@@ -240,95 +212,6 @@ function cardSentence(actor: SentencePart, entry: AuditEntry): AuditSentence {
     }
     default:
       return sentence([actor, ` a modifié ${card}`])
-  }
-}
-
-function economySentence(actor: SentencePart, entry: AuditEntry): AuditSentence {
-  const meta = entry.metadata
-  const cost = num(meta, 'cost')
-  const costDetail = cost === null ? [] : [`${cost} paillettes`]
-  switch (entry.action) {
-    case 'copy.recycled':
-      return sentence([actor, ' a recyclé une copie'])
-    case 'copy.crafted':
-      return sentence([actor, ' a fabriqué une copie'], costDetail)
-    case 'copy.foil_upgraded':
-      return sentence([actor, ' a passé une copie en foil'], costDetail)
-    case 'copy.promoted': {
-      const from = tierOf(str(meta, 'from'))
-      const to = tierOf(str(meta, 'to'))
-      return sentence(
-        to === null
-          ? [actor, ' a amélioré une carte']
-          : [actor, ' a fait passer une carte ', { strong: `${TIER_LABELS[to]} ★`, tier: to }],
-        [
-          ...(from !== null && to !== null ? [`${TIER_LABELS[from]} → ${TIER_LABELS[to]} ★`] : []),
-          ...costDetail,
-        ],
-      )
-    }
-    case 'mission.claimed': {
-      const dust = num(meta, 'dust') ?? 0
-      const boosters = num(meta, 'boosters') ?? 0
-      return sentence(
-        [actor, ` a récupéré la mission « ${str(meta, 'label') ?? ''} »`],
-        [
-          ...(dust > 0 ? [`+${dust} paillettes`] : []),
-          ...(boosters > 0 ? [`+${boosters} booster${boosters > 1 ? 's' : ''}`] : []),
-          ...(meta?.autoClaimed === true ? ['Créditée automatiquement à la remise à zéro.'] : []),
-        ],
-      )
-    }
-    case 'moment.posted': {
-      const dust = num(meta, 'dust') ?? 0
-      const late = num(meta, 'lateMinutes') ?? 0
-      return sentence(
-        [actor, ' a posté son Moment'],
-        [
-          late === 0 ? 'À l’heure' : `En retard de ${formatMomentLateness(late)}`,
-          ...(dust > 0 ? [`+${dust} paillettes`] : []),
-        ],
-      )
-    }
-    case 'cosmetic.purchased': {
-      const item = findCosmetic(str(meta, 'itemId') ?? '')
-      const price = num(meta, 'price')
-      return sentence(
-        item === undefined
-          ? [actor, ' a acheté un cosmétique']
-          : [actor, ' a acheté ', { strong: cosmeticFullName(item) }],
-        price === null ? [] : [formatDustPrice(price)],
-      )
-    }
-    case 'charm.purchased': {
-      const charm = findCharm(str(meta, 'charm') ?? '')
-      const price = num(meta, 'price')
-      return sentence(
-        charm === undefined
-          ? [actor, ' a pris un porte-bonheur']
-          : [actor, ' a pris le porte-bonheur ', { strong: charm.name }],
-        price === null ? [] : [formatDustPrice(price)],
-      )
-    }
-    case 'league_goal.reward_granted': {
-      const boosters = num(meta, 'boosters') ?? 0
-      const gifts = num(meta, 'premiumGifts') ?? 0
-      const members = num(meta, 'members')
-      return sentence(
-        [
-          gifts > 0
-            ? 'Palier bonus de l’objectif de la ligue atteint'
-            : 'Objectif de la ligue atteint',
-        ],
-        [
-          ...(boosters > 0 ? [`+${boosters} boosters pour chaque membre`] : []),
-          ...(gifts > 0 ? [`+${gifts} booster premium pour chaque membre`] : []),
-          ...(members === null ? [] : [`${members} membres récompensés`]),
-        ],
-      )
-    }
-    default:
-      return sentence([actor, ' a converti des doublons en paillettes'])
   }
 }
 
