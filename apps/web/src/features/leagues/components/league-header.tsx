@@ -31,25 +31,26 @@ export function LeagueHeader({
 
   return (
     <header className="flex items-center gap-3">
-      <Link
-        to="/l/$leagueId/league"
-        params={{ leagueId: currentLeagueId }}
-        className="league-entry"
-        aria-label={`${name}, classement et trophées`}
-      >
-        <LeagueAvatar name={name} photo={photo} />
-        <span className="min-w-0">
-          <span className="flex items-center gap-1">
-            <h1 className="truncate text-lg">{name}</h1>
-            <span className="league-entry-go" aria-hidden="true">
-              ›
+      <h1 className="m-0 flex min-w-0 flex-1 font-[inherit] text-[length:inherit]">
+        <Link
+          to="/l/$leagueId/league"
+          params={{ leagueId: currentLeagueId }}
+          className="league-entry"
+        >
+          <LeagueAvatar name={name} photo={photo} />
+          <span className="flex min-w-0 flex-col">
+            <span className="flex items-center gap-1">
+              <span className="truncate font-display text-lg font-bold">{name}</span>
+              <span className="league-entry-go" aria-hidden="true">
+                ›
+              </span>
+            </span>
+            <span className="mt-0.5 truncate text-[13px] font-normal text-muted">
+              {memberCount} {memberCount > 1 ? 'membres' : 'membre'} · Classement et trophées
             </span>
           </span>
-          <p className="m-0 mt-0.5 truncate text-[13px] text-muted">
-            {memberCount} {memberCount > 1 ? 'membres' : 'membre'} · Classement et trophées
-          </p>
-        </span>
-      </Link>
+        </Link>
+      </h1>
       {canSwitch ? (
         <button
           type="button"

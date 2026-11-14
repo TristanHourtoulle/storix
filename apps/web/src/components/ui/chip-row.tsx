@@ -46,7 +46,11 @@ function scrollLeftFor(row: HTMLElement, chip: HTMLElement): number | null {
   return null
 }
 
-/** A scrolling row of chips; the violet indicator slides to the active one, kept in view. */
+/**
+ * A scrolling row of chips; the violet indicator slides to the active one, kept in view.
+ * `options` must be referentially stable (a module constant or memoised): a new array re-measures
+ * the indicator and re-observes every chip.
+ */
 export function ChipRow<T extends string>({
   options,
   active,
