@@ -41,7 +41,7 @@ export function createSeriesService({ db, clock, logger }: Deps): SeriesService 
   }
 
   async function payCompletions(now: Date): Promise<number> {
-    const completions = await listUnrewardedCompletions(db)
+    const completions = await listUnrewardedCompletions(db, now)
     return each(completions, (completion) =>
       db.transaction((tx) => rewardCompletion(tx, { ...completion, now })),
     )

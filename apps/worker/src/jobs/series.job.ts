@@ -3,10 +3,13 @@ import { SERIES_ROLLOVER_JOB, SERIES_TICK_JOB } from '@storix/shared'
 import type { SeriesService } from '../features/series/series.service'
 
 const TICK_CRON = '*/10 * * * *'
-const ROLLOVER_CRON = '5 0 * * 1'
+const ROLLOVER_CRON = '5 0,2 * * 1'
 const SERIES_TIMEZONE = 'Europe/Paris'
 
-/** Schedules the series tick every 10 minutes and the weekly theme rollover on Monday 00:05 Paris time. */
+/**
+ * Schedules the series tick every 10 minutes and the weekly rollover on Monday Paris time: 00:05 opens the
+ * new theme, 02:05 closes the past one once its 2 h grace window is over (the tick catches up otherwise).
+ */
 export async function registerSeriesJobs(boss: PgBoss, service: SeriesService): Promise<void> {
   await boss.createQueue(SERIES_TICK_JOB)
   await boss.createQueue(SERIES_ROLLOVER_JOB)
