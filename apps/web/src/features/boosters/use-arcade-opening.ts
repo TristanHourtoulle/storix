@@ -139,6 +139,8 @@ function playSummary(withPity: boolean): void {
   if (withPity) playSound({ name: 'pity' }, SUMMARY_PITY_DELAY)
 }
 
+const NEUTRAL_TEAR_ACCENT = '#a5f3fc'
+
 function tearStyleOf(
   id: CosmeticItemId | null,
   pulls: readonly BoosterPull[],
@@ -146,9 +148,11 @@ function tearStyleOf(
 ): TearStyle | null {
   const kind = tearKind(id)
   if (kind === null) return null
-  const best = pulls.reduce<CardTier>(
+  const [first, ...rest] = pulls
+  if (first === undefined) return { kind, accent: NEUTRAL_TEAR_ACCENT }
+  const best = rest.reduce<CardTier>(
     (top, pull) => (tierRank(pull.card.tier) > tierRank(top) ? pull.card.tier : top),
-    'common',
+    first.card.tier,
   )
   return { kind, accent: palette.tiers[best].fx }
 }
