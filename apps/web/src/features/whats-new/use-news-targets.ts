@@ -32,6 +32,7 @@ export type NewsTryLink =
     }
   | { to: '/l/$leagueId/cards/$cardId'; params: { leagueId: string; cardId: string } }
   | { to: '/l/$leagueId/shop'; params: { leagueId: string } }
+  | { to: '/l/$leagueId/shop'; params: { leagueId: string }; search: { family: 'bonus' } }
   | { to: '/l/$leagueId/profile/style'; params: { leagueId: string } }
   | { to: '/l/$leagueId/league'; params: { leagueId: string } }
 
@@ -84,6 +85,8 @@ function linkFor(
       return cardLink(leagueId, targets.stackCardId)
     case 'shop':
       return { to: '/l/$leagueId/shop', params: { leagueId } }
+    case 'shop-bonus':
+      return { to: '/l/$leagueId/shop', params: { leagueId }, search: { family: 'bonus' } }
     case 'style':
       return { to: '/l/$leagueId/profile/style', params: { leagueId } }
     case 'league':

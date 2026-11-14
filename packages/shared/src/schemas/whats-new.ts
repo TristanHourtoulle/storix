@@ -37,6 +37,7 @@ export const NEWS_TRY_TARGETS = [
   'showcase-card',
   'stack-card',
   'shop',
+  'shop-bonus',
   'style',
   'league',
   'none',
