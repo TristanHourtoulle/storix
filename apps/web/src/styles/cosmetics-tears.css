@@ -89,10 +89,23 @@
   .ar-tear-top-clip {
     position: absolute;
     inset: 0;
-    clip-path: polygon(0 0, 100% 0, 100% 26%, 86% 22%, 70% 27%, 52% 21%, 34% 28%, 18% 22%, 0 26%);
+    clip-path: polygon(
+      -20% -20%,
+      120% -20%,
+      120% 26%,
+      100% 26%,
+      86% 22%,
+      70% 27%,
+      52% 21%,
+      34% 28%,
+      18% 22%,
+      0 26%,
+      -20% 26%
+    );
   }
   .ar-pack-wrap.is-torn .ar-pack-art {
     clip-path: polygon(
+      -20% 26%,
       0 26%,
       18% 22%,
       34% 28%,
@@ -100,8 +113,9 @@
       70% 27%,
       86% 22%,
       100% 26%,
-      100% 100%,
-      0 100%
+      120% 26%,
+      120% 130%,
+      -20% 130%
     );
   }
   .ar-pack-wrap.tear-braises .ar-cracks,
@@ -172,7 +186,7 @@
   .ar-tear-ribbon.is-v {
     top: 0;
     bottom: 0;
-    left: 44%;
+    left: calc(50% - 10px);
     width: 20px;
     background: linear-gradient(90deg, #fde68a, #d9b45a 50%, #a16207);
   }
@@ -251,7 +265,9 @@
     overflow: hidden;
     border-radius: 14px;
     pointer-events: none;
-    transform: rotate(-6deg);
+  }
+  .tear-mark .pack {
+    transform: none;
   }
   .tear-mark.is-open > .tear-layer {
     overflow: visible;
@@ -335,7 +351,7 @@
   .tear-mark .tm-ribbon-v {
     top: 0;
     bottom: 0;
-    left: 44%;
+    left: 45%;
     width: 10%;
     background: linear-gradient(90deg, #fde68a, #d9b45a 50%, #a16207);
   }
@@ -404,10 +420,23 @@
     opacity: 0;
   }
   .tear-demo .tear-top .pack {
-    clip-path: polygon(0 0, 100% 0, 100% 26%, 86% 22%, 70% 27%, 52% 21%, 34% 28%, 18% 22%, 0 26%);
+    clip-path: polygon(
+      -20% -20%,
+      120% -20%,
+      120% 26%,
+      100% 26%,
+      86% 22%,
+      70% 27%,
+      52% 21%,
+      34% 28%,
+      18% 22%,
+      0 26%,
+      -20% 26%
+    );
   }
   .tear-demo .tear-mark.is-open > .pack {
     clip-path: polygon(
+      -20% 26%,
       0 26%,
       18% 22%,
       34% 28%,
@@ -415,8 +444,9 @@
       70% 27%,
       86% 22%,
       100% 26%,
-      100% 100%,
-      0 100%
+      120% 26%,
+      120% 130%,
+      -20% 130%
     );
   }
   .tear-demo .tear-mark.is-open.is-braises .tear-top {
@@ -436,7 +466,17 @@
   }
   .tear-demo .tear-mark.is-open.is-verre > .pack,
   .tear-demo .tear-mark.is-open.is-original > .pack {
-    clip-path: polygon(0 30%, 30% 24%, 50% 34%, 72% 22%, 100% 30%, 100% 100%, 0 100%);
+    clip-path: polygon(
+      -20% 30%,
+      0 30%,
+      30% 24%,
+      50% 34%,
+      72% 22%,
+      100% 30%,
+      120% 30%,
+      120% 130%,
+      -20% 130%
+    );
   }
   .tear-demo .tear-mark.is-open .tm-burn {
     transform: scaleX(1);
@@ -450,7 +490,7 @@
     left: 50%;
     top: 22%;
     z-index: 1;
-    width: 62%;
+    width: 50%;
     aspect-ratio: 63 / 88;
     border-radius: 10px;
     opacity: 0;
