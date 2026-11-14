@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { BoosterPack } from '@/features/game/components/booster-pack'
 import { tearKind, type TearKind } from '../cosmetic-skins'
 import { useEquippedStyle } from '../style-context'
-import '@/styles/cosmetics-tears.css'
+import '@/styles/cosmetics-tears-demo.css'
 
 const TAPS = 3
 const CRACKS = [

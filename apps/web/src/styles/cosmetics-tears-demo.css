@@ -1,13 +1,3 @@
-@keyframes tear-ember-flicker {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.78;
-  }
-}
-
 @keyframes tear-spark-rise {
   0% {
     transform: translateY(0);
@@ -77,140 +67,6 @@
 }
 
 @layer components {
-  .ar-tear-fx,
-  .ar-tear-top {
-    z-index: 16;
-    pointer-events: none;
-    animation: ar-float 3.2s ease-in-out infinite;
-  }
-  .ar-tear-top {
-    opacity: 0;
-  }
-  .ar-tear-top-clip {
-    position: absolute;
-    inset: 0;
-    clip-path: polygon(
-      -20% -20%,
-      120% -20%,
-      120% 26%,
-      100% 26%,
-      86% 22%,
-      70% 27%,
-      52% 21%,
-      34% 28%,
-      18% 22%,
-      0 26%,
-      -20% 26%
-    );
-  }
-  .ar-pack-wrap.is-torn .ar-pack-art {
-    clip-path: polygon(
-      -20% 26%,
-      0 26%,
-      18% 22%,
-      34% 28%,
-      52% 21%,
-      70% 27%,
-      86% 22%,
-      100% 26%,
-      120% 26%,
-      120% 130%,
-      -20% 130%
-    );
-  }
-  .ar-pack-wrap.tear-braises .ar-cracks,
-  .ar-pack-wrap.tear-ruban .ar-cracks {
-    display: none;
-  }
-
-  .ar-tear-burn {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 23%;
-    height: 8px;
-    opacity: 0;
-    transform: scaleX(0);
-    transform-origin: left center;
-    background: linear-gradient(90deg, #f97316, #fde047 30%, #f97316 55%, #dc2626 80%, #f97316);
-    filter: blur(0.6px);
-    box-shadow:
-      0 0 10px #f97316,
-      0 0 20px #f9731688;
-    clip-path: polygon(
-      0 40%,
-      12% 0,
-      25% 60%,
-      40% 10%,
-      55% 70%,
-      70% 0,
-      85% 55%,
-      100% 20%,
-      100% 100%,
-      0 100%
-    );
-    animation: tear-ember-flicker 0.4s steps(2) infinite;
-  }
-
-  .ar-pack-wrap.tear-verre .ar-cracks {
-    filter: drop-shadow(0 0 3px #e0f2fe) drop-shadow(0 0 9px rgba(165, 243, 252, 0.75));
-  }
-  .ar-pack-wrap.tear-verre .ar-cracks path {
-    stroke-width: 1.6;
-  }
-  .ar-shard.is-glass .ar-shard-clip::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      135deg,
-      #ffffffcc,
-      color-mix(in srgb, var(--tear-c, #a5f3fc) 60%, transparent) 55%,
-      #ffffff33
-    );
-    mix-blend-mode: screen;
-  }
-
-  .ar-tear-ribbon {
-    position: absolute;
-    z-index: 2;
-    box-shadow: 0 1px 3px #0008;
-  }
-  .ar-tear-ribbon.is-h {
-    left: 0;
-    right: 0;
-    top: 42%;
-    height: 20px;
-    background: linear-gradient(180deg, #fde68a, #d9b45a 50%, #a16207);
-  }
-  .ar-tear-ribbon.is-v {
-    top: 0;
-    bottom: 0;
-    left: calc(50% - 10px);
-    width: 20px;
-    background: linear-gradient(90deg, #fde68a, #d9b45a 50%, #a16207);
-  }
-  .ar-tear-bow {
-    position: absolute;
-    z-index: 3;
-    top: 36%;
-    left: 50%;
-    width: 60px;
-    height: 37px;
-    transform: translateX(-50%);
-    background:
-      radial-gradient(circle at 25% 50%, #fde68a 0 30%, transparent 32%),
-      radial-gradient(circle at 75% 50%, #fde68a 0 30%, transparent 32%),
-      radial-gradient(circle at 50% 50%, #a16207 0 18%, transparent 20%);
-    filter: drop-shadow(0 2px 3px #0008);
-  }
-
-  .rm .ar-tear-fx,
-  .rm .ar-tear-top,
-  .rm .ar-tear-burn {
-    animation: none;
-  }
-
   /* Try-on demo and catalogue marks, drawn over the shop's `.pack`. */
   .tear-demo {
     display: grid;
@@ -505,9 +361,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .ar-tear-fx,
-    .ar-tear-top,
-    .ar-tear-burn,
     .tear-mark .tm-spark,
     .tear-mark .tm-shard,
     .tear-demo .tear-mark * {
