@@ -26,14 +26,19 @@ export function CharmBadge({ charm }: CharmBadgeProps) {
 interface CharmOddsProps {
   charm: OpeningCharm
   isPremium: boolean
+  isOverlay?: boolean
 }
 
 /** The odds the charm changed for this booster: the struck usual value, then the boosted one. */
-export function CharmOdds({ charm, isPremium }: CharmOddsProps) {
+export function CharmOdds({ charm, isPremium, isOverlay = false }: CharmOddsProps) {
   const copy = CHARM_COPY[charm.id]
   const lines = isPremium ? copy.premiumOdds : copy.standardOdds
   return (
-    <div className="charm-odds" style={{ '--c': copy.color } as CSSProperties}>
+    <div
+      className={`charm-odds${isOverlay ? ' is-overlay' : ''}`}
+      style={{ '--c': copy.color } as CSSProperties}
+      aria-hidden={isOverlay}
+    >
       <p className="charm-odds-title">Chances de base</p>
       {lines.map((line) => (
         <div key={line.label} className="charm-odds-line">

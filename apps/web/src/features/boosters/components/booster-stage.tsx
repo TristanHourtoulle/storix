@@ -73,7 +73,7 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
   }
 
   return (
-    <main className="screen ar-screen min-h-dvh">
+    <main className={`screen ar-screen min-h-dvh${opening.charm === null ? '' : ' has-charm'}`}>
       <TopBar
         title={`Booster · ${revealedCount} / ${pullCount} révélées`}
         start={
@@ -103,6 +103,9 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
             <p className="ar-stamp" style={STAMP_STYLE} />
           </div>
         </div>
+        {opening.charm !== null && state.phase === 'pack' ? (
+          <CharmOdds charm={opening.charm} isPremium={opening.isPremium} isOverlay />
+        ) : null}
         <button
           type="button"
           className="ar-tap"
@@ -133,9 +136,7 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
           {hint}
         </p>
       )}
-      {opening.charm !== null && state.phase === 'pack' ? (
-        <CharmOdds charm={opening.charm} isPremium={opening.isPremium} />
-      ) : null}
+
       {isComplete ? (
         <div className="flex flex-col gap-3">
           {state.phase === 'summary' ? <PushPrompt /> : null}

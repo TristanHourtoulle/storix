@@ -104,8 +104,8 @@ export function CharmShop({ leagueId }: CharmShopProps) {
         })}
       </ul>
       <p className="charm-fine">
-        Un seul bonus actif à la fois, 10 boosters chacun. Ils ne changent rien au classement ni aux
-        trophées, et la ligue voit le bonus sur tes ouvertures.
+        Un seul bonus actif à la fois, 10 boosters chacun. La ligue voit le bonus sur tes
+        ouvertures, et le classement compte tout pareil, bonus ou pas.
       </p>
       <CharmSheet
         leagueId={leagueId}

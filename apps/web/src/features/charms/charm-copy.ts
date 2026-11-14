@@ -100,8 +100,7 @@ export const CHARM_COPY: Readonly<Record<CharmId, CharmCopy>> = {
   },
 }
 
-export const MYTHIC_ABSENT_NOTE =
-  'Pas encore de Mythique dans la ligue : la chance va aux Légendaires'
+export const MYTHIC_ABSENT_NOTE = 'Sans Mythique dans la ligue, ça profite aux Légendaires'
 
 /** "7 boosters restants", singular aware. */
 export function chargesLeftLabel(charges: number): string {
