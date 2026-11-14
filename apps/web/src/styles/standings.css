@@ -58,6 +58,8 @@
   }
   .lg-step.s1 {
     height: 92px;
+  }
+  .lg-step.t1 {
     color: #fbbf24;
     background: linear-gradient(
       180deg,
@@ -67,6 +69,8 @@
   }
   .lg-step.s2 {
     height: 66px;
+  }
+  .lg-step.t2 {
     color: #cbd5e1;
     background: linear-gradient(
       180deg,
@@ -76,12 +80,25 @@
   }
   .lg-step.s3 {
     height: 50px;
+  }
+  .lg-step.t3 {
     color: #d97706;
     background: linear-gradient(
       180deg,
       color-mix(in srgb, #d97706 35%, var(--color-surface-2)),
       var(--color-surface)
     );
+  }
+
+  .lg-empty {
+    margin: 0;
+    padding: 18px 16px;
+    border-radius: 14px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--color-muted);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-hairline);
   }
 
   .lg-list {

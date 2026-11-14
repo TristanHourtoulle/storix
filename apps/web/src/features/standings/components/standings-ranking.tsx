@@ -11,7 +11,7 @@ import {
 import { useMemo } from 'react'
 import { ChipRow } from '@/components/ui/chip-row'
 import { useTravelDirection } from '@/features/cosmetics/use-travel-direction'
-import { formatCount, ordinal, themeSubline } from '../standings-copy'
+import { formatCount, ordinal, themeEmptyText, themeSubline } from '../standings-copy'
 import { StandingAvatar } from './standing-avatar'
 import { StandingName } from './standing-name'
 
@@ -49,7 +49,7 @@ function PodiumStep({ leagueId, row, step }: PodiumStepProps) {
       <StandingAvatar member={row.entry} size={step === 1 ? 'xl' : 'lg'} />
       <StandingName member={row.entry} className="lg-pod-name" />
       <span className="lg-pod-val">{formatCount(row.value)}</span>
-      <span className={`lg-step s${step}`}>{row.position}</span>
+      <span className={`lg-step s${step} t${Math.min(row.position, 3)}`}>{row.position}</span>
     </Link>
   )
 }
@@ -99,9 +99,9 @@ export function StandingsRanking({
   const theme = standingTheme(themeId)
   const rows = useMemo(() => rankStandings(members, themeId), [members, themeId])
   const direction = useTravelDirection(themeIndex(themeId))
-  const hasPodium = rows.length >= PODIUM_MIN_MEMBERS
-  const listed = hasPodium ? rows.slice(PODIUM_MIN_MEMBERS) : rows
   const leaderValue = rows[0]?.value ?? 0
+  const hasPodium = rows.length >= PODIUM_MIN_MEMBERS && leaderValue > 0
+  const listed = hasPodium ? rows.slice(PODIUM_MIN_MEMBERS) : rows
   const me = rows.find((row) => row.entry.isSelf)
 
   return (
@@ -114,6 +114,7 @@ export function StandingsRanking({
         announce={announceTheme}
       />
       <div key={themeId} className={`lg-pane ${direction}`}>
+        {leaderValue === 0 ? <p className="lg-empty">{themeEmptyText(themeId)}</p> : null}
         {hasPodium ? (
           <div className="lg-podium">
             <PodiumStep leagueId={leagueId} row={rows[1]} step={2} />
