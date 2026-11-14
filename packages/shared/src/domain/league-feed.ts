@@ -16,6 +16,7 @@ export const LEAGUE_EVENT_TYPES = [
   'league_goal_reached',
   'league_goal_bonus',
   'league_goal_missed',
+  'series_recap',
 ] as const
 
 export type LeagueEventType = (typeof LEAGUE_EVENT_TYPES)[number]
@@ -27,7 +28,7 @@ export type FeedFilter = (typeof FEED_FILTER_IDS)[number]
 export const FEED_FILTERS: Readonly<Record<FeedFilter, readonly LeagueEventType[]>> = {
   all: LEAGUE_EVENT_TYPES,
   pulls: ['booster_opened', 'card_pulled', 'card_tier_reached'],
-  photos: ['card_published'],
+  photos: ['card_published', 'series_recap'],
   feats: ['card_promoted', 'card_foiled', 'emblem_unlocked', 'missions_week_completed'],
 }
 
@@ -50,6 +51,10 @@ export interface LeagueEventPayload {
   target?: number
   progress?: number
   weekKey?: string
+  seriesId?: string
+  seriesCardIds?: string[]
+  memberCount?: number
+  topCount?: number
 }
 
 export interface FeedEvent {
@@ -84,6 +89,7 @@ const NEVER_GROUPED: ReadonlySet<LeagueEventType> = new Set([
   'league_goal_reached',
   'league_goal_bonus',
   'league_goal_missed',
+  'series_recap',
 ])
 
 const GROUPED_ACROSS_ACTORS: ReadonlySet<LeagueEventType> = new Set([

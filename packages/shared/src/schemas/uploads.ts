@@ -11,6 +11,7 @@ import {
 } from '../domain'
 import { idSchema, isoDateSchema } from './common'
 import { imageSetSchema } from './media'
+import { seriesIdsBodySchema } from './series-refs'
 
 export const UPLOAD_STATUSES = [
   'pending',
@@ -85,6 +86,7 @@ export const editUploadBodySchema = z
     title: draftTitleSchema.optional(),
     taggedUserIds: taggedUserIdsBodySchema.optional(),
     crop: cropRectSchema.nullable().optional(),
+    seriesIds: seriesIdsBodySchema.optional(),
   })
   .refine((b) => Object.keys(b).length > 0)
 
@@ -122,6 +124,7 @@ export const uploadDraftSchema = z.object({
   status: z.enum(['uploaded', 'processing', 'staged']),
   title: z.string().nullable(),
   taggedUserIds: z.array(idSchema),
+  seriesIds: z.array(z.uuid()).catch([]),
   crop: cropRectSchema.nullable(),
   capturedAt: isoDateSchema.nullable(),
   createdAt: isoDateSchema,

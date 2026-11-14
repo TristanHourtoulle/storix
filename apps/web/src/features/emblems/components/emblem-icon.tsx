@@ -37,6 +37,7 @@ const EMBLEM_PATHS: Record<EmblemId, readonly string[]> = {
     'M18 3l.6 1.6L20 5l-1.4.6L18 7l-.6-1.4L16 5l1.4-.4z',
   ],
   'on-time': ['M12 4a8 8 0 1 1 0 16 8 8 0 0 1 0-16Z', 'M12 8v4l2.5 2.5', 'M13 1.5l-2 3h3l-2 3'],
+  'series-complete': ['M4 6h7v7H4zM13 6h7v7h-7z', 'M4 15h7v5H4z', 'M14 17.5l2 2 4-4.5'],
 }
 
 interface EmblemIconProps {

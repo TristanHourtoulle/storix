@@ -1,10 +1,11 @@
 import { z } from 'zod'
-import { FEED_FILTER_IDS, LEAGUE_EVENT_TYPES } from '../domain'
+import { FEED_FILTER_IDS, LEAGUE_EVENT_TYPES, SERIES_RECAP_CARDS } from '../domain'
 import { cardTierSchema, collectionCardSchema } from './cards'
 import { storedCharmIdSchema } from './charms'
 import { isoDateSchema } from './common'
 import { emblemIdSchema } from './emblems'
 import { goalTypeSchema } from './league-goal'
+import { themeIdeaSchema } from './series'
 
 export const FEED_DEFAULT_LIMIT = 20
 export const FEED_MAX_LIMIT = 50
@@ -60,13 +61,24 @@ export const feedGoalSchema = z.object({
   progress: z.int().min(0),
 })
 
+export const feedSeriesSchema = z.object({
+  id: z.uuid(),
+  title: z.string(),
+  emoji: z.string(),
+  color: z.string().regex(/^#[0-9a-f]{6}$/),
+  cardCount: z.int().min(0),
+  memberCount: z.int().min(0),
+  topCount: z.int().min(0),
+  next: themeIdeaSchema.nullable(),
+})
+
 export const feedRowSchema = z.object({
   id: z.uuid(),
   kind: leagueEventTypeSchema,
   actors: z.array(feedActorSchema).min(1),
   count: z.int().min(1),
   card: collectionCardSchema.nullable(),
-  thumbs: z.array(collectionCardSchema).max(FEED_THUMBS),
+  thumbs: z.array(collectionCardSchema).max(SERIES_RECAP_CARDS),
   tier: cardTierSchema.nullable(),
   isPremium: z.boolean(),
   isDiscovery: z.boolean(),
@@ -75,6 +87,7 @@ export const feedRowSchema = z.object({
   toTier: cardTierSchema.nullable(),
   emblemIds: z.array(emblemIdSchema),
   goal: feedGoalSchema.nullable(),
+  series: feedSeriesSchema.nullable().catch(null),
   bravoCount: z.int().min(0),
   hasBravoed: z.boolean(),
   isNew: z.boolean(),
@@ -115,6 +128,7 @@ export type FeedBravo = z.infer<typeof feedBravoSchema>
 export type FeedQuery = z.infer<typeof feedQuerySchema>
 export type FeedActor = z.infer<typeof feedActorSchema>
 export type FeedRow = z.infer<typeof feedRowSchema>
+export type FeedSeries = z.infer<typeof feedSeriesSchema>
 export type FeedPage = z.infer<typeof feedPageSchema>
 export type FeedHighlight = z.infer<typeof feedHighlightSchema>
 export type FeedHighlights = z.infer<typeof feedHighlightsSchema>
