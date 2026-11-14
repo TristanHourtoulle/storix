@@ -116,10 +116,8 @@ export function createMediaSweepService(deps: Deps): MediaSweepService {
     )
     const incoming = keys.filter((key) => key.startsWith(INCOMING_PREFIX))
     if (incoming.length > 0) {
-      await bestEffort(
-        { count: incoming.length },
-        'Failed to delete settled portrait sources',
-        () => storage.delete(incoming),
+      await bestEffort({ count: incoming.length }, 'Failed to delete settled portrait sources', () =>
+        storage.delete(incoming),
       )
     }
     return keys.length

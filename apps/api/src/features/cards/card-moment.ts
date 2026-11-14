@@ -18,9 +18,7 @@ export const readyMomentSelfieUploadId = sql<string | null>`(
 )`
 
 /** Selects the Moment stamp the card's author wears, so every Moment card follows its author's style. */
-export const authorMomentStamp = sql<
-  string | null
->`case when ${cards.momentTakenAt} is not null then (
+export const authorMomentStamp = sql<string | null>`case when ${cards.momentTakenAt} is not null then (
   select uc.moment_stamp from user_cosmetics uc
   where uc.user_id = ${cards.authorId}
 ) end`
