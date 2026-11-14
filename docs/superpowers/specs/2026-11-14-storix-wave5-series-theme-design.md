@@ -24,7 +24,7 @@ series even when a theme comes back.
 
 ### Data
 
-- `card_series`: id, league_id, kind (`theme` | `event`), title, emoji, color, week_key (themes only, unique
+- `card_series`: id, league_id, kind (`theme` | `event`), title, icon, color, week_key (themes only, unique
   per league), starts_at, ends_at, grace_ends_at, closed_at, created_by, created_at.
 - `card_series_cards`: (series_id, card_id) primary key, added_at. Cascades with the series and the card.
 - `card_series_rewards`: (series_id, user_id) primary key, league_id, rewarded_at. One reward per member and
@@ -42,7 +42,9 @@ series even when a theme comes back.
 - Series page: header (emoji, name, kind, dates, progress), then the series cards with the regular collection
   grid (owned cards and locked silhouettes « encore à trouver »). Open series say « possédées sur N pour
   l'instant · en cours, le total bouge ».
-- Seal 1: a round emoji badge at the top-left of series cards (grid, booster, feed, mini cards). The card
+- No emoji anywhere (user request): every series carries a line-icon key from a curated list
+  (`SERIES_ICONS`), drawn with the app's own icon set.
+- Seal 1: a small « Nuit holo » medallion with the series line icon at the top-left of series cards (grid, booster, feed, mini cards). The card
   detail lists the full series names.
 - Reward: when a closed series of at least 5 active cards is fully owned by a member, they get the emblem
   « Série complète » (once) and 150 paillettes (each series). Checked by the worker every 10 minutes, so a
@@ -51,10 +53,10 @@ series even when a theme comes back.
 
 ## Weekly theme
 
-- Rotation B: a list of 40 themes (title, emoji, color) in shared code. Each league walks a deterministic
+- Rotation B: a list of 40 themes (title, icon, color) in shared code. Each league walks a deterministic
   shuffle of the list (seeded by league id and cycle), so no theme repeats before the list is used up, and
   a cycle never starts with the theme that ended the previous one.
-- An admin (or owner) can replace next week's theme with a title and a single emoji (or a suggestion from
+- An admin (or owner) can replace next week's theme with a title and an icon picked from the list (or a suggestion from
   the list), flagged `is_override`. The override is the next week's `card_series` row, created ahead of time; the rotation fills any
   week without a row.
 - Home: the theme card (A) between the Moment and the booster: emoji, « Thème de la semaine », name, days
