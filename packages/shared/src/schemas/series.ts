@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import {
+  isSingleEmoji,
   SERIES_EMOJI_MAX_LENGTH,
   SERIES_KINDS,
   SERIES_PHASES,
@@ -60,7 +61,7 @@ export const seriesDetailSchema = z.object({
 
 export const themeOverrideBodySchema = z.object({
   title: z.string().trim().min(1).max(SERIES_TITLE_MAX_LENGTH),
-  emoji: z.string().trim().min(1).max(SERIES_EMOJI_MAX_LENGTH),
+  emoji: z.string().trim().min(1).max(SERIES_EMOJI_MAX_LENGTH).refine(isSingleEmoji),
 })
 
 export const addSeriesCardBodySchema = z.object({ cardId: z.uuid() })

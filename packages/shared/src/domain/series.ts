@@ -14,6 +14,17 @@ export const SERIES_RECAP_CARDS = 5
 export const SERIES_TITLE_MAX_LENGTH = 40
 export const SERIES_EMOJI_MAX_LENGTH = 16
 export const SERIES_TICK_MINUTES = 10
+export const THEME_GRACE_MS = 2 * 3_600_000
+export const SERIES_REWARD_WINDOW_DAYS = 30
+export const SERIES_SHELF_CLOSED_MAX = 12
+
+const EMOJI_PATTERN = /\p{Extended_Pictographic}|\p{Regional_Indicator}/u
+const GRAPHEMES = new Intl.Segmenter('fr', { granularity: 'grapheme' })
+
+/** Tells whether a text is exactly one emoji (one grapheme holding a pictograph or a flag). */
+export function isSingleEmoji(text: string): boolean {
+  return [...GRAPHEMES.segment(text)].length === 1 && EMOJI_PATTERN.test(text)
+}
 
 export interface ThemeIdea {
   title: string
@@ -99,11 +110,13 @@ export function themeWeekKey(now: Date): string {
   return keyOf(midnight - weekday * DAY_MS)
 }
 
-/** Returns the [start, end) instants of a theme week, DST aware. */
-export function themeWeekBounds(key: string): { start: Date; end: Date } {
+/** Returns the [start, end) instants of a theme week, DST aware, and the end of its 2 h grace window. */
+export function themeWeekBounds(key: string): { start: Date; end: Date; graceEnd: Date } {
+  const end = parisLocalInstant(keyOf(midnightOf(key) + WEEK_MS), 0)
   return {
     start: parisLocalInstant(key, 0),
-    end: parisLocalInstant(keyOf(midnightOf(key) + WEEK_MS), 0),
+    end,
+    graceEnd: new Date(end.getTime() + THEME_GRACE_MS),
   }
 }
 
@@ -143,6 +156,14 @@ function shuffledIndexes(length: number, seed: string): number[] {
   )
 }
 
+function cycleOrder(leagueId: string, cycle: number, length: number): number[] {
+  const order = shuffledIndexes(length, `${leagueId}:${cycle}`)
+  if (cycle === 0 || length < 2) return order
+  const previousLast = shuffledIndexes(length, `${leagueId}:${cycle - 1}`).at(-1)
+  if (order[0] !== previousLast) return order
+  return order.with(0, order[1] ?? 0).with(1, order[0] ?? 0)
+}
+
 /** Picks the rotation theme of a league for a week: a per-league shuffle of the list, no repeat before the list is used up. */
 export function rotationThemeFor(
   leagueId: string,
@@ -151,7 +172,7 @@ export function rotationThemeFor(
 ): ThemeIdea {
   const weekIndex = Math.max(0, Math.round((midnightOf(weekKey) - EPOCH_MONDAY) / WEEK_MS))
   const cycle = Math.floor(weekIndex / ideas.length)
-  const order = shuffledIndexes(ideas.length, `${leagueId}:${cycle}`)
+  const order = cycleOrder(leagueId, cycle, ideas.length)
   const idea = ideas[order[weekIndex % ideas.length] ?? 0]
   if (idea === undefined) throw new Error('Empty theme rotation')
   return idea

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   acceptsCards,
   daysLeft,
+  isSingleEmoji,
   isRewardEligible,
   mostActive,
   nextThemeWeekKey,
@@ -29,6 +30,7 @@ describe('themeWeekBounds', () => {
     expect(themeWeekBounds('2026-11-09')).toEqual({
       start: new Date('2026-11-08T23:00:00Z'),
       end: new Date('2026-11-15T23:00:00Z'),
+      graceEnd: new Date('2026-11-16T01:00:00Z'),
     })
   })
 
@@ -36,6 +38,21 @@ describe('themeWeekBounds', () => {
     const { start, end } = themeWeekBounds('2026-03-23')
     expect(start).toEqual(new Date('2026-03-22T23:00:00Z'))
     expect(end).toEqual(new Date('2026-03-29T22:00:00Z'))
+  })
+})
+
+function weekKeyAt(index: number): string {
+  return new Date(Date.UTC(2024, 0, 1) + index * 7 * 86_400_000).toISOString().slice(0, 10)
+}
+
+describe('isSingleEmoji', () => {
+  it('should accept one emoji, flags and joined emojis, and refuse text or two emojis', () => {
+    expect(isSingleEmoji('🌿')).toBe(true)
+    expect(isSingleEmoji('👨‍👩‍👧')).toBe(true)
+    expect(isSingleEmoji('🇫🇷')).toBe(true)
+    expect(isSingleEmoji('a')).toBe(false)
+    expect(isSingleEmoji('🌿🌿')).toBe(false)
+    expect(isSingleEmoji('')).toBe(false)
   })
 })
 
@@ -52,6 +69,20 @@ describe('rotationThemeFor', () => {
       { key: '2024-01-01', seen: [] },
     ).seen
     expect(new Set(titles).size).toBe(THEME_ROTATION.length)
+  })
+
+  it('should never start a cycle with the last theme of the previous cycle', () => {
+    const length = THEME_ROTATION.length
+    const lastOfCycle = (cycle: number, leagueId: string) =>
+      rotationThemeFor(leagueId, weekKeyAt((cycle + 1) * length - 1)).title
+    const firstOfCycle = (cycle: number, leagueId: string) =>
+      rotationThemeFor(leagueId, weekKeyAt(cycle * length)).title
+    const leagues = Array.from({ length: 40 }, (_, index) => `league-${index}`)
+    leagues.forEach((leagueId) => {
+      ;[1, 2, 3].forEach((cycle) => {
+        expect(firstOfCycle(cycle, leagueId)).not.toBe(lastOfCycle(cycle - 1, leagueId))
+      })
+    })
   })
 
   it('should give two leagues different orders', () => {
