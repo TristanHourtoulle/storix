@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
-import type { BoosterPull, Box } from '@storix/shared'
+import type { BoosterOpening, BoosterPull, Box } from '@storix/shared'
 import { TIER_LABELS } from '@/features/cards/tier-labels'
+import { CharmDot, CharmRecap } from '@/features/charms/components/charm-opening'
 import { playSound } from '@/features/sound/sound'
 import { tierKey } from '../arcade/tiers'
 import { bestPullIndex, pullLabel } from '../pull-label'
@@ -13,9 +14,16 @@ interface ArcadeSummaryProps {
   pulls: readonly BoosterPull[]
   openedAt: string
   leagueName: string
+  charm?: BoosterOpening['charm']
 }
 
-export function ArcadeSummary({ leagueId, pulls, openedAt, leagueName }: ArcadeSummaryProps) {
+export function ArcadeSummary({
+  leagueId,
+  pulls,
+  openedAt,
+  leagueName,
+  charm = null,
+}: ArcadeSummaryProps) {
   const best = bestPullIndex(pulls)
   const bestPull = pulls[best]
   const heading = pulls.length > 1 ? `Tes ${pulls.length} cartes` : 'Ta carte'
@@ -87,6 +95,7 @@ export function ArcadeSummary({ leagueId, pulls, openedAt, leagueName }: ArcadeS
           </p>
         ) : null}
       </div>
+      {charm === null ? null : <CharmRecap charm={charm} pulls={pulls} />}
       <ul className="ar-summary-grid">
         {pulls.map((pull, index) => (
           <li key={pull.slot}>
@@ -96,7 +105,9 @@ export function ArcadeSummary({ leagueId, pulls, openedAt, leagueName }: ArcadeS
                 else buttons.current.delete(index)
               }}
               type="button"
-              className={`ar-summary-item${index === best ? ' is-best' : ''}`}
+              className={`ar-summary-item${index === best ? ' is-best' : ''}${
+                charm !== null && pull.isCharmBoosted ? ' is-charmed' : ''
+              }`}
               data-t={tierKey(pull.card.tier)}
               style={{ '--i': index } as CSSProperties}
               aria-label={`Agrandir ${pull.card.title}`}
@@ -112,6 +123,7 @@ export function ArcadeSummary({ leagueId, pulls, openedAt, leagueName }: ArcadeS
               >
                 <PulledFace pull={pull} />
               </div>
+              {charm !== null && pull.isCharmBoosted ? <CharmDot charm={charm} /> : null}
               <span className="ar-summary-name">{pull.card.title}</span>
               <span className="ar-summary-tier">{TIER_LABELS[pull.card.tier]}</span>
               <span className={pull.isFirstCopy ? 'ar-summary-new' : 'ar-summary-dust'}>

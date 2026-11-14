@@ -1,6 +1,7 @@
 import {
   CARD_TIERS,
   LEAGUE_ROLES,
+  findCharm,
   findCosmetic,
   formatMomentLateness,
   type AuditAction,
@@ -299,6 +300,16 @@ function economySentence(actor: SentencePart, entry: AuditEntry): AuditSentence 
         price === null ? [] : [formatDustPrice(price)],
       )
     }
+    case 'charm.purchased': {
+      const charm = findCharm(str(meta, 'charm') ?? '')
+      const price = num(meta, 'price')
+      return sentence(
+        charm === undefined
+          ? [actor, ' a pris un porte-bonheur']
+          : [actor, ' a pris le porte-bonheur ', { strong: charm.name }],
+        price === null ? [] : [formatDustPrice(price)],
+      )
+    }
     case 'league_goal.reward_granted': {
       const boosters = num(meta, 'boosters') ?? 0
       const gifts = num(meta, 'premiumGifts') ?? 0
@@ -436,6 +447,7 @@ export function auditSentence(entry: AuditEntry): AuditSentence {
     case 'league_goal.reward_granted':
     case 'moment.posted':
     case 'cosmetic.purchased':
+    case 'charm.purchased':
       return economySentence(actor, entry)
     case 'card.created':
     case 'card.hidden':

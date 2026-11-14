@@ -14,9 +14,13 @@ export const SHOP_CATEGORY_SLUGS = [
 
 export type ShopCategorySlug = (typeof SHOP_CATEGORY_SLUGS)[number]
 
-export const SHOP_FAMILY_SLUGS = ['cartes', 'profil', 'sons'] as const
+export const SHOP_FAMILY_SLUGS = ['cartes', 'profil', 'bonus'] as const
 
 export type ShopFamilySlug = (typeof SHOP_FAMILY_SLUGS)[number]
+
+export const STYLE_FAMILY_SLUGS = ['cartes', 'profil'] as const satisfies readonly ShopFamilySlug[]
+
+export type StyleFamilySlug = (typeof STYLE_FAMILY_SLUGS)[number]
 
 export interface ShopCategory {
   slug: ShopCategorySlug
@@ -65,7 +69,7 @@ const FAMILY_OF_CATEGORY: Readonly<Record<ShopCategorySlug, ShopFamilySlug>> = {
 const FAMILY_LABEL: Readonly<Record<ShopFamilySlug, string>> = {
   cartes: 'Cartes',
   profil: 'Profil',
-  sons: 'Sons & partage',
+  bonus: 'Bonus',
 }
 
 export const SHOP_FAMILIES: readonly ShopFamily[] = SHOP_FAMILY_SLUGS.map((slug) => ({

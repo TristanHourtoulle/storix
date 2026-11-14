@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
+import { CharmShop } from '@/features/charms/components/charm-shop'
 import { DustBalance } from '@/features/game/components/dust-balance'
 import { useWallet } from '@/features/game/use-wallet'
 import { myCosmeticsQueryOptions } from '../cosmetics.queries'
@@ -25,7 +26,7 @@ export function ShopCatalogue({ leagueId, shelf, onShelfChange }: ShopCatalogueP
         <h1 className="shop-title">Boutique</h1>
         <DustBalance dust={dust} />
       </div>
-      <ShopShelves shelf={shelf} onChange={onShelfChange}>
+      <ShopShelves shelf={shelf} onChange={onShelfChange} bonus={<CharmShop leagueId={leagueId} />}>
         {(category) => (
           <ul className="shop-list">
             {slotOptions(shopCategory(category).slot).map((option) => (

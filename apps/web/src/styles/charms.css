@@ -1,0 +1,269 @@
+/* Porte-bonheur: the Bonus shelf of the shop, its confirmation sheet and the opening badge. */
+@layer components {
+  .charm-shop {
+    display: grid;
+    gap: 10px;
+  }
+  .charm-slot {
+    display: grid;
+    grid-template-columns: 86px minmax(0, 1fr);
+    gap: 14px;
+    align-items: center;
+    padding: 16px;
+    border-radius: 22px;
+    background:
+      radial-gradient(
+        circle at 15% 50%,
+        color-mix(in srgb, var(--c) 26%, transparent),
+        transparent 60%
+      ),
+      var(--color-surface);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, var(--color-line));
+  }
+  .charm-ring {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 86px;
+    height: 86px;
+    color: var(--c);
+  }
+  .charm-ring-track {
+    position: absolute;
+    inset: 0;
+    width: 86px;
+    height: 86px;
+    transform: rotate(-90deg);
+  }
+  .charm-ring-bg {
+    fill: none;
+    stroke: var(--color-line-strong);
+    stroke-width: 6;
+  }
+  .charm-ring-fill {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 6;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease-out;
+  }
+  .charm-ring-icon {
+    width: 34px;
+    height: 34px;
+  }
+  .charm-ring-icon.is-empty {
+    opacity: 0.35;
+  }
+  .charm-slot-text {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+  .charm-slot-text b {
+    font: 700 18px var(--font-display);
+    color: var(--color-ink);
+  }
+  .charm-slot-eff {
+    font-size: 13px;
+    color: var(--color-ink-2);
+  }
+  .charm-slot-left {
+    font: 600 13px var(--font-display);
+    font-variant-numeric: tabular-nums;
+    color: var(--c);
+  }
+  .charm-week {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--color-muted);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .charm-list {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .charm-row {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    border-radius: 16px;
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 1px var(--color-line);
+  }
+  .charm-row.is-active {
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent);
+  }
+  .charm-ico {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--c) 20%, var(--color-surface-2));
+    color: var(--c);
+  }
+  .charm-ico svg {
+    width: 22px;
+    height: 22px;
+  }
+  .charm-ico.is-lg {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+  }
+  .charm-ico.is-lg svg {
+    width: 28px;
+    height: 28px;
+  }
+  .charm-row-text {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+  .charm-row-text b {
+    font: 600 14.5px var(--font-display);
+    color: var(--color-ink);
+  }
+  .charm-row-eff {
+    font-size: 12px;
+    line-height: 1.3;
+    color: var(--color-muted);
+  }
+  .charm-row-note {
+    font-size: 11.5px;
+    line-height: 1.3;
+    color: var(--color-late);
+  }
+  .charm-row-buy {
+    display: grid;
+    justify-items: end;
+    gap: 4px;
+  }
+  .charm-price {
+    font: 600 12px var(--font-display);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-tier-legendary);
+    white-space: nowrap;
+  }
+  .charm-btn {
+    padding: 7px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--color-surface-2);
+    box-shadow: inset 0 0 0 1px var(--color-line-strong);
+    color: var(--color-ink);
+    font: 600 13px var(--font-display);
+    cursor: pointer;
+  }
+  .charm-btn.is-on {
+    background: var(--color-accent);
+    box-shadow: none;
+    color: var(--color-bg);
+    opacity: 1;
+    cursor: default;
+  }
+  .charm-btn:disabled:not(.is-on) {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .charm-fine {
+    margin: 4px 2px 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--color-faint);
+  }
+  .charm-sheet-head {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+  }
+  .charm-sheet-warn {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--color-late) 14%, transparent);
+    color: var(--color-late);
+    font-size: 13px;
+  }
+
+  .charm-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--c) 18%, var(--color-surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent);
+    color: var(--c);
+    font: 600 14px var(--font-display);
+  }
+  .charm-badge svg {
+    width: 18px;
+    height: 18px;
+  }
+  .charm-badge em {
+    font-style: normal;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink-2);
+    font-size: 13px;
+  }
+  .charm-odds {
+    display: grid;
+    gap: 6px;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 1px var(--color-line);
+    font-size: 13.5px;
+  }
+  .charm-odds-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--color-ink-2);
+  }
+  .charm-odds s {
+    color: var(--color-faint);
+  }
+  .charm-odds b {
+    color: var(--c);
+    font-variant-numeric: tabular-nums;
+  }
+  .charm-opening {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+  }
+  .ar-summary-item.is-charmed {
+    position: relative;
+  }
+  .ar-summary-item .charm-dot {
+    right: calc(50% - 38px);
+  }
+  .charm-dot {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    z-index: 2;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--c);
+    box-shadow: 0 0 0 2px var(--color-bg);
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .charm-ring-fill {
+      transition: none;
+    }
+  }
+}
