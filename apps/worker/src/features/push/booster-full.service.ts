@@ -1,7 +1,7 @@
 import type { Database } from '@storix/db'
 import {
   boosterFullNotificationBody,
-  boosterFullPushPayloadSchema,
+  pushPayloadSchema,
   computeBoosterFullAt,
   isBoosterFullNotificationDue,
   resolveLeagueSettings,
@@ -115,7 +115,7 @@ export function createBoosterFullService(deps: Deps): BoosterFullService {
     candidate: repository.BoosterFullCandidate,
     fill: ClaimedFill,
   ): Promise<SendCounts> {
-    const payload = boosterFullPushPayloadSchema.parse({
+    const payload = pushPayloadSchema.parse({
       v: 1,
       title: NOTIFICATION_TITLE,
       body: boosterFullNotificationBody(fill.leagueName, fill.maxStock),

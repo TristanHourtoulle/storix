@@ -1,22 +1,19 @@
 import type { Database, SeriesRecord } from '@storix/db'
-import { boosterFullPushPayloadSchema } from '@storix/shared'
+import { eventEndPayload, eventStartPayload, type PushPayload } from '@storix/shared'
 import type { WorkerLogger } from '../../lib/logger'
 import type { PushSender, PushTarget } from '../../lib/push-sender.types'
 import {
   claimEventEnd,
-  claimEventStarts,
+  claimEventStart,
   deletePushSubscription,
   listEventPushTargets,
   listSeriesContributors,
+  listUnannouncedStarts,
 } from './series-push.repository'
 
-const NOTIFICATION_TITLE = 'Storix'
-const PARIS_TIME = new Intl.DateTimeFormat('fr-FR', {
-  timeZone: 'Europe/Paris',
-  hour: 'numeric',
-  minute: '2-digit',
-})
-
+const SEND_CHUNK = 10
+/** An event is announced once it has been live this long, so one ended right away never pushes. */
+export const EVENT_START_PUSH_DELAY_MS = 60_000
 export interface SeriesPushService {
   notifyStarts(): Promise<number>
   notifyEnd(series: SeriesRecord): Promise<void>
@@ -30,57 +27,55 @@ interface Deps {
   logger: WorkerLogger
 }
 
-/** « La Soirée de Léa commence ! Les photos d'ici 2:00 vont dans sa série. » */
-export function eventStartBody(series: Pick<SeriesRecord, 'title' | 'endsAt'>): string {
-  return `${series.title} commence ! Les photos d'ici ${PARIS_TIME.format(series.endsAt)} vont dans sa série.`
-}
-
-/** « Soirée de Léa, c'est fini : 23 cartes à trouver dans les boosters. » */
-export function eventEndBody(title: string, cardCount: number): string {
-  const cards = `${cardCount} carte${cardCount > 1 ? 's' : ''}`
-  return `${title}, c'est fini : ${cards} à trouver dans les boosters.`
+function chunks<T>(items: readonly T[], size: number): T[][] {
+  return Array.from({ length: Math.ceil(items.length / size) }, (_, index) =>
+    items.slice(index * size, index * size + size),
+  )
 }
 
 /** Creates the event pushes: one at the start for the whole league, one at the close for the contributors. */
 export function createSeriesPushService({ db, sender, clock, logger }: Deps): SeriesPushService {
-  async function sendAll(
-    targets: readonly PushTarget[],
-    message: { body: string; url: string; tag: string },
-  ): Promise<number> {
+  async function sendAll(targets: readonly PushTarget[], payload: PushPayload): Promise<number> {
     if (sender === null) return 0
-    const payload = boosterFullPushPayloadSchema.parse({
-      v: 1,
-      title: NOTIFICATION_TITLE,
-      ...message,
-    })
     let sent = 0
-    for (const target of targets) {
-      const result = await sender.send(target, payload)
-      if (result === 'sent') sent += 1
-      if (result === 'gone' || result === 'refused')
-        await deletePushSubscription(db, target.endpoint)
+    for (const batch of chunks(targets, SEND_CHUNK)) {
+      const results = await Promise.all(batch.map((target) => sender.send(target, payload)))
+      for (const [index, result] of results.entries()) {
+        if (result === 'sent') sent += 1
+        const target = batch[index]
+        if (target !== undefined && (result === 'gone' || result === 'refused')) {
+          await deletePushSubscription(db, target.endpoint)
+        }
+      }
     }
     return sent
+  }
+
+  async function announceStart(series: SeriesRecord, now: Date): Promise<boolean> {
+    const isOver = series.endsAt <= now
+    const isTooFresh = now.getTime() - series.startsAt.getTime() < EVENT_START_PUSH_DELAY_MS
+    if (isTooFresh && !isOver) return false
+    if (isOver) {
+      await claimEventStart(db, { seriesId: series.id, now })
+      return false
+    }
+    const payload = eventStartPayload(series)
+    if (!(await claimEventStart(db, { seriesId: series.id, now }))) return false
+    const targets = await listEventPushTargets(db, { leagueId: series.leagueId })
+    const sent = await sendAll(targets, payload)
+    logger.info({ seriesId: series.id, sent }, 'Event start announced')
+    return true
   }
 
   return {
     async notifyStarts() {
       const now = clock()
-      const started = await claimEventStarts(db, now)
       let announced = 0
-      for (const series of started) {
-        if (series.endsAt <= now) continue
+      for (const series of await listUnannouncedStarts(db, now)) {
         try {
-          const targets = await listEventPushTargets(db, { leagueId: series.leagueId })
-          const sent = await sendAll(targets, {
-            body: eventStartBody(series),
-            url: `/l/${series.leagueId}`,
-            tag: `event:${series.id}`,
-          })
-          announced += 1
-          logger.info({ seriesId: series.id, sent }, 'Event start announced')
+          if (await announceStart(series, now)) announced += 1
         } catch (error) {
-          logger.warn({ err: error, seriesId: series.id }, 'Event start push failed')
+          logger.error({ err: error, seriesId: series.id }, 'Event start push failed')
         }
       }
       return announced
@@ -88,18 +83,19 @@ export function createSeriesPushService({ db, sender, clock, logger }: Deps): Se
 
     async notifyEnd(series) {
       if (series.kind !== 'event') return
-      const contributors = await listSeriesContributors(db, series.id)
-      const cardCount = contributors.reduce((sum, row) => sum + row.cards, 0)
-      if (cardCount === 0) return
-      if (!(await claimEventEnd(db, { seriesId: series.id, now: clock() }))) return
-      const userIds = contributors.map((row) => row.userId)
-      const targets = await listEventPushTargets(db, { leagueId: series.leagueId, userIds })
-      const sent = await sendAll(targets, {
-        body: eventEndBody(series.title, cardCount),
-        url: `/l/${series.leagueId}/series/${series.id}`,
-        tag: `event-end:${series.id}`,
-      })
-      logger.info({ seriesId: series.id, sent }, 'Event end announced')
+      try {
+        const contributors = await listSeriesContributors(db, series.id)
+        const cardCount = contributors.reduce((sum, row) => sum + row.cards, 0)
+        if (cardCount === 0) return
+        const payload = eventEndPayload(series, cardCount)
+        if (!(await claimEventEnd(db, { seriesId: series.id, now: clock() }))) return
+        const userIds = contributors.map((row) => row.userId)
+        const targets = await listEventPushTargets(db, { leagueId: series.leagueId, userIds })
+        const sent = await sendAll(targets, payload)
+        logger.info({ seriesId: series.id, sent }, 'Event end announced')
+      } catch (error) {
+        logger.error({ err: error, seriesId: series.id }, 'Event end push failed')
+      }
     },
   }
 }

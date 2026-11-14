@@ -23,15 +23,18 @@ export const pushConfigSchema = z.object({ publicKey: z.string().nullable() })
 
 export type PushConfig = z.infer<typeof pushConfigSchema>
 
-export const boosterFullPushPayloadSchema = z.object({
+export const PUSH_TAG_KINDS = ['booster-full', 'moment', 'event', 'event-end'] as const
+
+/** Payload of every web push: a league page, optionally one of its series, and a tag per kind of notice. */
+export const pushPayloadSchema = z.object({
   v: z.literal(1),
   title: z.string().max(64),
   body: z.string().max(512),
-  url: z.string().regex(new RegExp(`^/l/${LEAGUE_ID_PATTERN}$`)),
-  tag: z.string().regex(new RegExp(`^(booster-full|moment):${LEAGUE_ID_PATTERN}$`)),
+  url: z.string().regex(new RegExp(`^/l/${LEAGUE_ID_PATTERN}(/series/${LEAGUE_ID_PATTERN})?$`)),
+  tag: z.string().regex(new RegExp(`^(${PUSH_TAG_KINDS.join('|')}):${LEAGUE_ID_PATTERN}$`)),
 })
 
-export type BoosterFullPushPayload = z.infer<typeof boosterFullPushPayloadSchema>
+export type PushPayload = z.infer<typeof pushPayloadSchema>
 
 export const BOOSTER_FULL_SCAN_JOB = 'push.booster-full-scan'
 

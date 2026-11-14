@@ -2,7 +2,12 @@ import { leagueMembers, pushSubscriptions, type DbExecutor } from '@storix/db'
 import { and, eq, inArray } from 'drizzle-orm'
 import type { PushTarget } from '../../lib/push-sender.types'
 
-export { claimEventEnd, claimEventStarts, listSeriesContributors } from '@storix/db'
+export {
+  claimEventEnd,
+  claimEventStart,
+  listSeriesContributors,
+  listUnannouncedStarts,
+} from '@storix/db'
 export { deletePushSubscription } from '../push/booster-full.repository'
 
 /** Lists the push subscriptions of a league's members, or of some of them. */

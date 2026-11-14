@@ -126,13 +126,45 @@ export async function listOpenEvents(
     .orderBy(asc(cardSeries.startsAt))
 }
 
-/** Marks every started event whose start was not announced yet, and returns them; each one exactly once. */
-export async function claimEventStarts(db: DbExecutor, now: Date): Promise<SeriesRecord[]> {
+/** Lists the started events whose start was not announced yet, oldest first. */
+export async function listUnannouncedStarts(db: DbExecutor, now: Date): Promise<SeriesRecord[]> {
   return db
-    .update(cardSeries)
-    .set({ startNotifiedAt: now })
+    .select()
+    .from(cardSeries)
     .where(and(isEvent, isNull(cardSeries.startNotifiedAt), lte(cardSeries.startsAt, now)))
-    .returning()
+    .orderBy(asc(cardSeries.startsAt))
+}
+
+/** Marks the start of an event as announced; false when another run already did it. */
+export async function claimEventStart(
+  db: DbExecutor,
+  input: { seriesId: string; now: Date },
+): Promise<boolean> {
+  const rows = await db
+    .update(cardSeries)
+    .set({ startNotifiedAt: input.now })
+    .where(and(eq(cardSeries.id, input.seriesId), isEvent, isNull(cardSeries.startNotifiedAt)))
+    .returning({ id: cardSeries.id })
+  return rows.length > 0
+}
+
+/** Counts the events a member scheduled since `since`, cancelled ones excluded. */
+export async function countEventsCreatedSince(
+  db: DbExecutor,
+  input: { leagueId: string; userId: string; since: Date },
+): Promise<number> {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(cardSeries)
+    .where(
+      and(
+        eq(cardSeries.leagueId, input.leagueId),
+        isEvent,
+        eq(cardSeries.createdById, input.userId),
+        gt(cardSeries.createdAt, input.since),
+      ),
+    )
+  return row?.n ?? 0
 }
 
 /** Marks the end of an event as announced; false when another run already did it. */
@@ -161,7 +193,10 @@ export async function listSeriesContributors(
   return result.rows.map((row) => ({ userId: row.author_id, cards: Number(row.n) }))
 }
 
-/** Keeps the ids of the league's series that take a photo with this timing, in the given order. */
+/**
+ * Keeps the ids of the league's series that take a photo with this timing, in the given order. The rows are
+ * share-locked, so inside a transaction a series cannot close between this check and the card being attached.
+ */
 export async function filterSeriesForPhoto(
   db: DbExecutor,
   input: { leagueId: string; seriesIds: readonly string[]; photo: PhotoTiming },
@@ -173,6 +208,7 @@ export async function filterSeriesForPhoto(
     .where(
       and(eq(cardSeries.leagueId, input.leagueId), inArray(cardSeries.id, [...input.seriesIds])),
     )
+    .for('share')
   const open = new Set(rows.filter((row) => acceptsPhoto(row, input.photo)).map((row) => row.id))
   return input.seriesIds.filter((id) => open.has(id))
 }
