@@ -1,45 +1,50 @@
-import { toTransform as T, type Director } from './director'
-import { CENTER_Y as CY, SHARDS, deckPose, shardDirection } from './geometry'
+import type { Director } from './director'
+import { CENTER_Y as CY, SHARDS, shardDirection } from './geometry'
+import { between, dealCards, fadePack, hidePack } from './pack-deal'
+import { burstTear, hitTear, type TearStyle } from './tear-choreography'
 import { BRAND_PARTICLES, CONFETTI_PARTICLES } from './tiers'
 
 export const PACK_TAPS = 3
 
-const DEAL_DELAY_MS = 120
-const DEAL_STAGGER_MS = 60
-const DEAL_DURATION_MS = 820
-const DEAL_LANDING_MS = 450
-const FADE_DEAL_MS = 160
-
-function between(min: number, max: number): number {
-  return min + Math.random() * (max - min)
+function wobblePack(d: Director, count: number): void {
+  const { pack } = d.layers
+  const tilt = count % 2 ? 1 : -1
+  const frames: Keyframe[] = [
+    { transform: `scale(.9) rotate(${-3 * tilt}deg)`, offset: 0.3 },
+    { transform: `scale(${1 + count * 0.02}) rotate(${2 * tilt}deg)`, offset: 0.65 },
+    { transform: 'scale(1) rotate(0deg)' },
+  ]
+  const movers = pack.tearFx ? [pack.wrap, pack.tearFx] : [pack.wrap]
+  movers.forEach((el) => d.fire(d.tween(el, frames, { duration: 320, easing: 'ease-out' })))
 }
 
-/** Plays one hit on the sealed pack. Returns true when the pack is ready to burst. */
-export function hitPack(d: Director, count: number): boolean {
-  const { pack } = d.layers
-  d.sound({ name: 'packTap', step: count - 1 })
-  pack.pipDots.forEach((pip, index) => pip.classList.toggle('is-on', index < count))
-  pack.crackGroups[count - 1]?.querySelectorAll('path').forEach((path) => {
+function crackPack(d: Director, count: number): void {
+  d.layers.pack.crackGroups[count - 1]?.querySelectorAll('path').forEach((path) => {
     d.animate(path, [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], {
       duration: 200,
       fill: 'forwards',
       easing: 'ease-out',
     })
   })
-  const tilt = count % 2 ? 1 : -1
-  d.fire(
-    d.tween(
-      pack.wrap,
-      [
-        { transform: `scale(.9) rotate(${-3 * tilt}deg)`, offset: 0.3 },
-        { transform: `scale(${1 + count * 0.02}) rotate(${2 * tilt}deg)`, offset: 0.65 },
-        { transform: 'scale(1) rotate(0deg)' },
-      ],
-      { duration: 320, easing: 'ease-out' },
-    ),
-  )
+}
+
+/**
+ * Plays one hit on the sealed pack, marked by the worn tear (or the original cracks).
+ * Returns true when the pack is ready to burst.
+ */
+export function hitPack(d: Director, count: number, tear: TearStyle | null = null): boolean {
+  const { pack } = d.layers
+  d.sound({ name: 'packTap', step: count - 1 })
+  pack.pipDots.forEach((pip, index) => pip.classList.toggle('is-on', index < count))
+  wobblePack(d, count)
   d.shake(2 + count * 2.5, 260)
   d.flash(0.12 * count, 220)
+  if (tear) {
+    if (tear.kind === 'verre') crackPack(d, count)
+    hitTear(d, tear, count, PACK_TAPS)
+    return count >= PACK_TAPS
+  }
+  crackPack(d, count)
   d.burst(d.width / 2, CY - 25, {
     n: 10 * count,
     kind: 'spark',
@@ -50,29 +55,6 @@ export function hitPack(d: Director, count: number): boolean {
     size: [1, 2.2],
   })
   return count >= PACK_TAPS
-}
-
-function hidePack(d: Director): void {
-  const { pack } = d.layers
-  const parts = [pack.halo, pack.wrap, pack.pips, ...pack.shards]
-  parts.forEach((el) => {
-    el.style.display = 'none'
-  })
-}
-
-async function fadePack(d: Director): Promise<void> {
-  const { pack, cards } = d.layers
-  const sealed = [pack.halo, pack.wrap, pack.pips]
-  sealed.forEach((el) => d.fire(d.tween(el, { opacity: 0 }, { duration: 240 })))
-  await d.wait(FADE_DEAL_MS)
-  cards.forEach(({ root }, index) => {
-    d.sound({ name: 'slam', index }, (index * DEAL_STAGGER_MS) / 1000)
-    const pose = deckPose(index, cards.length)
-    root.style.transform = T(pose)
-    root.style.zIndex = String(pose.z)
-    d.fire(d.tween(root, [{ opacity: 0 }, { opacity: 1 }], { duration: 300 }))
-  })
-  await d.wait(320)
 }
 
 function throwShards(d: Director): void {
@@ -93,38 +75,17 @@ function throwShards(d: Director): void {
   })
 }
 
-function dealCards(d: Director): void {
-  const { cards } = d.layers
-  cards.forEach(({ root }, index) => {
-    const pose = deckPose(index, cards.length)
-    const mid = T({
-      x: (pose.x ?? 0) * 0.6,
-      y: CY - 150 + Math.abs(pose.x ?? 0) * 0.3,
-      s: 0.5,
-      r: between(-40, 40),
-    })
-    root.style.transform = T({ y: CY, s: 0.2 })
-    root.style.opacity = '1'
-    root.style.zIndex = String(pose.z)
-    const delay = DEAL_DELAY_MS + index * DEAL_STAGGER_MS
-    d.sound({ name: 'slam', index }, (delay + DEAL_LANDING_MS) / 1000)
-    d.fire(
-      d.tween(root, [{ transform: mid, offset: 0.45 }, { transform: T(pose) }], {
-        duration: DEAL_DURATION_MS,
-        delay,
-        easing: 'cubic-bezier(.2,.8,.3,1)',
-      }),
-    )
-  })
-}
-
-/** Bursts the pack into shards and deals the cards into the deck. */
-export async function burstPack(d: Director): Promise<void> {
+/** Bursts the pack, with the worn tear or into the original shards, and deals the cards into the deck. */
+export async function burstPack(d: Director, tear: TearStyle | null = null): Promise<void> {
   const { pack } = d.layers
   if (d.isReduced) {
     d.sound({ name: 'burst' })
     await fadePack(d)
     hidePack(d)
+    return
+  }
+  if (tear) {
+    await burstTear(d, tear, throwShards)
     return
   }
   await d.wait(160)

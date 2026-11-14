@@ -7,11 +7,14 @@ import { Icon } from '@/components/ui/icon'
 import { TopBar } from '@/components/ui/top-bar'
 import { PushPrompt } from '@/features/push/components/push-prompt'
 import { newBoosterRequestId } from '@/features/game/booster-request'
+import { tearKind } from '@/features/cosmetics/cosmetic-skins'
+import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { leagueDetailQueryOptions } from '@/features/leagues/leagues.queries'
 import '@/styles/booster-stage.css'
 import '@/styles/booster-card.css'
 import '@/styles/booster-pack.css'
 import '@/styles/cosmetics-arcade.css'
+import '@/styles/cosmetics-tears.css'
 import { CENTER_Y, STAGE_HEIGHT, STAMP_TOP } from '../arcade/geometry'
 import { useArcadeOpening } from '../use-arcade-opening'
 import { useImagesDecoded } from '../use-images-decoded'
@@ -52,6 +55,7 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
   const shownPull = state.phase === 'shown' ? pulls[state.current] : undefined
   const hasStock = opening.wallet.booster.stock > 0
   const leagueName = useQuery(leagueDetailQueryOptions(leagueId)).data?.name ?? ''
+  const tear = tearKind(useEquippedStyle().openingTear)
   const premiumHint = opening.isPremium && state.phase === 'pack' ? PREMIUM_PACK_HINT : null
 
   function openAnother() {
@@ -80,7 +84,7 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
           <div className="ar-world">
             <div className="ar-tint" />
             <div className="ar-rays" />
-            <ArcadePack count={pullCount} isPremium={opening.isPremium} />
+            <ArcadePack count={pullCount} isPremium={opening.isPremium} tear={tear} />
             {pulls.map((pull, index) => (
               <ArcadeCard key={pull.slot} pull={pull} registerImage={register(index)} />
             ))}

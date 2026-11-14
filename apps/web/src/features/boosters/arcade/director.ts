@@ -23,6 +23,8 @@ export interface PackLayer {
   pipDots: HTMLSpanElement[]
   crackGroups: SVGGElement[]
   shards: HTMLDivElement[]
+  tearFx: HTMLDivElement | null
+  tearTop: HTMLDivElement | null
 }
 
 export interface ArcadeLayers {
@@ -95,6 +97,8 @@ export function collectLayers(stage: HTMLDivElement): ArcadeLayers {
       pipDots: all(stage, '.ar-pip'),
       crackGroups: all(stage, '.ar-cracks g'),
       shards: all(stage, '.ar-shard'),
+      tearFx: stage.querySelector<HTMLDivElement>('.ar-tear-fx'),
+      tearTop: stage.querySelector<HTMLDivElement>('.ar-tear-top'),
     },
   }
 }

@@ -1,7 +1,16 @@
-import { useCallback, useEffect, useReducer, useRef, useState, type RefObject } from 'react'
-import type { BoosterPull } from '@storix/shared'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react'
+import { tierRank, type BoosterPull, type CardTier, type CosmeticItemId } from '@storix/shared'
 import { TIER_LABELS } from '@/features/cards/tier-labels'
-import { raritySetPalette, revealAuraKind } from '@/features/cosmetics/cosmetic-skins'
+import { raritySetPalette, revealAuraKind, tearKind } from '@/features/cosmetics/cosmetic-skins'
+import type { RarityPalette } from '@/features/cosmetics/rarity-palettes'
 import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { playSound, preloadSound, stopSounds } from '@/features/sound/sound'
 import { logger } from '@/lib/logger'
@@ -9,6 +18,7 @@ import { revealLong, revealQuick, stash } from './arcade/choreography'
 import { Director, collectLayers, isStale } from './arcade/director'
 import { STAGE_HEIGHT } from './arcade/geometry'
 import { PACK_TAPS, burstPack, hitPack } from './arcade/pack-choreography'
+import type { TearStyle } from './arcade/tear-choreography'
 import { tierFx } from './arcade/tiers'
 import { pullLabel } from './pull-label'
 
@@ -129,6 +139,20 @@ function playSummary(withPity: boolean): void {
   if (withPity) playSound({ name: 'pity' }, SUMMARY_PITY_DELAY)
 }
 
+function tearStyleOf(
+  id: CosmeticItemId | null,
+  pulls: readonly BoosterPull[],
+  palette: RarityPalette,
+): TearStyle | null {
+  const kind = tearKind(id)
+  if (kind === null) return null
+  const best = pulls.reduce<CardTier>(
+    (top, pull) => (tierRank(pull.card.tier) > tierRank(top) ? pull.card.tier : top),
+    'common',
+  )
+  return { kind, accent: palette.tiers[best].fx }
+}
+
 function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
@@ -150,6 +174,10 @@ export function useArcadeOpening(
   const style = useEquippedStyle()
   const palette = raritySetPalette(style.raritySet)
   const auraKind = revealAuraKind(style.revealAura)
+  const tear = useMemo(
+    () => tearStyleOf(style.openingTear, pulls, palette),
+    [style.openingTear, pulls, palette],
+  )
   const directorRef = useRef<Director | null>(null)
   const stateRef = useRef(state)
   const busyRef = useRef(false)
@@ -229,7 +257,7 @@ export function useArcadeOpening(
     () =>
       run(async (director) => {
         dispatch({ type: 'opening' })
-        await burstPack(director)
+        await burstPack(director, tear)
         const plural = count > 1 ? 's' : ''
         dispatch({
           type: 'opened',
@@ -237,7 +265,7 @@ export function useArcadeOpening(
         })
         if (isReadyRef.current) await playReveal(director, 0)
       }),
-    [run, count, playReveal],
+    [run, count, playReveal, tear],
   )
 
   const advance = useCallback(
@@ -275,11 +303,11 @@ export function useArcadeOpening(
       }
       tapsRef.current = Math.min(PACK_TAPS, tapsRef.current + 1)
       dispatch({ type: 'tap', taps: tapsRef.current })
-      if (hitPack(director, tapsRef.current)) void open()
+      if (hitPack(director, tapsRef.current, tear)) void open()
       return
     }
     if ((phase === 'deck' || phase === 'shown') && isReady) void advance()
-  }, [isReduced, isReady, open, advance])
+  }, [isReduced, isReady, open, advance, tear])
 
   const revealAll = useCallback(() => {
     const { phase, revealed } = stateRef.current
