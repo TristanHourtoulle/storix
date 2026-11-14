@@ -81,6 +81,11 @@ describe('standings', () => {
     )
     expect(tie.holders.map((p) => p.displayUsername)).toEqual(['Léa', 'Max'])
     expect(tie.top).toHaveLength(2)
+    const crowd = trophyStanding(
+      ['A', 'B', 'C', 'D'].map((name) => person(name, { mythics: 1 })),
+      mythomane,
+    )
+    expect(crowd.top).toHaveLength(4)
     const empty = trophyStanding([person('Max', {}), person('Léa', {})], mythomane)
     expect(empty.holders).toEqual([])
     expect(empty.value).toBe(0)

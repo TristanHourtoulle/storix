@@ -252,7 +252,7 @@ export const TROPHY_TOP_SIZE = 3
 
 /**
  * Who holds a trophy: everyone at the best value, shared on a tie; nobody while the best is 0.
- * `top` lists the first three with a non-zero value.
+ * `top` lists the first three with a non-zero value, and every holder when more than three tie.
  */
 export function trophyStanding<T extends StandingEntry>(
   entries: readonly T[],
@@ -264,6 +264,6 @@ export function trophyStanding<T extends StandingEntry>(
     trophy,
     holders: ranked.filter((row) => row.value === value).map((row) => row.entry),
     value,
-    top: ranked.slice(0, TROPHY_TOP_SIZE),
+    top: ranked.filter((row, index) => index < TROPHY_TOP_SIZE || row.value === value),
   }
 }
