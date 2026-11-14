@@ -21,7 +21,7 @@ export const charmShopResponseSchema = z.object({
 
 export const purchaseCharmBodySchema = z.object({
   charmId: charmIdSchema,
-  replace: z.boolean(),
+  replaceCharm: charmIdSchema.nullable(),
 })
 
 export const purchaseCharmResponseSchema = z.object({

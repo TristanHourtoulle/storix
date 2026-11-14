@@ -1,4 +1,4 @@
-import { type CardTier, isTierAtLeast } from './cards'
+import type { CardTier } from './cards'
 
 export const CHARM_IDS = ['trefle', 'trefle-or', 'boussole', 'aimant', 'eclat', 'tamis'] as const
 
@@ -64,16 +64,19 @@ export function isCharmId(id: string): id is CharmId {
   return findCharm(id) !== undefined
 }
 
-/** Decides whether a member can buy a charm right now. */
+/**
+ * Decides whether a member can buy a charm right now. `replaceCharm` is the active charm the member
+ * saw and agreed to replace (null when they saw an empty slot); any other slot state asks again.
+ */
 export function charmPurchaseDecision(input: {
   charm: CharmItem
   active: ActiveCharm | null
-  replace: boolean
+  replaceCharm: CharmId | null
   purchasesThisWeek: number
   dust: number
 }): CharmPurchaseDecision {
   if (input.active?.id === input.charm.id) return 'already_active'
-  if (input.active !== null && !input.replace) return 'needs_replace'
+  if ((input.active?.id ?? null) !== input.replaceCharm) return 'needs_replace'
   if (input.purchasesThisWeek >= CHARM_WEEKLY_LIMIT) return 'weekly_limit'
   if (input.dust < input.charm.price) return 'insufficient_dust'
   return 'ok'
@@ -138,17 +141,15 @@ export function charmDust(dust: number, charm: CharmId | null): number {
 /** Whether a pull counts as touched by a charm, for the dot on the card and the summary count. */
 export function isPullCharmBoosted(input: {
   charm: CharmId | null
-  slot: number
-  lastSlot: number
-  tier: CardTier
   variant: 'normal' | 'foil'
   dust: number
   isRedirected: boolean
+  isLuckBoosted: boolean
 }): boolean {
   switch (input.charm) {
     case 'trefle':
     case 'trefle-or':
-      return input.slot === input.lastSlot && isTierAtLeast(input.tier, 'legendary')
+      return input.isLuckBoosted
     case 'boussole':
     case 'aimant':
       return input.isRedirected

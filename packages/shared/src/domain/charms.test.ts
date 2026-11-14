@@ -103,6 +103,22 @@ describe('charmed booster draws', () => {
     expect(share(lucky, 'legendary')).toBeGreaterThan(share(plain, 'legendary'))
     expect(share(lucky, 'mythic')).toBeLessThan(0.035)
   })
+  it('flags a Trèfle pull only when the same roll would have given a lower tier', () => {
+    const draws = (charm: CharmId | null) =>
+      Array.from({ length: 3000 }, (_, i) =>
+        drawBooster({
+          pool: FULL_POOL,
+          pity: NO_PITY,
+          random: createSeededRandom(seedAt(i + 1)),
+          charm,
+        }),
+      ).flat()
+    expect(draws(null).some((draw) => draw.isLuckBoosted)).toBe(false)
+    const boosted = draws('trefle-or').filter((draw) => draw.isLuckBoosted)
+    expect(boosted.length).toBeGreaterThan(0)
+    expect(boosted.every((draw) => draw.slot === 4)).toBe(true)
+    expect(boosted.every((draw) => draw.tier === 'legendary' || draw.tier === 'mythic')).toBe(true)
+  })
   it('raises foils with Éclat', () => {
     const foils = (charm: CharmId | null) =>
       Array.from({ length: 1500 }, (_, i) =>
@@ -179,7 +195,13 @@ describe('charmed booster draws', () => {
 describe('charm purchases and charges', () => {
   const trefle = findCharm('trefle')
   if (trefle === undefined) throw new Error('missing charm')
-  const base = { charm: trefle, active: null, replace: false, purchasesThisWeek: 0, dust: 5000 }
+  const base = {
+    charm: trefle,
+    active: null,
+    replaceCharm: null,
+    purchasesThisWeek: 0,
+    dust: 5000,
+  }
 
   it('prices every charm at a week of earnings or more', () => {
     expect(CHARM_CATALOG.every((charm) => charm.price >= 1500)).toBe(true)
@@ -194,8 +216,20 @@ describe('charm purchases and charges', () => {
       'needs_replace',
     )
     expect(
-      charmPurchaseDecision({ ...base, active: { id: 'eclat', charges: 4 }, replace: true }),
+      charmPurchaseDecision({
+        ...base,
+        active: { id: 'eclat', charges: 4 },
+        replaceCharm: 'eclat',
+      }),
     ).toBe('ok')
+    expect(
+      charmPurchaseDecision({
+        ...base,
+        active: { id: 'eclat', charges: 4 },
+        replaceCharm: 'tamis',
+      }),
+    ).toBe('needs_replace')
+    expect(charmPurchaseDecision({ ...base, replaceCharm: 'eclat' })).toBe('needs_replace')
     expect(charmPurchaseDecision({ ...base, purchasesThisWeek: CHARM_WEEKLY_LIMIT })).toBe(
       'weekly_limit',
     )

@@ -1,5 +1,11 @@
-import { CARD_TIERS, type CardTier, tierRank } from './cards'
-import { CHARM_COLLECTION_ODDS, charmFoilOdds, charmSlotWeights, type CharmId } from './charms'
+import { CARD_TIERS, type CardTier, isTierAtLeast, tierRank } from './cards'
+import {
+  CHARM_COLLECTION_ODDS,
+  CHARM_WEIGHT_SCALE,
+  charmFoilOdds,
+  charmSlotWeights,
+  type CharmId,
+} from './charms'
 import type { CopyVariant } from './dust'
 import { isEpicGuaranteed, legendaryBonusPercent, type PityState } from './pity'
 import type { RandomSource } from './random'
@@ -57,6 +63,7 @@ export interface BoosterDraw {
   cardId: string
   variant: CopyVariant
   isRedirected: boolean
+  isLuckBoosted: boolean
 }
 
 const byNumberThenId = (x: PoolCard, y: PoolCard): number =>
@@ -107,19 +114,37 @@ export function slotOddsPercent(weights: TierWeights): Partial<Record<CardTier, 
   )
 }
 
-/** Rolls a tier from integer weights with a single draw, cumulative over tiers ascending. */
-export function rollTier(weights: TierWeights, random: RandomSource): CardTier {
-  const entries = CARD_TIERS.map((tier) => [tier, weights[tier] ?? 0] as const).filter(
-    ([, weight]) => weight > 0,
-  )
-  const total = entries.reduce((sum, [, weight]) => sum + weight, 0)
-  const roll = random.nextInt(total)
+/** Returns the tier a roll in [0, total) lands on, cumulative over tiers ascending. */
+export function tierAtRoll(weights: TierWeights, roll: number): CardTier {
   let cumulative = 0
-  for (const [tier, weight] of entries) {
-    cumulative += weight
+  for (const tier of CARD_TIERS) {
+    cumulative += weights[tier] ?? 0
     if (roll < cumulative) return tier
   }
   throw new Error('Tier roll out of range')
+}
+
+function weightTotal(weights: TierWeights): number {
+  return CARD_TIERS.reduce((sum, tier) => sum + Math.max(0, weights[tier] ?? 0), 0)
+}
+
+/** Rolls a tier from integer weights with a single draw, cumulative over tiers ascending. */
+export function rollTier(weights: TierWeights, random: RandomSource): CardTier {
+  return rollTierWithValue(weights, random).tier
+}
+
+function rollTierWithValue(
+  weights: TierWeights,
+  random: RandomSource,
+): { tier: CardTier; roll: number } {
+  const roll = random.nextInt(weightTotal(weights))
+  return { tier: tierAtRoll(weights, roll), roll }
+}
+
+function scaleWeights(weights: TierWeights, factor: number): TierWeights {
+  return Object.fromEntries(
+    CARD_TIERS.map((tier) => [tier, (weights[tier] ?? 0) * factor] as const),
+  )
 }
 
 /**
@@ -167,6 +192,8 @@ function collectionCandidates(
 
 /**
  * Draws the five slots of a booster; RNG order per slot is tier, author, card, foil.
+ * A luck charm (Trèfle, Trèfle d'or) flags the pull when the same roll on the usual weights would have
+ * landed below the Légendaire or Mythique it gave.
  * A collection charm (Boussole, Aimant) adds one roll after the tier: 1 in 4 narrows the pick to the
  * unowned or owned cards of that tier. Without a charm the draw consumes the same numbers as before.
  * From version 3 the draw is without replacement and needs at least five distinct cards.
@@ -203,8 +230,7 @@ export function drawBooster(input: {
       charm !== null && isRarePlus
         ? charmSlotWeights(baseWeights, charm, isPremium ? 'premium' : 'standard')
         : null
-    const weights = charmed ?? baseWeights
-    const rolledTier = rollTier(weights, input.random)
+    const { tier: rolledTier, roll } = rollTierWithValue(charmed ?? baseWeights, input.random)
     const floor: CardTier | undefined = isPremium
       ? PREMIUM_SLOT_FLOORS[slot]
       : isRarePlus && hasEpicFloor
@@ -212,14 +238,39 @@ export function drawBooster(input: {
         : undefined
     const tier = resolveTierWithFallback(rolledTier, available, floor)
     if (tier === null) throw new EmptyBoosterPoolError()
+    const baseTier =
+      charmed === null
+        ? tier
+        : resolveTierWithFallback(
+            tierAtRoll(scaleWeights(baseWeights, CHARM_WEIGHT_SCALE), roll),
+            available,
+            floor,
+          )
     const tierCards = remaining.filter((c) => c.tier === tier)
     const narrowed = collectionCandidates(tierCards, charm, ownedCardIds)
     const isCollectionCharm = charm === 'boussole' || charm === 'aimant'
     const isRedirected =
       isCollectionCharm && input.random.nextInt(CHARM_COLLECTION_ODDS) === 0 && narrowed !== null
-    const picked = pickFromTier(isRedirected && narrowed !== null ? narrowed : tierCards, input.random)
+    const picked = pickFromTier(
+      isRedirected && narrowed !== null ? narrowed : tierCards,
+      input.random,
+    )
     const variant: CopyVariant = input.random.nextInt(foilOdds) === 0 ? 'foil' : 'normal'
-    return [...draws, { slot, rolledTier, tier, cardId: picked.cardId, variant, isRedirected }]
+    return [
+      ...draws,
+      {
+        slot,
+        rolledTier,
+        tier,
+        cardId: picked.cardId,
+        variant,
+        isRedirected,
+        isLuckBoosted:
+          baseTier !== null &&
+          tierRank(tier) > tierRank(baseTier) &&
+          isTierAtLeast(tier, 'legendary'),
+      },
+    ]
   }, [])
 }
 
