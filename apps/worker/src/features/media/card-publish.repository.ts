@@ -65,6 +65,7 @@ function toPublishRow(row: RawPublishRow): PublishRow {
         status: row.status,
         title: row.title,
         taggedUserIds: row.taggedUserIds,
+        seriesIds: row.seriesIds,
         clientCapturedAt: row.clientCapturedAt,
         stageOnly: row.stageOnly,
         crop: row.crop,

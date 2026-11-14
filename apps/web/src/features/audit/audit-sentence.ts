@@ -331,6 +331,7 @@ export function auditSentence(entry: AuditEntry): AuditSentence {
     case 'moment.posted':
     case 'cosmetic.purchased':
     case 'charm.purchased':
+    case 'series.completed':
       return economySentence(actor, entry)
     case 'card.created':
     case 'card.hidden':

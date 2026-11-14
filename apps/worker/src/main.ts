@@ -9,6 +9,7 @@ import {
   STORAGE_DELETE_SEND_OPTIONS,
   EMBLEMS_EVALUATE_JOB,
   EMBLEMS_EVALUATE_QUEUE_OPTIONS,
+  SERIES_ROLLOVER_JOB,
 } from '@storix/shared'
 import { assertStorageReachable, createObjectStorage } from '@storix/storage'
 import { PgBoss } from 'pg-boss'
@@ -39,6 +40,8 @@ import { registerMediaPublishJob } from './jobs/media-publish.job'
 import { createMediaQueue } from './jobs/media-queue'
 import { registerMediaSweepJob } from './jobs/media-sweep.job'
 import { registerLeagueGoalsJobs } from './jobs/league-goals.job'
+import { registerSeriesJobs } from './jobs/series.job'
+import { createSeriesService } from './features/series/series.service'
 import { registerMissionsSettleJob } from './jobs/missions-settle.job'
 import { registerRarityNightlyJob } from './jobs/rarity-nightly.job'
 import { createRarityQueue } from './jobs/rarity-queue'
@@ -185,6 +188,9 @@ async function start(): Promise<void> {
     createMissionsSettleService({ db: database.db, clock, logger }),
   )
   await registerLeagueGoalsJobs(boss, createLeagueGoalsService({ db: database.db, clock, logger }))
+  const series = createSeriesService({ db: database.db, clock, logger })
+  await registerSeriesJobs(boss, series)
+  await boss.send(SERIES_ROLLOVER_JOB, null)
   const sender = vapid ? createPushSender(vapid, logger) : null
   if (sender) {
     const boosterFull = createBoosterFullService({ db: database.db, sender, clock, logger })

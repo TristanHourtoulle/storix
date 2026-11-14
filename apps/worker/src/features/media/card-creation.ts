@@ -1,4 +1,4 @@
-import type { DbExecutor } from '@storix/db'
+import { attachCardToSeries, filterOpenSeries, type DbExecutor } from '@storix/db'
 import { PROVISIONAL_TIER } from '@storix/shared/domain'
 import { resolveLeagueSettings, type UploadStatus } from '@storix/shared'
 import * as repository from './media.repository'
@@ -9,6 +9,8 @@ export interface CardCreationInput {
   title: string
   now: Date
   from: readonly UploadStatus[]
+  /** When the author asked to publish: series are checked at that time, not when the worker gets to it. */
+  requestedAt?: Date | null
 }
 
 /** Creates the card of a media and its feed event inside the caller's transaction and marks its upload ready; throws when the upload left the `from` statuses. */
@@ -17,6 +19,7 @@ export async function insertCardForMedia(
   input: CardCreationInput,
 ): Promise<{ cardId: string; number: number }> {
   const { upload, mediaId, title, now, from } = input
+  const requestedAt = input.requestedAt ?? now
   const number = await repository.nextCardNumber(tx, upload.leagueId)
   const moment = upload.isMoment ? await repository.findMomentLink(tx, upload.id) : null
   const cardId = await repository.insertCard(tx, {
@@ -37,6 +40,12 @@ export async function insertCardForMedia(
     leagueId: upload.leagueId,
     userIds: upload.taggedUserIds,
   })
+  const seriesIds = await filterOpenSeries(tx, {
+    leagueId: upload.leagueId,
+    seriesIds: upload.seriesIds,
+    now: requestedAt,
+  })
+  await attachCardToSeries(tx, { cardId, seriesIds, now })
   await repository.insertAuditEntry(tx, {
     leagueId: upload.leagueId,
     actorId: upload.userId,

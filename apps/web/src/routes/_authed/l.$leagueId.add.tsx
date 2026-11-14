@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
-import type { UploadDraft } from '@storix/shared'
+import type { SeriesSummary, UploadDraft } from '@storix/shared'
 import { useMembers } from '@/features/members/use-members'
 import { membersQueryOptions } from '@/features/members/members.queries'
 import { CameraStart } from '@/features/uploads/camera/camera-start'
@@ -14,15 +15,20 @@ import { CardStack } from '@/features/uploads/stack/card-stack'
 import { draftsQueryOptions, useDrafts } from '@/features/uploads/use-drafts'
 import { useLeaveGuard } from '@/features/uploads/use-leave-guard'
 import { usePublish } from '@/features/uploads/use-publish'
+import { isSeriesOpen } from '@/features/series/series-copy'
+import { themeCardQueryOptions } from '@/features/series/series.queries'
 import { uploadQuotaQueryOptions, useUploadQuota } from '@/features/uploads/use-upload-quota'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/add')({
-  validateSearch: z.object({ resume: z.boolean().optional() }),
+  validateSearch: z.object({ resume: z.boolean().optional(), theme: z.uuid().optional() }),
   remountDeps: ({ params }) => params.leagueId,
   loader: ({ context, params }) =>
     Promise.all([
       context.queryClient.ensureQueryData(membersQueryOptions(params.leagueId)),
       context.queryClient.ensureQueryData(uploadQuotaQueryOptions(params.leagueId)),
+      context.queryClient
+        .ensureQueryData(themeCardQueryOptions(params.leagueId))
+        .catch(() => undefined),
       context.queryClient
         .ensureQueryData(draftsQueryOptions(params.leagueId))
         .catch(() => undefined),
@@ -31,17 +37,24 @@ export const Route = createFileRoute('/_authed/l/$leagueId/add')({
 })
 
 const NO_DRAFTS: UploadDraft[] = []
+const NO_SERIES: SeriesSummary[] = []
 
 function AddPhotos() {
   const { leagueId } = Route.useParams()
-  const { resume } = Route.useSearch()
+  const { resume, theme } = Route.useSearch()
+  const themeSeries = useQuery(themeCardQueryOptions(leagueId)).data?.series
+  const openSeries =
+    themeSeries !== undefined && isSeriesOpen(themeSeries) ? [themeSeries] : NO_SERIES
+  const [defaultSeriesIds] = useState<readonly string[]>(() =>
+    openSeries.filter((series) => series.id === theme).map((series) => series.id),
+  )
   const navigate = useNavigate({ from: Route.fullPath })
   const quota = useUploadQuota(leagueId)
   const members = useMembers(leagueId)
   const draftsQuery = useDrafts(leagueId)
   const drafts = draftsQuery.data ?? NO_DRAFTS
   const hasDrafts = draftsQuery.isSuccess
-  const session = useUploadSession(leagueId, draftCapacityOf(quota))
+  const session = useUploadSession(leagueId, draftCapacityOf(quota), defaultSeriesIds)
   const { publish, isPublishing, progress } = usePublish(leagueId, session)
   const leave = useLeaveGuard(leagueId, session, drafts)
   const { state, stats, resume: resumeDrafts, dispatch, goTo } = session
@@ -107,6 +120,7 @@ function AddPhotos() {
         <CardStack
           session={session}
           members={members}
+          openSeries={openSeries}
           onClose={close}
           onOverlayChange={leave.setOverlayCloser}
         />

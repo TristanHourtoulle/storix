@@ -4,7 +4,7 @@ import type { DraftCapacity } from '../draft-capacity'
 import type { CropRect } from '@storix/shared/domain'
 import type { StackCard } from './session-reducer'
 
-export type EditPatch = Partial<Pick<StackCard, 'title' | 'taggedUserIds' | 'crop'>>
+export type EditPatch = Partial<Pick<StackCard, 'title' | 'taggedUserIds' | 'seriesIds' | 'crop'>>
 
 let cardSequence = 0
 
@@ -17,15 +17,26 @@ export function nextLocalId(): string {
 export interface DraftFields {
   title: string
   taggedUserIds: readonly string[]
+  seriesIds: readonly string[]
   crop: CropRect | null
 }
 
 /** The fields of a draft as the server stores them before any edit. */
-export const EMPTY_DRAFT_FIELDS: DraftFields = { title: '', taggedUserIds: [], crop: null }
+export const EMPTY_DRAFT_FIELDS: DraftFields = {
+  title: '',
+  taggedUserIds: [],
+  seriesIds: [],
+  crop: null,
+}
 
 /** Returns the editable fields of a card. */
 export function fieldsOf(card: StackCard): DraftFields {
-  return { title: card.title, taggedUserIds: card.taggedUserIds, crop: card.crop }
+  return {
+    title: card.title,
+    taggedUserIds: card.taggedUserIds,
+    seriesIds: card.seriesIds,
+    crop: card.crop,
+  }
 }
 
 function sameTags(a: readonly string[], b: readonly string[]): boolean {
@@ -44,6 +55,7 @@ export function changedFields(sent: DraftFields, current: DraftFields): EditUplo
     ...(sameTags(sent.taggedUserIds, current.taggedUserIds)
       ? {}
       : { taggedUserIds: [...current.taggedUserIds] }),
+    ...(sameTags(sent.seriesIds, current.seriesIds) ? {} : { seriesIds: [...current.seriesIds] }),
     ...(sameCrop(sent.crop, current.crop) ? {} : { crop: current.crop }),
   }
   return Object.keys(body).length > 0 ? body : null

@@ -34,6 +34,7 @@ import { DustBalance } from '@/features/game/components/dust-balance'
 import { useWallet } from '@/features/game/use-wallet'
 import { membersQueryOptions } from '@/features/members/members.queries'
 import { DraftBanner } from '@/features/uploads/components/draft-banner'
+import { SeriesShelf } from '@/features/series/components/series-shelf'
 import { useScrollTopOnChange } from '@/lib/use-scroll-top-on-change'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/collection')({
@@ -130,6 +131,7 @@ function Collection() {
       </div>
       {notice ? <Notice tone="error">Cette carte a déjà été retirée.</Notice> : null}
       <DraftBanner leagueId={leagueId} />
+      <SeriesShelf leagueId={leagueId} />
       <CollectionBody
         leagueId={leagueId}
         filters={filters}

@@ -63,6 +63,7 @@ export function createCardsService({ db, signer, clock }: CardsServiceDeps): Car
         upgradable: query.upgradable,
         moment: query.moment,
         taggedUserId: query.taggedUserId,
+        seriesId: query.seriesId,
       }
       const revealOwnOf = query.revealOwn === true && query.authorId === m.userId ? m.userId : null
       if (query.cursor === LEGACY_COLLECTION_CURSOR) {

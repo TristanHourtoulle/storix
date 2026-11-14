@@ -78,6 +78,13 @@ export function economySentence(actor: SentencePart, entry: AuditEntry): AuditSe
         price === null ? [] : [formatDustPrice(price)],
       )
     }
+    case 'series.completed': {
+      const dust = num(meta, 'dust') ?? 0
+      return sentence(
+        [actor, ` a complété la série « ${str(meta, 'title') ?? ''} »`],
+        dust > 0 ? [`+${dust} paillettes`] : [],
+      )
+    }
     case 'league_goal.reward_granted': {
       const boosters = num(meta, 'boosters') ?? 0
       const gifts = num(meta, 'premiumGifts') ?? 0

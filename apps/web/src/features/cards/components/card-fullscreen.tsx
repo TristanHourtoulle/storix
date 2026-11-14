@@ -8,7 +8,10 @@ import { TIER_COLOR_VAR } from '../tier-labels'
 
 const TAP_SLOP_PX = 10
 
-type StageHandlers = Pick<HTMLAttributes<HTMLDivElement>, 'onPointerDown' | 'onPointerUp' | 'onPointerCancel'>
+type StageHandlers = Pick<
+  HTMLAttributes<HTMLDivElement>,
+  'onPointerDown' | 'onPointerUp' | 'onPointerCancel'
+>
 
 interface CardFullscreenProps {
   tier: CardTier

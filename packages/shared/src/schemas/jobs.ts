@@ -96,3 +96,5 @@ export function emblemsEvaluateSendOptions(payload: EmblemsEvaluatePayload) {
 export const MISSIONS_SETTLE_JOB = 'missions.settle'
 export const LEAGUE_GOALS_TICK_JOB = 'league-goals.tick'
 export const LEAGUE_GOALS_CLOSE_JOB = 'league-goals.close'
+export const SERIES_TICK_JOB = 'series.tick'
+export const SERIES_ROLLOVER_JOB = 'series.rollover'

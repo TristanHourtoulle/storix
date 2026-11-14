@@ -1,11 +1,12 @@
 import type { CSSProperties } from 'react'
-import type { CardTier, CollectionCard } from '@storix/shared'
+import type { CardSeal, CardTier, CollectionCard } from '@storix/shared'
 import { raritySetClass } from '@/features/cosmetics/cosmetic-skins'
 import { DEFAULT_RARITY_PALETTE } from '@/features/cosmetics/rarity-palettes'
 import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { CardImage } from './card-image'
 import { TIER_COLOR_VAR } from '../tier-labels'
 import { useThumbhashUrl } from '../use-thumbhash-url'
+import { Icon } from '@/components/ui/icon'
 
 interface MiniCardProps {
   card: CollectionCard | null
@@ -13,6 +14,15 @@ interface MiniCardProps {
   sizes: string
   isFoil?: boolean
   isDiscovery?: boolean
+}
+
+function MiniSeal({ seal }: { seal: CardSeal | undefined }) {
+  if (seal === undefined) return null
+  return (
+    <span className="hmc-seal" style={{ '--sc': seal.color } as CSSProperties} aria-hidden="true">
+      <Icon name={seal.icon} className="hmc-seal-ic" />
+    </span>
+  )
 }
 
 function BlurredFill({ thumbhash }: { thumbhash: string }) {
@@ -54,6 +64,9 @@ export function MiniCard({
       ) : (
         <BlurredFill thumbhash={card.thumbhash} />
       )}
+      {card !== null && (card.kind === 'owned' || card.kind === 'unpulled') ? (
+        <MiniSeal seal={card.seals[0]} />
+      ) : null}
       {isDiscovery ? (
         <i className="hmc-new" aria-label="Découverte">
           N

@@ -15,6 +15,7 @@ import { CharmIcon } from '@/features/charms/components/charm-icon'
 import { StyledName } from '@/features/cosmetics/components/styled-name'
 import { EmblemIcon } from '@/features/emblems/components/emblem-icon'
 import { MiniCard } from '@/features/cards/components/mini-card'
+import { SeriesRecapRow } from '@/features/series/components/series-recap-row'
 import { TIER_CLASS, TIER_LABELS } from '@/features/cards/tier-labels'
 import { countOf, tierColorStyle } from '@/features/members/member-copy'
 import { timeAgo } from '@/lib/paris-dates'
@@ -215,6 +216,8 @@ function sentence(row: FeedRowData, nameStyles: ReadonlyMap<string, CosmeticItem
           <b>Palier bonus</b> · +1 premium
         </>
       )
+    case 'series_recap':
+      return <b>Série terminée</b>
     case 'league_goal_missed':
       return row.goal === null ? (
         <b>Objectif manqué</b>
@@ -336,6 +339,9 @@ export function FeedRow({
   nameStyles,
   onBravo,
 }: FeedRowProps) {
+  if (row.kind === 'series_recap') {
+    return <SeriesRecapRow leagueId={leagueId} row={row} nameStyles={nameStyles} />
+  }
   const tier = rowTier(row)
   const classes = [
     'feed-act',

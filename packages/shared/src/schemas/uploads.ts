@@ -11,6 +11,7 @@ import {
 } from '../domain'
 import { idSchema, isoDateSchema } from './common'
 import { imageSetSchema } from './media'
+import { seriesIdsBodySchema } from './series-refs'
 
 export const UPLOAD_STATUSES = [
   'pending',
@@ -85,6 +86,7 @@ export const editUploadBodySchema = z
     title: draftTitleSchema.optional(),
     taggedUserIds: taggedUserIdsBodySchema.optional(),
     crop: cropRectSchema.nullable().optional(),
+    seriesIds: seriesIdsBodySchema.optional(),
   })
   .refine((b) => Object.keys(b).length > 0)
 
@@ -110,6 +112,10 @@ export const uploadStatesQuerySchema = z.object({
     .pipe(z.array(z.uuid()).min(1).max(MAX_STATES_BATCH)),
 })
 
+export const editedUploadSchema = uploadStateSchema.extend({
+  seriesIds: z.array(z.uuid()).catch([]),
+})
+
 export const uploadStatesResponseSchema = z.object({ states: z.array(uploadStateSchema) })
 
 export const publishProblemSchema = z.object({
@@ -122,6 +128,7 @@ export const uploadDraftSchema = z.object({
   status: z.enum(['uploaded', 'processing', 'staged']),
   title: z.string().nullable(),
   taggedUserIds: z.array(idSchema),
+  seriesIds: z.array(z.uuid()).catch([]),
   crop: cropRectSchema.nullable(),
   capturedAt: isoDateSchema.nullable(),
   createdAt: isoDateSchema,
@@ -159,6 +166,7 @@ export type CreateUploadBody = z.infer<typeof createUploadBodySchema>
 export type CreateUploadResponse = z.infer<typeof createUploadResponseSchema>
 export type CompleteUploadBody = z.infer<typeof completeUploadBodySchema>
 export type UploadState = z.infer<typeof uploadStateSchema>
+export type EditedUpload = z.infer<typeof editedUploadSchema>
 export type UploadQuota = z.infer<typeof uploadQuotaSchema>
 export type CropRectBody = z.infer<typeof cropRectSchema>
 export type EditUploadBody = z.infer<typeof editUploadBodySchema>

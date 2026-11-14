@@ -6,6 +6,8 @@ import {
   DRAFT_TTL_MS,
   planPublish,
   storedMediaKeys,
+  storedSeriesIdsSchema,
+  type EditedUpload,
   type EditUploadBody,
   type MediaVariantSize,
   type PublishPlan,
@@ -22,6 +24,7 @@ import type { Membership } from '../leagues/leagues.service'
 import { assertTaggedMembers } from './assert-tagged-members'
 import {
   deleteCardlessMediaOfUploads,
+  filterOpenSeries,
   findOwnedUploadRow,
   listDrafts,
   listOwnedStates,
@@ -40,7 +43,7 @@ const DRAFT_IMAGE_SIZES: readonly MediaVariantSize[] = [768, 1600]
 const PUBLISH_REKICK_MIN_AGE_MS = 60_000
 
 export interface UploadDraftsService {
-  editUpload(m: Membership, uploadId: string, body: EditUploadBody): Promise<UploadState>
+  editUpload(m: Membership, uploadId: string, body: EditUploadBody): Promise<EditedUpload>
   listDrafts(m: Membership): Promise<UploadDraft[]>
   listStates(m: Membership, ids: string[]): Promise<UploadState[]>
   discard(m: Membership, ids: string[]): Promise<void>
@@ -96,6 +99,7 @@ function toDraft(row: DraftRow, signer: MediaSigner): UploadDraft {
     status: row.status === 'staged' || row.status === 'processing' ? row.status : 'uploaded',
     title: row.title,
     taggedUserIds: row.taggedUserIds,
+    seriesIds: storedSeriesIdsSchema.parse(row.seriesIds),
     crop: row.crop,
     capturedAt: (row.media?.capturedAt ?? row.clientCapturedAt)?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
@@ -193,17 +197,29 @@ export function createUploadDraftsService(deps: {
       if (body.taggedUserIds !== undefined) {
         await assertTaggedMembers(db, m.leagueId, body.taggedUserIds)
       }
+      const seriesIds =
+        body.seriesIds === undefined
+          ? undefined
+          : await filterOpenSeries(db, {
+              leagueId: m.leagueId,
+              seriesIds: body.seriesIds,
+              now: clock(),
+            })
       const updated = await updateDraftFields(db, {
         leagueId: m.leagueId,
         userId: m.userId,
         id: row.id,
         title: draftTitleOf(body.title),
         taggedUserIds: body.taggedUserIds,
+        seriesIds,
         crop: body.crop,
       })
       const current = await findOwned(m, uploadId)
       if (!updated) throw notEditable(current)
-      return toUploadState(current)
+      return {
+        ...toUploadState(current),
+        seriesIds: storedSeriesIdsSchema.parse(current.seriesIds),
+      }
     },
 
     async listDrafts(m) {

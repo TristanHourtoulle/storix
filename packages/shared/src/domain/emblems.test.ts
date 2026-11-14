@@ -18,6 +18,7 @@ const ZERO: EmblemStats = {
   mythicPulls: 0,
   ownMythicPhotos: 0,
   momentsOnTime: 0,
+  seriesCompleted: 0,
 }
 
 const find = (stats: EmblemStats, id: EmblemId) => {

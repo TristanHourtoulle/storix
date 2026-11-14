@@ -20,12 +20,19 @@ import {
 } from './session-reducer'
 import { useDraftReconcile } from './use-draft-reconcile'
 import { useDraftSync } from './use-draft-sync'
+import { showToast } from '@/components/ui/toast'
 import { useStageQueue } from './use-stage-queue'
 
 const QUOTA_SOUND_DELAY = 0.15
+const NO_SERIES: readonly string[] = []
+const SERIES_ENDED_NOTICE = 'Ce thème est terminé : la photo reste dans ta collection, hors thème.'
 
 /** Holds the upload stack: picks, background staging, edits with autosave, navigation and discards. */
-export function useUploadSession(leagueId: string, capacity: DraftCapacity) {
+export function useUploadSession(
+  leagueId: string,
+  capacity: DraftCapacity,
+  defaultSeriesIds: readonly string[] = NO_SERIES,
+) {
   const queryClient = useQueryClient()
   const [state, dispatch] = useReducer(sessionReducer, INITIAL_SESSION)
   const stateRef = useRef(state)
@@ -52,6 +59,12 @@ export function useUploadSession(leagueId: string, capacity: DraftCapacity) {
     leagueId,
     cards: state.cards,
     onConflict: useCallback(() => void reconcileRef.current(), []),
+    onSeriesDropped: useCallback((uploadId: string, kept: readonly string[]) => {
+      const card = stateRef.current.cards.find((candidate) => candidate.uploadId === uploadId)
+      if (card === undefined) return
+      dispatch({ type: 'edited', localId: card.localId, patch: { seriesIds: kept } })
+      showToast(SERIES_ENDED_NOTICE)
+    }, []),
   })
   const { flush, forget } = sync
   const queue = useStageQueue({ leagueId, cards: state.cards, dispatch })
@@ -101,7 +114,7 @@ export function useUploadSession(leagueId: string, capacity: DraftCapacity) {
       const slots = Math.max(0, capacity.slots - used)
       const accepted = files.slice(0, slots)
       const skipped = files.length - accepted.length
-      const cards = accepted.map(() => createStackCard(nextLocalId()))
+      const cards = accepted.map(() => createStackCard(nextLocalId(), defaultSeriesIds))
       dispatch({
         type: 'added',
         cards,
@@ -130,7 +143,7 @@ export function useUploadSession(leagueId: string, capacity: DraftCapacity) {
         }
       }
     },
-    [capacity, trackUrl],
+    [capacity, trackUrl, defaultSeriesIds],
   )
 
   const resume = useCallback(

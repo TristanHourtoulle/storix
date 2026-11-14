@@ -1,6 +1,7 @@
 import {
   MAX_PUBLISH_BATCH,
   createUploadResponseSchema,
+  editedUploadSchema,
   uploadDraftsResponseSchema,
   uploadQuotaSchema,
   uploadStateSchema,
@@ -8,6 +9,7 @@ import {
   type CompleteUploadBody,
   type CreateUploadBody,
   type CreateUploadResponse,
+  type EditedUpload,
   type EditUploadBody,
   type UploadDraft,
   type UploadQuota,
@@ -129,12 +131,12 @@ export function editUpload(
   uploadId: string,
   body: EditUploadBody,
   signal?: AbortSignal,
-): Promise<UploadState> {
+): Promise<EditedUpload> {
   return apiRequest(uploadPath(leagueId, uploadId), {
     method: 'PATCH',
     body,
     signal,
-    schema: uploadStateSchema,
+    schema: editedUploadSchema,
   })
 }
 

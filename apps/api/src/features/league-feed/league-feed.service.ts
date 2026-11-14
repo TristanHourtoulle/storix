@@ -23,6 +23,7 @@ import { toCollectionCard, withViewerCopies } from '../cards/card-views'
 import { listOwnedCopies } from '../copies/copies.repository'
 import { listStackEntries } from '../copies/stacks.repository'
 import type { Membership } from '../leagues/leagues.service'
+import { listFeedSeries, toFeedSeries, type FeedSeriesRef } from '../series/series-feed.repository'
 import {
   findLeagueEvent,
   findReadAt,
@@ -59,6 +60,12 @@ interface FeedContext {
   cards: ReadonlyMap<string, CollectionCard>
   actors: ReadonlyMap<string, FeedActorRow>
   bravos: ReadonlyMap<string, BravoStatsRow>
+  series: ReadonlyMap<string, FeedSeriesRef>
+}
+
+function thumbIdsOf(group: FeedGroup): string[] {
+  if (group.type === 'series_recap') return group.payload.seriesCardIds ?? []
+  return group.cardIds.slice(0, FEED_THUMBS)
 }
 
 function toFeedEvent(row: FeedEventRow): FeedEvent {
@@ -92,7 +99,7 @@ function toRow(group: FeedGroup, ctx: FeedContext): FeedRow {
     actors: group.actorIds.map((actorId) => toActor(actorId, ctx.actors)),
     count: group.count,
     card: group.cardId === null ? null : (ctx.cards.get(group.cardId) ?? null),
-    thumbs: group.cardIds.slice(0, FEED_THUMBS).flatMap((cardId) => {
+    thumbs: thumbIdsOf(group).flatMap((cardId) => {
       const card = ctx.cards.get(cardId)
       return card === undefined ? [] : [card]
     }),
@@ -104,6 +111,10 @@ function toRow(group: FeedGroup, ctx: FeedContext): FeedRow {
     toTier: group.payload.toTier ?? null,
     emblemIds: group.emblemIds,
     goal: goalOf(group),
+    series:
+      group.type === 'series_recap'
+        ? toFeedSeries(ctx.series.get(group.payload.seriesId ?? ''), group.payload)
+        : null,
     bravoCount: bravo?.bravoCount ?? 0,
     hasBravoed: bravo?.hasBravoed ?? false,
     isNew: group.isNew,
@@ -136,17 +147,22 @@ export function createLeagueFeedService({
     const actorIds = groups.flatMap((group) =>
       group.actorIds.flatMap((id) => (id === null ? [] : [id])),
     )
-    const cardIds = groups.flatMap((group) => group.cardIds.slice(0, FEED_THUMBS))
+    const cardIds = groups.flatMap(thumbIdsOf)
     const promotionIds = groups.filter((g) => g.type === 'card_promoted').map((g) => g.key)
-    const [cards, actors, bravos] = await Promise.all([
+    const seriesIds = groups.flatMap((g) =>
+      g.type === 'series_recap' && g.payload.seriesId !== undefined ? [g.payload.seriesId] : [],
+    )
+    const [cards, actors, bravos, series] = await Promise.all([
       viewCards(m, cardIds),
       listFeedActors(db, { leagueId: m.leagueId, userIds: [...new Set(actorIds)] }),
       listBravoStats(db, { eventIds: promotionIds, viewerId: m.userId }),
+      listFeedSeries(db, { leagueId: m.leagueId, seriesIds }),
     ])
     return {
       cards,
       actors: new Map(actors.map((actor) => [actor.userId, actor])),
       bravos: new Map(bravos.map((bravo) => [bravo.eventId, bravo])),
+      series,
     }
   }
 

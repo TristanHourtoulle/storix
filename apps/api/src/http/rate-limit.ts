@@ -35,6 +35,8 @@ export const rateLimits = {
   goalRead: { max: 60, timeWindow: '1 minute' },
   goalBannerSeen: { max: 20, timeWindow: '1 minute' },
   standingsRead: { max: 30, timeWindow: '1 minute' },
+  seriesRead: { max: 60, timeWindow: '1 minute' },
+  seriesWrite: { max: 20, timeWindow: '1 minute' },
 } as const
 
 export interface RateLimit {

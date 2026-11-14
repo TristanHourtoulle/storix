@@ -56,7 +56,12 @@ function CardDetailScreen() {
       ) : card?.kind === 'hidden' ? (
         <HiddenCardDetail card={card} onWithdraw={openWithdraw} />
       ) : card ? (
-        <LockedCardDetail card={card} onWithdraw={openWithdraw} />
+        <LockedCardDetail
+          leagueId={leagueId}
+          card={card}
+          meId={me.user.id}
+          onWithdraw={openWithdraw}
+        />
       ) : isPending ? (
         <p className="m-0 text-sm text-muted">Chargement…</p>
       ) : isMissing ? (

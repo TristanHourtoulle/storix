@@ -8,6 +8,7 @@ export interface CollectionFilters {
   upgradable: boolean
   moment?: boolean
   taggedUserId: string | null
+  seriesId?: string | null
   revealOwn?: boolean
   sort: CollectionSort
 }

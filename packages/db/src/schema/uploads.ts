@@ -49,6 +49,10 @@ export const uploads = pgTable(
     crop: jsonb('crop').$type<CropRect>(),
     publishRequestedAt: timestamp('publish_requested_at', { withTimezone: true }),
     isMoment: boolean('is_moment').notNull().default(false),
+    seriesIds: jsonb('series_ids')
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
   },
   (t) => [
     index('uploads_league_user_created_idx').on(t.leagueId, t.userId, t.createdAt.desc()),

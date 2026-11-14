@@ -169,6 +169,7 @@ export function createCardPublishService(deps: Deps): CardPublishService {
         title: title.data,
         now: clock(),
         from: ['publishing'],
+        requestedAt: locked.publishRequestedAt,
       })
       return { kind: 'published', ...card }
     })

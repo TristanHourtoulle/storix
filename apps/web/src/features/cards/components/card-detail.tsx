@@ -24,6 +24,7 @@ import { MotionPrompt } from './motion-prompt'
 import { useMemberAvatarFrames } from '@/features/portraits/use-member-avatar-frames'
 import { useMemberAvatars } from '@/features/portraits/use-member-avatars'
 import { AuthorLink } from './author-link'
+import { CardSeries } from '@/features/series/components/card-series'
 import { MetaCell, discovererLabel, formatDate } from './meta-cell'
 import { PromotedHolders } from './promoted-holders'
 import { PromotionCelebration, type Celebration } from './promotion-celebration'
@@ -154,6 +155,7 @@ export function CardDetail({ leagueId, card, meId, onWithdraw }: CardDetailProps
         />
         <MetaCell label="Sur la photo" value={tagged || 'Personne'} />
       </div>
+      <CardSeries leagueId={leagueId} card={card} meId={meId} />
       <PromotedHolders holders={card.promotedHolders} avatars={avatars} frames={frames} />
       <ReactionBar
         reactions={card.reactions}

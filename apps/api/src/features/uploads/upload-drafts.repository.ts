@@ -8,6 +8,8 @@ import {
 import { and, asc, eq, inArray, notExists, or, sql } from 'drizzle-orm'
 import type { UploadRow } from './uploads.repository'
 
+export { filterOpenSeries } from '@storix/db'
+
 export type LockedPublishCandidate = PublishCandidate & { publishRequestedAt: Date | null }
 
 export interface DraftRow {
@@ -15,6 +17,7 @@ export interface DraftRow {
   status: UploadRow['status']
   title: string | null
   taggedUserIds: string[]
+  seriesIds: unknown
   crop: CropRect | null
   clientCapturedAt: Date | null
   createdAt: Date
@@ -60,12 +63,18 @@ export async function updateDraftFields(
     id: string
     title?: string | null
     taggedUserIds?: string[]
+    seriesIds?: string[]
     crop?: CropRect | null
   },
 ): Promise<boolean> {
   const rows = await db
     .update(uploads)
-    .set({ title: input.title, taggedUserIds: input.taggedUserIds, crop: input.crop })
+    .set({
+      title: input.title,
+      taggedUserIds: input.taggedUserIds,
+      seriesIds: input.seriesIds,
+      crop: input.crop,
+    })
     .where(
       and(
         eq(uploads.id, input.id),
@@ -86,6 +95,7 @@ export async function listDrafts(db: DbExecutor, input: OwnerScope): Promise<Dra
       status: uploads.status,
       title: uploads.title,
       taggedUserIds: uploads.taggedUserIds,
+      seriesIds: uploads.seriesIds,
       crop: uploads.crop,
       clientCapturedAt: uploads.clientCapturedAt,
       createdAt: uploads.createdAt,

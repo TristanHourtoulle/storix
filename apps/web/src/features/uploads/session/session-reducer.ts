@@ -17,6 +17,7 @@ export interface StackCard {
   capturedAt: string | null
   title: string
   taggedUserIds: readonly string[]
+  seriesIds: readonly string[]
   crop: CropRect | null
   errorMessage: string | null
   isRetryable: boolean
@@ -46,7 +47,7 @@ export type SessionAction =
   | {
       type: 'edited'
       localId: string
-      patch: Partial<Pick<StackCard, 'title' | 'taggedUserIds' | 'crop'>>
+      patch: Partial<Pick<StackCard, 'title' | 'taggedUserIds' | 'seriesIds' | 'crop'>>
     }
   | { type: 'navigated'; index: number }
   | { type: 'next' }
@@ -77,8 +78,8 @@ const BUSY_PHASES: ReadonlySet<StackCardPhase> = new Set([
 const UNSENT_PHASES: ReadonlySet<StackCardPhase> = new Set(['preparing', 'queued', 'sending'])
 const SENT_PHASES: ReadonlySet<StackCardPhase> = new Set(['processing', 'staged'])
 
-/** Creates an empty local card for a picked photo that is still being prepared. */
-export function createStackCard(localId: string): StackCard {
+/** Creates an empty local card for a picked photo that is still being prepared, in the given series. */
+export function createStackCard(localId: string, seriesIds: readonly string[] = []): StackCard {
   return {
     localId,
     uploadId: null,
@@ -90,6 +91,7 @@ export function createStackCard(localId: string): StackCard {
     capturedAt: null,
     title: '',
     taggedUserIds: [],
+    seriesIds,
     crop: null,
     errorMessage: null,
     isRetryable: false,
@@ -142,6 +144,7 @@ function cardFromDraft(draft: UploadDraft): StackCard {
     capturedAt: draft.capturedAt,
     title: draft.title ?? '',
     taggedUserIds: draft.taggedUserIds,
+    seriesIds: draft.seriesIds,
     crop: draft.crop,
   }
 }

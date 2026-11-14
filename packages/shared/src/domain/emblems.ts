@@ -17,6 +17,7 @@ export const EMBLEM_IDS = [
   'mythic',
   'muse',
   'on-time',
+  'series-complete',
 ] as const
 
 export type EmblemId = (typeof EMBLEM_IDS)[number]
@@ -37,6 +38,7 @@ export interface EmblemStats {
   mythicPulls: number
   ownMythicPhotos: number
   momentsOnTime: number
+  seriesCompleted: number
 }
 
 export type EmblemMetric = keyof EmblemStats
@@ -190,6 +192,14 @@ export const EMBLEM_CATALOGUE: readonly EmblemDefinition[] = [
     tier: 'rare',
     metric: 'momentsOnTime',
     target: 10,
+  },
+  {
+    id: 'series-complete',
+    name: 'Série complète',
+    rule: 'Complète une série de la ligue une fois close (dès 5 cartes).',
+    tier: 'epic',
+    metric: 'seriesCompleted',
+    target: 1,
   },
 ]
 

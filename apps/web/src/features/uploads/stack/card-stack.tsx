@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { MemberSummary } from '@storix/shared'
+import type { MemberSummary, SeriesSummary } from '@storix/shared'
 import { CARD_CROP_FRAME } from '@storix/shared/domain'
 import { CropEditor } from '@/components/crop/crop-editor'
 import { Icon } from '@/components/ui/icon'
@@ -18,6 +18,7 @@ import { useStackNavigation } from './use-stack-navigation'
 interface CardStackProps {
   session: UploadSession
   members: readonly MemberSummary[]
+  openSeries: readonly SeriesSummary[]
   onClose: () => void
   onOverlayChange: (close: (() => void) | null) => void
 }
@@ -69,7 +70,13 @@ function CropDialog({
 }
 
 /** The swipeable stack of picked photos (proposal D). */
-export function CardStack({ session, members, onClose, onOverlayChange }: CardStackProps) {
+export function CardStack({
+  session,
+  members,
+  openSeries,
+  onClose,
+  onOverlayChange,
+}: CardStackProps) {
   const { state } = session
   const reduced = useReducedMotion()
   const [cropFor, setCropFor] = useState<string | null>(null)
@@ -175,6 +182,14 @@ export function CardStack({ session, members, onClose, onOverlayChange }: CardSt
         card={current}
         previous={state.cards[state.index - 1] ?? null}
         members={members}
+        openSeries={openSeries}
+        onToggleSeries={(seriesId) =>
+          session.edit(current.localId, {
+            seriesIds: current.seriesIds.includes(seriesId)
+              ? current.seriesIds.filter((id) => id !== seriesId)
+              : [...current.seriesIds, seriesId],
+          })
+        }
         onToggleTag={(userId) =>
           session.edit(current.localId, {
             taggedUserIds: current.taggedUserIds.includes(userId)

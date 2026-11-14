@@ -12,6 +12,7 @@ import {
 } from '../domain'
 import { idSchema, isoDateSchema } from './common'
 import { imageSetSchema } from './media'
+import { cardSealsSchema } from './series-refs'
 import { cardTitleSchema } from './uploads'
 
 export const cardTierSchema = z.enum(CARD_TIERS)
@@ -44,6 +45,7 @@ export const cardSummarySchema = z.object({
   height: z.int().positive(),
   image: imageSetSchema,
   moment: cardMomentSchema.nullable(),
+  seals: cardSealsSchema,
 })
 
 export const collectionCursorSchema = z.string().transform((raw, ctx) => {
@@ -69,6 +71,7 @@ export const listCardsQuerySchema = z
     upgradable: z.stringbool().optional(),
     moment: z.stringbool().optional(),
     taggedUserId: idSchema.optional(),
+    seriesId: z.uuid().optional(),
     revealOwn: z.stringbool().optional(),
     sort: collectionSortSchema.default(DEFAULT_COLLECTION_SORT),
     cursor: z.union([legacyCollectionCursorSchema, collectionCursorSchema]).optional(),
@@ -155,6 +158,7 @@ export const unpulledCardSummarySchema = z.strictObject({
   height: z.int().positive(),
   image: imageSetSchema,
   moment: cardMomentSchema.nullable(),
+  seals: cardSealsSchema,
 })
 
 export const collectionCardSchema = z.discriminatedUnion('kind', [
@@ -210,6 +214,7 @@ export const ownedCardDetailSchema = ownedCardSummarySchema.extend({
 
 export const lockedCardDetailSchema = lockedCardSummarySchema.extend({
   createdAt: isoDateSchema,
+  seals: cardSealsSchema,
   discoveredBy: cardPersonSchema.nullable(),
   canWithdraw: z.boolean(),
 })
