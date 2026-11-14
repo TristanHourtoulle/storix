@@ -11,7 +11,9 @@ is out of scope. Wave 9 (scheduled events) reuses this foundation.
 A series is a small collection inside the league collection. Two kinds share one model:
 
 - `theme`: the weekly theme, one per league per Paris week (Monday 00:00 to next Monday 00:00, Europe/Paris,
-  as the artifact states; stored in UTC). No grace window: cards can join until Sunday 23:59.
+  as the artifact states; stored in UTC). A 2 h grace window (until Monday 02:00) lets a photo whose
+  publish was asked on Sunday evening still join once the worker processes it. The series is checked at
+  the time the author asked to publish, not when the worker gets to it.
 - `event`: wave 9 (scheduled, `grace_ends_at` = end + 12 h). Only the model and the read side exist now.
 
 Series cards stay normal cards: they live in the general collection and are drawn by classic boosters with
@@ -35,7 +37,8 @@ series even when a theme comes back.
 - A series accepts cards while `starts_at <= now < grace_ends_at` and it is not closed.
 - Collection: a « Séries » shelf at the top (layout A). A tile shows the emoji, the name and either
   « ● En cours · N cartes » (open) or « owned / total » with a progress bar (closed, « · complète » at 100 %).
-  Only series with at least one card are listed, the open theme first, then newest first.
+  Only series with at least one card are listed, the open theme first, then the 12 most recent closed
+  series.
 - Series page: header (emoji, name, kind, dates, progress), then the series cards with the regular collection
   grid (owned cards and locked silhouettes « encore à trouver »). Open series say « possédées sur N pour
   l'instant · en cours, le total bouge ».
@@ -43,14 +46,16 @@ series even when a theme comes back.
   detail lists the full series names.
 - Reward: when a closed series of at least 5 active cards is fully owned by a member, they get the emblem
   « Série complète » (once) and 150 paillettes (each series). Checked by the worker every 10 minutes, so a
-  series completed later through boosters still pays. Idempotent through `card_series_rewards`.
+  series completed later through boosters still pays, as long as the series closed within the last 30
+  days; after that, completing it pays nothing. Idempotent through `card_series_rewards`.
 
 ## Weekly theme
 
 - Rotation B: a list of 40 themes (title, emoji, color) in shared code. Each league walks a deterministic
-  shuffle of the list (seeded by league id and cycle), so no theme repeats before the list is used up.
-- An admin (or owner) can replace next week's theme with a title and an emoji (or a suggestion from the
-  list). The override is the next week's `card_series` row, created ahead of time; the rotation fills any
+  shuffle of the list (seeded by league id and cycle), so no theme repeats before the list is used up, and
+  a cycle never starts with the theme that ended the previous one.
+- An admin (or owner) can replace next week's theme with a title and a single emoji (or a suggestion from
+  the list), flagged `is_override`. The override is the next week's `card_series` row, created ahead of time; the rotation fills any
   week without a row.
 - Home: the theme card (A) between the Moment and the booster: emoji, « Thème de la semaine », name, days
   left (« J-3 », « Dernier jour »), the avatars of the members who posted, « N photos · M membres », and two
@@ -61,7 +66,8 @@ series even when a theme comes back.
 - The author can also add one of their own cards published during the theme week to the theme from the card
   detail, until Sunday 23:59.
 - No per-member cap. The league upload quota applies normally (no exemption, unlike the Moment).
-- Monday 00:05 Paris: the past theme closes and a recap is posted in the league feed (only when it has
+- Monday 00:05 Paris the new week's theme opens. The past theme closes once its grace window ends
+  (Monday 02:00, picked up by the 10-minute tick), and a recap is posted in the league feed (only when it has
   cards): « « Vert » est terminé », the new theme, five cards, the card and member counts, and the most
   active member. Tapping it opens the series page. The rollover also creates the new week's theme.
   Catch-up runs every 10 minutes, and the API creates the current theme on read if the worker has not.
