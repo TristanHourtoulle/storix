@@ -98,11 +98,18 @@ export function EventSheet({ leagueId, open, event, onClose }: EventSheetProps) 
       setStep(step + 1)
       return
     }
+    const submittedAt = new Date()
+    const finalSlot = shortcut === null ? slot : eventShortcuts(submittedAt)[shortcut]
+    if (validateEventWindow({ ...finalSlot, now: submittedAt }) !== 'ok') {
+      setSlot(finalSlot)
+      setStep(1)
+      return
+    }
     const body = {
       title: trimmed,
       icon,
-      startsAt: slot.startsAt.toISOString(),
-      endsAt: slot.endsAt.toISOString(),
+      startsAt: finalSlot.startsAt.toISOString(),
+      endsAt: finalSlot.endsAt.toISOString(),
     }
     change.mutate(
       event === undefined
@@ -126,7 +133,7 @@ export function EventSheet({ leagueId, open, event, onClose }: EventSheetProps) 
           >
             {step === 0 ? 'Fermer' : '‹ Retour'}
           </button>
-          <span className="text-xs text-muted">
+          <span className="text-xs text-muted" aria-live="polite">
             Étape {step + 1} / {STEPS}
           </span>
         </div>
@@ -201,12 +208,13 @@ export function EventSheet({ leagueId, open, event, onClose }: EventSheetProps) 
                   />
                 </Field>
               </div>
-              <p
-                className={error === null ? 'text-xs text-muted' : 'text-xs text-danger'}
-                role="status"
-              >
-                {error ?? 'Heure de Paris · de 30 min à 48 h.'}
-              </p>
+              {error === null ? (
+                <p className="text-xs text-muted">Heure de Paris · de 30 min à 48 h.</p>
+              ) : (
+                <p className="text-xs text-danger" role="alert">
+                  {error}
+                </p>
+              )}
             </>
           ) : null}
           {step === 2 ? (

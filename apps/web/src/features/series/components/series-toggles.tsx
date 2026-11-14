@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useId, type CSSProperties } from 'react'
 import { acceptsPhoto, type SeriesSummary } from '@storix/shared'
 import { Icon } from '@/components/ui/icon'
 
@@ -33,6 +33,7 @@ function hint(series: SeriesSummary, isOn: boolean): string {
 
 /** One switch per open series that takes this photo: the theme, and the events it was taken during. */
 export function SeriesToggles({ seriesIds, capturedAt, openSeries, onToggle }: SeriesTogglesProps) {
+  const idBase = useId()
   const now = new Date()
   const taken = capturedAt === null ? now : new Date(capturedAt)
   const offered = openSeries.filter((series) => takesPhoto(series, taken, now))
@@ -42,6 +43,7 @@ export function SeriesToggles({ seriesIds, capturedAt, openSeries, onToggle }: S
       <span className="text-[11px] font-medium tracking-[0.06em] text-muted uppercase">Séries</span>
       {offered.map((series) => {
         const isOn = seriesIds.includes(series.id)
+        const hintId = `${idBase}-${series.id}`
         return (
           <button
             key={series.id}
@@ -50,6 +52,7 @@ export function SeriesToggles({ seriesIds, capturedAt, openSeries, onToggle }: S
             className="series-toggle"
             aria-checked={isOn}
             aria-label={seriesName(series)}
+            aria-describedby={hintId}
             style={{ '--sc': series.color } as CSSProperties}
             onClick={() => onToggle(series.id)}
           >
@@ -58,7 +61,7 @@ export function SeriesToggles({ seriesIds, capturedAt, openSeries, onToggle }: S
             </span>
             <span className="series-toggle-tx" aria-hidden="true">
               <b>{seriesName(series)}</b>
-              <small>{hint(series, isOn)}</small>
+              <small id={hintId}>{hint(series, isOn)}</small>
             </span>
             <span className="series-switch" aria-hidden="true" />
           </button>
