@@ -77,7 +77,7 @@ function CharmSheetBody({
   const isShort = left !== null && left < 0
 
   function buy() {
-    purchase({ charmId: charm.id, replace: active !== null }, () => {
+    purchase({ charmId: charm.id, replaceCharm: active?.item.id ?? null }, () => {
       showToast(`${charm.name} actif pour 10 boosters.`)
       onClose()
     })
@@ -92,6 +92,7 @@ function CharmSheetBody({
         <span className="charm-row-text">
           <b>{copy.short}</b>
           <span className="charm-row-eff">{copy.effect}</span>
+          {copy.note === null ? null : <span className="charm-row-eff">{copy.note}</span>}
           <span className="charm-row-eff">
             Pour tes 10 prochains boosters, standard ou premium.
           </span>

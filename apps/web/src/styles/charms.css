@@ -224,6 +224,13 @@
     box-shadow: inset 0 0 0 1px var(--color-line);
     font-size: 13.5px;
   }
+  .charm-odds-title {
+    margin: 0;
+    font: 600 11px var(--font-display);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-faint);
+  }
   .charm-odds-line {
     display: flex;
     justify-content: space-between;

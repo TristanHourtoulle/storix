@@ -10,7 +10,8 @@ export interface CharmCopy {
   short: string
   effect: string
   named: string
-  thanks: string
+  recap: string
+  note: string | null
   color: string
   standardOdds: readonly OddsLine[]
   premiumOdds: readonly OddsLine[]
@@ -28,7 +29,8 @@ export const CHARM_COPY: Readonly<Record<CharmId, CharmCopy>> = {
     short: 'Mythique et Légendaire +25 %',
     effect: 'Légendaire 7 → 8,75 %, Mythique 1 → 1,25 % (premium : Mythique 15 → 18,75 %)',
     named: 'le Trèfle',
-    thanks: 'au Trèfle',
+    recap: 'Rareté montée grâce au Trèfle',
+    note: null,
     color: 'var(--color-tier-uncommon)',
     standardOdds: [
       { label: 'Mythique', before: '1 %', after: '1,25 %' },
@@ -41,7 +43,8 @@ export const CHARM_COPY: Readonly<Record<CharmId, CharmCopy>> = {
     short: 'Mythique ×2',
     effect: 'Mythique 1 → 2 %, Légendaire 7 → 9 % (premium : Mythique 15 → 25 %)',
     named: "le Trèfle d'or",
-    thanks: "au Trèfle d'or",
+    recap: "Rareté montée grâce au Trèfle d'or",
+    note: null,
     color: 'var(--color-tier-legendary)',
     standardOdds: [
       { label: 'Mythique', before: '1 %', after: '2 %' },
@@ -54,7 +57,8 @@ export const CHARM_COPY: Readonly<Record<CharmId, CharmCopy>> = {
     short: 'Nouvelle carte +25 %',
     effect: "25 % de chances par carte de piocher une carte que tu n'as pas, même rareté",
     named: 'la Boussole',
-    thanks: 'à la Boussole',
+    recap: 'Nouvelles grâce à la Boussole',
+    note: null,
     color: 'var(--color-tier-rare)',
     standardOdds: [COLLECTION_LINE("Carte que tu n'as pas")],
     premiumOdds: [COLLECTION_LINE("Carte que tu n'as pas")],
@@ -63,9 +67,10 @@ export const CHARM_COPY: Readonly<Record<CharmId, CharmCopy>> = {
   aimant: {
     short: 'Doublon +25 %',
     effect:
-      '25 % de chances par carte de piocher une carte que tu as déjà : plus de paillettes et de piles',
+      'Doublon = la même carte. 1 chance sur 4 par carte de repiocher une carte que tu as déjà, même rareté : plus de paillettes et de piles',
     named: "l'Aimant",
-    thanks: "à l'Aimant",
+    recap: "Doublons grâce à l'Aimant",
+    note: "Une brillante d'une carte que tu n'as qu'en normale compte comme nouvelle.",
     color: 'var(--color-danger)',
     standardOdds: [COLLECTION_LINE('Carte que tu as déjà')],
     premiumOdds: [COLLECTION_LINE('Carte que tu as déjà')],
@@ -75,7 +80,8 @@ export const CHARM_COPY: Readonly<Record<CharmId, CharmCopy>> = {
     short: 'Brillante +25 %',
     effect: 'Brillante 1 sur 15 → 1 sur 12 par carte',
     named: "l'Éclat",
-    thanks: "à l'Éclat",
+    recap: "Brillantes grâce à l'Éclat",
+    note: null,
     color: 'var(--color-cyan-soft)',
     standardOdds: [{ label: 'Brillante', before: '1 sur 15', after: '1 sur 12' }],
     premiumOdds: [{ label: 'Brillante', before: '1 sur 15', after: '1 sur 12' }],
@@ -85,7 +91,8 @@ export const CHARM_COPY: Readonly<Record<CharmId, CharmCopy>> = {
     short: 'Paillettes +25 %',
     effect: 'Paillettes des doublons ×1,25',
     named: 'le Tamis',
-    thanks: 'au Tamis',
+    recap: 'Doublons mieux payés grâce au Tamis',
+    note: null,
     color: 'var(--color-tier-legendary)',
     standardOdds: [{ label: 'Paillettes des doublons', before: '×1', after: '×1,25' }],
     premiumOdds: [{ label: 'Paillettes des doublons', before: '×1', after: '×1,25' }],

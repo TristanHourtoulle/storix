@@ -34,6 +34,7 @@ export function CharmOdds({ charm, isPremium }: CharmOddsProps) {
   const lines = isPremium ? copy.premiumOdds : copy.standardOdds
   return (
     <div className="charm-odds" style={{ '--c': copy.color } as CSSProperties}>
+      <p className="charm-odds-title">Chances de base</p>
       {lines.map((line) => (
         <div key={line.label} className="charm-odds-line">
           <span>{line.label}</span>
@@ -72,7 +73,7 @@ export function CharmRecap({ charm, pulls }: CharmRecapProps) {
         </div>
       ) : null}
       <div className="charm-odds-line">
-        <span>{`Cartes touchées grâce ${copy.thanks}`}</span>
+        <span>{copy.recap}</span>
         <b>{boosted}</b>
       </div>
     </div>
