@@ -8,7 +8,7 @@ import {
 import { and, asc, eq, inArray, notExists, or, sql } from 'drizzle-orm'
 import type { UploadRow } from './uploads.repository'
 
-export { filterOpenSeries } from '@storix/db'
+export { filterSeriesForPhoto } from '@storix/db'
 
 export type LockedPublishCandidate = PublishCandidate & { publishRequestedAt: Date | null }
 
@@ -239,4 +239,14 @@ export async function markPublishing(
     .where(and(ownedBy(input), inArray(uploads.id, [...input.ids]), eq(uploads.status, 'staged')))
     .returning({ id: uploads.id })
   return rows.length
+}
+
+/** Returns the capture date read from the staged media of an upload, if it was processed. */
+export async function findMediaCapturedAt(db: DbExecutor, uploadId: string): Promise<Date | null> {
+  const [row] = await db
+    .select({ capturedAt: media.capturedAt })
+    .from(media)
+    .where(eq(media.uploadId, uploadId))
+    .limit(1)
+  return row?.capturedAt ?? null
 }

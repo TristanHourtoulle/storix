@@ -1,5 +1,6 @@
-import { cardSeries, cardSeriesRewards, cards, type DbExecutor } from '@storix/db'
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { cardSeries, cardSeriesRewards, cards, media, uploads, type DbExecutor } from '@storix/db'
+import { captureInstant } from '@storix/shared'
+import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 
 export {
   attachCardToSeries,
@@ -44,7 +45,13 @@ function ownedCardCount(viewerId: string) {
 /** Lists the league's series, newest first, with their active card count and how many the viewer owns. */
 export async function listSeriesWithCounts(
   db: DbExecutor,
-  input: { leagueId: string; viewerId: string; seriesId?: string; withCardsOnly?: boolean },
+  input: {
+    leagueId: string
+    viewerId: string
+    seriesId?: string
+    withCardsOnly?: boolean
+    openEventsOnly?: boolean
+  },
 ): Promise<SeriesWithCounts[]> {
   const rows = await db
     .select({
@@ -58,6 +65,9 @@ export async function listSeriesWithCounts(
         eq(cardSeries.leagueId, input.leagueId),
         input.seriesId === undefined ? undefined : eq(cardSeries.id, input.seriesId),
         input.withCardsOnly === true ? hasActiveCard : undefined,
+        input.openEventsOnly === true
+          ? and(eq(cardSeries.kind, 'event'), isNull(cardSeries.closedAt))
+          : undefined,
       ),
     )
     .orderBy(desc(cardSeries.startsAt))
@@ -106,15 +116,41 @@ export async function isRewarded(
   return row !== undefined
 }
 
+export interface CardForSeries {
+  authorId: string | null
+  status: 'active' | 'hidden'
+  createdAt: Date
+  capturedAt: Date
+}
+
 /** Loads a card of the league with the fields that decide whether its author may add it to a series. */
 export async function findCardForSeries(
   db: DbExecutor,
   input: { leagueId: string; cardId: string },
-): Promise<{ authorId: string | null; status: 'active' | 'hidden'; createdAt: Date } | null> {
+): Promise<CardForSeries | null> {
   const [row] = await db
-    .select({ authorId: cards.authorId, status: cards.status, createdAt: cards.createdAt })
+    .select({
+      authorId: cards.authorId,
+      status: cards.status,
+      createdAt: cards.createdAt,
+      mediaCapturedAt: media.capturedAt,
+      clientCapturedAt: uploads.clientCapturedAt,
+      uploadedAt: uploads.createdAt,
+    })
     .from(cards)
+    .innerJoin(media, eq(media.id, cards.mediaId))
+    .leftJoin(uploads, eq(uploads.cardId, cards.id))
     .where(and(eq(cards.leagueId, input.leagueId), eq(cards.id, input.cardId)))
     .limit(1)
-  return row ?? null
+  if (row === undefined) return null
+  return {
+    authorId: row.authorId,
+    status: row.status,
+    createdAt: row.createdAt,
+    capturedAt: captureInstant({
+      mediaCapturedAt: row.mediaCapturedAt,
+      clientCapturedAt: row.clientCapturedAt,
+      uploadedAt: row.uploadedAt ?? row.createdAt,
+    }),
+  }
 }

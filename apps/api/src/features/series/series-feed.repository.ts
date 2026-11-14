@@ -10,10 +10,13 @@ import { and, eq, inArray } from 'drizzle-orm'
 
 export interface FeedSeriesRef {
   id: string
+  kind: FeedSeries['kind']
   title: string
   icon: SeriesIcon
   color: string
   next: FeedSeries['next']
+  startsAt: string
+  endsAt: string
 }
 
 /** Loads the series named by recap events with, for a theme, the theme of the following week. */
@@ -52,6 +55,7 @@ export async function listFeedSeries(
         row.id,
         {
           id: row.id,
+          kind: row.kind,
           title: row.title,
           icon: seriesIconSchema.parse(row.icon),
           color: row.color,
@@ -59,6 +63,8 @@ export async function listFeedSeries(
             next === undefined
               ? null
               : { title: next.title, icon: seriesIconSchema.parse(next.icon), color: next.color },
+          startsAt: row.startsAt.toISOString(),
+          endsAt: row.endsAt.toISOString(),
         },
       ]
     }),

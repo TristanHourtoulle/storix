@@ -5,6 +5,7 @@ import {
   DISCARDED_SWEEP_DELAY_MS,
   DRAFT_TTL_MS,
   planPublish,
+  captureInstant,
   storedMediaKeys,
   storedSeriesIdsSchema,
   type EditedUpload,
@@ -24,7 +25,8 @@ import type { Membership } from '../leagues/leagues.service'
 import { assertTaggedMembers } from './assert-tagged-members'
 import {
   deleteCardlessMediaOfUploads,
-  filterOpenSeries,
+  filterSeriesForPhoto,
+  findMediaCapturedAt,
   findOwnedUploadRow,
   listDrafts,
   listOwnedStates,
@@ -200,10 +202,17 @@ export function createUploadDraftsService(deps: {
       const seriesIds =
         body.seriesIds === undefined
           ? undefined
-          : await filterOpenSeries(db, {
+          : await filterSeriesForPhoto(db, {
               leagueId: m.leagueId,
               seriesIds: body.seriesIds,
-              now: clock(),
+              photo: {
+                capturedAt: captureInstant({
+                  mediaCapturedAt: await findMediaCapturedAt(db, row.id),
+                  clientCapturedAt: row.clientCapturedAt,
+                  uploadedAt: row.createdAt,
+                }),
+                sentAt: clock(),
+              },
             })
       const updated = await updateDraftFields(db, {
         leagueId: m.leagueId,

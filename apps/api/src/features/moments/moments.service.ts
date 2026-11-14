@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { Database } from '@storix/db'
+import { filterSeriesForPhoto, type Database } from '@storix/db'
 import {
   isUploadReservationExpired,
   momentLateMinutes,
@@ -194,12 +194,21 @@ export function createMomentsService(deps: {
           rewardDust,
         })
         if (!isInserted) throw alreadyPosted()
-        const capturedAt = body.capturedAt === null ? null : new Date(body.capturedAt)
+        const capturedAt = sanitizeCaptureDate(
+          body.capturedAt === null ? null : new Date(body.capturedAt),
+          now,
+        )
+        const seriesIds = await filterSeriesForPhoto(tx, {
+          leagueId: m.leagueId,
+          seriesIds: body.seriesIds ?? [],
+          photo: { capturedAt: capturedAt ?? takenAt, sentAt: now },
+        })
         await completeMomentUploads(tx, {
           backUploadId: back.id,
           selfieUploadId: selfie.id,
           title: body.title ?? momentCardTitle(slot),
-          capturedAt: sanitizeCaptureDate(capturedAt, now),
+          capturedAt,
+          seriesIds,
           now,
         })
         return { day: slot.day, takenAt, lateMinutes, rewardDust, uploadIds: [back.id, selfie.id] }

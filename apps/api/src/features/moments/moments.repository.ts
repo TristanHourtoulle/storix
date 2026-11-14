@@ -108,6 +108,7 @@ export async function completeMomentUploads(
     selfieUploadId: string
     title: string
     capturedAt: Date | null
+    seriesIds: readonly string[]
     now: Date
   },
 ): Promise<void> {
@@ -117,6 +118,7 @@ export async function completeMomentUploads(
       status: 'uploaded',
       title: input.title,
       clientCapturedAt: input.capturedAt,
+      seriesIds: [...input.seriesIds],
       stageOnly: false,
       completedAt: input.now,
     })
