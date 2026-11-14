@@ -157,7 +157,7 @@ export function TearDemo() {
         type="button"
         className={`tear-demo-stage${isOpen ? ' is-open' : ''}`}
         onClick={tap}
-        aria-label={hintOf(taps)}
+        aria-label="Booster d'essai"
         aria-disabled={isOpen || undefined}
       >
         <span className="tear-peek" aria-hidden="true" />

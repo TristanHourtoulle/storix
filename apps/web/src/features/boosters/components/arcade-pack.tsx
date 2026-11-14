@@ -88,7 +88,7 @@ export function ArcadePack({
         </svg>
       </div>
       {tear === 'braises' || tear === 'ruban' ? (
-        <div className="ar-pack-pos ar-tear-top" style={PACK_STYLE}>
+        <div className="ar-pack-pos ar-tear-top" style={PACK_STYLE} aria-hidden="true">
           <div className="ar-tear-top-clip">
             <PackArt label={label} isPremium={isPremium} skin={skin} />
           </div>
