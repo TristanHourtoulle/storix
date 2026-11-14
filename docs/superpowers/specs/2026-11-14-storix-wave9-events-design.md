@@ -94,6 +94,14 @@ cards stay normal cards that are drawn in classic boosters.
 - Moment: the Moment publish screen shows the same toggles. Live events are pre-checked (the capture is
   now), the theme is off by default. Moments stay exempt from the quota.
 
+- **Trust note.** The capture time comes from the photo's EXIF or the date the phone sends; both are
+  client-controlled. A member could backdate a photo into an event. This is accepted: the league is a circle of
+  friends and the photo still has to be sent before the grace end.
+- Drafts carry `effectiveCapturedAt` (server `captureInstant`, upload time as last resort) so the switches and
+  the pre-check use exactly the instant the server will check; `capturedAt` stays for display.
+- Anti-spam: a non-admin member schedules at most 3 events per rolling 24 h (`EVENT_COOLDOWN`, 429), and the
+  start push only goes out once the event has been live for 1 minute and is still live.
+
 ### Live display (A)
 
 - While an event is `live`, a **live banner** replaces the theme card at the top of home (artifact

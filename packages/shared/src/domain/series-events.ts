@@ -25,6 +25,7 @@ export const EVENT_MAX_LEAD_DAYS = 30
 export const EVENT_START_SLACK_MINUTES = 5
 export const EVENT_GRACE_HOURS = 12
 export const EVENT_MAX_ACTIVE = 3
+export const EVENT_CREATIONS_PER_DAY = 3
 
 const MINUTE_MS = 60_000
 const HOUR_MS = 60 * MINUTE_MS
@@ -111,10 +112,9 @@ function parisClock(date: Date): { weekday: number; minutes: number } {
   const parts = Object.fromEntries(
     PARIS_CLOCK.formatToParts(date).map((part) => [part.type, part.value]),
   )
-  return {
-    weekday: WEEKDAYS[parts.weekday ?? 'Mon'] ?? 1,
-    minutes: Number(parts.hour) * 60 + Number(parts.minute),
-  }
+  const weekday = parts.weekday === undefined ? undefined : WEEKDAYS[parts.weekday]
+  if (weekday === undefined) throw new Error(`Unexpected Paris weekday: ${String(parts.weekday)}`)
+  return { weekday, minutes: Number(parts.hour) * 60 + Number(parts.minute) }
 }
 
 function shiftDayKey(key: string, days: number): string {
@@ -142,11 +142,19 @@ export function eventShortcuts(now: Date): EventShortcuts {
   const today = parisDayKey(now)
   const { weekday, minutes } = parisClock(now)
   const startNow = roundUpToStep(now)
+  const isAfterMidnight = minutes < 2 * 60
   const tonightStart = at(today, 20)
-  const tonight = {
-    startsAt: now < tonightStart ? tonightStart : startNow,
-    endsAt: at(shiftDayKey(today, 1), 2),
-  }
+  const tonight = isAfterMidnight
+    ? {
+        startsAt: startNow,
+        endsAt: new Date(
+          Math.max(at(today, 2).getTime(), startNow.getTime() + EVENT_MIN_MINUTES * MINUTE_MS),
+        ),
+      }
+    : {
+        startsAt: now < tonightStart ? tonightStart : startNow,
+        endsAt: at(shiftDayKey(today, 1), 2),
+      }
   const tomorrow = shiftDayKey(today, 1)
   const tomorrowNoon = { startsAt: at(tomorrow, 12), endsAt: at(tomorrow, 16) }
   return { tonight, tomorrowNoon, weekend: weekendOf(now, today, weekday, minutes, startNow) }

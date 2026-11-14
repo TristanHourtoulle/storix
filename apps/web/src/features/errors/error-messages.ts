@@ -60,6 +60,7 @@ const MESSAGES: Record<ErrorCode, string> = {
   EVENT_WINDOW_INVALID: 'Choisis un créneau de 30 min à 48 h, qui commence dans les 30 jours.',
   EVENT_ALREADY_STARTED: 'Cet événement a déjà commencé.',
   EVENT_NOT_LIVE: 'Cet événement n’est plus en cours.',
+  EVENT_COOLDOWN: 'Tu as déjà programmé 3 événements en 24 h. Réessaie un peu plus tard.',
   INTERNAL_ERROR: 'Une erreur est survenue.',
 }
 

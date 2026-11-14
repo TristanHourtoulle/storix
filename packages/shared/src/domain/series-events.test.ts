@@ -84,6 +84,12 @@ describe('eventShortcuts', () => {
     expect(weekend.endsAt.toISOString()).toBe('2026-11-15T19:00:00.000Z')
   })
 
+  it('should start « Ce soir » now when it is already past midnight in Paris', () => {
+    const { tonight } = eventShortcuts(new Date('2026-11-14T23:32:00Z'))
+    expect(tonight.startsAt.toISOString()).toBe('2026-11-14T23:35:00.000Z')
+    expect(tonight.endsAt.toISOString()).toBe('2026-11-15T01:00:00.000Z')
+  })
+
   it('should cross the October DST change on the right hour', () => {
     const { weekend } = eventShortcuts(new Date('2026-10-22T09:00:00Z'))
     expect(weekend.startsAt.toISOString()).toBe('2026-10-24T08:00:00.000Z')

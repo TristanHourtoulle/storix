@@ -1,5 +1,6 @@
 import type { Database } from '@storix/db'
 import {
+  EVENT_CREATIONS_PER_DAY,
   EVENT_MAX_ACTIVE,
   eventGraceEndsAt,
   hasRoleAtLeast,
@@ -18,6 +19,7 @@ import type { Membership } from '../leagues/leagues.service'
 import { listGoalPeople } from '../league-goal/league-goal.repository'
 import {
   countActiveEvents,
+  countEventsCreatedSince,
   deleteUpcomingEvent,
   endEventNow,
   findEvent,
@@ -40,6 +42,8 @@ export interface SeriesEventsService {
   cancel(m: Membership, seriesId: string): Promise<void>
   end(m: Membership, seriesId: string): Promise<EventSummary>
 }
+
+const DAY_MS = 86_400_000
 
 interface Deps {
   db: Database
@@ -116,6 +120,12 @@ export function createSeriesEventsService({ db, clock }: Deps): SeriesEventsServ
     return event
   }
 
+  async function raiseGone(m: Membership, seriesId: string): Promise<never> {
+    const event = await findEvent(db, { leagueId: m.leagueId, seriesId })
+    if (event === null) throw notFound('Event not found')
+    throw new AppError('EVENT_ALREADY_STARTED', 409, 'The event already started')
+  }
+
   return {
     async list(m) {
       const rows = await listSeriesWithCounts(db, {
@@ -145,6 +155,17 @@ export function createSeriesEventsService({ db, clock }: Deps): SeriesEventsServ
         await lockLeagueSeries(tx, m.leagueId)
         if ((await countActiveEvents(tx, { leagueId: m.leagueId, now })) >= EVENT_MAX_ACTIVE) {
           throw new AppError('EVENT_LIMIT_REACHED', 409, 'Too many events planned')
+        }
+        if (!hasRoleAtLeast(m.role, 'admin')) {
+          const since = new Date(now.getTime() - DAY_MS)
+          const created = await countEventsCreatedSince(tx, {
+            leagueId: m.leagueId,
+            userId: m.userId,
+            since,
+          })
+          if (created >= EVENT_CREATIONS_PER_DAY) {
+            throw new AppError('EVENT_COOLDOWN', 429, 'Too many events created today')
+          }
         }
         return insertEvent(tx, {
           leagueId: m.leagueId,
@@ -179,17 +200,13 @@ export function createSeriesEventsService({ db, clock }: Deps): SeriesEventsServ
         graceEndsAt: eventGraceEndsAt(endsAt),
       }
       const updated = await updateUpcomingEvent(db, { seriesId, edit, now })
-      if (updated === null) {
-        throw new AppError('EVENT_ALREADY_STARTED', 409, 'The event already started')
-      }
+      if (updated === null) await raiseGone(m, seriesId)
       return summaryOf(m, seriesId)
     },
 
     async cancel(m, seriesId) {
       await managed(m, seriesId)
-      if (!(await deleteUpcomingEvent(db, { seriesId, now: clock() }))) {
-        throw new AppError('EVENT_ALREADY_STARTED', 409, 'The event already started')
-      }
+      if (!(await deleteUpcomingEvent(db, { seriesId, now: clock() }))) await raiseGone(m, seriesId)
     },
 
     async end(m, seriesId) {

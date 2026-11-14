@@ -1,5 +1,6 @@
 export {
   countActiveEvents,
+  countEventsCreatedSince,
   deleteUpcomingEvent,
   endEventNow,
   findEvent,
