@@ -1,11 +1,11 @@
 import {
   discardUploadsBodySchema,
   editUploadBodySchema,
+  editedUploadSchema,
   leagueParamsSchema,
   uploadDraftsResponseSchema,
   uploadIdsBodySchema,
   uploadParamsSchema,
-  uploadStateSchema,
   uploadStatesQuerySchema,
   uploadStatesResponseSchema,
 } from '@storix/shared'
@@ -80,7 +80,7 @@ export function uploadDraftsRoutes(service: UploadDraftsService): FastifyPluginA
         schema: {
           params: uploadParamsSchema,
           body: editUploadBodySchema,
-          response: { 200: uploadStateSchema },
+          response: { 200: editedUploadSchema },
         },
       },
       (request) => service.editUpload(request.membership, request.params.uploadId, request.body),

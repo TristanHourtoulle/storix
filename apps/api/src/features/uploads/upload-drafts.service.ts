@@ -7,6 +7,7 @@ import {
   planPublish,
   storedMediaKeys,
   storedSeriesIdsSchema,
+  type EditedUpload,
   type EditUploadBody,
   type MediaVariantSize,
   type PublishPlan,
@@ -42,7 +43,7 @@ const DRAFT_IMAGE_SIZES: readonly MediaVariantSize[] = [768, 1600]
 const PUBLISH_REKICK_MIN_AGE_MS = 60_000
 
 export interface UploadDraftsService {
-  editUpload(m: Membership, uploadId: string, body: EditUploadBody): Promise<UploadState>
+  editUpload(m: Membership, uploadId: string, body: EditUploadBody): Promise<EditedUpload>
   listDrafts(m: Membership): Promise<UploadDraft[]>
   listStates(m: Membership, ids: string[]): Promise<UploadState[]>
   discard(m: Membership, ids: string[]): Promise<void>
@@ -215,7 +216,10 @@ export function createUploadDraftsService(deps: {
       })
       const current = await findOwned(m, uploadId)
       if (!updated) throw notEditable(current)
-      return toUploadState(current)
+      return {
+        ...toUploadState(current),
+        seriesIds: storedSeriesIdsSchema.parse(current.seriesIds),
+      }
     },
 
     async listDrafts(m) {

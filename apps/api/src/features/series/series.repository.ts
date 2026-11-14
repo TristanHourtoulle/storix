@@ -26,6 +26,12 @@ const activeCardCount = sql<number>`(
   where sc.series_id = ${cardSeries.id}
 )`
 
+const hasActiveCard = sql`exists (
+  select 1 from card_series_cards sc
+  join cards c on c.id = sc.card_id and c.status = 'active'
+  where sc.series_id = ${cardSeries.id}
+)`
+
 function ownedCardCount(viewerId: string) {
   return sql<number>`(
     select count(distinct c.id)::int from card_series_cards sc
@@ -38,7 +44,7 @@ function ownedCardCount(viewerId: string) {
 /** Lists the league's series, newest first, with their active card count and how many the viewer owns. */
 export async function listSeriesWithCounts(
   db: DbExecutor,
-  input: { leagueId: string; viewerId: string; seriesId?: string },
+  input: { leagueId: string; viewerId: string; seriesId?: string; withCardsOnly?: boolean },
 ): Promise<SeriesWithCounts[]> {
   const rows = await db
     .select({
@@ -51,6 +57,7 @@ export async function listSeriesWithCounts(
       and(
         eq(cardSeries.leagueId, input.leagueId),
         input.seriesId === undefined ? undefined : eq(cardSeries.id, input.seriesId),
+        input.withCardsOnly === true ? hasActiveCard : undefined,
       ),
     )
     .orderBy(desc(cardSeries.startsAt))

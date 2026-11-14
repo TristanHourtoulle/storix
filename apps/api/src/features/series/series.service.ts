@@ -6,6 +6,7 @@ import {
   isRewardEligible,
   nextThemeWeekKey,
   rotationThemeFor,
+  SERIES_SHELF_CLOSED_MAX,
   SERIES_THEME_CONTRIBUTORS,
   seriesColorFor,
   seriesPhase,
@@ -144,7 +145,7 @@ export function createSeriesService({ db, signer, clock }: SeriesServiceDeps): S
         title: planned.title,
         emoji: planned.emoji,
         color: planned.color,
-        isOverride: planned.createdById !== null,
+        isOverride: planned.isOverride,
       }
     }
     return { weekKey, ...rotationThemeFor(m.leagueId, weekKey), isOverride: false }
@@ -153,13 +154,18 @@ export function createSeriesService({ db, signer, clock }: SeriesServiceDeps): S
   return {
     async getShelf(m) {
       const now = clock()
-      await ensureThemeSeries(db, { leagueId: m.leagueId, weekKey: themeWeekKey(now) })
-      const rows = await listSeriesWithCounts(db, { leagueId: m.leagueId, viewerId: m.userId })
+      const rows = await listSeriesWithCounts(db, {
+        leagueId: m.leagueId,
+        viewerId: m.userId,
+        withCardsOnly: true,
+      })
       const summaries = rows
         .map((row) => toSummary(row, now))
-        .filter((summary) => summary.cardCount > 0 && summary.phase !== 'upcoming')
+        .filter((summary) => summary.phase !== 'upcoming')
       const live = summaries.filter((s) => s.phase === 'live' || s.phase === 'grace')
-      const done = summaries.filter((s) => s.phase === 'closed')
+      const done = summaries
+        .filter((s) => s.phase === 'closed')
+        .slice(0, SERIES_SHELF_CLOSED_MAX)
       return {
         series: [
           ...live.toSorted((a, b) => Number(b.kind === 'theme') - Number(a.kind === 'theme')),
@@ -231,7 +237,7 @@ export function createSeriesService({ db, signer, clock }: SeriesServiceDeps): S
       if (!acceptsCards(series, now)) throw new AppError('SERIES_CLOSED', 409, 'Series closed')
       const card = await findCardForSeries(db, { leagueId: m.leagueId, cardId })
       if (card === null) throw notFound('Card not found')
-      const isInWindow = card.createdAt >= series.startsAt && card.createdAt < series.graceEndsAt
+      const isInWindow = card.createdAt >= series.startsAt && card.createdAt < series.endsAt
       if (card.authorId !== m.userId || card.status !== 'active' || !isInWindow) {
         throw new AppError('SERIES_CARD_NOT_ALLOWED', 403, 'This card cannot join the series')
       }

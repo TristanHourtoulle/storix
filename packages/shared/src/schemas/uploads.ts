@@ -112,6 +112,10 @@ export const uploadStatesQuerySchema = z.object({
     .pipe(z.array(z.uuid()).min(1).max(MAX_STATES_BATCH)),
 })
 
+export const editedUploadSchema = uploadStateSchema.extend({
+  seriesIds: z.array(z.uuid()).catch([]),
+})
+
 export const uploadStatesResponseSchema = z.object({ states: z.array(uploadStateSchema) })
 
 export const publishProblemSchema = z.object({
@@ -162,6 +166,7 @@ export type CreateUploadBody = z.infer<typeof createUploadBodySchema>
 export type CreateUploadResponse = z.infer<typeof createUploadResponseSchema>
 export type CompleteUploadBody = z.infer<typeof completeUploadBodySchema>
 export type UploadState = z.infer<typeof uploadStateSchema>
+export type EditedUpload = z.infer<typeof editedUploadSchema>
 export type UploadQuota = z.infer<typeof uploadQuotaSchema>
 export type CropRectBody = z.infer<typeof cropRectSchema>
 export type EditUploadBody = z.infer<typeof editUploadBodySchema>
