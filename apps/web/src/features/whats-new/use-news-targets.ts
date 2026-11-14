@@ -33,6 +33,7 @@ export type NewsTryLink =
   | { to: '/l/$leagueId/cards/$cardId'; params: { leagueId: string; cardId: string } }
   | { to: '/l/$leagueId/shop'; params: { leagueId: string } }
   | { to: '/l/$leagueId/profile/style'; params: { leagueId: string } }
+  | { to: '/l/$leagueId/league'; params: { leagueId: string } }
 
 interface NewsTargets {
   hrefFor: (target: NewsTryTarget) => NewsTryLink | null
@@ -85,6 +86,8 @@ function linkFor(
       return { to: '/l/$leagueId/shop', params: { leagueId } }
     case 'style':
       return { to: '/l/$leagueId/profile/style', params: { leagueId } }
+    case 'league':
+      return { to: '/l/$leagueId/league', params: { leagueId } }
     case 'none':
       return null
   }
