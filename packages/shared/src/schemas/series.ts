@@ -1,5 +1,11 @@
 import { z } from 'zod'
-import { SERIES_ICONS, SERIES_KINDS, SERIES_PHASES, SERIES_TITLE_MAX_LENGTH } from '../domain'
+import {
+  EVENT_ICONS,
+  SERIES_ICONS,
+  SERIES_KINDS,
+  SERIES_PHASES,
+  SERIES_TITLE_MAX_LENGTH,
+} from '../domain'
 import { isoDateSchema } from './common'
 import { goalContributorSchema } from './league-goal'
 import { seriesIconSchema } from './series-refs'
@@ -63,6 +69,34 @@ export const addSeriesCardBodySchema = z.object({ cardId: z.uuid() })
 
 export const seriesParamsSchema = z.object({ leagueId: z.uuid(), seriesId: z.uuid() })
 
+export const eventBodySchema = z.object({
+  title: z.string().trim().min(1).max(SERIES_TITLE_MAX_LENGTH),
+  icon: z.enum(EVENT_ICONS),
+  startsAt: isoDateSchema,
+  endsAt: isoDateSchema,
+})
+
+export const eventPatchSchema = eventBodySchema
+  .partial()
+  .refine((patch) => Object.keys(patch).length > 0)
+
+export const eventCreatorSchema = z.object({
+  userId: z.string(),
+  displayUsername: z.string(),
+})
+
+export const eventSummarySchema = seriesSummarySchema.extend({
+  createdBy: eventCreatorSchema.nullable(),
+  canManage: z.boolean(),
+  memberCount: z.int().min(0),
+})
+
+export const eventListSchema = z.object({
+  live: z.array(eventSummarySchema),
+  grace: z.array(eventSummarySchema),
+  upcoming: z.array(eventSummarySchema),
+})
+
 export type SeriesSummary = z.infer<typeof seriesSummarySchema>
 export type SeriesShelf = z.infer<typeof seriesShelfSchema>
 export type ThemeCard = z.infer<typeof themeCardSchema>
@@ -70,3 +104,7 @@ export type SeriesDetail = z.infer<typeof seriesDetailSchema>
 export type NextTheme = z.infer<typeof nextThemeSchema>
 export type ThemeOverrideBody = z.infer<typeof themeOverrideBodySchema>
 export type AddSeriesCardBody = z.infer<typeof addSeriesCardBodySchema>
+export type EventBody = z.infer<typeof eventBodySchema>
+export type EventPatch = z.infer<typeof eventPatchSchema>
+export type EventSummary = z.infer<typeof eventSummarySchema>
+export type EventList = z.infer<typeof eventListSchema>

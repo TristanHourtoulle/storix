@@ -5,7 +5,7 @@ import { storedCharmIdSchema } from './charms'
 import { isoDateSchema } from './common'
 import { emblemIdSchema } from './emblems'
 import { goalTypeSchema } from './league-goal'
-import { themeIdeaSchema } from './series'
+import { seriesKindSchema, themeIdeaSchema } from './series'
 import { seriesIconSchema } from './series-refs'
 
 export const FEED_DEFAULT_LIMIT = 20
@@ -64,6 +64,7 @@ export const feedGoalSchema = z.object({
 
 export const feedSeriesSchema = z.object({
   id: z.uuid(),
+  kind: seriesKindSchema.catch('theme'),
   title: z.string(),
   icon: seriesIconSchema,
   color: z.string().regex(/^#[0-9a-f]{6}$/),
@@ -71,6 +72,8 @@ export const feedSeriesSchema = z.object({
   memberCount: z.int().min(0),
   topCount: z.int().min(0),
   next: themeIdeaSchema.nullable(),
+  startsAt: isoDateSchema.nullable().catch(null),
+  endsAt: isoDateSchema.nullable().catch(null),
 })
 
 export const feedRowSchema = z.object({

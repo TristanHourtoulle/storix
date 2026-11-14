@@ -46,6 +46,11 @@ export const SERIES_ICONS = [
   'heart',
   'star',
   'eye',
+  'party',
+  'dinner',
+  'mountain',
+  'tree',
+  'glass',
 ] as const
 
 export type SeriesIcon = (typeof SERIES_ICONS)[number]

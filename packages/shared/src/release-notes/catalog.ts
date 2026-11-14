@@ -3,6 +3,20 @@ import type { ReleaseNote } from '../schemas/whats-new'
 /** Every feature release shown in the "Nouveautés" booster, newest first. */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    id: '2026-11-14-e',
+    publishedAt: '2026-11-14T21:00:00+01:00',
+    cards: [
+      {
+        key: 'evenements',
+        title: 'Les événements',
+        body: 'Un repas de famille, une soirée ? Programme-le depuis la page Ligue : les photos prises pendant l’événement forment une série, et toute la ligue est prévenue au début.',
+        tier: 'legendary',
+        illustration: 'celebration',
+        tryTarget: 'league',
+      },
+    ],
+  },
+  {
     id: '2026-11-14-d',
     publishedAt: '2026-11-14T20:00:00+01:00',
     cards: [
