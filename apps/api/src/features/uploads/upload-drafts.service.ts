@@ -104,6 +104,11 @@ function toDraft(row: DraftRow, signer: MediaSigner): UploadDraft {
     seriesIds: storedSeriesIdsSchema.parse(row.seriesIds),
     crop: row.crop,
     capturedAt: (row.media?.capturedAt ?? row.clientCapturedAt)?.toISOString() ?? null,
+    effectiveCapturedAt: captureInstant({
+      mediaCapturedAt: row.media?.capturedAt ?? null,
+      clientCapturedAt: row.clientCapturedAt,
+      uploadedAt: row.createdAt,
+    }).toISOString(),
     createdAt: row.createdAt.toISOString(),
     expiresAt: new Date(row.createdAt.getTime() + DRAFT_TTL_MS).toISOString(),
     media:

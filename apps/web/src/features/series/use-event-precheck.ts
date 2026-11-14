@@ -21,7 +21,8 @@ export function useEventPrecheck(
       }))
     for (const card of cards) {
       if (card.isPrechecked || card.phase === 'preparing') continue
-      const capturedAt = card.capturedAt === null ? new Date() : new Date(card.capturedAt)
+      const capturedAt =
+        card.effectiveCapturedAt === null ? new Date() : new Date(card.effectiveCapturedAt)
       const matching = precheckedEventIds(events, capturedAt)
       const eventIds = new Set(events.map((event) => event.id))
       const kept = card.seriesIds.filter((id) => !eventIds.has(id))

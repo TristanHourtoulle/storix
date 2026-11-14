@@ -15,6 +15,8 @@ export interface StackCard {
   remote: { image: ImageSet; thumbhash: string } | null
   size: ImageSize | null
   capturedAt: string | null
+  /** When the photo counts as taken for series (server value for drafts); null means "now". */
+  effectiveCapturedAt: string | null
   title: string
   taggedUserIds: readonly string[]
   seriesIds: readonly string[]
@@ -92,6 +94,7 @@ export function createStackCard(localId: string, seriesIds: readonly string[] = 
     remote: null,
     size: null,
     capturedAt: null,
+    effectiveCapturedAt: null,
     title: '',
     taggedUserIds: [],
     seriesIds,
@@ -146,6 +149,7 @@ function cardFromDraft(draft: UploadDraft): StackCard {
     remote: draft.media ? { image: draft.media.image, thumbhash: draft.media.thumbhash } : null,
     size: draft.media ? { width: draft.media.width, height: draft.media.height } : null,
     capturedAt: draft.capturedAt,
+    effectiveCapturedAt: draft.effectiveCapturedAt,
     title: draft.title ?? '',
     taggedUserIds: draft.taggedUserIds,
     seriesIds: draft.seriesIds,
@@ -162,6 +166,7 @@ function mergeDraft(card: StackCard, draft: UploadDraft): StackCard {
     remote: card.remote ?? fresh.remote,
     size: card.size ?? fresh.size,
     capturedAt: card.capturedAt ?? fresh.capturedAt,
+    effectiveCapturedAt: card.effectiveCapturedAt ?? fresh.effectiveCapturedAt,
     phase: isStagedNow ? 'staged' : card.phase,
   }
 }
@@ -224,6 +229,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         phase: 'queued',
         size: { width: action.photo.width, height: action.photo.height },
         capturedAt: action.photo.capturedAt,
+        effectiveCapturedAt: action.photo.capturedAt,
       }))
     case 'phase':
       return updateCard(state, action.localId, (card) =>

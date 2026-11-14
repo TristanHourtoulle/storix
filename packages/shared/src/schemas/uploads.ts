@@ -131,6 +131,8 @@ export const uploadDraftSchema = z.object({
   seriesIds: z.array(z.uuid()).catch([]),
   crop: cropRectSchema.nullable(),
   capturedAt: isoDateSchema.nullable(),
+  /** When the photo counts as taken for series: the capture date, else the upload time. */
+  effectiveCapturedAt: isoDateSchema.nullable().catch(null),
   createdAt: isoDateSchema,
   expiresAt: isoDateSchema,
   media: z

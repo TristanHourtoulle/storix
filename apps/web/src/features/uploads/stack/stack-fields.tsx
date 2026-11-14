@@ -115,7 +115,7 @@ export function StackFields({
       </section>
       <SeriesToggles
         seriesIds={card.seriesIds}
-        capturedAt={card.capturedAt}
+        capturedAt={card.effectiveCapturedAt}
         openSeries={openSeries}
         onToggle={onToggleSeries}
       />
