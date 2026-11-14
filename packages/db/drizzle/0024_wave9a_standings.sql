@@ -1,0 +1,1 @@
+CREATE INDEX "audit_log_league_actor_stats_idx" ON "audit_log" USING btree ("league_id","actor_id") WHERE "audit_log"."action" IN ('copy.promoted', 'copy.recycled', 'stack.converted');

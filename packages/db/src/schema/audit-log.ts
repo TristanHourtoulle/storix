@@ -20,5 +20,10 @@ export const auditLog = pgTable(
       .default(sql`'{}'::jsonb`),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index('audit_log_league_created_idx').on(t.leagueId, t.createdAt.desc())],
+  (t) => [
+    index('audit_log_league_created_idx').on(t.leagueId, t.createdAt.desc()),
+    index('audit_log_league_actor_stats_idx')
+      .on(t.leagueId, t.actorId)
+      .where(sql`${t.action} IN ('copy.promoted', 'copy.recycled', 'stack.converted')`),
+  ],
 )
