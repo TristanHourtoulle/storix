@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { CARD_TITLE_MAX_LENGTH, type PostMomentResponse } from '@storix/shared'
 import { latenessLabel } from '../moment-copy'
@@ -14,6 +14,8 @@ interface MomentPreviewProps {
   result: PostMomentResponse | null
   isPublishing: boolean
   error: string | null
+  /** Series switches shown under the title, when a theme or a live event takes the Moment. */
+  series?: ReactNode
   onTitleChange: (title: string) => void
   onPublish: () => void
   onRetake: () => void
@@ -33,6 +35,7 @@ export function MomentPreview({
   result,
   isPublishing,
   error,
+  series = null,
   onTitleChange,
   onPublish,
   onRetake,
@@ -98,6 +101,7 @@ export function MomentPreview({
               Laisse vide pour garder ce titre.
             </span>
           </div>
+          {series}
           {error ? (
             <p role="alert" className="moment-preview-error">
               {error}

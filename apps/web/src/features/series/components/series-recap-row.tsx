@@ -4,7 +4,7 @@ import type { CosmeticItemId, FeedRow } from '@storix/shared'
 import { StyledName } from '@/features/cosmetics/components/styled-name'
 import { MiniCard } from '@/features/cards/components/mini-card'
 import { actorName } from '@/features/league-feed/feed-copy'
-import { cardsLabel } from '../series-copy'
+import { cardsLabel, seriesDatesLabel } from '../series-copy'
 import { Icon } from '@/components/ui/icon'
 
 interface SeriesRecapRowProps {
@@ -20,8 +20,12 @@ export function SeriesRecapRow({ leagueId, row, nameStyles }: SeriesRecapRowProp
   const { series } = row
   if (series === null) return null
   const top = row.actors[0]
-  const subtitle =
-    series.next === null
+  const isEvent = series.kind === 'event'
+  const subtitle = isEvent
+    ? series.startsAt === null || series.endsAt === null
+      ? 'Événement'
+      : `Événement · ${seriesDatesLabel({ kind: 'event', startsAt: series.startsAt, endsAt: series.endsAt })}`
+    : series.next === null
       ? 'Thème de la semaine'
       : `Thème de la semaine · cette semaine : ${series.next.title}`
   return (
@@ -36,7 +40,7 @@ export function SeriesRecapRow({ leagueId, row, nameStyles }: SeriesRecapRowProp
           <Icon name={series.icon} className="size-[18px]" />
         </span>
         <span>
-          <b>« {series.title} » est terminé</b>
+          <b>{isEvent ? `${series.title}, c’est fini` : `« ${series.title} » est terminé`}</b>
           <small>{subtitle}</small>
         </span>
       </span>
@@ -54,7 +58,8 @@ export function SeriesRecapRow({ leagueId, row, nameStyles }: SeriesRecapRowProp
         <span className="feed-stat">
           <b>{series.memberCount}</b> {series.memberCount > 1 ? 'membres' : 'membre'}
         </span>
-        {top !== undefined && top.userId !== null && series.topCount > 0 ? (
+        {isEvent ? <span className="feed-stat">à trouver dans les boosters</span> : null}
+        {!isEvent && top !== undefined && top.userId !== null && series.topCount > 0 ? (
           <span className="feed-stat">
             <StyledName styleId={nameStyles.get(top.userId) ?? null}>{actorName(top)}</StyledName> :{' '}
             <b>{series.topCount}</b> {series.topCount > 1 ? 'photos' : 'photo'}

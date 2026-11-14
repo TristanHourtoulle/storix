@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
@@ -16,11 +16,16 @@ import { draftsQueryOptions, useDrafts } from '@/features/uploads/use-drafts'
 import { useLeaveGuard } from '@/features/uploads/use-leave-guard'
 import { usePublish } from '@/features/uploads/use-publish'
 import { isSeriesOpen } from '@/features/series/series-copy'
-import { themeCardQueryOptions } from '@/features/series/series.queries'
+import { eventsQueryOptions, themeCardQueryOptions } from '@/features/series/series.queries'
+import { useEventPrecheck } from '@/features/series/use-event-precheck'
 import { uploadQuotaQueryOptions, useUploadQuota } from '@/features/uploads/use-upload-quota'
 
 export const Route = createFileRoute('/_authed/l/$leagueId/add')({
-  validateSearch: z.object({ resume: z.boolean().optional(), theme: z.uuid().optional() }),
+  validateSearch: z.object({
+    resume: z.boolean().optional(),
+    theme: z.uuid().optional(),
+    series: z.uuid().optional(),
+  }),
   remountDeps: ({ params }) => params.leagueId,
   loader: ({ context, params }) =>
     Promise.all([
@@ -28,6 +33,9 @@ export const Route = createFileRoute('/_authed/l/$leagueId/add')({
       context.queryClient.ensureQueryData(uploadQuotaQueryOptions(params.leagueId)),
       context.queryClient
         .ensureQueryData(themeCardQueryOptions(params.leagueId))
+        .catch(() => undefined),
+      context.queryClient
+        .ensureQueryData(eventsQueryOptions(params.leagueId))
         .catch(() => undefined),
       context.queryClient
         .ensureQueryData(draftsQueryOptions(params.leagueId))
@@ -41,12 +49,22 @@ const NO_SERIES: SeriesSummary[] = []
 
 function AddPhotos() {
   const { leagueId } = Route.useParams()
-  const { resume, theme } = Route.useSearch()
+  const { resume, theme, series: seriesParam } = Route.useSearch()
   const themeSeries = useQuery(themeCardQueryOptions(leagueId)).data?.series
-  const openSeries =
-    themeSeries !== undefined && isSeriesOpen(themeSeries) ? [themeSeries] : NO_SERIES
+  const eventsQuery = useQuery(eventsQueryOptions(leagueId))
+  const events = eventsQuery.data
+  const openSeries = useMemo<readonly SeriesSummary[]>(() => {
+    const open = [
+      ...(themeSeries !== undefined && isSeriesOpen(themeSeries) ? [themeSeries] : []),
+      ...(events?.live ?? []),
+      ...(events?.grace ?? []),
+    ]
+    return open.length === 0 ? NO_SERIES : open
+  }, [themeSeries, events])
   const [defaultSeriesIds] = useState<readonly string[]>(() =>
-    openSeries.filter((series) => series.id === theme).map((series) => series.id),
+    openSeries
+      .filter((series) => series.id === theme || series.id === seriesParam)
+      .map((series) => series.id),
   )
   const navigate = useNavigate({ from: Route.fullPath })
   const quota = useUploadQuota(leagueId)
@@ -58,6 +76,7 @@ function AddPhotos() {
   const { publish, isPublishing, progress } = usePublish(leagueId, session)
   const leave = useLeaveGuard(leagueId, session, drafts)
   const { state, stats, resume: resumeDrafts, dispatch, goTo } = session
+  useEventPrecheck(state.cards, openSeries, dispatch, !eventsQuery.isPending)
 
   useEffect(() => {
     if (!resume || !hasDrafts) return

@@ -1,5 +1,6 @@
 import { queryOptions, type QueryClient } from '@tanstack/react-query'
 import { logger } from '@/lib/logger'
+import { fetchEvents } from './events.api'
 import { fetchSeries, fetchSeriesShelf, fetchThemeCard } from './series.api'
 
 const SERIES_STALE_MS = 30_000
@@ -29,6 +30,14 @@ export function seriesDetailQueryOptions(leagueId: string, seriesId: string) {
   return queryOptions({
     queryKey: [...seriesQueryKey(leagueId), 'detail', seriesId],
     queryFn: () => fetchSeries(leagueId, seriesId),
+    staleTime: SERIES_STALE_MS,
+  })
+}
+
+export function eventsQueryOptions(leagueId: string) {
+  return queryOptions({
+    queryKey: [...seriesQueryKey(leagueId), 'events'],
+    queryFn: () => fetchEvents(leagueId),
     staleTime: SERIES_STALE_MS,
   })
 }

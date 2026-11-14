@@ -10,6 +10,7 @@ import { FeedSection } from '@/features/league-feed/components/feed-section'
 import { GoalSection } from '@/features/league-goal/components/goal-section'
 import { MissionsSection } from '@/features/missions/components/missions-section'
 import { MomentHome } from '@/features/moments/components/moment-home'
+import { LiveBanner, useHasLiveEvent } from '@/features/series/components/live-banner'
 import { ThemeCard } from '@/features/series/components/theme-card'
 import { RemovalNotice } from '@/features/privacy/components/removal-notice'
 import { useRemovedCardsSync } from '@/features/privacy/use-removed-cards-sync'
@@ -30,6 +31,7 @@ function LeagueHome() {
   const leagues = useMyLeagues()
   const { me } = Route.useRouteContext()
   const { notice, acknowledge } = useRemovedCardsSync(me.user.id, leagueId)
+  const hasLiveEvent = useHasLiveEvent(leagueId)
 
   function invalidateWallet() {
     void queryClient.invalidateQueries({ queryKey: walletQueryOptions(leagueId).queryKey })
@@ -57,7 +59,8 @@ function LeagueHome() {
         <RemovalNotice count={notice.count} dust={notice.dust} onClose={acknowledge} />
       ) : null}
       <MomentHome leagueId={leagueId} />
-      <ThemeCard leagueId={leagueId} />
+      <LiveBanner leagueId={leagueId} />
+      {hasLiveEvent ? null : <ThemeCard leagueId={leagueId} />}
       {wallet ? (
         <BoosterWidget
           leagueId={leagueId}

@@ -4,6 +4,7 @@ import { useId } from 'react'
 import { Button } from '@/components/ui/button'
 import { SegmentedControl, segmentPanelId, segmentTabId } from '@/components/ui/segmented-control'
 import { useTravelDirection } from '@/features/cosmetics/use-travel-direction'
+import { LeagueEvents } from '@/features/series/components/league-events'
 import { standingsQueryOptions } from '../standings.queries'
 import { StandingsRanking } from './standings-ranking'
 import { StandingsTrophies } from './standings-trophies'
@@ -38,6 +39,7 @@ export function LeaguePage({
 
   return (
     <>
+      <LeagueEvents leagueId={leagueId} />
       <SegmentedControl
         label="Ligue"
         idBase={idBase}

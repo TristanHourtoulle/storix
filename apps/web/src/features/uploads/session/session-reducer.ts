@@ -18,6 +18,8 @@ export interface StackCard {
   title: string
   taggedUserIds: readonly string[]
   seriesIds: readonly string[]
+  /** Set once the live events matching the capture time were switched on, or the author chose by hand. */
+  isPrechecked: boolean
   crop: CropRect | null
   errorMessage: string | null
   isRetryable: boolean
@@ -49,6 +51,7 @@ export type SessionAction =
       localId: string
       patch: Partial<Pick<StackCard, 'title' | 'taggedUserIds' | 'seriesIds' | 'crop'>>
     }
+  | { type: 'prechecked'; localId: string; seriesIds: readonly string[] }
   | { type: 'navigated'; index: number }
   | { type: 'next' }
   | { type: 'prev' }
@@ -92,6 +95,7 @@ export function createStackCard(localId: string, seriesIds: readonly string[] = 
     title: '',
     taggedUserIds: [],
     seriesIds,
+    isPrechecked: false,
     crop: null,
     errorMessage: null,
     isRetryable: false,
@@ -145,6 +149,7 @@ function cardFromDraft(draft: UploadDraft): StackCard {
     title: draft.title ?? '',
     taggedUserIds: draft.taggedUserIds,
     seriesIds: draft.seriesIds,
+    isPrechecked: true,
     crop: draft.crop,
   }
 }
@@ -225,7 +230,15 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         applyPhase(card, action.phase, action.patch),
       )
     case 'edited':
-      return updateCard(state, action.localId, (card) => ({ ...card, ...action.patch }))
+      return updateCard(state, action.localId, (card) => ({
+        ...card,
+        ...action.patch,
+        isPrechecked: card.isPrechecked || action.patch.seriesIds !== undefined,
+      }))
+    case 'prechecked':
+      return updateCard(state, action.localId, (card) =>
+        card.isPrechecked ? card : { ...card, isPrechecked: true, seriesIds: action.seriesIds },
+      )
     case 'navigated':
       return { ...state, index: clampIndex(action.index, state.cards.length) }
     case 'next':

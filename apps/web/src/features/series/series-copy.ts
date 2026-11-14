@@ -100,6 +100,11 @@ const ICON_LABELS: Readonly<Record<SeriesIcon, string>> = {
   heart: 'Cœur',
   star: 'Étoile',
   eye: 'Œil',
+  party: 'Fête',
+  dinner: 'Repas',
+  mountain: 'Montagne',
+  tree: 'Sapin',
+  glass: 'Verre',
 }
 
 /** French name of a series icon, for screen readers. */

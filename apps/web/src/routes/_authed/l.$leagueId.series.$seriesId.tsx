@@ -142,11 +142,11 @@ function SeriesScreen() {
             isOpen ? 'Ajoute la première photo de cette série.' : 'Cette série est restée vide.'
           }
           action={
-            isOpen && series.kind === 'theme' ? (
+            isOpen ? (
               <Link
                 to="/l/$leagueId/add"
                 params={{ leagueId }}
-                search={{ theme: series.id }}
+                search={series.kind === 'theme' ? { theme: series.id } : { series: series.id }}
                 className={buttonClassName({ variant: 'primary' })}
               >
                 ＋ Ajouter

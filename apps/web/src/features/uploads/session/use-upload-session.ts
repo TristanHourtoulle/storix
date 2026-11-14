@@ -25,7 +25,7 @@ import { useStageQueue } from './use-stage-queue'
 
 const QUOTA_SOUND_DELAY = 0.15
 const NO_SERIES: readonly string[] = []
-const SERIES_ENDED_NOTICE = 'Ce thème est terminé : la photo reste dans ta collection, hors thème.'
+const SERIES_ENDED_NOTICE = 'Cette série ne prend plus la photo : elle reste dans ta collection.'
 
 /** Holds the upload stack: picks, background staging, edits with autosave, navigation and discards. */
 export function useUploadSession(
