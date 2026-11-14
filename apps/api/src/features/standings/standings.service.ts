@@ -1,4 +1,4 @@
-import type { Database } from '@storix/db'
+import type { Database, DbExecutor } from '@storix/db'
 import {
   CARD_TIERS,
   RARITY_SCORE,
@@ -15,19 +15,11 @@ import type { Membership } from '../leagues/leagues.service'
 import { toPortraitView } from '../portraits/portrait-view'
 import {
   countLeagueCards,
-  listAuditCounts,
-  listAuthoredPhotos,
-  listClaimedMissions,
-  listCopies,
-  listMuseCopies,
-  listOnTimeMoments,
+  listAuthored,
   listOwnedTiers,
-  listPullCounts,
-  listReactionsReceived,
-  listShopSpent,
+  listStacked,
   listStandingsPeople,
   type OwnedTierRow,
-  type UserCountRow,
 } from './standings.repository'
 
 export interface StandingsService {
@@ -40,9 +32,26 @@ export interface StandingsServiceDeps {
   clock: () => Date
 }
 
+/** How long a league's standings are reused before being recomputed. */
+export const STANDINGS_CACHE_MS = 30_000
+
+type SharedMember = Omit<StandingsMember, 'isSelf'>
+
+interface LeagueSnapshot {
+  leagueCardCount: number
+  members: SharedMember[]
+}
+
 type CollectionStats = Pick<
   MemberStats,
-  'uniqueCards' | 'rarityScore' | 'mythics' | 'legendaries' | 'weekCards'
+  | 'uniqueCards'
+  | 'rarityScore'
+  | 'mythics'
+  | 'legendaries'
+  | 'weekCards'
+  | 'copies'
+  | 'foils'
+  | 'bestFoilTier'
 >
 
 const EMPTY_COLLECTION: CollectionStats = {
@@ -51,9 +60,12 @@ const EMPTY_COLLECTION: CollectionStats = {
   mythics: 0,
   legendaries: 0,
   weekCards: 0,
+  copies: 0,
+  foils: 0,
+  bestFoilTier: 0,
 }
 
-/** 1 for Commune up to 6 for Mythique, 0 when the member owns no foil. */
+/** 1 for Commune up to 6 for Mythique, 0 when there is no tier. */
 function tierRank(tier: CardTier | null): number {
   return tier === null ? 0 : CARD_TIERS.indexOf(tier) + 1
 }
@@ -67,12 +79,11 @@ function collectionByOwner(rows: readonly OwnedTierRow[]): Map<string, Collectio
       mythics: current.mythics + (row.tier === 'mythic' ? row.cards : 0),
       legendaries: current.legendaries + (row.tier === 'legendary' ? row.cards : 0),
       weekCards: current.weekCards + row.weekCards,
+      copies: current.copies + row.copies,
+      foils: current.foils + row.foils,
+      bestFoilTier: Math.max(current.bestFoilTier, tierRank(row.bestFoilTier)),
     })
   }, new Map<string, CollectionStats>())
-}
-
-function byUser(rows: readonly UserCountRow[]): Map<string, number> {
-  return new Map(rows.map((row) => [row.userId, row.value]))
 }
 
 /** Builds the service behind the Ligue page: every member's ranking and trophy stats in one call. */
@@ -81,95 +92,91 @@ export function createStandingsService({
   signer,
   clock,
 }: StandingsServiceDeps): StandingsService {
+  const cache = new Map<string, { at: number; snapshot: LeagueSnapshot }>()
+
+  async function readSnapshot(tx: DbExecutor, leagueId: string): Promise<LeagueSnapshot> {
+    const weekStart = periodBounds('week', missionWeekKey(clock())).start
+    const people = await listStandingsPeople(tx, leagueId)
+    const leagueCardCount = await countLeagueCards(tx, leagueId)
+    const owned = await listOwnedTiers(tx, leagueId, weekStart)
+    const stacked = await listStacked(tx, leagueId)
+    const authored = await listAuthored(tx, leagueId)
+    const looks = await findMemberLooks(
+      tx,
+      people.map((person) => person.userId),
+    )
+    const collection = collectionByOwner(owned)
+    const stackedOf = new Map(stacked.map((row) => [row.ownerId, row.stacked]))
+    const authoredOf = new Map(authored.map((row) => [row.userId, row]))
+
+    const members = people.map((person): SharedMember => {
+      const look = looks.get(person.userId) ?? ORIGINAL_LOOK
+      const own = collection.get(person.userId) ?? EMPTY_COLLECTION
+      const photos = authoredOf.get(person.userId)
+      const avatar =
+        person.avatarUploadId === null || person.avatarColor === null
+          ? null
+          : toPortraitView(
+              {
+                kind: 'avatar',
+                ownerId: person.userId,
+                uploadId: person.avatarUploadId,
+                dominantColor: person.avatarColor,
+              },
+              signer,
+            )
+      return {
+        userId: person.userId,
+        displayUsername: person.displayUsername,
+        avatar,
+        avatarFrame: look.avatarFrame,
+        nameStyle: look.nameStyle,
+        joinedAt: person.joinedAt.toISOString(),
+        stats: {
+          ...own,
+          copies: own.copies + (stackedOf.get(person.userId) ?? 0),
+          photos: photos?.photos ?? 0,
+          reactionsReceived: photos?.reactionsReceived ?? 0,
+          muse: photos?.muse ?? 0,
+          boostersOpened: person.boostersOpened,
+          dust: person.dust,
+          promotions: person.promotions,
+          recycled: person.recycled,
+          discoveries: person.discoveries,
+          mythicPulls: person.mythicPulls,
+          onTimeMoments: person.onTimeMoments,
+          missions: person.missions,
+          shopSpent: person.shopSpent,
+        },
+      }
+    })
+    return { leagueCardCount, members }
+  }
+
+  async function snapshotOf(leagueId: string): Promise<LeagueSnapshot> {
+    const now = clock().getTime()
+    const cached = cache.get(leagueId)
+    if (cached !== undefined && now - cached.at < STANDINGS_CACHE_MS) return cached.snapshot
+    const snapshot = await db.transaction((tx) => readSnapshot(tx, leagueId), {
+      accessMode: 'read only',
+    })
+    for (const [key, entry] of cache) {
+      if (now - entry.at >= STANDINGS_CACHE_MS) cache.delete(key)
+    }
+    cache.set(leagueId, { at: now, snapshot })
+    return snapshot
+  }
+
   return {
     async getStandings(m) {
-      const weekStart = periodBounds('week', missionWeekKey(clock())).start
-      const [
-        people,
-        leagueCardCount,
-        ownedTiers,
-        copies,
-        photos,
-        reactionsReceived,
-        muse,
-        audit,
-        pulls,
-        moments,
-        missions,
-        shopSpent,
-      ] = await Promise.all([
-        listStandingsPeople(db, m.leagueId),
-        countLeagueCards(db, m.leagueId),
-        listOwnedTiers(db, m.leagueId, weekStart),
-        listCopies(db, m.leagueId),
-        listAuthoredPhotos(db, m.leagueId),
-        listReactionsReceived(db, m.leagueId),
-        listMuseCopies(db, m.leagueId),
-        listAuditCounts(db, m.leagueId),
-        listPullCounts(db, m.leagueId),
-        listOnTimeMoments(db, m.leagueId),
-        listClaimedMissions(db, m.leagueId),
-        listShopSpent(db, m.leagueId),
-      ])
-      const looks = await findMemberLooks(
-        db,
-        people.map((person) => person.userId),
-      )
-      const collection = collectionByOwner(ownedTiers)
-      const copiesOf = new Map(copies.map((row) => [row.ownerId, row]))
-      const auditOf = new Map(audit.map((row) => [row.userId, row]))
-      const pullsOf = new Map(pulls.map((row) => [row.userId, row]))
-      const photosOf = byUser(photos)
-      const reactionsOf = byUser(reactionsReceived)
-      const museOf = byUser(muse)
-      const momentsOf = byUser(moments)
-      const missionsOf = byUser(missions)
-      const shopOf = byUser(shopSpent)
-
-      const members = people.map((person): StandingsMember => {
-        const look = looks.get(person.userId) ?? ORIGINAL_LOOK
-        const owned = copiesOf.get(person.userId)
-        const avatar =
-          person.avatarUploadId === null || person.avatarColor === null
-            ? null
-            : toPortraitView(
-                {
-                  kind: 'avatar',
-                  ownerId: person.userId,
-                  uploadId: person.avatarUploadId,
-                  dominantColor: person.avatarColor,
-                },
-                signer,
-              )
-        return {
-          userId: person.userId,
-          displayUsername: person.displayUsername,
-          avatar,
-          avatarFrame: look.avatarFrame,
-          nameStyle: look.nameStyle,
-          isSelf: person.userId === m.userId,
-          joinedAt: person.joinedAt.toISOString(),
-          stats: {
-            ...(collection.get(person.userId) ?? EMPTY_COLLECTION),
-            copies: owned?.copies ?? 0,
-            foils: owned?.foils ?? 0,
-            bestFoilTier: tierRank(owned?.bestFoilTier ?? null),
-            photos: photosOf.get(person.userId) ?? 0,
-            reactionsReceived: reactionsOf.get(person.userId) ?? 0,
-            muse: museOf.get(person.userId) ?? 0,
-            boostersOpened: person.boostersOpened,
-            dust: person.dust,
-            promotions: auditOf.get(person.userId)?.promotions ?? 0,
-            recycled: auditOf.get(person.userId)?.recycled ?? 0,
-            discoveries: pullsOf.get(person.userId)?.discoveries ?? 0,
-            mythicPulls: pullsOf.get(person.userId)?.mythicPulls ?? 0,
-            onTimeMoments: momentsOf.get(person.userId) ?? 0,
-            missions: missionsOf.get(person.userId) ?? 0,
-            shopSpent: shopOf.get(person.userId) ?? 0,
-          },
-        }
-      })
-      return { leagueCardCount, members }
+      const snapshot = await snapshotOf(m.leagueId)
+      return {
+        leagueCardCount: snapshot.leagueCardCount,
+        members: snapshot.members.map((member) => ({
+          ...member,
+          isSelf: member.userId === m.userId,
+        })),
+      }
     },
   }
 }

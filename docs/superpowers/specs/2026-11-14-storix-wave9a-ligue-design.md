@@ -16,7 +16,7 @@ Source of truth: design artifact https://claude.ai/artifact/RoprodgKkCyHNAochcmV
 | id | label | value | tie-break |
 |---|---|---|---|
 | collector (default) | Collectionneur | distinct cards owned; sub "% de la ligue" | total copies (stacks included) |
-| hunter | Chasseur | rarity score 1/2/4/10/25/60 per distinct card at its current tier | mythics |
+| hunter | Chasseur | rarity score 1/2/4/10/25/60 per distinct card at the tier its owner sees (best copy, as `shownCopyTier`) | mythics |
 | foil | Brillant | foil copies | best foil tier |
 | photographer | Photographe | active cards authored | reactions received |
 | opener | Ouvreur | boosters opened | earlier join date |
@@ -29,10 +29,11 @@ Equal values share the rank and show "=". Display order: tie-break, then alphabe
 Mythomane, Légende, Ouvreur fou, Alchimiste, Recycleur, Crésus, Orfèvre, Explorateur, Photographe, Muse, Main heureuse, Ponctuel, Assidu, Mécène — rules, icons and sources exactly as in the artifact table.
 
 ## Rules
-- Current members only; former members drop out.
+- Current members only; former members drop out. Withdrawn (hidden) cards don't count; the league share is capped at 100 %.
+- Muse counts copies and stacked duplicates of the author's active photos held by others.
 - Podium only from 3 members; below that, list only.
-- One aggregated API call per league: `GET /api/leagues/:leagueId/standings`, member guard, all stats per member; ranking and trophies are computed client-side by pure shared domain code. Web `staleTime` 60 s.
-- No new tracking, no migration: every stat already exists (card_copies, card_copy_stacks, member_wallets, audit_log, booster_pulls, moment_posts, member_missions, cosmetic_purchases, cards, reactions).
+- One aggregated API call per league: `GET /api/leagues/:leagueId/standings`, member guard, all stats per member, read in one read-only transaction and cached 30 s per league on the server; ranking and trophies are computed client-side by pure shared domain code. Web `staleTime` 60 s.
+- No new tracking; migration 0024 only adds a partial `audit_log (league_id, actor_id)` index for the upgrade/recycle counters: every stat already exists (card_copies, card_copy_stacks, member_wallets, audit_log, booster_pulls, moment_posts, member_missions, cosmetic_purchases, cards, reactions).
 
 ## Release note
 `2026-11-14-b`: one card « La page Ligue », try target `league`.
