@@ -38,6 +38,7 @@ export const NEWS_TRY_TARGETS = [
   'stack-card',
   'shop',
   'style',
+  'league',
   'none',
 ] as const
 export const newsTryTargetSchema = z.enum(NEWS_TRY_TARGETS)

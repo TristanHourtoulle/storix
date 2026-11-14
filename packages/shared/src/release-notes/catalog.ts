@@ -3,6 +3,20 @@ import type { ReleaseNote } from '../schemas/whats-new'
 /** Every feature release shown in the "Nouveautés" booster, newest first. */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    id: '2026-11-14-b',
+    publishedAt: '2026-11-14T18:00:00+01:00',
+    cards: [
+      {
+        key: 'page-ligue',
+        title: 'La page Ligue',
+        body: 'Touche le nom de ta ligue sur l’accueil : classement par thème, du Collectionneur à la Fortune, et 14 trophées à décrocher. Touche un membre pour voir son profil.',
+        tier: 'legendary',
+        illustration: 'members',
+        tryTarget: 'league',
+      },
+    ],
+  },
+  {
     id: '2026-11-14',
     publishedAt: '2026-11-14T09:00:00+01:00',
     cards: [
