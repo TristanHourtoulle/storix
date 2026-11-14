@@ -20,6 +20,8 @@ export interface WalletRow {
   boostersOpened: number
   bonusBoosters: number
   premiumGifts: number
+  charm: string | null
+  charmCharges: number
 }
 
 export interface WalletKey {
@@ -44,6 +46,8 @@ const walletColumns = {
   boostersOpened: memberWallets.boostersOpened,
   bonusBoosters: memberWallets.bonusBoosters,
   premiumGifts: memberWallets.premiumGifts,
+  charm: memberWallets.charm,
+  charmCharges: memberWallets.charmCharges,
 }
 
 function keyCondition(leagueId: string, userId: string) {

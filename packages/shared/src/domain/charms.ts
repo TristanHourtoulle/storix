@@ -19,11 +19,7 @@ export interface ActiveCharm {
 }
 
 export type CharmPurchaseDecision =
-  | 'ok'
-  | 'already_active'
-  | 'needs_replace'
-  | 'weekly_limit'
-  | 'insufficient_dust'
+  'ok' | 'already_active' | 'needs_replace' | 'weekly_limit' | 'insufficient_dust'
 
 export const CHARM_CHARGES = 10
 export const CHARM_WEEKLY_LIMIT = 3
@@ -81,6 +77,15 @@ export function charmPurchaseDecision(input: {
   if (input.purchasesThisWeek >= CHARM_WEEKLY_LIMIT) return 'weekly_limit'
   if (input.dust < input.charm.price) return 'insufficient_dust'
   return 'ok'
+}
+
+/** Reads the stored charm slot of a wallet, ignoring an unknown id or a spent slot. */
+export function activeCharmOf(row: {
+  charm: string | null
+  charmCharges: number
+}): ActiveCharm | null {
+  if (row.charm === null || row.charmCharges <= 0 || !isCharmId(row.charm)) return null
+  return { id: row.charm, charges: Math.min(row.charmCharges, CHARM_CHARGES) }
 }
 
 /** Returns the active charm after one booster spent a charge, or null once it runs out. */

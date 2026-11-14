@@ -31,6 +31,7 @@ import {
   createCosmeticsService,
   type CosmeticsService,
 } from './features/cosmetics/cosmetics.service'
+import { createCharmsService, type CharmsService } from './features/charms/charms.service'
 import {
   createEmblemAwards,
   createEmblemsService,
@@ -112,6 +113,7 @@ export interface Services {
   cards: CardsService
   copies: CopiesService
   cosmetics: CosmeticsService
+  charms: CharmsService
   stacks: StacksService
   emblems: EmblemsService
   health: HealthService
@@ -187,6 +189,7 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       signer: deps.mediaSigner,
       clock: deps.clock,
     }),
+    charms: createCharmsService({ db: deps.db, clock: deps.clock }),
     stacks: createStacksService({ db: deps.db, clock: deps.clock, emblems: emblemAwards }),
     emblems: createEmblemsService({ db: deps.db, clock: deps.clock }),
     health: createHealthService(deps.db),

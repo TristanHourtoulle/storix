@@ -31,5 +31,6 @@ export function toBoosterPull(row: PullViewRow, signer: MediaSigner): BoosterPul
     stackCount: row.stackCount,
     isFirstCopy: row.isFirstCopy,
     isDiscovery: row.isDiscovery,
+    isCharmBoosted: row.isCharmBoosted,
   }
 }

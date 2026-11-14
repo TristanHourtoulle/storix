@@ -42,6 +42,7 @@ export interface OpeningRecord {
   openedAt: Date
   dustGained: number
   isPremium: boolean
+  charm: string | null
 }
 
 export interface InsertOpeningRow {
@@ -55,6 +56,7 @@ export interface InsertOpeningRow {
   dustGained: number
   isPremium: boolean
   source: BoosterSource
+  charm: string | null
 }
 
 export interface InsertPullRow {
@@ -68,6 +70,7 @@ export interface InsertPullRow {
   stackCount: number | null
   isFirstCopy: boolean
   isDiscovery: boolean
+  isCharmBoosted: boolean
 }
 
 interface CardMediaColumns {
@@ -99,6 +102,7 @@ export interface PullViewRow extends CardMediaColumns {
   stackCount: number | null
   isFirstCopy: boolean
   isDiscovery: boolean
+  isCharmBoosted: boolean
   capturedAt: Date | null
 }
 
@@ -197,6 +201,7 @@ export async function findOpeningByRequest(
       openedAt: boosterOpenings.openedAt,
       dustGained: boosterOpenings.dustGained,
       isPremium: boosterOpenings.isPremium,
+      charm: boosterOpenings.charm,
     })
     .from(boosterOpenings)
     .where(
@@ -252,6 +257,7 @@ export async function listOpeningPulls(db: DbExecutor, openingId: string): Promi
       stackCount: boosterPulls.stackCount,
       isFirstCopy: boosterPulls.isFirstCopy,
       isDiscovery: boosterPulls.isDiscovery,
+      isCharmBoosted: boosterPulls.isCharmBoosted,
       capturedAt: media.capturedAt,
     })
     .from(boosterPulls)

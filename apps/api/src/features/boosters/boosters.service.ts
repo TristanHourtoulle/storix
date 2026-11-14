@@ -1,6 +1,9 @@
 import type { Database, DbExecutor } from '@storix/db'
 import {
+  activeCharmOf,
+  BOOSTER_SLOTS,
   boosterEligibleBefore,
+  charmDust,
   boosterPoolDigestInput,
   canOpenBooster,
   computeBoosterStock,
@@ -11,18 +14,21 @@ import {
   drawBooster,
   DROP_TABLE_VERSION,
   isPremiumBooster,
+  isPullCharmBoosted,
   isTierAtLeast,
   MIN_DRAWABLE_CARDS_FOR_BOOSTER,
   nextPityState,
   pickBoosterSource,
   resolveLeagueSettings,
   settleBoosterCopies,
+  spendCharmCharge,
   stackCountsByCard,
   tierRank,
   type BoosterCadence,
   type BoosterSource,
   type BoosterStockState,
   type CardTier,
+  type CharmId,
   type BoosterDraw,
   type BoosterOpening,
   type OwnedPullTarget,
@@ -149,6 +155,13 @@ async function walletStateFor(ctx: OpeningContext, wallet: WalletRow): Promise<W
   return toWalletState(wallet, ctx.cadence, ctx.now, pool)
 }
 
+function openingCharm(opening: OpeningRecord, wallet: WalletState): BoosterOpening['charm'] {
+  const used =
+    opening.charm === null ? null : activeCharmOf({ charm: opening.charm, charmCharges: 1 })
+  if (used === null) return null
+  return { id: used.id, chargesLeft: wallet.charm?.id === used.id ? wallet.charm.charges : 0 }
+}
+
 async function present(
   ctx: OpeningContext,
   opening: OpeningRecord,
@@ -162,8 +175,23 @@ async function present(
     pulls: pulls.map((row) => toBoosterPull(row, signer)),
     dustGained: opening.dustGained,
     isPremium: opening.isPremium,
+    charm: openingCharm(opening, wallet),
     wallet,
   }
+}
+
+async function ownedPoolCardIds(
+  ctx: OpeningContext,
+  pool: readonly BoosterPoolCard[],
+  charm: CharmId | null,
+): Promise<ReadonlySet<string>> {
+  if (charm !== 'boussole' && charm !== 'aimant') return new Set()
+  const rows = await listOwnedCopies(ctx.tx, {
+    leagueId: ctx.m.leagueId,
+    ownerId: ctx.m.userId,
+    cardIds: [...new Set(pool.map((card) => card.cardId))],
+  })
+  return new Set(rows.map((row) => row.cardId))
 }
 
 async function openNewBooster(
@@ -199,11 +227,15 @@ async function openNewBooster(
   const pityBefore = { sinceEpic: wallet.pitySinceEpic, sinceLegendary: wallet.pitySinceLegendary }
   const seed = generateBoosterSeed()
   const isPremium = source === 'premium_gift' || isPremiumBooster(wallet.boostersOpened)
+  const activeCharm = activeCharmOf(wallet)
+  const charm = activeCharm?.id ?? null
   const draws = drawBooster({
     pool,
     pity: pityBefore,
     random: createSeededRandom(seed),
     isPremium,
+    charm,
+    ownedCardIds: await ownedPoolCardIds(ctx, pool, charm),
   })
   assertLeagueCards(pool, draws, ctx.m.leagueId)
 
@@ -225,11 +257,15 @@ async function openNewBooster(
     cardIds,
   })
   const stackCounts = stackCountsByCard(stackEntries)
-  const { settlements } = settleBoosterCopies(
+  const settled = settleBoosterCopies(
     draws.map((draw) => ({ cardId: draw.cardId, tier: draw.tier, variant: draw.variant })),
     owned,
     stackCounts,
   )
+  const settlements = settled.settlements.map((settlement) => ({
+    ...settlement,
+    dust: charmDust(settlement.dust, charm),
+  }))
   const dustGained = settlements.reduce((total, settlement) => total + settlement.dust, 0)
   const discoveries = await discoverySlots(ctx, draws)
 
@@ -244,6 +280,7 @@ async function openNewBooster(
     dustGained,
     isPremium,
     source,
+    charm,
   })
   await mintCopies(ctx, settlements, opening.id)
   await addToStack(
@@ -278,10 +315,19 @@ async function openNewBooster(
       stackCount: settlement.stackCountAfter,
       isFirstCopy: settlement.isFirstCopyOfCard,
       isDiscovery: discoveries.has(draw.slot),
+      isCharmBoosted: isPullCharmBoosted({
+        charm,
+        slot: draw.slot,
+        lastSlot: BOOSTER_SLOTS.length - 1,
+        tier: draw.tier,
+        variant: settlement.variant,
+        dust: settlement.dust,
+        isRedirected: draw.isRedirected,
+      }),
     }
   })
   await insertPulls(ctx.tx, opening.id, pullRows)
-  await insertLeagueEvents(ctx.tx, openingEvents(ctx.m, opening, pullRows))
+  await insertLeagueEvents(ctx.tx, openingEvents(ctx.m, { ...opening, charm }, pullRows))
 
   const pityAfter = nextPityState(
     pityBefore,
@@ -294,10 +340,19 @@ async function openNewBooster(
     pitySinceLegendary: pityAfter.sinceLegendary,
     boostersOpened: wallet.boostersOpened + 1,
     boosterFullNotifiedAt: null,
+    ...charmPatch(activeCharm),
   }
   await updateWallet(ctx.tx, { leagueId: ctx.m.leagueId, userId: ctx.m.userId }, patch)
   const walletState = await walletStateFor(ctx, { ...wallet, ...patch })
-  return present(ctx, { ...opening, dustGained }, walletState, signer)
+  return present(ctx, { ...opening, dustGained, charm }, walletState, signer)
+}
+
+function charmPatch(
+  active: ReturnType<typeof activeCharmOf>,
+): Pick<WalletPatch, 'charm' | 'charmCharges'> {
+  if (active === null) return {}
+  const next = spendCharmCharge(active)
+  return { charm: next?.id ?? null, charmCharges: next?.charges ?? 0 }
 }
 
 function consumeFromSource(
@@ -315,7 +370,7 @@ function consumeFromSource(
 
 function openingEvents(
   m: Membership,
-  opening: { id: string; openedAt: Date; isPremium: boolean },
+  opening: { id: string; openedAt: Date; isPremium: boolean; charm: CharmId | null },
   pulls: readonly InsertPullRow[],
 ): NewLeagueEvent[] {
   const bestTier = pulls.reduce<CardTier | null>(
@@ -333,6 +388,7 @@ function openingEvents(
         openingId: opening.id,
         isPremium: opening.isPremium,
         ...(bestTier === null ? {} : { tier: bestTier }),
+        ...(opening.charm === null ? {} : { charm: opening.charm }),
       },
       dedupeKey: `opening:${opening.id}`,
     },

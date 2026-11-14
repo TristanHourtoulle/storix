@@ -15,6 +15,7 @@ import { auditRoutes } from './features/audit/audit.routes'
 import { boostersRoutes } from './features/boosters/boosters.routes'
 import { cardsRoutes } from './features/cards/cards.routes'
 import { copiesRoutes } from './features/copies/copies.routes'
+import { charmsRoutes } from './features/charms/charms.routes'
 import { cosmeticsRoutes } from './features/cosmetics/cosmetics.routes'
 import { emblemsRoutes } from './features/emblems/emblems.routes'
 import { healthRoutes } from './features/health/health.routes'
@@ -107,6 +108,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(boostersRoutes(services.boosters, services.boosterHistory), { prefix: '/api' })
   await app.register(copiesRoutes(services.copies, services.stacks), { prefix: '/api' })
   await app.register(cosmeticsRoutes(services.cosmetics), { prefix: '/api' })
+  await app.register(charmsRoutes(services.charms), { prefix: '/api' })
   await app.register(reactionsRoutes(services.reactions), { prefix: '/api' })
   await app.register(leagueFeedRoutes(services.leagueFeed), { prefix: '/api' })
   await app.register(missionsRoutes(services.missions), { prefix: '/api' })
