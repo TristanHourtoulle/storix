@@ -43,15 +43,17 @@ function SeriesToggles({
           <button
             key={series.id}
             type="button"
+            role="switch"
             className="series-toggle"
-            aria-pressed={isOn}
+            aria-checked={isOn}
+            aria-label={seriesName(series)}
             style={{ '--sc': series.color } as CSSProperties}
             onClick={() => onToggleSeries(series.id)}
           >
             <span className="series-toggle-em" aria-hidden="true">
               {series.emoji}
             </span>
-            <span className="series-toggle-tx">
+            <span className="series-toggle-tx" aria-hidden="true">
               <b>{seriesName(series)}</b>
               <small>
                 {isOn

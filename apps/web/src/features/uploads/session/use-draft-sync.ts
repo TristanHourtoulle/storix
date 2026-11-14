@@ -11,6 +11,8 @@ export interface DraftSyncInput {
   leagueId: string
   cards: readonly StackCard[]
   onConflict: () => void
+  /** Called when the server kept fewer series than sent, e.g. because the theme ended. */
+  onSeriesDropped: (uploadId: string, kept: readonly string[]) => void
 }
 
 export interface DraftSync {
@@ -34,21 +36,31 @@ function currentValues(fields: DraftFields, keys: readonly string[]): EditUpload
  * around the completion is lost. A save dropped after its retry leaves its fields unsynced, and they
  * are sent again with the next change or flush.
  */
-export function useDraftSync({ leagueId, cards, onConflict }: DraftSyncInput): DraftSync {
+export function useDraftSync({
+  leagueId,
+  cards,
+  onConflict,
+  onSeriesDropped,
+}: DraftSyncInput): DraftSync {
   const autosaveRef = useRef<DraftAutosave | null>(null)
   const sentRef = useRef<ReadonlyMap<string, DraftFields>>(new Map())
   const unsyncedRef = useRef<ReadonlyMap<string, readonly string[]>>(new Map())
   const cardsRef = useRef(cards)
   const onConflictRef = useRef(onConflict)
+  const onSeriesDroppedRef = useRef(onSeriesDropped)
 
   useEffect(() => {
     onConflictRef.current = onConflict
-  }, [onConflict])
+    onSeriesDroppedRef.current = onSeriesDropped
+  }, [onConflict, onSeriesDropped])
 
   useEffect(() => {
     const autosave = createDraftAutosave({
       save: async (uploadId, body) => {
-        await editUpload(leagueId, uploadId, body)
+        const edited = await editUpload(leagueId, uploadId, body)
+        if (body.seriesIds !== undefined && edited.seriesIds.length < body.seriesIds.length) {
+          onSeriesDroppedRef.current(uploadId, edited.seriesIds)
+        }
       },
       onConflict: () => onConflictRef.current(),
       onDropped: (uploadId, body) => {

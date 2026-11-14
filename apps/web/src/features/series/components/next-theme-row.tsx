@@ -11,6 +11,12 @@ interface NextThemeRowProps {
 /** « La semaine prochaine : 🍳 Dans la cuisine », with « Remplacer » for admins. */
 export function NextThemeRow({ leagueId, next, canOverride }: NextThemeRowProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [openCount, setOpenCount] = useState(0)
+
+  function open(): void {
+    setOpenCount((count) => count + 1)
+    setIsOpen(true)
+  }
   return (
     <div className="series-next">
       <span>
@@ -22,11 +28,11 @@ export function NextThemeRow({ leagueId, next, canOverride }: NextThemeRowProps)
       </span>
       {canOverride ? (
         <>
-          <button type="button" className="series-next-btn" onClick={() => setIsOpen(true)}>
+          <button type="button" className="series-next-btn" onClick={open}>
             Remplacer
           </button>
           <NextThemeSheet
-            key={`${next.title}-${next.emoji}`}
+            key={openCount}
             leagueId={leagueId}
             current={next}
             open={isOpen}

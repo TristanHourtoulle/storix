@@ -18,7 +18,7 @@ function canJoin(card: OwnedCardDetail, meId: string, theme: SeriesSummary | und
   const createdAt = new Date(card.createdAt).getTime()
   return (
     createdAt >= new Date(theme.startsAt).getTime() &&
-    createdAt < new Date(theme.graceEndsAt).getTime()
+    createdAt < new Date(theme.endsAt).getTime()
   )
 }
 

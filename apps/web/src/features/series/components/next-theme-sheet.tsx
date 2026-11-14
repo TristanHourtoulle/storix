@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import {
+  isSingleEmoji,
   SERIES_EMOJI_MAX_LENGTH,
   SERIES_TITLE_MAX_LENGTH,
   THEME_ROTATION,
@@ -29,7 +30,8 @@ export function NextThemeSheet({ leagueId, current, open, onClose }: NextThemeSh
     0,
     SUGGESTIONS,
   )
-  const canSave = title.trim() !== '' && emoji.trim() !== '' && !mutation.isPending
+  const isEmojiValid = isSingleEmoji(emoji.trim())
+  const canSave = title.trim() !== '' && isEmojiValid && !mutation.isPending
 
   function submit(event: FormEvent): void {
     event.preventDefault()
@@ -42,7 +44,7 @@ export function NextThemeSheet({ leagueId, current, open, onClose }: NextThemeSh
       <form className="flex flex-col gap-4" onSubmit={submit}>
         <div className="flex gap-3">
           <div className="w-20 flex-none">
-            <Field label="Emoji">
+            <Field label="Emoji" error={emoji.trim() === '' || isEmojiValid ? undefined : 'Un seul emoji'}>
               <Input
                 value={emoji}
                 maxLength={SERIES_EMOJI_MAX_LENGTH}

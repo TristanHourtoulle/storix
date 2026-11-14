@@ -27,6 +27,9 @@ export const Route = createFileRoute('/_authed/l/$leagueId/add')({
       context.queryClient.ensureQueryData(membersQueryOptions(params.leagueId)),
       context.queryClient.ensureQueryData(uploadQuotaQueryOptions(params.leagueId)),
       context.queryClient
+        .ensureQueryData(themeCardQueryOptions(params.leagueId))
+        .catch(() => undefined),
+      context.queryClient
         .ensureQueryData(draftsQueryOptions(params.leagueId))
         .catch(() => undefined),
     ]),
@@ -39,10 +42,12 @@ const NO_SERIES: SeriesSummary[] = []
 function AddPhotos() {
   const { leagueId } = Route.useParams()
   const { resume, theme } = Route.useSearch()
-  const [defaultSeriesIds] = useState<readonly string[]>(() => (theme ? [theme] : []))
   const themeSeries = useQuery(themeCardQueryOptions(leagueId)).data?.series
   const openSeries =
     themeSeries !== undefined && isSeriesOpen(themeSeries) ? [themeSeries] : NO_SERIES
+  const [defaultSeriesIds] = useState<readonly string[]>(() =>
+    openSeries.filter((series) => series.id === theme).map((series) => series.id),
+  )
   const navigate = useNavigate({ from: Route.fullPath })
   const quota = useUploadQuota(leagueId)
   const members = useMembers(leagueId)

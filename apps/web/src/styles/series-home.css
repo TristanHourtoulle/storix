@@ -103,7 +103,7 @@
     box-shadow: inset 0 0 0 1px var(--color-line);
     cursor: pointer;
   }
-  .series-toggle[aria-pressed='true'] {
+  .series-toggle[aria-checked='true'] {
     box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-tier-uncommon) 60%, transparent);
   }
   .series-toggle-em {
@@ -138,10 +138,10 @@
     background: var(--color-ink);
     transition: transform 0.2s ease-out;
   }
-  .series-toggle[aria-pressed='true'] .series-switch {
+  .series-toggle[aria-checked='true'] .series-switch {
     background: var(--color-tier-uncommon);
   }
-  .series-toggle[aria-pressed='true'] .series-switch::after {
+  .series-toggle[aria-checked='true'] .series-switch::after {
     transform: translateX(18px);
   }
 
