@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { FEED_FILTER_IDS, LEAGUE_EVENT_TYPES } from '../domain'
 import { cardTierSchema, collectionCardSchema } from './cards'
+import { storedCharmIdSchema } from './charms'
 import { isoDateSchema } from './common'
 import { emblemIdSchema } from './emblems'
 import { goalTypeSchema } from './league-goal'
@@ -69,6 +70,7 @@ export const feedRowSchema = z.object({
   tier: cardTierSchema.nullable(),
   isPremium: z.boolean(),
   isDiscovery: z.boolean(),
+  charm: storedCharmIdSchema,
   fromTier: cardTierSchema.nullable(),
   toTier: cardTierSchema.nullable(),
   emblemIds: z.array(emblemIdSchema),

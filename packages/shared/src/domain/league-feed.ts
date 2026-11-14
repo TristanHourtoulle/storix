@@ -1,4 +1,5 @@
 import { type CardTier, isTierAtLeast, tierRank } from './cards'
+import type { CharmId } from './charms'
 import type { EmblemId } from './emblems'
 import type { GoalType } from './league-goal'
 
@@ -39,6 +40,7 @@ export interface LeagueEventPayload {
   tier?: CardTier
   isPremium?: boolean
   isDiscovery?: boolean
+  charm?: CharmId
   fromTier?: CardTier
   toTier?: CardTier
   emblemId?: EmblemId

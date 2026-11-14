@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { PREMIUM_BOOSTER_EVERY } from '../domain'
+import { activeCharmSchema } from './charms'
 import { isoDateSchema } from './common'
 
 export const walletStateSchema = z.object({
@@ -30,6 +31,7 @@ export const walletStateSchema = z.object({
     boostersUntil: z.int().min(1).max(PREMIUM_BOOSTER_EVERY),
     progress: z.number().min(0).max(1),
   }),
+  charm: activeCharmSchema,
 })
 
 export type WalletState = z.infer<typeof walletStateSchema>
