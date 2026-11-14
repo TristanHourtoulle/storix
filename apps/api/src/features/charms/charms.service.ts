@@ -24,7 +24,7 @@ export interface CharmsService {
   getShop(m: Membership): Promise<CharmShopResponse>
   purchase(
     m: Membership,
-    input: { charmId: CharmId; replace: boolean },
+    input: { charmId: CharmId; replaceCharm: CharmId | null },
   ): Promise<PurchaseCharmResponse>
 }
 
@@ -42,7 +42,7 @@ function refusal(
     case 'already_active':
       return new AppError('CHARM_ALREADY_ACTIVE', 409, 'This charm is already active')
     case 'needs_replace':
-      return new AppError('CHARM_ACTIVE', 409, 'Another charm is active; confirm the replacement')
+      return new AppError('CHARM_ACTIVE', 409, 'The active charm changed; confirm the replacement')
     case 'weekly_limit':
       return new AppError('CHARM_WEEKLY_LIMIT', 409, 'Weekly charm purchase limit reached', {
         limit: CHARM_WEEKLY_LIMIT,
@@ -95,7 +95,7 @@ export function createCharmsService({ db, clock }: CharmsServiceDeps): CharmsSer
         const decision = charmPurchaseDecision({
           charm,
           active,
-          replace: input.replace,
+          replaceCharm: input.replaceCharm,
           purchasesThisWeek,
           dust: wallet.dust,
         })
