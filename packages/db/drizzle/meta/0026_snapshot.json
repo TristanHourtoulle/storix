@@ -1,5 +1,5 @@
 {
-  "id": "de4e391b-31da-4e36-8a53-ac97ef311881",
+  "id": "8a3643f6-dade-4665-8226-3d1a193c1d34",
   "prevId": "e76b84e0-861c-4721-acbe-4a12994ca18a",
   "version": "7",
   "dialect": "postgresql",
@@ -5061,6 +5061,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "is_override": {
+          "name": "is_override",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "starts_at": {
           "name": "starts_at",
           "type": "timestamp with time zone",
@@ -5155,6 +5162,22 @@
           ],
           "isUnique": false,
           "where": "\"card_series\".\"closed_at\" IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "card_series_closed_idx": {
+          "name": "card_series_closed_idx",
+          "columns": [
+            {
+              "expression": "closed_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"card_series\".\"closed_at\" IS NOT NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}

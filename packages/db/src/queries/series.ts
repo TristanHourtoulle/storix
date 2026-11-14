@@ -6,6 +6,7 @@ import {
   SERIES_COMPLETE_DUST,
   SERIES_RECAP_CARDS,
   SERIES_REWARD_MIN_CARDS,
+  SERIES_REWARD_WINDOW_DAYS,
   themeWeekBounds,
 } from '@storix/shared/domain'
 import type { DbExecutor } from '../client'
@@ -34,7 +35,7 @@ export async function ensureThemeSeries(
   db: DbExecutor,
   input: { leagueId: string; weekKey: string },
 ): Promise<SeriesRecord> {
-  const { start, end } = themeWeekBounds(input.weekKey)
+  const { start, end, graceEnd } = themeWeekBounds(input.weekKey)
   const idea = rotationThemeFor(input.leagueId, input.weekKey)
   await db
     .insert(cardSeries)
@@ -47,7 +48,7 @@ export async function ensureThemeSeries(
       weekKey: input.weekKey,
       startsAt: start,
       endsAt: end,
-      graceEndsAt: end,
+      graceEndsAt: graceEnd,
     })
     .onConflictDoNothing({
       target: [cardSeries.leagueId, cardSeries.weekKey],
@@ -82,7 +83,7 @@ export async function upsertThemeOverride(
   db: DbExecutor,
   input: { leagueId: string; weekKey: string; choice: ThemeChoice; userId: string; now: Date },
 ): Promise<boolean> {
-  const { start, end } = themeWeekBounds(input.weekKey)
+  const { start, end, graceEnd } = themeWeekBounds(input.weekKey)
   if (start <= input.now) return false
   await db
     .insert(cardSeries)
@@ -93,13 +94,14 @@ export async function upsertThemeOverride(
       weekKey: input.weekKey,
       startsAt: start,
       endsAt: end,
-      graceEndsAt: end,
+      graceEndsAt: graceEnd,
+      isOverride: true,
       createdById: input.userId,
     })
     .onConflictDoUpdate({
       target: [cardSeries.leagueId, cardSeries.weekKey],
       targetWhere: sql`${cardSeries.kind} = 'theme'`,
-      set: { ...input.choice, createdById: input.userId },
+      set: { ...input.choice, isOverride: true, createdById: input.userId },
     })
   return true
 }
@@ -205,8 +207,15 @@ export interface SeriesCompletion {
   title: string
 }
 
-/** Lists current members who own every active card of a closed series big enough for the reward, not rewarded yet. */
-export async function listUnrewardedCompletions(db: DbExecutor): Promise<SeriesCompletion[]> {
+/**
+ * Lists current members who own every active card of a series closed within the reward window and big
+ * enough for the reward, not rewarded yet. Completing a series after the window pays nothing.
+ */
+export async function listUnrewardedCompletions(
+  db: DbExecutor,
+  now: Date,
+): Promise<SeriesCompletion[]> {
+  const since = new Date(now.getTime() - SERIES_REWARD_WINDOW_DAYS * 86_400_000)
   const result = await db.execute<{
     series_id: string
     league_id: string
@@ -218,7 +227,7 @@ export async function listUnrewardedCompletions(db: DbExecutor): Promise<SeriesC
       FROM card_series s
       JOIN card_series_cards sc ON sc.series_id = s.id
       JOIN cards c ON c.id = sc.card_id AND c.status = 'active'
-      WHERE s.closed_at IS NOT NULL
+      WHERE s.closed_at IS NOT NULL AND s.closed_at >= ${since}
       GROUP BY s.id
       HAVING count(*) >= ${SERIES_REWARD_MIN_CARDS}
     )
@@ -255,10 +264,12 @@ export async function rewardCompletion(
     .returning({ seriesId: cardSeriesRewards.seriesId })
   if (inserted.length === 0) return false
   await ensureMemberWallets(db, { leagueId, userIds: [userId], now })
-  await db
+  const credited = await db
     .update(memberWallets)
     .set({ dust: sql`${memberWallets.dust} + ${SERIES_COMPLETE_DUST}`, updatedAt: now })
     .where(and(eq(memberWallets.leagueId, leagueId), eq(memberWallets.userId, userId)))
+    .returning({ userId: memberWallets.userId })
+  if (credited.length === 0) throw new Error(`Wallet missing for series reward ${seriesId}`)
   await db.insert(auditLog).values({
     leagueId,
     actorId: userId,

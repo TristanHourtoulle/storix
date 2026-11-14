@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import {
+  boolean,
   check,
   foreignKey,
   index,
@@ -27,6 +28,7 @@ export const cardSeries = pgTable(
     emoji: text('emoji').notNull(),
     color: text('color').notNull(),
     weekKey: text('week_key'),
+    isOverride: boolean('is_override').notNull().default(false),
     startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
     endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
     graceEndsAt: timestamp('grace_ends_at', { withTimezone: true }).notNull(),
@@ -48,6 +50,9 @@ export const cardSeries = pgTable(
     index('card_series_open_grace_idx')
       .on(t.graceEndsAt)
       .where(sql`${t.closedAt} IS NULL`),
+    index('card_series_closed_idx')
+      .on(t.closedAt)
+      .where(sql`${t.closedAt} IS NOT NULL`),
   ],
 )
 

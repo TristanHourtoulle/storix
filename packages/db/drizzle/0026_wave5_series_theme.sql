@@ -6,6 +6,7 @@ CREATE TABLE "card_series" (
 	"emoji" text NOT NULL,
 	"color" text NOT NULL,
 	"week_key" text,
+	"is_override" boolean DEFAULT false NOT NULL,
 	"starts_at" timestamp with time zone NOT NULL,
 	"ends_at" timestamp with time zone NOT NULL,
 	"grace_ends_at" timestamp with time zone NOT NULL,
@@ -42,5 +43,6 @@ ALTER TABLE "card_series_rewards" ADD CONSTRAINT "card_series_rewards_member_fk"
 CREATE UNIQUE INDEX "card_series_theme_week_unique" ON "card_series" USING btree ("league_id","week_key") WHERE "card_series"."kind" = 'theme';--> statement-breakpoint
 CREATE INDEX "card_series_league_starts_idx" ON "card_series" USING btree ("league_id","starts_at" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "card_series_open_grace_idx" ON "card_series" USING btree ("grace_ends_at") WHERE "card_series"."closed_at" IS NULL;--> statement-breakpoint
+CREATE INDEX "card_series_closed_idx" ON "card_series" USING btree ("closed_at") WHERE "card_series"."closed_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "card_series_cards_card_idx" ON "card_series_cards" USING btree ("card_id");--> statement-breakpoint
 CREATE INDEX "card_series_rewards_member_idx" ON "card_series_rewards" USING btree ("league_id","user_id");
