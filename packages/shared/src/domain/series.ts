@@ -12,67 +12,98 @@ export const SERIES_REWARD_MIN_CARDS = 5
 export const SERIES_COMPLETE_DUST = 150
 export const SERIES_RECAP_CARDS = 5
 export const SERIES_TITLE_MAX_LENGTH = 40
-export const SERIES_EMOJI_MAX_LENGTH = 16
 export const SERIES_TICK_MINUTES = 10
 export const THEME_GRACE_MS = 2 * 3_600_000
 export const SERIES_REWARD_WINDOW_DAYS = 30
 export const SERIES_SHELF_CLOSED_MAX = 12
 
-const EMOJI_PATTERN = /\p{Extended_Pictographic}|\p{Regional_Indicator}/u
-const GRAPHEMES = new Intl.Segmenter('fr', { granularity: 'grapheme' })
+export const SERIES_ICONS = [
+  'leaf',
+  'sun',
+  'moon',
+  'cloud',
+  'drop',
+  'flower',
+  'book',
+  'music',
+  'paw',
+  'shoe',
+  'window',
+  'door',
+  'mug',
+  'cake',
+  'road',
+  'ball',
+  'brush',
+  'clock',
+  'hand',
+  'wind',
+  'mirror',
+  'bulb',
+  'basket',
+  'monitor',
+  'camera',
+  'heart',
+  'star',
+  'eye',
+] as const
 
-/** Tells whether a text is exactly one emoji (one grapheme holding a pictograph or a flag). */
-export function isSingleEmoji(text: string): boolean {
-  return [...GRAPHEMES.segment(text)].length === 1 && EMOJI_PATTERN.test(text)
+export type SeriesIcon = (typeof SERIES_ICONS)[number]
+
+export const DEFAULT_SERIES_ICON: SeriesIcon = 'star'
+
+/** Tells whether a stored value is a known series icon key. */
+export function isSeriesIcon(value: string): value is SeriesIcon {
+  return (SERIES_ICONS as readonly string[]).includes(value)
 }
 
 export interface ThemeIdea {
   title: string
-  emoji: string
+  icon: SeriesIcon
   color: string
 }
 
 export const THEME_ROTATION: readonly ThemeIdea[] = [
-  { title: 'Vert', emoji: '🌿', color: '#4ade80' },
-  { title: 'Reflets', emoji: '🪞', color: '#a78bfa' },
-  { title: 'Dans la cuisine', emoji: '🍳', color: '#fbbf24' },
-  { title: "Vu d'en haut", emoji: '🛰️', color: '#22d3ee' },
-  { title: 'Rouge', emoji: '🍒', color: '#f87171' },
-  { title: 'Bleu', emoji: '🫐', color: '#60a5fa' },
-  { title: 'Jaune', emoji: '🍋', color: '#facc15' },
-  { title: 'Ombres', emoji: '🌘', color: '#94a3b8' },
-  { title: 'Lumière du soir', emoji: '🌇', color: '#fb923c' },
-  { title: 'Animaux', emoji: '🐾', color: '#f59e0b' },
-  { title: 'Fenêtres', emoji: '🪟', color: '#67e8f9' },
-  { title: 'Portes', emoji: '🚪', color: '#c084fc' },
-  { title: 'Chaussures', emoji: '👟', color: '#f472b6' },
-  { title: 'Ciel', emoji: '☁️', color: '#7dd3fc' },
-  { title: 'Eau', emoji: '💧', color: '#38bdf8' },
-  { title: 'Gourmandises', emoji: '🍰', color: '#f9a8d4' },
-  { title: 'En mouvement', emoji: '💨', color: '#5eead4' },
-  { title: 'Symétrie', emoji: '🦋', color: '#818cf8' },
-  { title: 'Textures', emoji: '🧶', color: '#fca5a5' },
-  { title: 'Graffitis', emoji: '🎨', color: '#e879f9' },
-  { title: 'Fleurs', emoji: '🌸', color: '#f0abc1' },
-  { title: 'Rétro', emoji: '📼', color: '#d97706' },
-  { title: 'Mains', emoji: '🙌', color: '#fdba74' },
-  { title: 'Les pieds dans…', emoji: '🦶', color: '#a3e635' },
-  { title: 'Petit déj', emoji: '🥐', color: '#fcd34d' },
-  { title: 'Lignes', emoji: '📏', color: '#a5b4fc' },
-  { title: 'Rond', emoji: '⭕', color: '#fb7185' },
-  { title: 'Nuit', emoji: '🌙', color: '#6366f1' },
-  { title: 'Sur la route', emoji: '🛣️', color: '#a8a29e' },
-  { title: 'Sport', emoji: '⚽', color: '#34d399' },
-  { title: 'Musique', emoji: '🎸', color: '#c084fc' },
-  { title: 'Livres', emoji: '📚', color: '#d6a46c' },
-  { title: 'Plantes vertes', emoji: '🪴', color: '#22c55e' },
-  { title: 'Au marché', emoji: '🧺', color: '#eab308' },
-  { title: 'Selfie de groupe', emoji: '🤳', color: '#f472b6' },
-  { title: 'Le plus vieux objet', emoji: '🕰️', color: '#b45309' },
-  { title: 'Néons', emoji: '💡', color: '#e879f9' },
-  { title: 'Météo du jour', emoji: '🌦️', color: '#93c5fd' },
-  { title: 'Bureau', emoji: '🖥️', color: '#94a3b8' },
-  { title: 'Câlin', emoji: '🫶', color: '#fda4af' },
+  { title: 'Vert', icon: 'leaf', color: '#4ade80' },
+  { title: 'Reflets', icon: 'mirror', color: '#a78bfa' },
+  { title: 'Dans la cuisine', icon: 'mug', color: '#fbbf24' },
+  { title: "Vu d'en haut", icon: 'eye', color: '#22d3ee' },
+  { title: 'Rouge', icon: 'heart', color: '#f87171' },
+  { title: 'Bleu', icon: 'drop', color: '#60a5fa' },
+  { title: 'Jaune', icon: 'sun', color: '#facc15' },
+  { title: 'Ombres', icon: 'moon', color: '#94a3b8' },
+  { title: 'Lumière du soir', icon: 'sun', color: '#fb923c' },
+  { title: 'Animaux', icon: 'paw', color: '#f59e0b' },
+  { title: 'Fenêtres', icon: 'window', color: '#67e8f9' },
+  { title: 'Portes', icon: 'door', color: '#c084fc' },
+  { title: 'Chaussures', icon: 'shoe', color: '#f472b6' },
+  { title: 'Ciel', icon: 'cloud', color: '#7dd3fc' },
+  { title: 'Eau', icon: 'drop', color: '#38bdf8' },
+  { title: 'Gourmandises', icon: 'cake', color: '#f9a8d4' },
+  { title: 'En mouvement', icon: 'wind', color: '#5eead4' },
+  { title: 'Symétrie', icon: 'mirror', color: '#818cf8' },
+  { title: 'Textures', icon: 'brush', color: '#fca5a5' },
+  { title: 'Graffitis', icon: 'brush', color: '#e879f9' },
+  { title: 'Fleurs', icon: 'flower', color: '#f0abc1' },
+  { title: 'Rétro', icon: 'clock', color: '#d97706' },
+  { title: 'Mains', icon: 'hand', color: '#fdba74' },
+  { title: 'Les pieds dans…', icon: 'shoe', color: '#a3e635' },
+  { title: 'Petit déj', icon: 'mug', color: '#fcd34d' },
+  { title: 'Lignes', icon: 'road', color: '#a5b4fc' },
+  { title: 'Rond', icon: 'ball', color: '#fb7185' },
+  { title: 'Nuit', icon: 'moon', color: '#6366f1' },
+  { title: 'Sur la route', icon: 'road', color: '#a8a29e' },
+  { title: 'Sport', icon: 'ball', color: '#34d399' },
+  { title: 'Musique', icon: 'music', color: '#c084fc' },
+  { title: 'Livres', icon: 'book', color: '#d6a46c' },
+  { title: 'Plantes vertes', icon: 'leaf', color: '#22c55e' },
+  { title: 'Au marché', icon: 'basket', color: '#eab308' },
+  { title: 'Selfie de groupe', icon: 'camera', color: '#f472b6' },
+  { title: 'Le plus vieux objet', icon: 'clock', color: '#b45309' },
+  { title: 'Néons', icon: 'bulb', color: '#e879f9' },
+  { title: 'Météo du jour', icon: 'cloud', color: '#93c5fd' },
+  { title: 'Bureau', icon: 'monitor', color: '#94a3b8' },
+  { title: 'Câlin', icon: 'heart', color: '#fda4af' },
 ]
 
 export const DEFAULT_SERIES_COLOR = '#a78bfa'

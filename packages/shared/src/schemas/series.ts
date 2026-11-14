@@ -1,13 +1,8 @@
 import { z } from 'zod'
-import {
-  isSingleEmoji,
-  SERIES_EMOJI_MAX_LENGTH,
-  SERIES_KINDS,
-  SERIES_PHASES,
-  SERIES_TITLE_MAX_LENGTH,
-} from '../domain'
+import { SERIES_ICONS, SERIES_KINDS, SERIES_PHASES, SERIES_TITLE_MAX_LENGTH } from '../domain'
 import { isoDateSchema } from './common'
 import { goalContributorSchema } from './league-goal'
+import { seriesIconSchema } from './series-refs'
 
 export const SERIES_THEME_CONTRIBUTORS = 4
 
@@ -20,7 +15,7 @@ export const seriesSummarySchema = z.object({
   id: z.uuid(),
   kind: seriesKindSchema,
   title: z.string(),
-  emoji: z.string(),
+  icon: seriesIconSchema,
   color: colorSchema,
   phase: seriesPhaseSchema,
   startsAt: isoDateSchema,
@@ -34,7 +29,7 @@ export const seriesShelfSchema = z.object({ series: z.array(seriesSummarySchema)
 
 export const themeIdeaSchema = z.object({
   title: z.string(),
-  emoji: z.string(),
+  icon: seriesIconSchema,
   color: colorSchema,
 })
 
@@ -61,7 +56,7 @@ export const seriesDetailSchema = z.object({
 
 export const themeOverrideBodySchema = z.object({
   title: z.string().trim().min(1).max(SERIES_TITLE_MAX_LENGTH),
-  emoji: z.string().trim().min(1).max(SERIES_EMOJI_MAX_LENGTH).refine(isSingleEmoji),
+  icon: z.enum(SERIES_ICONS),
 })
 
 export const addSeriesCardBodySchema = z.object({ cardId: z.uuid() })

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   acceptsCards,
   daysLeft,
-  isSingleEmoji,
   isRewardEligible,
   mostActive,
   nextThemeWeekKey,
@@ -44,17 +43,6 @@ describe('themeWeekBounds', () => {
 function weekKeyAt(index: number): string {
   return new Date(Date.UTC(2024, 0, 1) + index * 7 * 86_400_000).toISOString().slice(0, 10)
 }
-
-describe('isSingleEmoji', () => {
-  it('should accept one emoji, flags and joined emojis, and refuse text or two emojis', () => {
-    expect(isSingleEmoji('🌿')).toBe(true)
-    expect(isSingleEmoji('👨‍👩‍👧')).toBe(true)
-    expect(isSingleEmoji('🇫🇷')).toBe(true)
-    expect(isSingleEmoji('a')).toBe(false)
-    expect(isSingleEmoji('🌿🌿')).toBe(false)
-    expect(isSingleEmoji('')).toBe(false)
-  })
-})
 
 describe('rotationThemeFor', () => {
   it('should not repeat a theme before the whole list is used', () => {

@@ -25,7 +25,7 @@ export const cardSeries = pgTable(
       .references(() => leagues.id, { onDelete: 'cascade' }),
     kind: text('kind').$type<SeriesKind>().notNull(),
     title: text('title').notNull(),
-    emoji: text('emoji').notNull(),
+    icon: text('icon').notNull(),
     color: text('color').notNull(),
     weekKey: text('week_key'),
     isOverride: boolean('is_override').notNull().default(false),

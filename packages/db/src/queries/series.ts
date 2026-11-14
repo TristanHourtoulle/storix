@@ -26,7 +26,7 @@ export type SeriesRecord = typeof cardSeries.$inferSelect
 
 export interface ThemeChoice {
   title: string
-  emoji: string
+  icon: string
   color: string
 }
 
@@ -43,7 +43,7 @@ export async function ensureThemeSeries(
       leagueId: input.leagueId,
       kind: 'theme',
       title: idea.title,
-      emoji: idea.emoji,
+      icon: idea.icon,
       color: idea.color,
       weekKey: input.weekKey,
       startsAt: start,

@@ -3,7 +3,7 @@ CREATE TABLE "card_series" (
 	"league_id" uuid NOT NULL,
 	"kind" text NOT NULL,
 	"title" text NOT NULL,
-	"emoji" text NOT NULL,
+	"icon" text NOT NULL,
 	"color" text NOT NULL,
 	"week_key" text,
 	"is_override" boolean DEFAULT false NOT NULL,

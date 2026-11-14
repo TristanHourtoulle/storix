@@ -6,6 +6,7 @@ import { isoDateSchema } from './common'
 import { emblemIdSchema } from './emblems'
 import { goalTypeSchema } from './league-goal'
 import { themeIdeaSchema } from './series'
+import { seriesIconSchema } from './series-refs'
 
 export const FEED_DEFAULT_LIMIT = 20
 export const FEED_MAX_LIMIT = 50
@@ -64,7 +65,7 @@ export const feedGoalSchema = z.object({
 export const feedSeriesSchema = z.object({
   id: z.uuid(),
   title: z.string(),
-  emoji: z.string(),
+  icon: seriesIconSchema,
   color: z.string().regex(/^#[0-9a-f]{6}$/),
   cardCount: z.int().min(0),
   memberCount: z.int().min(0),
