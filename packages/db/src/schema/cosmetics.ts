@@ -33,5 +33,6 @@ export const userCosmetics = pgTable('user_cosmetics', {
   banner: text('banner'),
   nameStyle: text('name_style'),
   momentStamp: text('moment_stamp'),
+  openingTear: text('opening_tear'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })

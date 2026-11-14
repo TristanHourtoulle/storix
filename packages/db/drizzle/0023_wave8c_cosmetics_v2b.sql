@@ -1,0 +1,1 @@
+ALTER TABLE "user_cosmetics" ADD COLUMN "opening_tear" text;
