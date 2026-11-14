@@ -34,6 +34,8 @@ export const cardSeries = pgTable(
     graceEndsAt: timestamp('grace_ends_at', { withTimezone: true }).notNull(),
     closedAt: timestamp('closed_at', { withTimezone: true }),
     createdById: text('created_by_id').references(() => user.id, { onDelete: 'set null' }),
+    startNotifiedAt: timestamp('start_notified_at', { withTimezone: true }),
+    endNotifiedAt: timestamp('end_notified_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -53,6 +55,12 @@ export const cardSeries = pgTable(
     index('card_series_closed_idx')
       .on(t.closedAt)
       .where(sql`${t.closedAt} IS NOT NULL`),
+    index('card_series_event_start_push_idx')
+      .on(t.startsAt)
+      .where(sql`${t.kind} = 'event' AND ${t.startNotifiedAt} IS NULL`),
+    index('card_series_event_open_idx')
+      .on(t.leagueId, t.endsAt)
+      .where(sql`${t.kind} = 'event' AND ${t.closedAt} IS NULL`),
   ],
 )
 
