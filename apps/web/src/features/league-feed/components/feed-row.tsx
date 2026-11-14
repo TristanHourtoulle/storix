@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   emblemDefinition,
+  type CharmId,
   type CosmeticItemId,
   type EmblemId,
   type FeedRow as FeedRowData,
@@ -9,6 +10,8 @@ import {
 } from '@storix/shared'
 import { Avatar } from '@/components/ui/avatar'
 import { Icon } from '@/components/ui/icon'
+import { CHARM_COPY } from '@/features/charms/charm-copy'
+import { CharmIcon } from '@/features/charms/components/charm-icon'
 import { StyledName } from '@/features/cosmetics/components/styled-name'
 import { EmblemIcon } from '@/features/emblems/components/emblem-icon'
 import { MiniCard } from '@/features/cards/components/mini-card'
@@ -115,6 +118,15 @@ function Who({
   )
 }
 
+function FeedCharm({ charm }: { charm: CharmId }) {
+  return (
+    <span className="feed-charm" style={{ '--c': CHARM_COPY[charm].color } as CSSProperties}>
+      <CharmIcon charm={charm} />
+      <span className="sr-only">{` avec ${CHARM_COPY[charm].named}`}</span>
+    </span>
+  )
+}
+
 function sentence(row: FeedRowData, nameStyles: ReadonlyMap<string, CosmeticItemId>): ReactNode {
   const who = <Who actors={row.actors} nameStyles={nameStyles} />
   const isPlural = row.actors.length > 1
@@ -124,6 +136,7 @@ function sentence(row: FeedRowData, nameStyles: ReadonlyMap<string, CosmeticItem
         <>
           {who} {isPlural ? 'ont' : 'a'} ouvert {countOf(row.count, 'booster', 'boosters')}
           {row.isPremium ? ' dont un premium' : ''}
+          {row.charm === null ? null : <FeedCharm charm={row.charm} />}
         </>
       )
     case 'card_pulled':

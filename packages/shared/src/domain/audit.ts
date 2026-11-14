@@ -37,6 +37,7 @@ export const AUDIT_ACTIONS = [
   'league_goal.reward_granted',
   'moment.posted',
   'cosmetic.purchased',
+  'charm.purchased',
 ] as const
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number]
@@ -97,6 +98,7 @@ const CATEGORY_BY_ACTION: Readonly<Record<AuditAction, AuditCategory>> = {
   'league_goal.reward_granted': 'economy',
   'moment.posted': 'economy',
   'cosmetic.purchased': 'economy',
+  'charm.purchased': 'economy',
 }
 
 /** Returns the Journal category of an audit action. */

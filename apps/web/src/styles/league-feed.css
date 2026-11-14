@@ -230,4 +230,14 @@
     text-align: left;
     cursor: pointer;
   }
+  .feed-charm {
+    display: inline-flex;
+    vertical-align: -2px;
+    margin-left: 5px;
+    color: var(--c);
+  }
+  .feed-charm svg {
+    width: 14px;
+    height: 14px;
+  }
 }

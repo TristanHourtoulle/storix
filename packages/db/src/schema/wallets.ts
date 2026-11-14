@@ -26,6 +26,8 @@ export const memberWallets = pgTable(
     boostersOpened: integer('boosters_opened').notNull().default(0),
     bonusBoosters: integer('bonus_boosters').notNull().default(0),
     premiumGifts: integer('premium_gifts').notNull().default(0),
+    charm: text('charm'),
+    charmCharges: integer('charm_charges').notNull().default(0),
     boosterFullNotifiedAt: timestamp('booster_full_notified_at', { withTimezone: true }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -42,6 +44,7 @@ export const memberWallets = pgTable(
       'member_wallets_bonus_non_negative',
       sql`${t.bonusBoosters} >= 0 AND ${t.premiumGifts} >= 0`,
     ),
+    check('member_wallets_charm_charges_non_negative', sql`${t.charmCharges} >= 0`),
     foreignKey({
       name: 'member_wallets_member_fk',
       columns: [t.leagueId, t.userId],

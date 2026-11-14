@@ -1,4 +1,5 @@
 import {
+  activeCharmOf,
   computeBoosterStock,
   MIN_DRAWABLE_CARDS_FOR_BOOSTER,
   pitySummary,
@@ -44,5 +45,6 @@ export function toWalletState(
       legendaryAvailable: pool.hasLegendaryOrBetter,
     },
     premium: premiumSummary(row.boostersOpened),
+    charm: activeCharmOf(row),
   }
 }

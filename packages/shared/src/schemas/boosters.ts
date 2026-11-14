@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { charmIdSchema } from './charms'
 import { cardAuthorSchema, cardMomentSchema, cardTierSchema, copyVariantSchema } from './cards'
 import { isoDateSchema } from './common'
 import { imageSetSchema } from './media'
@@ -29,6 +30,7 @@ export const boosterPullSchema = z.object({
   stackCount: z.int().positive().nullable(),
   isFirstCopy: z.boolean(),
   isDiscovery: z.boolean(),
+  isCharmBoosted: z.boolean().catch(false),
 })
 
 export const boosterOpeningSchema = z.object({
@@ -37,6 +39,10 @@ export const boosterOpeningSchema = z.object({
   pulls: z.array(boosterPullSchema).max(5),
   dustGained: z.int().min(0),
   isPremium: z.boolean(),
+  charm: z
+    .object({ id: charmIdSchema, chargesLeft: z.int().min(0) })
+    .nullable()
+    .catch(null),
   wallet: walletStateSchema,
 })
 

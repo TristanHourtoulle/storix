@@ -4,6 +4,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import type { BoosterOpening } from '@storix/shared'
 import { Button, buttonClassName } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icon'
+import { CharmBadge, CharmOdds } from '@/features/charms/components/charm-opening'
 import { TopBar } from '@/components/ui/top-bar'
 import { PushPrompt } from '@/features/push/components/push-prompt'
 import { newBoosterRequestId } from '@/features/game/booster-request'
@@ -16,6 +17,7 @@ import '@/styles/booster-pack.css'
 import '@/styles/cosmetics-arcade.css'
 import '@/styles/cosmetics-arcade-themes.css'
 import '@/styles/cosmetics-tears-arcade.css'
+import '@/styles/charms.css'
 import { CENTER_Y, STAGE_HEIGHT, STAMP_TOP } from '../arcade/geometry'
 import { useArcadeOpening } from '../use-arcade-opening'
 import { useImagesDecoded } from '../use-images-decoded'
@@ -71,7 +73,7 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
   }
 
   return (
-    <main className="screen ar-screen min-h-dvh">
+    <main className={`screen ar-screen min-h-dvh${opening.charm === null ? '' : ' has-charm'}`}>
       <TopBar
         title={`Booster · ${revealedCount} / ${pullCount} révélées`}
         start={
@@ -80,6 +82,11 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
           </Link>
         }
       />
+      {opening.charm === null ? null : (
+        <div className="charm-opening">
+          <CharmBadge charm={opening.charm} />
+        </div>
+      )}
       <div ref={stageRef} className={`ar-stage${isReduced ? ' rm' : ''}`}>
         <div className="ar-scaler" style={WORLD_STYLE} aria-hidden="true">
           <div className="ar-world">
@@ -96,6 +103,9 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
             <p className="ar-stamp" style={STAMP_STYLE} />
           </div>
         </div>
+        {opening.charm !== null && state.phase === 'pack' ? (
+          <CharmOdds charm={opening.charm} isPremium={opening.isPremium} isOverlay />
+        ) : null}
         <button
           type="button"
           className="ar-tap"
@@ -109,6 +119,7 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
             pulls={pulls}
             openedAt={opening.openedAt}
             leagueName={leagueName}
+            charm={opening.charm}
           />
         ) : null}
       </div>
@@ -125,6 +136,7 @@ export function BoosterStage({ leagueId, opening }: BoosterStageProps) {
           {hint}
         </p>
       )}
+
       {isComplete ? (
         <div className="flex flex-col gap-3">
           {state.phase === 'summary' ? <PushPrompt /> : null}

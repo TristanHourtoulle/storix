@@ -3,6 +3,20 @@ import type { ReleaseNote } from '../schemas/whats-new'
 /** Every feature release shown in the "Nouveautés" booster, newest first. */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    id: '2026-11-14-c',
+    publishedAt: '2026-11-14T19:00:00+01:00',
+    cards: [
+      {
+        key: 'porte-bonheur',
+        title: 'Un porte-bonheur',
+        body: 'Nouvelle famille Bonus dans la Boutique : Trèfle, Boussole, Aimant, Éclat… Un seul actif à la fois, pour tes 10 prochains boosters. La ligue le voit sur tes ouvertures.',
+        tier: 'mythic',
+        illustration: 'mythic',
+        tryTarget: 'shop-bonus',
+      },
+    ],
+  },
+  {
     id: '2026-11-14-b',
     publishedAt: '2026-11-14T18:00:00+01:00',
     cards: [
@@ -45,7 +59,7 @@ export const RELEASE_NOTES: readonly ReleaseNote[] = [
       {
         key: 'boutique-familles',
         title: 'Une Boutique rangée',
-        body: 'La Boutique se range en trois familles : Cartes, Profil, et bientôt Sons & partage. Glisse d’une catégorie à l’autre avec les puces.',
+        body: 'La Boutique se range en familles : Cartes et Profil. Glisse d’une catégorie à l’autre avec les puces.',
         tier: 'epic',
         illustration: 'premium',
         tryTarget: 'shop',

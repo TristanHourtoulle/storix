@@ -19,6 +19,7 @@ interface ShopShelvesProps {
   shelf: ShopShelf
   onChange: (shelf: ShopShelf) => void
   hasCounts?: boolean
+  bonus: ReactNode
   children: (category: ShopCategorySlug) => ReactNode
 }
 
@@ -27,27 +28,18 @@ export const FAMILY_OPTIONS = SHOP_FAMILIES.map((family) => ({
   label: family.label,
 }))
 
-/** Placeholder for the Sons & partage family until its first cosmetics ship. */
-export function ShopComingSoon() {
-  return (
-    <div className="shop-soon">
-      <span className="shop-soon-ico" aria-hidden="true">
-        ♪
-      </span>
-      <b>Sons & partage</b>
-      <p>
-        Des packs de sons pour tes ouvertures et des styles de partage exclusifs arrivent bientôt.
-      </p>
-      <small>Bientôt</small>
-    </div>
-  )
-}
-
 /**
- * The shop's three families with their counted categories; switching slides the active pill, the
- * chip indicator and the content in the direction of travel.
+ * The shop's three families (Cartes, Profil and the porte-bonheur Bonus) with their counted
+ * categories; switching slides the active pill, the chip indicator and the content in the direction
+ * of travel.
  */
-export function ShopShelves({ shelf, onChange, hasCounts = true, children }: ShopShelvesProps) {
+export function ShopShelves({
+  shelf,
+  onChange,
+  hasCounts = true,
+  bonus,
+  children,
+}: ShopShelvesProps) {
   const family = shopFamily(shelf.family)
   const category =
     family.categories.find((item) => item.slug === shelf.category)?.slug ??
@@ -76,13 +68,13 @@ export function ShopShelves({ shelf, onChange, hasCounts = true, children }: Sho
         />
       ) : null}
       <div
-        key={category ?? 'soon'}
+        key={category ?? shelf.family}
         id={segmentPanelId(idBase)}
         role="tabpanel"
         aria-labelledby={segmentTabId(idBase, shelf.family)}
         className={`shop-pane ${direction}`}
       >
-        {category === null ? <ShopComingSoon /> : children(category)}
+        {category === null ? bonus : children(category)}
       </div>
     </>
   )

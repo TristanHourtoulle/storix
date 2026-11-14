@@ -176,6 +176,13 @@
       "when": 1794647295657,
       "tag": "0024_wave9a_standings",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794647691853,
+      "tag": "0025_wave9b_bonus",
+      "breakpoints": true
     }
   ]
 }

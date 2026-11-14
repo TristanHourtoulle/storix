@@ -99,6 +99,7 @@ function toRow(group: FeedGroup, ctx: FeedContext): FeedRow {
     tier: group.bestTier,
     isPremium: group.hasPremium,
     isDiscovery: group.payload.isDiscovery === true,
+    charm: group.payload.charm ?? null,
     fromTier: group.payload.fromTier ?? null,
     toTier: group.payload.toTier ?? null,
     emblemIds: group.emblemIds,
