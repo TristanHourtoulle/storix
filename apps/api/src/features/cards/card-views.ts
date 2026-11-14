@@ -36,6 +36,7 @@ import type { MediaSigner } from '../../lib/media-signer'
 import type { OwnedCopyRow } from '../copies/copies.repository'
 import type { CardStackEntry, PromotedHolderRow } from '../copies/stacks.repository'
 import type { CardViewerRow, CollectionListRow, CollectionRow } from './cards.repository'
+import { toCardSeals } from './card-seals'
 import { toCardMoment } from './card-moment'
 import { toImageSet } from './image-set'
 
@@ -207,6 +208,7 @@ function toOwnedSummary(
     height: row.height,
     image: toImageSet(row.variants, sizes, signer),
     moment: toCardMoment(row, signer),
+    seals: toCardSeals(row.seals),
     copies: { normal: row.normalTier, foil: row.foilTier },
     isPromoted: isPromoted(rowCopies(row)),
     stackCount: row.stackCount,
@@ -331,6 +333,7 @@ function toUnpulledSummary(row: CollectionRow, signer: MediaSigner): UnpulledCar
     height: row.height,
     image: toImageSet(row.variants, SUMMARY_SIZES, signer),
     moment: toCardMoment(row, signer),
+    seals: toCardSeals(row.seals),
   }
 }
 

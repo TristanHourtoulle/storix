@@ -27,6 +27,7 @@ import {
   authorMembership,
   authorMembershipOn,
 } from './card-author.repository'
+import { cardSealsColumn } from './card-seals'
 import { authorMomentStamp, readyMomentSelfieUploadId } from './card-moment'
 
 export interface CollectionRow {
@@ -49,6 +50,7 @@ export interface CollectionRow {
   momentTakenAt: Date | null
   momentLateMinutes: number | null
   momentStamp: string | null
+  seals: unknown
   normalTier: CardTier | null
   foilTier: CardTier | null
   normalPromotedTier: CardTier | null
@@ -85,6 +87,7 @@ export interface CollectionFilters {
   upgradable?: boolean
   moment?: boolean
   taggedUserId?: string
+  seriesId?: string
 }
 
 const discoverer = alias(user, 'discoverer')
@@ -179,6 +182,7 @@ function collectionColumns(
     momentTakenAt: cards.momentTakenAt,
     momentLateMinutes: cards.momentLateMinutes,
     momentStamp: authorMomentStamp,
+    seals: cardSealsColumn,
     normalTier: owned.normalTier,
     foilTier: owned.foilTier,
     normalPromotedTier: owned.normalPromotedTier,
@@ -224,6 +228,10 @@ function taggedWith(userId: string): SQL {
   return sql`exists (select 1 from ${cardTags} where ${cardTags.cardId} = ${cards.id} and ${cardTags.userId} = ${userId})`
 }
 
+function inSeries(seriesId: string): SQL {
+  return sql`exists (select 1 from card_series_cards sc where sc.card_id = ${cards.id} and sc.series_id = ${seriesId})`
+}
+
 function collectionWhere(
   input: CollectionFilters,
   owned: ReturnType<typeof viewerCopies>,
@@ -237,6 +245,7 @@ function collectionWhere(
     input.tier === undefined ? undefined : eq(displayTierOf(owned), input.tier),
     input.upgradable === true ? upgradableNow(input, owned, stacked) : undefined,
     input.taggedUserId === undefined ? undefined : taggedWith(input.taggedUserId),
+    input.seriesId === undefined ? undefined : inSeries(input.seriesId),
     input.moment === true ? isNotNull(cards.momentTakenAt) : undefined,
   )
 }

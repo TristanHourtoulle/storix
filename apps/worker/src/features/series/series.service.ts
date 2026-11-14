@@ -1,3 +1,6 @@
+import type { Database } from '@storix/db'
+import { themeWeekKey } from '@storix/shared'
+import type { WorkerLogger } from '../../lib/logger'
 import {
   closeSeries,
   ensureThemeSeries,
@@ -5,10 +8,7 @@ import {
   listLeagueIds,
   listUnrewardedCompletions,
   rewardCompletion,
-  type Database,
-} from '@storix/db'
-import { themeWeekKey } from '@storix/shared'
-import type { WorkerLogger } from '../../lib/logger'
+} from './series.repository'
 
 export interface SeriesService {
   tick(): Promise<{ closed: number; rewarded: number }>

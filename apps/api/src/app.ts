@@ -25,6 +25,7 @@ import { missionsRoutes } from './features/missions/missions.routes'
 import { momentsRoutes } from './features/moments/moments.routes'
 import { leagueGoalRoutes } from './features/league-goal/league-goal.routes'
 import { standingsRoutes } from './features/standings/standings.routes'
+import { seriesRoutes } from './features/series/series.routes'
 import { leagueSettingsRoutes } from './features/league-settings/league-settings.routes'
 import { leaguesRoutes } from './features/leagues/leagues.routes'
 import { mediaRoutes } from './features/media/media.routes'
@@ -115,6 +116,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(momentsRoutes(services.moments), { prefix: '/api' })
   await app.register(leagueGoalRoutes(services.leagueGoal), { prefix: '/api' })
   await app.register(standingsRoutes(services.standings), { prefix: '/api' })
+  await app.register(seriesRoutes(services.series), { prefix: '/api' })
   await app.register(emblemsRoutes(services.emblems), { prefix: '/api' })
   await app.register(tagsRoutes(services.tags), { prefix: '/api' })
   await app.register(showcaseRoutes(services.showcase), { prefix: '/api' })

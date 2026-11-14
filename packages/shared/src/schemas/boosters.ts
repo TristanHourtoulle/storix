@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { charmIdSchema } from './charms'
 import { cardAuthorSchema, cardMomentSchema, cardTierSchema, copyVariantSchema } from './cards'
 import { isoDateSchema } from './common'
+import { cardSealsSchema } from './series-refs'
 import { imageSetSchema } from './media'
 import { cardTitleSchema } from './uploads'
 import { walletStateSchema } from './wallet'
@@ -23,6 +24,7 @@ export const boosterPullSchema = z.object({
     image: imageSetSchema,
     capturedAt: isoDateSchema.nullable(),
     moment: cardMomentSchema.nullable(),
+    seals: cardSealsSchema,
   }),
   variant: copyVariantSchema,
   outcome: z.enum(['new', 'upgraded', 'duplicate']),

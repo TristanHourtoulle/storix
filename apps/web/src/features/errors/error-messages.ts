@@ -53,6 +53,9 @@ const MESSAGES: Record<ErrorCode, string> = {
   MISSION_REROLL_NOT_ALLOWED: 'Tu ne peux plus changer cette mission aujourd’hui.',
   MOMENT_ALREADY_POSTED: 'Tu as déjà posté ce Moment.',
   MOMENT_TOO_MANY_ATTEMPTS: 'Trop d’essais. Réessaie dans un moment.',
+  SERIES_CLOSED: 'Cette série est terminée.',
+  SERIES_CARD_NOT_ALLOWED: 'Seules tes photos publiées pendant la série peuvent y entrer.',
+  THEME_ALREADY_STARTED: 'Ce thème a déjà commencé.',
   INTERNAL_ERROR: 'Une erreur est survenue.',
 }
 

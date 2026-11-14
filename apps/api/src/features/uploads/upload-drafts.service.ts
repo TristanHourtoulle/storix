@@ -6,6 +6,7 @@ import {
   DRAFT_TTL_MS,
   planPublish,
   storedMediaKeys,
+  storedSeriesIdsSchema,
   type EditUploadBody,
   type MediaVariantSize,
   type PublishPlan,
@@ -22,6 +23,7 @@ import type { Membership } from '../leagues/leagues.service'
 import { assertTaggedMembers } from './assert-tagged-members'
 import {
   deleteCardlessMediaOfUploads,
+  filterOpenSeries,
   findOwnedUploadRow,
   listDrafts,
   listOwnedStates,
@@ -96,6 +98,7 @@ function toDraft(row: DraftRow, signer: MediaSigner): UploadDraft {
     status: row.status === 'staged' || row.status === 'processing' ? row.status : 'uploaded',
     title: row.title,
     taggedUserIds: row.taggedUserIds,
+    seriesIds: storedSeriesIdsSchema.parse(row.seriesIds),
     crop: row.crop,
     capturedAt: (row.media?.capturedAt ?? row.clientCapturedAt)?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
@@ -193,12 +196,21 @@ export function createUploadDraftsService(deps: {
       if (body.taggedUserIds !== undefined) {
         await assertTaggedMembers(db, m.leagueId, body.taggedUserIds)
       }
+      const seriesIds =
+        body.seriesIds === undefined
+          ? undefined
+          : await filterOpenSeries(db, {
+              leagueId: m.leagueId,
+              seriesIds: body.seriesIds,
+              now: clock(),
+            })
       const updated = await updateDraftFields(db, {
         leagueId: m.leagueId,
         userId: m.userId,
         id: row.id,
         title: draftTitleOf(body.title),
         taggedUserIds: body.taggedUserIds,
+        seriesIds,
         crop: body.crop,
       })
       const current = await findOwned(m, uploadId)

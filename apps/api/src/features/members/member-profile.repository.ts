@@ -15,6 +15,7 @@ import {
   authorMembership,
   authorMembershipOn,
 } from '../cards/card-author.repository'
+import { cardSealsColumn } from '../cards/card-seals'
 import { authorMomentStamp, readyMomentSelfieUploadId } from '../cards/card-moment'
 
 export interface ProfileMember {
@@ -132,6 +133,7 @@ export async function listCardBases(
       momentTakenAt: cards.momentTakenAt,
       momentLateMinutes: cards.momentLateMinutes,
       momentStamp: authorMomentStamp,
+      seals: cardSealsColumn,
     })
     .from(cards)
     .innerJoin(media, eq(media.id, cards.mediaId))
