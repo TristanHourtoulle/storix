@@ -7,6 +7,7 @@ import { refreshEmblems } from '@/features/emblems/emblems.queries'
 import { refreshFeed } from '@/features/league-feed/league-feed.queries'
 import { refreshMissions } from '@/features/missions/missions.queries'
 import { refreshLeagueGoal } from '@/features/league-goal/league-goal.queries'
+import { refreshStandings } from '@/features/standings/standings.queries'
 
 /** Extracts the API error code of a failed opening, if any. */
 export function getOpeningErrorCode(error: unknown): ErrorCode | null {
@@ -36,6 +37,7 @@ export function useBoosterOpening(
     refreshEmblems(queryClient, leagueId)
     refreshMissions(queryClient, leagueId)
     refreshLeagueGoal(queryClient, leagueId)
+    refreshStandings(queryClient, leagueId)
   }, [queryClient, leagueId, openingId, wallet])
 
   useEffect(() => {
