@@ -1,5 +1,5 @@
 {
-  "id": "f0b9ec18-18ea-44f5-82b0-b72cffcbdcc0",
+  "id": "e76b84e0-861c-4721-acbe-4a12994ca18a",
   "prevId": "d349f3a4-d616-4567-b8a8-bb2bb80e5264",
   "version": "7",
   "dialect": "postgresql",
@@ -2623,6 +2623,12 @@
         "charm": {
           "name": "charm",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "charm_charges_after": {
+          "name": "charm_charges_after",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },

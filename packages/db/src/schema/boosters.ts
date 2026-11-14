@@ -38,6 +38,7 @@ export const boosterOpenings = pgTable(
     isPremium: boolean('is_premium').notNull().default(false),
     source: text('source').$type<BoosterSource>().notNull().default('timer'),
     charm: text('charm'),
+    charmChargesAfter: integer('charm_charges_after'),
     openedAt: timestamp('opened_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
