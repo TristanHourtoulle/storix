@@ -17,7 +17,7 @@ import { runInTransaction } from '../../lib/transaction'
 import { insertAuditEntry } from '../audit/audit.repository'
 import { findLeagueSettings } from '../leagues/leagues.repository'
 import type { Membership } from '../leagues/leagues.service'
-import { ensureWallet, lockWallet, updateWallet } from '../wallets/wallets.repository'
+import { ensureWallet, findWallet, lockWallet, updateWallet } from '../wallets/wallets.repository'
 import { insertCharmPurchase, leagueHasMythic, listCharmPurchaseDates } from './charms.repository'
 
 export interface CharmsService {
@@ -63,22 +63,21 @@ export function createCharmsService({ db, clock }: CharmsServiceDeps): CharmsSer
     async getShop(m) {
       const settings = resolveLeagueSettings(await findLeagueSettings(db, m.leagueId))
       const now = clock()
-      return runInTransaction(db, async (tx) => {
-        const key = { leagueId: m.leagueId, userId: m.userId }
-        await ensureWallet(tx, { ...key, cadence: settings.booster, now })
-        const wallet = await lockWallet(tx, m.leagueId, m.userId)
-        const [dates, hasMythic] = await Promise.all([
-          listCharmPurchaseDates(tx, { ...key, since: weekStart(now) }),
-          leagueHasMythic(tx, m.leagueId),
-        ])
-        return {
-          dust: wallet.dust,
-          active: activeCharmOf(wallet),
-          purchasesThisWeek: charmPurchasesInWeek(dates, now),
-          weeklyLimit: CHARM_WEEKLY_LIMIT,
-          hasMythic,
-        }
-      })
+      const key = { leagueId: m.leagueId, userId: m.userId }
+      await ensureWallet(db, { ...key, cadence: settings.booster, now })
+      const [wallet, dates, hasMythic] = await Promise.all([
+        findWallet(db, m.leagueId, m.userId),
+        listCharmPurchaseDates(db, { ...key, since: weekStart(now) }),
+        leagueHasMythic(db, m.leagueId),
+      ])
+      if (wallet === null) throw new Error('Member wallet not found')
+      return {
+        dust: wallet.dust,
+        active: activeCharmOf(wallet),
+        purchasesThisWeek: charmPurchasesInWeek(dates, now),
+        weeklyLimit: CHARM_WEEKLY_LIMIT,
+        hasMythic,
+      }
     },
 
     async purchase(m, input) {
