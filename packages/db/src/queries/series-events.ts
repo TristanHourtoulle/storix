@@ -148,16 +148,17 @@ export async function claimEventEnd(
   return rows.length > 0
 }
 
-/** Lists the members who added at least one active card to a series. */
-export async function listSeriesContributorIds(
+/** Lists the members who added active cards to a series, with how many each. */
+export async function listSeriesContributors(
   db: DbExecutor,
   seriesId: string,
-): Promise<string[]> {
-  const result = await db.execute<{ author_id: string }>(sql`
-    SELECT DISTINCT c.author_id
+): Promise<{ userId: string; cards: number }[]> {
+  const result = await db.execute<{ author_id: string; n: unknown }>(sql`
+    SELECT c.author_id, count(*) AS n
     FROM card_series_cards sc JOIN cards c ON c.id = sc.card_id AND c.status = 'active'
-    WHERE sc.series_id = ${seriesId} AND c.author_id IS NOT NULL`)
-  return result.rows.map((row) => row.author_id)
+    WHERE sc.series_id = ${seriesId} AND c.author_id IS NOT NULL
+    GROUP BY c.author_id`)
+  return result.rows.map((row) => ({ userId: row.author_id, cards: Number(row.n) }))
 }
 
 /** Keeps the ids of the league's series that take a photo with this timing, in the given order. */

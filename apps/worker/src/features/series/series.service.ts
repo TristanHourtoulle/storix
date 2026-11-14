@@ -1,6 +1,7 @@
 import type { Database } from '@storix/db'
 import { themeWeekKey } from '@storix/shared'
 import type { WorkerLogger } from '../../lib/logger'
+import type { SeriesPushService } from './series-push.service'
 import {
   closeSeries,
   ensureThemeSeries,
@@ -12,6 +13,7 @@ import {
 
 export interface SeriesService {
   tick(): Promise<{ closed: number; rewarded: number }>
+  announceStarts(): Promise<number>
   rollover(): Promise<{ closed: number; opened: number; rewarded: number }>
 }
 
@@ -19,10 +21,11 @@ interface Deps {
   db: Database
   clock: () => Date
   logger: WorkerLogger
+  pushes: SeriesPushService
 }
 
 /** Creates the use cases closing due series with their recap, paying completed series and opening the weekly theme; idempotent. */
-export function createSeriesService({ db, clock, logger }: Deps): SeriesService {
+export function createSeriesService({ db, clock, logger, pushes }: Deps): SeriesService {
   async function each<T>(items: readonly T[], run: (item: T) => Promise<boolean>): Promise<number> {
     return items.reduce<Promise<number>>(async (pending, item) => {
       const done = await pending
@@ -37,7 +40,11 @@ export function createSeriesService({ db, clock, logger }: Deps): SeriesService 
 
   async function closeDue(now: Date): Promise<number> {
     const due = await listDueSeries(db, now)
-    return each(due, (series) => db.transaction((tx) => closeSeries(tx, { series, now })))
+    return each(due, async (series) => {
+      const isClosed = await db.transaction((tx) => closeSeries(tx, { series, now }))
+      if (isClosed) await pushes.notifyEnd(series)
+      return isClosed
+    })
   }
 
   async function payCompletions(now: Date): Promise<number> {
@@ -63,6 +70,10 @@ export function createSeriesService({ db, clock, logger }: Deps): SeriesService 
       const rewarded = await payCompletions(now)
       if (closed > 0 || rewarded > 0) logger.info({ closed, rewarded }, 'Series ticked')
       return { closed, rewarded }
+    },
+
+    announceStarts() {
+      return pushes.notifyStarts()
     },
 
     async rollover() {

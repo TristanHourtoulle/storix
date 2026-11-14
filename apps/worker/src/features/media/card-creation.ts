@@ -1,7 +1,8 @@
-import { attachCardToSeries, filterOpenSeries, type DbExecutor } from '@storix/db'
+import { attachCardToSeries, filterSeriesForPhoto, type DbExecutor } from '@storix/db'
 import { PROVISIONAL_TIER } from '@storix/shared/domain'
 import { resolveLeagueSettings, type UploadStatus } from '@storix/shared'
 import * as repository from './media.repository'
+import { findPhotoCapture } from './photo-capture.repository'
 
 export interface CardCreationInput {
   upload: repository.OwnedUpload
@@ -40,11 +41,17 @@ export async function insertCardForMedia(
     leagueId: upload.leagueId,
     userIds: upload.taggedUserIds,
   })
-  const seriesIds = await filterOpenSeries(tx, {
-    leagueId: upload.leagueId,
-    seriesIds: upload.seriesIds,
-    now: requestedAt,
-  })
+  const seriesIds =
+    upload.seriesIds.length === 0
+      ? []
+      : await filterSeriesForPhoto(tx, {
+          leagueId: upload.leagueId,
+          seriesIds: upload.seriesIds,
+          photo: {
+            capturedAt: await findPhotoCapture(tx, { uploadId: upload.id, mediaId }),
+            sentAt: requestedAt,
+          },
+        })
   await attachCardToSeries(tx, { cardId, seriesIds, now })
   await repository.insertAuditEntry(tx, {
     leagueId: upload.leagueId,
