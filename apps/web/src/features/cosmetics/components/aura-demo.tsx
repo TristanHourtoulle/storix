@@ -4,6 +4,7 @@ import { TIER_COLOR_VAR } from '@/features/cards/tier-labels'
 import { revealAuraKind } from '../cosmetic-skins'
 import { useEquippedStyle } from '../style-context'
 import '@/styles/cosmetics-arcade.css'
+import '@/styles/cosmetics-arcade-themes.css'
 
 interface AuraDemoProps {
   children?: ReactNode

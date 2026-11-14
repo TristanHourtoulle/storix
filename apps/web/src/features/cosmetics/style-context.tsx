@@ -12,6 +12,7 @@ const ORIGINAL_STYLE: EquippedCosmetics = {
   banner: null,
   nameStyle: null,
   momentStamp: null,
+  openingTear: null,
 }
 
 const StyleContext = createContext<EquippedCosmetics>(ORIGINAL_STYLE)

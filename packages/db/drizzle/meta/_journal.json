@@ -162,6 +162,13 @@
       "when": 1794470391637,
       "tag": "0022_wave8b_cosmetics_v2a",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794645041455,
+      "tag": "0023_wave8c_cosmetics_v2b",
+      "breakpoints": true
     }
   ]
 }

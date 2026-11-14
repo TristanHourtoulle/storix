@@ -1,8 +1,8 @@
 import type { CardTier } from '@storix/shared'
 
-export type RarityFrame = 'ring' | 'neon' | 'gem' | 'filet'
+export type RarityFrame = 'ring' | 'neon' | 'gem' | 'filet' | 'vitrail'
 
-export type RaritySetKey = 'default' | 'neon' | 'gemmes' | 'filet'
+export type RaritySetKey = 'default' | 'neon' | 'gemmes' | 'filet' | 'vitrail'
 
 export type GradientStops = readonly (readonly [number, string])[]
 
@@ -97,6 +97,7 @@ export const RARITY_PALETTES: Readonly<Record<RaritySetKey, RarityPalette>> = {
   neon: { ...DEFAULT_PALETTE, frame: 'neon' },
   gemmes: { ...DEFAULT_PALETTE, frame: 'gem', mythicRainbow: GEM_MYTHIC_RAINBOW },
   filet: { ...DEFAULT_PALETTE, frame: 'filet' },
+  vitrail: { ...DEFAULT_PALETTE, frame: 'vitrail' },
 }
 
 export const DEFAULT_RARITY_PALETTE: RarityPalette = DEFAULT_PALETTE

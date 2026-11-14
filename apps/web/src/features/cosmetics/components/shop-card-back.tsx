@@ -3,6 +3,7 @@ import { cardBackClass } from '../cosmetic-skins'
 import { useEquippedStyle } from '../style-context'
 import '@/styles/booster-card.css'
 import '@/styles/cosmetics-arcade.css'
+import '@/styles/cosmetics-arcade-themes.css'
 
 export const CARD_BACK_WIDTH = 220
 export const CARD_BACK_HEIGHT = 308

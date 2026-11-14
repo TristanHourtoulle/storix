@@ -1,0 +1,110 @@
+@layer components {
+  .pack.skin-cosmos {
+    background:
+      radial-gradient(1.5px 1.5px at 20% 30%, #fff, transparent),
+      radial-gradient(1px 1px at 70% 20%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 60% 75%, #fff, transparent),
+      radial-gradient(1px 1px at 35% 85%, #fff, transparent),
+      radial-gradient(60% 40% at 70% 70%, #be185d88, transparent),
+      radial-gradient(60% 50% at 25% 35%, #4338ca99, transparent), #04030c;
+    box-shadow:
+      0 12px 30px rgba(67, 56, 202, 0.35),
+      inset 0 0 0 1px #818cf888;
+  }
+  .pack.skin-vitrail {
+    background:
+      linear-gradient(#111, #111) 50% 0 / 3px 100% no-repeat,
+      linear-gradient(#111, #111) 0 45% / 100% 3px no-repeat,
+      linear-gradient(60deg, transparent 49%, #111 49% 51%, transparent 51%),
+      linear-gradient(-60deg, transparent 49%, #111 49% 51%, transparent 51%),
+      conic-gradient(
+        from 20deg at 50% 45%,
+        #1d4ed8cc,
+        #a21cafcc,
+        #dc2626cc,
+        #f59e0bcc,
+        #16a34acc,
+        #0891b2cc,
+        #1d4ed8cc
+      );
+    box-shadow:
+      0 12px 30px rgba(0, 0, 0, 0.45),
+      inset 0 0 0 2px #111;
+  }
+  .skin-vitrail .pack-logo,
+  .skin-vitrail .pack-sub {
+    color: #f2f2f7;
+    text-shadow:
+      0 1px 0 #000,
+      0 0 8px #000;
+  }
+  .pack.is-premium.skin-cosmos,
+  .pack.is-premium.skin-vitrail {
+    box-shadow:
+      inset 0 0 0 1.5px #d9b45a,
+      0 0 22px color-mix(in srgb, #d9b45a 45%, transparent),
+      0 12px 30px rgba(0, 0, 0, 0.45);
+  }
+  .is-premium.skin-cosmos .pack-sub,
+  .is-premium.skin-vitrail .pack-sub {
+    color: #d9b45a;
+  }
+
+  .card.rs-vitrail {
+    --frame-lead: 4px;
+    box-shadow: 0 0 0 1.5px var(--tc);
+  }
+  .card.rs-vitrail.sm {
+    --frame-lead: 2.5px;
+  }
+  .card.rs-vitrail.md {
+    --frame-lead: 3px;
+  }
+  .card.rs-vitrail.lg,
+  .card.rs-vitrail.xl,
+  .card.rs-vitrail.showcase {
+    --frame-lead: 7px;
+    box-shadow: 0 0 0 2px var(--tc);
+  }
+  .rs-vitrail .card-frame {
+    box-shadow:
+      inset 0 0 0 var(--frame-lead) #111,
+      inset 0 0 0 calc(var(--frame-lead) + 1.5px) color-mix(in srgb, var(--tc) 70%, #fff);
+  }
+  .rs-vitrail .card-frame::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--tc) 30%, transparent),
+      transparent 40%,
+      color-mix(in srgb, var(--tc) 22%, transparent) 70%,
+      transparent
+    );
+    mix-blend-mode: screen;
+  }
+  .rs-vitrail .card-art {
+    filter: saturate(1.15);
+  }
+  .card.rs-vitrail.t-M {
+    box-shadow:
+      0 0 0 2px #f87171,
+      0 0 0 4px #fbbf24,
+      0 0 0 6px #22d3ee;
+  }
+  .card.rs-vitrail.t-M::before {
+    display: none;
+  }
+  .rs-vitrail.t-M .card-frame {
+    box-shadow: inset 0 0 0 var(--frame-lead) #111;
+  }
+
+  .hmc.rs-vitrail {
+    border: 2.5px solid #111;
+    box-shadow:
+      0 0 0 1.5px var(--tc),
+      inset 0 0 0 1px color-mix(in srgb, var(--tc) 70%, #fff);
+  }
+}

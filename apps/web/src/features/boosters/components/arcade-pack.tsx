@@ -1,4 +1,4 @@
-import { packSkinClass } from '@/features/cosmetics/cosmetic-skins'
+import { packSkinClass, type TearKind } from '@/features/cosmetics/cosmetic-skins'
 import { useEquippedStyle } from '@/features/cosmetics/style-context'
 import { CRACK_PATHS, PACK_TOP, PIPS_TOP, SHARDS } from '../arcade/geometry'
 
@@ -10,6 +10,7 @@ interface ArcadePackProps {
   subtitle?: string
   isChargeHidden?: boolean
   isPremium?: boolean
+  tear?: TearKind | null
 }
 
 interface PackArtProps {
@@ -40,11 +41,29 @@ function PackArt({ label, isPremium, skin }: PackArtProps) {
   )
 }
 
+function TearMarks({ kind }: { kind: TearKind }) {
+  switch (kind) {
+    case 'braises':
+      return <div className="ar-tear-burn" />
+    case 'verre':
+      return null
+    case 'ruban':
+      return (
+        <>
+          <div className="ar-tear-ribbon is-v" />
+          <div className="ar-tear-ribbon is-h" />
+          <div className="ar-tear-bow" />
+        </>
+      )
+  }
+}
+
 export function ArcadePack({
   count,
   subtitle,
   isChargeHidden = false,
   isPremium = false,
+  tear = null,
 }: ArcadePackProps) {
   const cardsLabel = count > 1 ? `${count} cartes` : '1 carte'
   const label = subtitle ?? (isPremium ? `Premium · ${cardsLabel}` : cardsLabel)
@@ -53,7 +72,10 @@ export function ArcadePack({
   return (
     <>
       <div className={`ar-pack-halo${premiumClass}`} style={{ top: PACK_TOP + 145 }} />
-      <div className={`ar-pack-pos ar-pack-wrap${premiumClass}`} style={PACK_STYLE}>
+      <div
+        className={`ar-pack-pos ar-pack-wrap${premiumClass}${tear ? ` tear-${tear}` : ''}`}
+        style={PACK_STYLE}
+      >
         <PackArt label={label} isPremium={isPremium} skin={skin} />
         <svg className="ar-cracks" viewBox="0 0 200 290" aria-hidden="true">
           {CRACK_PATHS.map((group, index) => (
@@ -65,6 +87,18 @@ export function ArcadePack({
           ))}
         </svg>
       </div>
+      {tear === 'braises' || tear === 'ruban' ? (
+        <div className="ar-pack-pos ar-tear-top" style={PACK_STYLE} aria-hidden="true">
+          <div className="ar-tear-top-clip">
+            <PackArt label={label} isPremium={isPremium} skin={skin} />
+          </div>
+        </div>
+      ) : null}
+      {tear ? (
+        <div className={`ar-pack-pos ar-tear-fx tear-${tear}`} style={PACK_STYLE}>
+          <TearMarks kind={tear} />
+        </div>
+      ) : null}
       <div
         className={`ar-pips${isChargeHidden ? ' is-hidden' : ''}`}
         style={{ top: PIPS_TOP }}

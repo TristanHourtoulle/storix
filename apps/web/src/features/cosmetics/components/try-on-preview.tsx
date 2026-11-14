@@ -11,6 +11,7 @@ import { SampleMomentFace } from './sample-card-face'
 import { ScaledBox } from './scaled-box'
 import { ShopCardBack } from './shop-card-back'
 import { StyledName } from './styled-name'
+import { TearDemo } from './tear-demo'
 import { TryOnFaceView } from './try-on-face'
 
 const PACK_WIDTH = 112
@@ -110,6 +111,11 @@ function AuraPreview({ faces }: { faces: readonly TryOnFace[] }) {
   )
 }
 
+function TearPreview() {
+  const tear = useEquippedStyle().openingTear
+  return <TearDemo key={tear ?? 'original'} />
+}
+
 /** The cabin's stage for a slot, drawn with the real skinned components and the viewer's cards. */
 export function TryOnPreview({ slot, faces }: TryOnPreviewProps) {
   switch (slot) {
@@ -135,5 +141,7 @@ export function TryOnPreview({ slot, faces }: TryOnPreviewProps) {
       return <NamePreview />
     case 'momentStamp':
       return <SampleMomentFace size="lg" />
+    case 'openingTear':
+      return <TearPreview />
   }
 }

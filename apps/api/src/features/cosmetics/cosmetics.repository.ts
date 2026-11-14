@@ -43,6 +43,7 @@ const EMPTY_EQUIPPED: EquippedCosmetics = {
   banner: null,
   nameStyle: null,
   momentStamp: null,
+  openingTear: null,
 }
 
 const SLOT_COLUMNS = {
@@ -54,6 +55,7 @@ const SLOT_COLUMNS = {
   banner: userCosmetics.banner,
   nameStyle: userCosmetics.nameStyle,
   momentStamp: userCosmetics.momentStamp,
+  openingTear: userCosmetics.openingTear,
 } as const satisfies Record<CosmeticSlot, unknown>
 
 function toItemId(value: string | null): CosmeticItemId | null {
@@ -92,6 +94,7 @@ export async function findEquipped(db: DbExecutor, userId: string): Promise<Equi
     banner: toItemId(row.banner),
     nameStyle: toItemId(row.nameStyle),
     momentStamp: toItemId(row.momentStamp),
+    openingTear: toItemId(row.openingTear),
   }
 }
 

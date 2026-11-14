@@ -31,6 +31,7 @@ export const equippedCosmeticsSchema = z.object({
   banner: storedCosmeticItemIdSchema,
   nameStyle: storedCosmeticItemIdSchema,
   momentStamp: storedCosmeticItemIdSchema,
+  openingTear: storedCosmeticItemIdSchema,
 })
 
 export const myCosmeticsResponseSchema = z.object({
