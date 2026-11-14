@@ -27,6 +27,7 @@ function LeagueScreen() {
       subtitle={league ? memberCountLabel(league.memberCount) : undefined}
       backLabel="Retour à l’accueil"
       fallback="home"
+      layout="leading"
     >
       <LeaguePage
         leagueId={leagueId}
