@@ -16,4 +16,6 @@ export const seriesIdsBodySchema = z
   .max(MAX_SERIES_PER_UPLOAD)
   .refine((ids) => new Set(ids).size === ids.length)
 
+export const storedSeriesIdsSchema = z.array(z.uuid()).catch([])
+
 export type CardSeal = z.infer<typeof cardSealSchema>

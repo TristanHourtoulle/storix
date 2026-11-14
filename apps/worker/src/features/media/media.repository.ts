@@ -16,6 +16,7 @@ import {
 } from '@storix/db'
 import {
   cropRectSchema,
+  storedSeriesIdsSchema,
   taggedUserIdsSchema,
   type CardTier,
   type CropRect,
@@ -34,6 +35,7 @@ export interface UploadForProcessing {
   status: UploadStatus
   title: string | null
   taggedUserIds: string[]
+  seriesIds: string[]
   clientCapturedAt: Date | null
   stageOnly: boolean
   crop: CropRect | null
@@ -114,6 +116,7 @@ export const uploadColumns = {
   status: uploads.status,
   title: uploads.title,
   taggedUserIds: uploads.taggedUserIds,
+  seriesIds: uploads.seriesIds,
   clientCapturedAt: uploads.clientCapturedAt,
   stageOnly: uploads.stageOnly,
   crop: uploads.crop,
@@ -122,10 +125,11 @@ export const uploadColumns = {
 
 interface RawUploadRow extends Omit<
   UploadForProcessing,
-  'crop' | 'hasInvalidCrop' | 'taggedUserIds'
+  'crop' | 'hasInvalidCrop' | 'taggedUserIds' | 'seriesIds'
 > {
   crop: unknown
   taggedUserIds: unknown
+  seriesIds: unknown
 }
 
 /** Parses the jsonb columns of an upload row; an unreadable crop becomes null and is flagged. */
@@ -142,6 +146,7 @@ export function toUploadForProcessing(row: RawUploadRow): UploadForProcessing {
     clientCapturedAt: row.clientCapturedAt,
     stageOnly: row.stageOnly,
     taggedUserIds: taggedUserIdsSchema.parse(row.taggedUserIds),
+    seriesIds: storedSeriesIdsSchema.parse(row.seriesIds),
     crop: crop.success ? crop.data : null,
     hasInvalidCrop: !crop.success,
     isMoment: row.isMoment,

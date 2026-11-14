@@ -1,4 +1,4 @@
-import type { DbExecutor } from '@storix/db'
+import { attachCardToSeries, filterOpenSeries, type DbExecutor } from '@storix/db'
 import { PROVISIONAL_TIER } from '@storix/shared/domain'
 import { resolveLeagueSettings, type UploadStatus } from '@storix/shared'
 import * as repository from './media.repository'
@@ -37,6 +37,12 @@ export async function insertCardForMedia(
     leagueId: upload.leagueId,
     userIds: upload.taggedUserIds,
   })
+  const seriesIds = await filterOpenSeries(tx, {
+    leagueId: upload.leagueId,
+    seriesIds: upload.seriesIds,
+    now,
+  })
+  await attachCardToSeries(tx, { cardId, seriesIds, now })
   await repository.insertAuditEntry(tx, {
     leagueId: upload.leagueId,
     actorId: upload.userId,
