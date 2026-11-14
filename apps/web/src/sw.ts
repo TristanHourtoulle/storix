@@ -9,7 +9,7 @@ import {
 } from 'serwist'
 import { API_CACHE_NAME, API_CACHE_PREFIX, MEDIA_CACHE_NAME } from './features/pwa/cache-names'
 
-interface BoosterFullPush {
+interface StorixPush {
   v: 1
   title: string
   body: string
@@ -23,8 +23,8 @@ interface TaggedNotificationOptions extends NotificationOptions {
 
 const OFFLINE_READ_PATTERN = /^\/api\/(me|leagues\/[^/]+(\/cards(\/[^/]+)?)?)$/
 const API_NETWORK_TIMEOUT_SECONDS = 3
-const LEAGUE_URL_PATTERN = /^\/l\/[0-9a-f-]{36}$/
-const PUSH_TAG_PATTERN = /^(booster-full|moment):[0-9a-f-]{36}$/
+const LEAGUE_URL_PATTERN = /^\/l\/[0-9a-f-]{36}(\/series\/[0-9a-f-]{36})?$/
+const PUSH_TAG_PATTERN = /^(booster-full|moment|event|event-end):[0-9a-f-]{36}$/
 const NOTIFICATION_ICON = '/icons/icon-192.png'
 const FALLBACK_TITLE = 'Storix'
 const FALLBACK_BODY = "Tes boosters t'attendent"
@@ -98,7 +98,7 @@ self.addEventListener('activate', (event) => {
   )
 })
 
-function isBoosterFullPush(value: unknown): value is BoosterFullPush {
+function isStorixPush(value: unknown): value is StorixPush {
   if (typeof value !== 'object' || value === null) return false
   const { v, title, body, url, tag } = value as Record<string, unknown>
   return (
@@ -121,7 +121,7 @@ function readPushPayload(event: PushEvent): unknown {
 }
 
 function showPushNotification(payload: unknown): Promise<void> {
-  if (!isBoosterFullPush(payload)) {
+  if (!isStorixPush(payload)) {
     return self.registration.showNotification(FALLBACK_TITLE, {
       body: FALLBACK_BODY,
       icon: NOTIFICATION_ICON,

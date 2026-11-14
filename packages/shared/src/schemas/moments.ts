@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { isoDateSchema } from './common'
+import { seriesIdsBodySchema } from './series-refs'
 import { cardTitleSchema, createUploadResponseSchema } from './uploads'
 
 export const momentPostViewSchema = z.object({
@@ -30,6 +31,7 @@ export const postMomentBodySchema = z
     selfieUploadId: z.uuid(),
     capturedAt: isoDateSchema.nullable(),
     title: cardTitleSchema.optional(),
+    seriesIds: seriesIdsBodySchema.optional(),
   })
   .refine((body) => body.backUploadId !== body.selfieUploadId)
 

@@ -1,4 +1,4 @@
-import type { BoosterFullPushPayload } from '@storix/shared'
+import type { PushPayload } from '@storix/shared'
 
 export type PushSendResult = 'sent' | 'gone' | 'refused' | 'failed'
 
@@ -9,7 +9,7 @@ export interface PushTarget {
 }
 
 export interface PushSender {
-  send(target: PushTarget, payload: BoosterFullPushPayload): Promise<PushSendResult>
+  send(target: PushTarget, payload: PushPayload): Promise<PushSendResult>
 }
 
 export interface VapidConfig {

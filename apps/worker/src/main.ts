@@ -42,6 +42,7 @@ import { registerMediaSweepJob } from './jobs/media-sweep.job'
 import { registerLeagueGoalsJobs } from './jobs/league-goals.job'
 import { registerSeriesJobs } from './jobs/series.job'
 import { createSeriesService } from './features/series/series.service'
+import { createSeriesPushService } from './features/series/series-push.service'
 import { registerMissionsSettleJob } from './jobs/missions-settle.job'
 import { registerRarityNightlyJob } from './jobs/rarity-nightly.job'
 import { createRarityQueue } from './jobs/rarity-queue'
@@ -188,10 +189,15 @@ async function start(): Promise<void> {
     createMissionsSettleService({ db: database.db, clock, logger }),
   )
   await registerLeagueGoalsJobs(boss, createLeagueGoalsService({ db: database.db, clock, logger }))
-  const series = createSeriesService({ db: database.db, clock, logger })
+  const sender = vapid ? createPushSender(vapid, logger) : null
+  const series = createSeriesService({
+    db: database.db,
+    clock,
+    logger,
+    pushes: createSeriesPushService({ db: database.db, sender, clock, logger }),
+  })
   await registerSeriesJobs(boss, series)
   await boss.send(SERIES_ROLLOVER_JOB, null)
-  const sender = vapid ? createPushSender(vapid, logger) : null
   if (sender) {
     const boosterFull = createBoosterFullService({ db: database.db, sender, clock, logger })
     await registerBoosterFullScanJob(boss, boosterFull)

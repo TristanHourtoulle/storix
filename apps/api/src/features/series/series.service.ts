@@ -1,6 +1,7 @@
 import type { Database } from '@storix/db'
 import {
   acceptsCards,
+  acceptsPhoto,
   daysLeft,
   hasRoleAtLeast,
   isRewardEligible,
@@ -236,7 +237,10 @@ export function createSeriesService({ db, signer, clock }: SeriesServiceDeps): S
       if (!acceptsCards(series, now)) throw new AppError('SERIES_CLOSED', 409, 'Series closed')
       const card = await findCardForSeries(db, { leagueId: m.leagueId, cardId })
       if (card === null) throw notFound('Card not found')
-      const isInWindow = card.createdAt >= series.startsAt && card.createdAt < series.endsAt
+      const isInWindow =
+        series.kind === 'event'
+          ? acceptsPhoto(series, { capturedAt: card.capturedAt, sentAt: now })
+          : card.createdAt >= series.startsAt && card.createdAt < series.endsAt
       if (card.authorId !== m.userId || card.status !== 'active' || !isInWindow) {
         throw new AppError('SERIES_CARD_NOT_ALLOWED', 403, 'This card cannot join the series')
       }

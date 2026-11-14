@@ -157,6 +157,11 @@ export async function closeSeries(
   input: { series: SeriesRecord; now: Date },
 ): Promise<boolean> {
   const { series, now } = input
+  await db
+    .select({ id: cardSeries.id })
+    .from(cardSeries)
+    .where(eq(cardSeries.id, series.id))
+    .for('update')
   const [closed] = await db
     .update(cardSeries)
     .set({ closedAt: now })

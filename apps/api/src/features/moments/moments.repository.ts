@@ -1,6 +1,8 @@
 import { and, count, eq, gte, inArray } from 'drizzle-orm'
 import { momentPosts, uploads, type DbExecutor } from '@storix/db'
 
+export { filterSeriesForPhoto } from '@storix/db'
+
 export type MomentPostRow = typeof momentPosts.$inferSelect
 export type MomentUploadRow = typeof uploads.$inferSelect
 
@@ -108,6 +110,7 @@ export async function completeMomentUploads(
     selfieUploadId: string
     title: string
     capturedAt: Date | null
+    seriesIds: readonly string[]
     now: Date
   },
 ): Promise<void> {
@@ -117,6 +120,7 @@ export async function completeMomentUploads(
       status: 'uploaded',
       title: input.title,
       clientCapturedAt: input.capturedAt,
+      seriesIds: [...input.seriesIds],
       stageOnly: false,
       completedAt: input.now,
     })

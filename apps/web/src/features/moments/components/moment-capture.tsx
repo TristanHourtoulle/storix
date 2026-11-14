@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { userMessage } from '@/features/errors/user-message'
+import { SeriesToggles } from '@/features/series/components/series-toggles'
+import { isSeriesOpen } from '@/features/series/series-copy'
+import { eventsQueryOptions, themeCardQueryOptions } from '@/features/series/series.queries'
 import { CAMERA_COPY } from '@/features/uploads/camera/camera-copy'
 import type { CameraStream } from '@/features/uploads/camera/camera-types'
 import { countdownLabel, momentAutoTitle } from '../moment-copy'
@@ -88,6 +91,17 @@ export function MomentCapture({ leagueId }: MomentCaptureProps) {
   const capture = useMomentCapture(true, post.reserve)
   const { data: moment } = useQuery(currentMomentQueryOptions(leagueId))
   const [title, setTitle] = useState('')
+  const themeSeries = useQuery(themeCardQueryOptions(leagueId)).data?.series
+  const liveEvents = useQuery(eventsQueryOptions(leagueId)).data?.live
+  const openSeries = useMemo(
+    () => [
+      ...(themeSeries !== undefined && isSeriesOpen(themeSeries) ? [themeSeries] : []),
+      ...(liveEvents ?? []),
+    ],
+    [themeSeries, liveEvents],
+  )
+  const [pickedSeriesIds, setPickedSeriesIds] = useState<readonly string[] | null>(null)
+  const seriesIds = pickedSeriesIds ?? (liveEvents ?? []).map((event) => event.id)
   const { step, camera, back, front, countdown } = capture
 
   if (step === 'preview' && back !== null && front !== null) {
@@ -103,8 +117,24 @@ export function MomentCapture({ leagueId }: MomentCaptureProps) {
         result={post.data ?? null}
         isPublishing={post.isPending}
         error={post.error === null ? null : userMessage(post.error)}
+        series={
+          <SeriesToggles
+            seriesIds={seriesIds}
+            capturedAt={capturedAt.toISOString()}
+            openSeries={openSeries}
+            onToggle={(seriesId) =>
+              setPickedSeriesIds(
+                seriesIds.includes(seriesId)
+                  ? seriesIds.filter((id) => id !== seriesId)
+                  : [...seriesIds, seriesId],
+              )
+            }
+          />
+        }
         onTitleChange={setTitle}
-        onPublish={() => post.mutate({ back: back.file, front: front.file, title })}
+        onPublish={() =>
+          post.mutate({ back: back.file, front: front.file, title, seriesIds: [...seriesIds] })
+        }
         onRetake={() => {
           post.reset()
           capture.retake()

@@ -1,10 +1,5 @@
 import type { Database } from '@storix/db'
-import {
-  boosterFullPushPayloadSchema,
-  isMomentWindowOpen,
-  momentSlot,
-  parisDayKey,
-} from '@storix/shared'
+import { pushPayloadSchema, isMomentWindowOpen, momentSlot, parisDayKey } from '@storix/shared'
 import type { WorkerLogger } from '../../lib/logger'
 import type { PushSender } from '../../lib/push-sender.types'
 import * as repository from './moments.repository'
@@ -37,7 +32,7 @@ export function createMomentsTickService(deps: Deps): MomentsTickService {
   const { db, sender, clock, logger } = deps
 
   async function notify(league: repository.MomentLeague): Promise<number> {
-    const payload = boosterFullPushPayloadSchema.parse({
+    const payload = pushPayloadSchema.parse({
       v: 1,
       title: NOTIFICATION_TITLE,
       body: momentNotificationBody(league.name),

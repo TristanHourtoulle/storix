@@ -56,6 +56,11 @@ const MESSAGES: Record<ErrorCode, string> = {
   SERIES_CLOSED: 'Cette série est terminée.',
   SERIES_CARD_NOT_ALLOWED: 'Seules tes photos publiées pendant la série peuvent y entrer.',
   THEME_ALREADY_STARTED: 'Ce thème a déjà commencé.',
+  EVENT_LIMIT_REACHED: 'Déjà 3 événements prévus dans la ligue. Attends que l’un d’eux se termine.',
+  EVENT_WINDOW_INVALID: 'Choisis un créneau de 30 min à 48 h, qui commence dans les 30 jours.',
+  EVENT_ALREADY_STARTED: 'Cet événement a déjà commencé.',
+  EVENT_NOT_LIVE: 'Cet événement n’est plus en cours.',
+  EVENT_COOLDOWN: 'Tu as déjà programmé 3 événements en 24 h. Réessaie un peu plus tard.',
   INTERNAL_ERROR: 'Une erreur est survenue.',
 }
 

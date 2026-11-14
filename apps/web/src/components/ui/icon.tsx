@@ -77,6 +77,11 @@ export type IconName =
   | 'bulb'
   | 'basket'
   | 'monitor'
+  | 'party'
+  | 'dinner'
+  | 'mountain'
+  | 'tree'
+  | 'glass'
 
 const PATHS: Record<IconName, string> = {
   home: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -167,6 +172,12 @@ const PATHS: Record<IconName, string> = {
   bulb: 'M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z',
   basket: 'M3 10h18l-2 10H5zM7 10l4-6M17 10l-4-6M9 14v3M15 14v3M12 14v3',
   monitor: 'M3 4h18v12H3zM8 20h8M12 16v4',
+  party:
+    'M4 20l4-11 7 7zM8 9l7 7M14 4v2M19 9h2M17 6l1.5-1.5M12 8c1-1.5 1-3 0-4M16 12c1.5-1 3-1 4 0',
+  dinner: 'M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 21V3c-2 1-3 4-3 8h3',
+  mountain: 'M3 20l6-11 4 6 2-3 6 8zM9 9l2 3.5',
+  tree: 'M12 3l-5 7h3l-4 6h12l-4-6h3zM12 16v5M9 21h6',
+  glass: 'M7 3h10l-1 7a4 4 0 0 1-8 0zM12 14v6M8 21h8M7.5 7h9',
 }
 
 const STROKE_WIDTHS: Partial<Record<IconName, number>> = { more: 3 }

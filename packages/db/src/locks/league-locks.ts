@@ -7,7 +7,7 @@
 import { sql } from 'drizzle-orm'
 import type { DbExecutor } from '../client'
 
-function leagueLockKey(scope: 'economy' | 'moderation' | 'rarity', leagueId: string) {
+function leagueLockKey(scope: 'economy' | 'moderation' | 'rarity' | 'series', leagueId: string) {
   return sql`hashtext(${scope + ':' + leagueId})::bigint`
 }
 
@@ -29,4 +29,9 @@ export async function lockLeagueModeration(db: DbExecutor, leagueId: string): Pr
 /** Serializes rarity writes of one league: recomputes, pins and bounds. */
 export async function lockLeagueRarity(db: DbExecutor, leagueId: string): Promise<void> {
   await db.execute(sql`select pg_advisory_xact_lock(${leagueLockKey('rarity', leagueId)})`)
+}
+
+/** Serializes event planning of one league, so the active event cap holds under concurrent creations. */
+export async function lockLeagueSeries(db: DbExecutor, leagueId: string): Promise<void> {
+  await db.execute(sql`select pg_advisory_xact_lock(${leagueLockKey('series', leagueId)})`)
 }

@@ -12,6 +12,7 @@ interface MomentSubmission {
   back: File
   front: File
   title: string
+  seriesIds: readonly string[]
 }
 
 /**
@@ -32,7 +33,7 @@ export function usePostMoment(leagueId: string) {
   }, [leagueId])
 
   const mutation = useMutation<PostMomentResponse, Error, MomentSubmission>({
-    mutationFn: async ({ back, front, title }) => {
+    mutationFn: async ({ back, front, title, seriesIds }) => {
       const uploads = await (reservationRef.current ?? createMomentUploads(leagueId))
       await Promise.all([postToBucket(uploads.back, back), postToBucket(uploads.selfie, front)])
       const trimmedTitle = title.trim()
@@ -41,6 +42,7 @@ export function usePostMoment(leagueId: string) {
         selfieUploadId: uploads.selfie.uploadId,
         capturedAt: viewfinderCaptureDate(back),
         ...(trimmedTitle === '' ? {} : { title: trimmedTitle }),
+        ...(seriesIds.length === 0 ? {} : { seriesIds: [...seriesIds] }),
       })
     },
     onError: () => {
@@ -51,6 +53,7 @@ export function usePostMoment(leagueId: string) {
       void queryClient.invalidateQueries({ queryKey: walletQueryOptions(leagueId).queryKey })
       void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'cards'] })
       refreshMissions(queryClient, leagueId)
+      void queryClient.invalidateQueries({ queryKey: ['leagues', leagueId, 'series'] })
     },
   })
 
