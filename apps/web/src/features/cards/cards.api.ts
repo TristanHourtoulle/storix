@@ -42,6 +42,7 @@ export function fetchCardPage(
     upgradable?: boolean
     moment?: boolean
     taggedUserId?: string | null
+    seriesId?: string | null
     revealOwn?: boolean
     sort: CollectionSort
     cursor: string | undefined
@@ -54,6 +55,7 @@ export function fetchCardPage(
   if (params.upgradable) query.set('upgradable', 'true')
   if (params.moment) query.set('moment', 'true')
   if (params.taggedUserId) query.set('taggedUserId', params.taggedUserId)
+  if (params.seriesId) query.set('seriesId', params.seriesId)
   if (params.revealOwn) query.set('revealOwn', 'true')
   if (params.cursor !== undefined) query.set('cursor', params.cursor)
   if (params.limit !== undefined) query.set('limit', String(params.limit))

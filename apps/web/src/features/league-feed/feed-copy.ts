@@ -106,6 +106,8 @@ export function rowIcon(row: FeedRow): IconName {
     case 'league_goal_bonus':
     case 'league_goal_missed':
       return 'target'
+    case 'series_recap':
+      return 'collection'
   }
 }
 

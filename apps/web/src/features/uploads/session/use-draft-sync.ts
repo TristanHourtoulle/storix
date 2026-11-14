@@ -23,6 +23,7 @@ function currentValues(fields: DraftFields, keys: readonly string[]): EditUpload
   return {
     ...(keys.includes('title') ? { title: fields.title } : {}),
     ...(keys.includes('taggedUserIds') ? { taggedUserIds: [...fields.taggedUserIds] } : {}),
+    ...(keys.includes('seriesIds') ? { seriesIds: [...fields.seriesIds] } : {}),
     ...(keys.includes('crop') ? { crop: fields.crop } : {}),
   }
 }

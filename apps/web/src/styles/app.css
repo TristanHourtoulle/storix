@@ -26,6 +26,7 @@
 @import './shop.css';
 @import './shop-shelves.css';
 @import './standings.css';
+@import './series.css';
 
 @theme {
   --spacing-nav: calc(68px + env(safe-area-inset-bottom));

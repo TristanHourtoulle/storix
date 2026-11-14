@@ -34,6 +34,7 @@ export function CollectionCardView({
         tier={tier ?? card.tier}
         isProvisional={card.isProvisional}
         moment={card.moment}
+        seals={card.seals}
         band={
           <div className="card-band">
             <span className="card-name">{card.title}</span>
@@ -66,6 +67,7 @@ export function CollectionCardView({
       isPromoted={tier === undefined && card.isPromoted}
       stackCount={card.stackCount}
       moment={card.moment}
+      seals={card.seals}
     >
       <CardImage
         image={card.image}

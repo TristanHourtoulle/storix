@@ -3,6 +3,28 @@ import type { ReleaseNote } from '../schemas/whats-new'
 /** Every feature release shown in the "Nouveautés" booster, newest first. */
 export const RELEASE_NOTES: readonly ReleaseNote[] = [
   {
+    id: '2026-11-14-d',
+    publishedAt: '2026-11-14T20:00:00+01:00',
+    cards: [
+      {
+        key: 'theme-semaine',
+        title: 'Le thème de la semaine',
+        body: 'Chaque lundi, un nouveau thème pour toute la ligue. Ajoute autant de photos que tu veux depuis l’accueil, ou garde-les hors thème : c’est toi qui choisis.',
+        tier: 'rare',
+        illustration: 'camera',
+        tryTarget: 'home',
+      },
+      {
+        key: 'series',
+        title: 'Des séries à compléter',
+        body: 'Les photos du thème forment une série dans ta collection, avec un sceau sur chaque carte. Complète une série close d’au moins 5 cartes : emblème et 150 paillettes.',
+        tier: 'epic',
+        illustration: 'stacks',
+        tryTarget: 'home',
+      },
+    ],
+  },
+  {
     id: '2026-11-14-c',
     publishedAt: '2026-11-14T19:00:00+01:00',
     cards: [

@@ -47,6 +47,7 @@ export function PulledFace({
       isProvisional={false}
       isFoil={pull.variant === 'foil'}
       moment={card.moment}
+      seals={card.seals}
     >
       <CardImage
         image={card.image}
