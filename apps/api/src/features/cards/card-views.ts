@@ -370,6 +370,7 @@ export function toCardDetail(row: CardViewerRow, ctx: CardDetailContext): Viewer
     return {
       ...toLockedSummary(row),
       createdAt,
+      seals: toCardSeals(row.seals),
       discoveredBy,
       canWithdraw,
     }

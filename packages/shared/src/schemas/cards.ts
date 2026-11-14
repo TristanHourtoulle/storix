@@ -214,6 +214,7 @@ export const ownedCardDetailSchema = ownedCardSummarySchema.extend({
 
 export const lockedCardDetailSchema = lockedCardSummarySchema.extend({
   createdAt: isoDateSchema,
+  seals: cardSealsSchema,
   discoveredBy: cardPersonSchema.nullable(),
   canWithdraw: z.boolean(),
 })

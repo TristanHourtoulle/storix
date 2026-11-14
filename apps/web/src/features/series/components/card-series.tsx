@@ -1,19 +1,26 @@
 import type { CSSProperties } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import type { OwnedCardDetail, SeriesSummary } from '@storix/shared'
+import type { CardAuthor, CardSeal, SeriesSummary } from '@storix/shared'
 import { isSeriesOpen } from '../series-copy'
 import { themeCardQueryOptions } from '../series.queries'
 import { useAddCardToSeries } from '../use-series-mutations'
 import { Icon } from '@/components/ui/icon'
 
+interface SeriesCard {
+  id: string
+  author: CardAuthor
+  createdAt: string
+  seals: readonly CardSeal[]
+}
+
 interface CardSeriesProps {
   leagueId: string
-  card: OwnedCardDetail
+  card: SeriesCard
   meId: string
 }
 
-function canJoin(card: OwnedCardDetail, meId: string, theme: SeriesSummary | undefined): boolean {
+function canJoin(card: SeriesCard, meId: string, theme: SeriesSummary | undefined): boolean {
   if (theme === undefined || !isSeriesOpen(theme) || card.author.userId !== meId) return false
   if (card.seals.some((seal) => seal.seriesId === theme.id)) return false
   const createdAt = new Date(card.createdAt).getTime()
