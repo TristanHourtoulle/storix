@@ -11,6 +11,7 @@ const WORN_STYLE_SEGMENTS: ReadonlySet<unknown> = new Set([
   'booster-history',
   'feed',
   'goal',
+  'standings',
 ])
 
 /** League queries whose payload carries what members wear (Moment stamp, name, banner, frame). */

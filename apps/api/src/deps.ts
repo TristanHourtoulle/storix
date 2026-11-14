@@ -20,6 +20,10 @@ import {
   createLeagueGoalService,
   type LeagueGoalService,
 } from './features/league-goal/league-goal.service'
+import {
+  createStandingsService,
+  type StandingsService,
+} from './features/standings/standings.service'
 import { createBoostersService, type BoostersService } from './features/boosters/boosters.service'
 import { createCardsService, type CardsService } from './features/cards/cards.service'
 import { createCopiesService, type CopiesService } from './features/copies/copies.service'
@@ -116,6 +120,7 @@ export interface Services {
   missions: MissionsService
   moments: MomentsService
   leagueGoal: LeagueGoalService
+  standings: StandingsService
   leagues: LeaguesService
   leagueSettings: LeagueSettingsService
   me: MeService
@@ -205,6 +210,11 @@ export function buildServices(deps: AppDeps, logger: ErrorLogger): Services {
       clock: deps.clock,
     }),
     leagueGoal: createLeagueGoalService({
+      db: deps.db,
+      signer: deps.mediaSigner,
+      clock: deps.clock,
+    }),
+    standings: createStandingsService({
       db: deps.db,
       signer: deps.mediaSigner,
       clock: deps.clock,

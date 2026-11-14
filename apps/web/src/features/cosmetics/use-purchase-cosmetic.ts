@@ -13,6 +13,7 @@ import { ApiError } from '@/lib/http'
 import { logger } from '@/lib/logger'
 import { purchaseCosmetic } from './cosmetics.api'
 import { myCosmeticsQueryKey } from './cosmetics.queries'
+import { standingsQueryKey } from '@/features/standings/standings.queries'
 
 interface PurchaseCosmetic {
   purchase: (body: PurchaseCosmeticBody, onDone: (itemId: CosmeticItemId) => void) => void
@@ -30,6 +31,7 @@ export function usePurchaseCosmetic(leagueId: string): PurchaseCosmetic {
     void Promise.all([
       queryClient.invalidateQueries({ queryKey: walletKey }),
       queryClient.invalidateQueries({ queryKey: myCosmeticsQueryKey }),
+      queryClient.invalidateQueries({ queryKey: standingsQueryKey(leagueId) }),
     ]).catch((error: unknown) => logger.warn('Shop cache refresh failed', { error }))
   }
 

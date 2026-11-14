@@ -25,6 +25,7 @@
 @import './cosmetics-themes.css';
 @import './shop.css';
 @import './shop-shelves.css';
+@import './standings.css';
 
 @theme {
   --spacing-nav: calc(68px + env(safe-area-inset-bottom));
