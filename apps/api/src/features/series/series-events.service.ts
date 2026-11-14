@@ -1,15 +1,4 @@
-import {
-  countActiveEvents,
-  deleteUpcomingEvent,
-  endEventNow,
-  findEvent,
-  insertEvent,
-  lockLeagueSeries,
-  updateUpcomingEvent,
-  type Database,
-  type EventEdit,
-  type SeriesRecord,
-} from '@storix/db'
+import type { Database } from '@storix/db'
 import {
   EVENT_MAX_ACTIVE,
   eventGraceEndsAt,
@@ -27,6 +16,17 @@ import { AppError, forbidden, notFound } from '../../lib/errors'
 import { runInTransaction } from '../../lib/transaction'
 import type { Membership } from '../leagues/leagues.service'
 import { listGoalPeople } from '../league-goal/league-goal.repository'
+import {
+  countActiveEvents,
+  deleteUpcomingEvent,
+  endEventNow,
+  findEvent,
+  insertEvent,
+  lockLeagueSeries,
+  updateUpcomingEvent,
+  type EventEdit,
+  type SeriesRecord,
+} from './series-events.repository'
 import {
   listSeriesContributions,
   listSeriesWithCounts,

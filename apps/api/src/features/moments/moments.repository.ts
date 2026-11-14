@@ -1,6 +1,8 @@
 import { and, count, eq, gte, inArray } from 'drizzle-orm'
 import { momentPosts, uploads, type DbExecutor } from '@storix/db'
 
+export { filterSeriesForPhoto } from '@storix/db'
+
 export type MomentPostRow = typeof momentPosts.$inferSelect
 export type MomentUploadRow = typeof uploads.$inferSelect
 

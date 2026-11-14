@@ -1,17 +1,14 @@
+import type { Database, SeriesRecord } from '@storix/db'
+import { boosterFullPushPayloadSchema } from '@storix/shared'
+import type { WorkerLogger } from '../../lib/logger'
+import type { PushSender, PushTarget } from '../../lib/push-sender.types'
 import {
   claimEventEnd,
   claimEventStarts,
-  leagueMembers,
+  deletePushSubscription,
+  listEventPushTargets,
   listSeriesContributors,
-  pushSubscriptions,
-  type Database,
-  type SeriesRecord,
-} from '@storix/db'
-import { boosterFullPushPayloadSchema } from '@storix/shared'
-import { and, eq, inArray } from 'drizzle-orm'
-import type { WorkerLogger } from '../../lib/logger'
-import type { PushSender, PushTarget } from '../../lib/push-sender.types'
-import { deletePushSubscription } from '../push/booster-full.repository'
+} from './series-push.repository'
 
 const NOTIFICATION_TITLE = 'Storix'
 const PARIS_TIME = new Intl.DateTimeFormat('fr-FR', {
@@ -44,25 +41,6 @@ export function eventEndBody(title: string, cardCount: number): string {
   return `${title}, c'est fini : ${cards} à trouver dans les boosters.`
 }
 
-function targetsOf(db: Database, input: { leagueId: string; userIds?: readonly string[] }) {
-  return db
-    .select({
-      endpoint: pushSubscriptions.endpoint,
-      p256dh: pushSubscriptions.p256dh,
-      auth: pushSubscriptions.auth,
-    })
-    .from(pushSubscriptions)
-    .innerJoin(leagueMembers, eq(leagueMembers.userId, pushSubscriptions.userId))
-    .where(
-      and(
-        eq(leagueMembers.leagueId, input.leagueId),
-        input.userIds === undefined
-          ? undefined
-          : inArray(pushSubscriptions.userId, [...input.userIds]),
-      ),
-    )
-}
-
 /** Creates the event pushes: one at the start for the whole league, one at the close for the contributors. */
 export function createSeriesPushService({ db, sender, clock, logger }: Deps): SeriesPushService {
   async function sendAll(
@@ -93,7 +71,7 @@ export function createSeriesPushService({ db, sender, clock, logger }: Deps): Se
       for (const series of started) {
         if (series.endsAt <= now) continue
         try {
-          const targets = await targetsOf(db, { leagueId: series.leagueId })
+          const targets = await listEventPushTargets(db, { leagueId: series.leagueId })
           const sent = await sendAll(targets, {
             body: eventStartBody(series),
             url: `/l/${series.leagueId}`,
@@ -115,7 +93,7 @@ export function createSeriesPushService({ db, sender, clock, logger }: Deps): Se
       if (cardCount === 0) return
       if (!(await claimEventEnd(db, { seriesId: series.id, now: clock() }))) return
       const userIds = contributors.map((row) => row.userId)
-      const targets = await targetsOf(db, { leagueId: series.leagueId, userIds })
+      const targets = await listEventPushTargets(db, { leagueId: series.leagueId, userIds })
       const sent = await sendAll(targets, {
         body: eventEndBody(series.title, cardCount),
         url: `/l/${series.leagueId}/series/${series.id}`,

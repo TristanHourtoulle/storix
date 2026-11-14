@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { filterSeriesForPhoto, type Database } from '@storix/db'
+import type { Database } from '@storix/db'
 import {
   isUploadReservationExpired,
   momentLateMinutes,
@@ -35,6 +35,7 @@ import {
   lockMemberUpload,
   type MomentPostRow,
   type MomentUploadRow,
+  filterSeriesForPhoto,
 } from './moments.repository'
 
 const UPLOAD_CACHE_CONTROL = 'no-store'
