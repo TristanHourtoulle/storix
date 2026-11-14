@@ -10,6 +10,7 @@ export const SLOT_ROW_HINT: Readonly<Record<CosmeticSlot, string>> = {
   banner: 'Vu par la ligue',
   nameStyle: 'Vu par la ligue',
   momentStamp: 'Sur tes Moments',
+  openingTear: 'À chaque ouverture',
 }
 
 export const ORIGINAL_ROW_HINT = "Le style d'origine"
@@ -24,6 +25,7 @@ export const SLOT_TITLE: Readonly<Record<CosmeticSlot, string>> = {
   banner: 'Bannière de classeur',
   nameStyle: 'Reflet du pseudo',
   momentStamp: 'Tampon du Moment',
+  openingTear: "Déchirure d'ouverture",
 }
 
 const PURCHASE_NOUN: Readonly<Record<CosmeticSlot, string>> = {
@@ -35,6 +37,7 @@ const PURCHASE_NOUN: Readonly<Record<CosmeticSlot, string>> = {
   banner: 'la bannière',
   nameStyle: 'le reflet',
   momentStamp: 'le tampon',
+  openingTear: 'la déchirure',
 }
 
 /** Question title of the purchase sheet, e.g. "Acheter les raretés Néon ?". */
@@ -46,12 +49,17 @@ const THEME_ACCENT: Readonly<Record<CosmeticItemId, string>> = {
   'booster-neon': '#ff8be8',
   'booster-or-noir': '#e8cf8a',
   'booster-aquarelle': '#f9a8d4',
+  'booster-cosmos': '#a5b4fc',
+  'booster-vitrail': '#fde68a',
   'back-neon': '#ff8be8',
   'back-or-noir': '#e8cf8a',
   'back-aquarelle': '#f9a8d4',
+  'back-cosmos': '#a5b4fc',
+  'back-vitrail': '#fde68a',
   'rarity-neon': '#ff8be8',
   'rarity-gemmes': '#a5f3fc',
   'rarity-filet': '#d4d4e0',
+  'rarity-vitrail': '#fde68a',
   'frame-couronne': '#e8cf8a',
   'frame-arc-en-ciel': '#fbbf24',
   'frame-neon': '#ff8be8',
@@ -67,6 +75,9 @@ const THEME_ACCENT: Readonly<Record<CosmeticItemId, string>> = {
   'stamp-ticket': '#fef3c7',
   'stamp-polaroid': '#f9a8d4',
   'stamp-encre': '#fda4af',
+  'tear-braises': '#fb923c',
+  'tear-verre': '#a5f3fc',
+  'tear-ruban': '#e8cf8a',
 }
 
 const ORIGINAL_ACCENT = '#22d3ee'

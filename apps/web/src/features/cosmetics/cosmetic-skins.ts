@@ -7,24 +7,31 @@ export type BannerKind = 'constellation' | 'pellicule' | 'aurore'
 
 export type MomentStampKind = 'ticket' | 'polaroid' | 'encre'
 
+export type TearKind = 'braises' | 'verre' | 'ruban'
+
 type ItemId<Prefix extends string> = Extract<CosmeticItemId, `${Prefix}-${string}`>
 
 const PACK_SKIN: Readonly<Record<ItemId<'booster'>, string>> = {
   'booster-neon': 'skin-neon',
   'booster-or-noir': 'skin-or-noir',
   'booster-aquarelle': 'skin-aquarelle',
+  'booster-cosmos': 'skin-cosmos',
+  'booster-vitrail': 'skin-vitrail',
 }
 
 const CARD_BACK: Readonly<Record<ItemId<'back'>, string>> = {
   'back-neon': 'back-neon',
   'back-or-noir': 'back-or-noir',
   'back-aquarelle': 'back-aquarelle',
+  'back-cosmos': 'back-cosmos',
+  'back-vitrail': 'back-vitrail',
 }
 
 const RARITY_SET: Readonly<Record<ItemId<'rarity'>, Exclude<RaritySetKey, 'default'>>> = {
   'rarity-neon': 'neon',
   'rarity-gemmes': 'gemmes',
   'rarity-filet': 'filet',
+  'rarity-vitrail': 'vitrail',
 }
 
 const AVATAR_FRAME: Readonly<Record<ItemId<'frame'>, string>> = {
@@ -55,6 +62,12 @@ const MOMENT_STAMP: Readonly<Record<ItemId<'stamp'>, MomentStampKind>> = {
   'stamp-ticket': 'ticket',
   'stamp-polaroid': 'polaroid',
   'stamp-encre': 'encre',
+}
+
+const OPENING_TEAR: Readonly<Record<ItemId<'tear'>, TearKind>> = {
+  'tear-braises': 'braises',
+  'tear-verre': 'verre',
+  'tear-ruban': 'ruban',
 }
 
 function lookup<K extends string, V>(map: Readonly<Record<K, V>>, id: string | null): V | null {
@@ -111,4 +124,9 @@ export function nameStyleClass(id: CosmeticItemId | null): string | null {
 /** Kind of Moment stamp, or null for the original Moment badge. */
 export function momentStampKind(id: CosmeticItemId | null): MomentStampKind | null {
   return lookup(MOMENT_STAMP, id)
+}
+
+/** Kind of opening tear, or null for the original crack and shard burst. */
+export function tearKind(id: CosmeticItemId | null): TearKind | null {
+  return lookup(OPENING_TEAR, id)
 }

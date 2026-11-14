@@ -12,6 +12,7 @@ export const SLOT_ITEM_PREFIX: Readonly<Record<CosmeticSlot, string>> = {
   banner: 'Bannière',
   nameStyle: 'Pseudo',
   momentStamp: 'Tampon',
+  openingTear: 'Déchirure',
 }
 
 /** Full name of an item with what it is, e.g. "Raretés Néon" or "Cadre Couronne d'or". */

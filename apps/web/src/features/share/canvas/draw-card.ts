@@ -84,6 +84,7 @@ interface CardRect {
 }
 
 const FRAME_GAP = '#0a0a10'
+const LEAD = '#111111'
 
 function strokeRect(
   ctx: CanvasRenderingContext2D,
@@ -162,6 +163,11 @@ function drawFrame(
       strokeRect(ctx, rect, unit * 0.5, unit * 0.5, ringStyle)
       strokeRect(ctx, rect, -unit * 1.5, unit * 1.5, FRAME_GAP)
       strokeRect(ctx, rect, -unit * 2.5, unit * 0.5, withAlpha(ring, 0.7))
+      break
+    case 'vitrail':
+      strokeRect(ctx, rect, 0, unit * 0.75, ringStyle)
+      strokeRect(ctx, rect, unit * 2, unit * 2.5, LEAD)
+      strokeRect(ctx, rect, unit * 3.6, unit * 0.75, withAlpha(ring, 0.8))
       break
   }
   ctx.restore()
