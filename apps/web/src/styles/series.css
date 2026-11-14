@@ -73,12 +73,34 @@
     width: 19px;
     height: 19px;
   }
+  .card.moment .card-seals {
+    top: auto;
+    bottom: 34%;
+    left: auto;
+    right: 6px;
+  }
+  .card.lg.moment .card-seals,
+  .card.xl.moment .card-seals,
+  .card.showcase.moment .card-seals {
+    top: auto;
+    left: auto;
+    right: 10px;
+  }
+  .card.moment.has-seal .card-stack-badge {
+    top: 6px;
+  }
   .card.has-seal .card-stack-badge {
     top: 30px;
   }
   .card.lg.has-seal .card-stack-badge,
-  .card.xl.has-seal .card-stack-badge {
+  .card.xl.has-seal .card-stack-badge,
+  .card.showcase.has-seal .card-stack-badge {
     top: 50px;
+  }
+  .card.lg.moment.has-seal .card-stack-badge,
+  .card.xl.moment.has-seal .card-stack-badge,
+  .card.showcase.moment.has-seal .card-stack-badge {
+    top: 10px;
   }
   .hmc-seal {
     position: absolute;
@@ -130,8 +152,9 @@
   .stile {
     flex: none;
     display: grid;
+    align-content: start;
     gap: 6px;
-    width: 128px;
+    width: 140px;
     padding: 10px;
     border-radius: 16px;
     font-size: 13px;
@@ -169,6 +192,9 @@
     color: var(--color-muted);
   }
   .stile-live {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     font-size: 12px;
     font-weight: 600;
     color: var(--color-tier-uncommon);

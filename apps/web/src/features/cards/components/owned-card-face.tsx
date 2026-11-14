@@ -36,6 +36,7 @@ export function OwnedCardFace({
       isPromoted={isPromoted ?? card.isPromoted}
       stackCount={hasStack ? card.stackCount : 0}
       moment={card.moment}
+      seals={card.seals}
       className={className}
     >
       <CardImage

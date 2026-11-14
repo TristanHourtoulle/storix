@@ -9,7 +9,7 @@ interface SeriesTileProps {
   series: SeriesSummary
 }
 
-/** A shelf tile: icon, name, then « ● En cours · N cartes » while open or « owned / total » with a bar once closed. */
+/** A shelf tile: icon, name, then « N cartes · ● En cours » while open or « owned / total » with a bar once closed. */
 export function SeriesTile({ leagueId, series }: SeriesTileProps) {
   const isOpen = isSeriesOpen(series)
   const isComplete = series.cardCount > 0 && series.ownedCount === series.cardCount
@@ -25,7 +25,10 @@ export function SeriesTile({ leagueId, series }: SeriesTileProps) {
       </span>
       <b>{series.title}</b>
       {isOpen ? (
-        <span className="stile-live">● En cours · {cardsLabel(series.cardCount)}</span>
+        <>
+          <span className="stile-meta">{cardsLabel(series.cardCount)}</span>
+          <span className="stile-live">● En cours</span>
+        </>
       ) : (
         <>
           <span className="stile-meta">
