@@ -37,6 +37,7 @@ export const boosterOpenings = pgTable(
     dustGained: integer('dust_gained').notNull().default(0),
     isPremium: boolean('is_premium').notNull().default(false),
     source: text('source').$type<BoosterSource>().notNull().default('timer'),
+    charm: text('charm'),
     openedAt: timestamp('opened_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -73,6 +74,7 @@ export const boosterPulls = pgTable(
     isFirstCopy: boolean('is_first_copy').notNull(),
     isDiscovery: boolean('is_discovery').notNull(),
     stackCount: integer('stack_count'),
+    isCharmBoosted: boolean('is_charm_boosted').notNull().default(false),
   },
   (t) => [
     primaryKey({ columns: [t.openingId, t.slot] }),
