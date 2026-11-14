@@ -35,11 +35,11 @@ series even when a theme comes back.
 ### Rules
 
 - A series accepts cards while `starts_at <= now < grace_ends_at` and it is not closed.
-- Collection: a « Séries » shelf at the top (layout A). A tile shows the emoji, the name and either
+- Collection: a « Séries » shelf at the top (layout A). A tile shows the icon, the name and either
   « ● En cours · N cartes » (open) or « owned / total » with a progress bar (closed, « · complète » at 100 %).
   Only series with at least one card are listed, the open theme first, then the 12 most recent closed
   series.
-- Series page: header (emoji, name, kind, dates, progress), then the series cards with the regular collection
+- Series page: header (icon, name, kind, dates, progress), then the series cards with the regular collection
   grid (owned cards and locked silhouettes « encore à trouver »). Open series say « possédées sur N pour
   l'instant · en cours, le total bouge ».
 - No emoji anywhere (user request): every series carries a line-icon key from a curated list
@@ -59,7 +59,7 @@ series even when a theme comes back.
 - An admin (or owner) can replace next week's theme with a title and an icon picked from the list (or a suggestion from
   the list), flagged `is_override`. The override is the next week's `card_series` row, created ahead of time; the rotation fills any
   week without a row.
-- Home: the theme card (A) between the Moment and the booster: emoji, « Thème de la semaine », name, days
+- Home: the theme card (A) between the Moment and the booster: icon, « Thème de la semaine », name, days
   left (« J-3 », « Dernier jour »), the avatars of the members who posted, « N photos · M membres », and two
   buttons: « ＋ Ajouter » (opens the camera with the theme toggle on) and « Voir la série ».
 - Publish: a « Séries » field under the tags with a toggle row « Thème · Vert ». It is on only when the
