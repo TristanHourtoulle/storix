@@ -54,6 +54,12 @@
     --frame-lead: 4px;
     box-shadow: 0 0 0 1.5px var(--tc);
   }
+  .card.rs-vitrail.sm {
+    --frame-lead: 2.5px;
+  }
+  .card.rs-vitrail.md {
+    --frame-lead: 3px;
+  }
   .card.rs-vitrail.lg,
   .card.rs-vitrail.xl,
   .card.rs-vitrail.showcase {
