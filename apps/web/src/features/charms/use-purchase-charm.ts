@@ -8,6 +8,7 @@ import type {
 import { userMessage } from '@/features/errors/user-message'
 import { walletQueryOptions } from '@/features/game/game.queries'
 import { playSound } from '@/features/sound/sound'
+import { standingsQueryKey } from '@/features/standings/standings.queries'
 import { ApiError } from '@/lib/http'
 import { logger } from '@/lib/logger'
 import { purchaseCharm } from './charms.api'
@@ -29,6 +30,7 @@ export function usePurchaseCharm(leagueId: string): PurchaseCharm {
     void Promise.all([
       queryClient.invalidateQueries({ queryKey: walletKey }),
       queryClient.invalidateQueries({ queryKey: shopKey }),
+      queryClient.invalidateQueries({ queryKey: standingsQueryKey(leagueId) }),
     ]).catch((error: unknown) => logger.warn('Charm cache refresh failed', { error }))
   }
 
