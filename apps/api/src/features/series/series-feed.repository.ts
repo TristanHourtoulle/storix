@@ -1,11 +1,17 @@
 import { cardSeries, type DbExecutor } from '@storix/db'
-import { nextThemeWeekKey, type FeedSeries, type LeagueEventPayload } from '@storix/shared'
+import {
+  nextThemeWeekKey,
+  seriesIconSchema,
+  type FeedSeries,
+  type LeagueEventPayload,
+  type SeriesIcon,
+} from '@storix/shared'
 import { and, eq, inArray } from 'drizzle-orm'
 
 export interface FeedSeriesRef {
   id: string
   title: string
-  emoji: string
+  icon: SeriesIcon
   color: string
   next: FeedSeries['next']
 }
@@ -47,10 +53,12 @@ export async function listFeedSeries(
         {
           id: row.id,
           title: row.title,
-          emoji: row.emoji,
+          icon: seriesIconSchema.parse(row.icon),
           color: row.color,
           next:
-            next === undefined ? null : { title: next.title, emoji: next.emoji, color: next.color },
+            next === undefined
+              ? null
+              : { title: next.title, icon: seriesIconSchema.parse(next.icon), color: next.color },
         },
       ]
     }),

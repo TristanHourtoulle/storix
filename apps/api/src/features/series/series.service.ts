@@ -9,6 +9,7 @@ import {
   SERIES_SHELF_CLOSED_MAX,
   SERIES_THEME_CONTRIBUTORS,
   seriesColorFor,
+  seriesIconSchema,
   seriesPhase,
   THEME_ROTATION,
   themeWeekKey,
@@ -58,7 +59,7 @@ function toSummary(row: SeriesWithCounts, now: Date): SeriesSummary {
     id: row.id,
     kind: row.kind,
     title: row.title,
-    emoji: row.emoji,
+    icon: seriesIconSchema.parse(row.icon),
     color: row.color,
     phase: seriesPhase(row, now),
     startsAt: row.startsAt.toISOString(),
@@ -143,7 +144,7 @@ export function createSeriesService({ db, signer, clock }: SeriesServiceDeps): S
       return {
         weekKey,
         title: planned.title,
-        emoji: planned.emoji,
+        icon: seriesIconSchema.parse(planned.icon),
         color: planned.color,
         isOverride: planned.isOverride,
       }
@@ -163,9 +164,7 @@ export function createSeriesService({ db, signer, clock }: SeriesServiceDeps): S
         .map((row) => toSummary(row, now))
         .filter((summary) => summary.phase !== 'upcoming')
       const live = summaries.filter((s) => s.phase === 'live' || s.phase === 'grace')
-      const done = summaries
-        .filter((s) => s.phase === 'closed')
-        .slice(0, SERIES_SHELF_CLOSED_MAX)
+      const done = summaries.filter((s) => s.phase === 'closed').slice(0, SERIES_SHELF_CLOSED_MAX)
       return {
         series: [
           ...live.toSorted((a, b) => Number(b.kind === 'theme') - Number(a.kind === 'theme')),
@@ -219,7 +218,7 @@ export function createSeriesService({ db, signer, clock }: SeriesServiceDeps): S
       if (!hasRoleAtLeast(m.role, 'admin')) throw forbidden('Only admins can set the theme')
       const now = clock()
       const weekKey = nextThemeWeekKey(themeWeekKey(now))
-      const choice = { title: body.title, emoji: body.emoji, color: colorOf(body.title) }
+      const choice = { title: body.title, icon: body.icon, color: colorOf(body.title) }
       const isSet = await upsertThemeOverride(db, {
         leagueId: m.leagueId,
         weekKey,

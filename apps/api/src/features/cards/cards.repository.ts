@@ -229,7 +229,7 @@ function taggedWith(userId: string): SQL {
 }
 
 function inSeries(seriesId: string): SQL {
-  return sql`exists (select 1 from card_series_cards sc where sc.card_id = ${cards.id} and sc.series_id = ${seriesId})`
+  return sql`exists (select 1 from card_series_cards sc where sc.card_id = "cards"."id" and sc.series_id = ${seriesId})`
 }
 
 function collectionWhere(

@@ -23,13 +23,13 @@ export interface SeriesContributionRow {
 const activeCardCount = sql<number>`(
   select count(*)::int from card_series_cards sc
   join cards c on c.id = sc.card_id and c.status = 'active'
-  where sc.series_id = ${cardSeries.id}
+  where sc.series_id = "card_series"."id"
 )`
 
 const hasActiveCard = sql`exists (
   select 1 from card_series_cards sc
   join cards c on c.id = sc.card_id and c.status = 'active'
-  where sc.series_id = ${cardSeries.id}
+  where sc.series_id = "card_series"."id"
 )`
 
 function ownedCardCount(viewerId: string) {
@@ -37,7 +37,7 @@ function ownedCardCount(viewerId: string) {
     select count(distinct c.id)::int from card_series_cards sc
     join cards c on c.id = sc.card_id and c.status = 'active'
     join card_copies cc on cc.card_id = c.id and cc.owner_id = ${viewerId}
-    where sc.series_id = ${cardSeries.id}
+    where sc.series_id = "card_series"."id"
   )`
 }
 
