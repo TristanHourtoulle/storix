@@ -4,6 +4,7 @@ import type { CardTier, CosmeticItemId, CosmeticSlot } from '@storix/shared'
 import { Avatar } from '@/components/ui/avatar'
 import { meQueryOptions } from '@/features/auth/session.queries'
 import { BoosterPack } from '@/features/game/components/booster-pack'
+import { tearKind } from '../cosmetic-skins'
 import { StylePreview, useEquippedStyle } from '../style-context'
 import { AuraDemo } from './aura-demo'
 import { MemberBanner } from './member-banner'
@@ -11,6 +12,7 @@ import { SampleCardFace, SampleMomentFace } from './sample-card-face'
 import { ScaledBox } from './scaled-box'
 import { CARD_BACK_HEIGHT, CARD_BACK_WIDTH, ShopCardBack } from './shop-card-back'
 import { StyledName } from './styled-name'
+import { TearMark } from './tear-demo'
 
 const PACK_WIDTH = 84
 const PACK_HEIGHT = 117
@@ -47,6 +49,21 @@ export const BANNER_HEIGHT = 96
 const BANNER_THUMB_WIDTH: Readonly<Record<ThumbVariant, number>> = { row: 88, slot: 52, sheet: 260 }
 
 const MOMENT_SIZE = { row: 'sm', slot: 'sm', sheet: 'md' } as const
+
+const TEAR_SCALE: Readonly<Record<ThumbVariant, number>> = {
+  row: 44 / PACK_WIDTH,
+  slot: 34 / PACK_WIDTH,
+  sheet: 124 / PACK_WIDTH,
+}
+
+function TearThumb({ variant }: { variant: ThumbVariant }) {
+  const kind = tearKind(useEquippedStyle().openingTear)
+  return (
+    <ScaledBox width={PACK_WIDTH} height={PACK_HEIGHT} scale={TEAR_SCALE[variant]}>
+      <TearMark kind={kind} hasMotion={variant === 'sheet'} />
+    </ScaledBox>
+  )
+}
 
 function BannerThumb({ variant }: { variant: ThumbVariant }) {
   const banner = useEquippedStyle().banner
@@ -130,6 +147,8 @@ function ThumbContent({ slot, variant }: { slot: CosmeticSlot; variant: ThumbVar
       return <NameThumb variant={variant} />
     case 'momentStamp':
       return <SampleMomentFace size={MOMENT_SIZE[variant]} />
+    case 'openingTear':
+      return <TearThumb variant={variant} />
   }
 }
 
