@@ -63,7 +63,10 @@ export function LiveBanner({ leagueId }: LiveBannerProps) {
           <span className="live-dot">En direct</span>
           <b>{live.title}</b>
           <small>
-            {untilLabel(new Date(live.endsAt))} · {postsLabel(live.cardCount, live.memberCount)}
+            {untilLabel(new Date(live.endsAt))} ·{' '}
+            {live.cardCount === 0
+              ? 'pas encore de photo'
+              : postsLabel(live.cardCount, live.memberCount)}
           </small>
         </div>
       </div>

@@ -54,9 +54,9 @@ export function LeagueEvents({ leagueId }: LeagueEventsProps) {
     <section className="league-events" aria-label="Événements">
       <div className="league-events-head">
         <h2>Événements</h2>
-        <Button variant="ghost" onClick={() => setIsCreating(true)}>
-          Programmer un événement
-        </Button>
+        <button type="button" className="series-next-btn" onClick={() => setIsCreating(true)}>
+          ＋ Programmer un événement
+        </button>
       </div>
       {events.map((event) => (
         <div
