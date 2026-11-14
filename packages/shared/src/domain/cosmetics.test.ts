@@ -11,12 +11,19 @@ import {
 const neonSet = findCosmetic('rarity-neon')
 
 describe('cosmetics catalogue', () => {
-  it('has unique ids and three items per slot', () => {
+  it('has unique ids and lists a slot in display order', () => {
     expect(new Set(COSMETIC_ITEMS.map((item) => item.id)).size).toBe(COSMETIC_ITEMS.length)
     expect(cosmeticsOfSlot('booster').map((item) => item.id)).toEqual([
       'booster-neon',
       'booster-or-noir',
       'booster-aquarelle',
+      'booster-cosmos',
+      'booster-vitrail',
+    ])
+    expect(cosmeticsOfSlot('openingTear').map((item) => item.id)).toEqual([
+      'tear-braises',
+      'tear-verre',
+      'tear-ruban',
     ])
     expect(findCosmetic('nope')).toBeUndefined()
   })
@@ -27,6 +34,8 @@ describe('cosmetics catalogue', () => {
     expect(findCosmetic('name-or')?.price).toBe(900)
     expect(findCosmetic('name-surligneur')?.price).toBe(600)
     expect(findCosmetic('stamp-encre')?.price).toBe(400)
+    expect(findCosmetic('tear-verre')?.price).toBe(1200)
+    expect(findCosmetic('rarity-vitrail')?.price).toBe(2500)
   })
 
   it('marks what the league sees as league-visible', () => {
@@ -36,6 +45,7 @@ describe('cosmetics catalogue', () => {
     expect(visibility('name-holo')).toBe('league')
     expect(visibility('stamp-ticket')).toBe('league')
     expect(visibility('back-neon')).toBe('self')
+    expect(visibility('tear-ruban')).toBe('self')
   })
 })
 

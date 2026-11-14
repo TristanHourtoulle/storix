@@ -7,6 +7,7 @@ export const COSMETIC_SLOTS = [
   'banner',
   'nameStyle',
   'momentStamp',
+  'openingTear',
 ] as const
 
 export type CosmeticSlot = (typeof COSMETIC_SLOTS)[number]
@@ -17,12 +18,17 @@ export const COSMETIC_ITEM_IDS = [
   'booster-neon',
   'booster-or-noir',
   'booster-aquarelle',
+  'booster-cosmos',
+  'booster-vitrail',
   'back-neon',
   'back-or-noir',
   'back-aquarelle',
+  'back-cosmos',
+  'back-vitrail',
   'rarity-neon',
   'rarity-gemmes',
   'rarity-filet',
+  'rarity-vitrail',
   'frame-couronne',
   'frame-arc-en-ciel',
   'frame-neon',
@@ -38,6 +44,9 @@ export const COSMETIC_ITEM_IDS = [
   'stamp-ticket',
   'stamp-polaroid',
   'stamp-encre',
+  'tear-braises',
+  'tear-verre',
+  'tear-ruban',
 ] as const
 
 export type CosmeticItemId = (typeof COSMETIC_ITEM_IDS)[number]
@@ -60,6 +69,7 @@ export const COSMETIC_PRICES: Readonly<Record<CosmeticSlot, number>> = {
   banner: 400,
   nameStyle: 900,
   momentStamp: 400,
+  openingTear: 1200,
 }
 
 const LEAGUE_VISIBLE_SLOTS: ReadonlySet<CosmeticSlot> = new Set<CosmeticSlot>([
@@ -83,6 +93,7 @@ export const DEFAULT_THEME_NAME: Readonly<Record<CosmeticSlot, string>> = {
   banner: "D'origine",
   nameStyle: "D'origine",
   momentStamp: "D'origine",
+  openingTear: "D'origine",
 }
 
 function item(
@@ -106,12 +117,17 @@ export const COSMETIC_ITEMS: readonly CosmeticItem[] = [
   item('booster-neon', 'booster', 'Néon', 1),
   item('booster-or-noir', 'booster', 'Or noir', 2),
   item('booster-aquarelle', 'booster', 'Aquarelle', 3),
+  item('booster-cosmos', 'booster', 'Cosmos', 4),
+  item('booster-vitrail', 'booster', 'Vitrail', 5),
   item('back-neon', 'cardBack', 'Néon', 1),
   item('back-or-noir', 'cardBack', 'Or noir', 2),
   item('back-aquarelle', 'cardBack', 'Aquarelle', 3),
+  item('back-cosmos', 'cardBack', 'Cosmos', 4),
+  item('back-vitrail', 'cardBack', 'Vitrail', 5),
   item('rarity-neon', 'raritySet', 'Néon', 1),
   item('rarity-gemmes', 'raritySet', 'Gemmes', 2),
   item('rarity-filet', 'raritySet', 'Filet', 3),
+  item('rarity-vitrail', 'raritySet', 'Vitrail', 4),
   item('frame-couronne', 'avatarFrame', "Couronne d'or", 1),
   item('frame-arc-en-ciel', 'avatarFrame', 'Arc-en-ciel', 2),
   item('frame-neon', 'avatarFrame', 'Néon', 3),
@@ -127,4 +143,7 @@ export const COSMETIC_ITEMS: readonly CosmeticItem[] = [
   item('stamp-ticket', 'momentStamp', 'Ticket', 1),
   item('stamp-polaroid', 'momentStamp', 'Polaroid', 2),
   item('stamp-encre', 'momentStamp', 'Encre', 3),
+  item('tear-braises', 'openingTear', 'Braises', 1),
+  item('tear-verre', 'openingTear', 'Éclats de verre', 2),
+  item('tear-ruban', 'openingTear', 'Ruban', 3),
 ]
